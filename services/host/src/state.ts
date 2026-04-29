@@ -144,6 +144,7 @@ import {
   assignmentReceiptPayloadSchema,
   assignmentRejectedObservationPayloadSchema,
   runtimeCommandReceiptPayloadSchema,
+  type RuntimeCommandReceiptProjectionRecord,
   approvalUpdatedObservationPayloadSchema,
   artifactRefObservationPayloadSchema,
   artifactRefProjectionRecordSchema,
@@ -2292,9 +2293,10 @@ export async function getRuntimeAssignment(
 
 function buildRuntimeAssignmentTimelineEntries(input: {
   assignment: RuntimeAssignmentRecord;
+  commandReceipts: RuntimeCommandReceiptProjectionRecord[];
   receipts: AssignmentReceiptProjectionRecord[];
 }): RuntimeAssignmentTimelineEntry[] {
-  const { assignment, receipts } = input;
+  const { assignment, commandReceipts, receipts } = input;
   const entries: RuntimeAssignmentTimelineEntry[] = [
     {
       assignmentId: assignment.assignmentId,
@@ -2354,6 +2356,18 @@ function buildRuntimeAssignmentTimelineEntries(input: {
     });
   }
 
+  for (const receipt of commandReceipts) {
+    entries.push({
+      assignmentId: assignment.assignmentId,
+      commandEventType: receipt.commandEventType,
+      commandId: receipt.commandId,
+      entryKind: "runtime.command.receipt",
+      receiptStatus: receipt.receiptStatus,
+      runnerId: receipt.runnerId,
+      timestamp: receipt.observedAt
+    });
+  }
+
   return entries.sort((left, right) => {
     const timeOrder = left.timestamp.localeCompare(right.timestamp);
     return timeOrder !== 0
@@ -2376,13 +2390,18 @@ export async function getRuntimeAssignmentTimeline(
   const receipts = (await listAssignmentReceiptProjectionRecords()).filter(
     (receipt) => receipt.assignmentId === assignment.assignmentId
   );
+  const commandReceipts = (await listRuntimeCommandReceiptProjectionRecords()).filter(
+    (receipt) => receipt.assignmentId === assignment.assignmentId
+  );
 
   return runtimeAssignmentTimelineResponseSchema.parse({
     assignment,
+    commandReceipts,
     generatedAt: nowIsoString(),
     receipts,
     timeline: buildRuntimeAssignmentTimelineEntries({
       assignment,
+      commandReceipts,
       receipts
     })
   });

@@ -1534,9 +1534,26 @@ async function main(): Promise<void> {
       ),
       "Assignment timeline must include assignment acceptance."
     );
+    assertCondition(
+      assignmentTimeline.commandReceipts.some(
+        (receipt) =>
+          receipt.commandEventType === "runtime.start" &&
+          receipt.receiptStatus === "completed"
+      ),
+      "Assignment timeline must expose completed runtime command receipts."
+    );
+    assertCondition(
+      assignmentTimeline.timeline.some(
+        (entry) =>
+          entry.entryKind === "runtime.command.receipt" &&
+          entry.commandEventType === "runtime.start" &&
+          entry.receiptStatus === "completed"
+      ),
+      "Assignment timeline must include runtime command receipt entries."
+    );
     printPass(
       "assignment-timeline",
-      `entries=${assignmentTimeline.timeline.length}; receipts=${assignmentTimeline.receipts.length}`
+      `entries=${assignmentTimeline.timeline.length}; receipts=${assignmentTimeline.receipts.length}; commands=${assignmentTimeline.commandReceipts.length}`
     );
 
     const materializedContextPath = path.join(

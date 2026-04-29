@@ -4,7 +4,11 @@ import {
   runtimeAssignmentRecordSchema,
   runtimeAssignmentStatusSchema
 } from "../federation/assignment.js";
-import { assignmentReceiptProjectionRecordSchema } from "../projection/projection.js";
+import {
+  assignmentReceiptProjectionRecordSchema,
+  runtimeCommandReceiptProjectionRecordSchema
+} from "../projection/projection.js";
+import { entangleRuntimeCommandEventTypeSchema } from "../protocol/control.js";
 
 export const runtimeAssignmentListResponseSchema = z.object({
   assignments: z.array(runtimeAssignmentRecordSchema),
@@ -22,13 +26,17 @@ export const runtimeAssignmentTimelineEntrySchema = z.object({
     "assignment.accepted",
     "assignment.rejected",
     "assignment.revoked",
-    "assignment.receipt"
+    "assignment.receipt",
+    "runtime.command.receipt"
   ]),
+  commandEventType: entangleRuntimeCommandEventTypeSchema.optional(),
+  commandId: identifierSchema.optional(),
   message: nonEmptyStringSchema.optional(),
   nodeId: identifierSchema.optional(),
   receiptKind: z
     .enum(["received", "materialized", "started", "stopped", "failed"])
     .optional(),
+  receiptStatus: z.enum(["received", "completed", "failed"]).optional(),
   runnerId: identifierSchema.optional(),
   status: runtimeAssignmentStatusSchema.optional(),
   timestamp: nonEmptyStringSchema
@@ -36,6 +44,7 @@ export const runtimeAssignmentTimelineEntrySchema = z.object({
 
 export const runtimeAssignmentTimelineResponseSchema = z.object({
   assignment: runtimeAssignmentRecordSchema,
+  commandReceipts: z.array(runtimeCommandReceiptProjectionRecordSchema),
   generatedAt: nonEmptyStringSchema,
   receipts: z.array(assignmentReceiptProjectionRecordSchema),
   timeline: z.array(runtimeAssignmentTimelineEntrySchema)

@@ -83,14 +83,14 @@ joined User Node runner processes with separate state roots. It assigns the
 agent node and both User Nodes through signed control events, verifies that
 each User Node `human_interface` runtime exposes a User Client endpoint, checks
 User Client health and state routes, observes runtime state through signed
-  runner observations, verifies completed lifecycle command receipt projection,
-  publishes signed User Node messages through the relay, and
-  verifies that the assigned agent runner persisted both received conversations
-  and that Host projection contains both User Node conversations from
-  runner-signed observations. It also verifies the per-assignment timeline read
-  model over real runner acceptance and lifecycle receipt evidence. It publishes
-  a synthetic signed agent-to-user
-message through the relay and verifies that the running User Node records it as
+runner observations, verifies completed lifecycle command receipt projection,
+publishes signed User Node messages through the relay, and
+verifies that the assigned agent runner persisted both received conversations
+and that Host projection contains both User Node conversations from
+runner-signed observations. It also verifies the per-assignment timeline read
+model over real runner acceptance, lifecycle receipt, and runtime command
+receipt evidence. It publishes a synthetic signed agent-to-user message
+through the relay and verifies that the running User Node records it as
 inbound inbox history, uses the running User Client JSON API for selected
 conversation inspection, then submits signed source-candidate review and
 approval response messages through the same JSON User Client API. It also loads
@@ -462,8 +462,9 @@ This repository currently contains:
   lifecycle transitions including handoffs, coordination result/close,
   approval request/response, completion, cancellation, and failure paths;
 - assignment timelines now join Host assignment lifecycle state with
-  runner-signed receipt projection, with Host API, host-client, CLI, and Studio
-  grouped receipt summaries sharing the same read model;
+  runner-signed receipt projection and assignment-scoped runtime command
+  receipt projection, with Host API, host-client, CLI, and Studio grouped
+  receipt summaries sharing the same read model;
 - a Studio federation overview that joins User Node identities with runtime
   projection and conversation projection, so operators can see Human Interface
   Runtime state, runner placement, User Client links, conversation counts,

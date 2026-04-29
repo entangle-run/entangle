@@ -194,6 +194,7 @@ same-machine slice records.
 - [391-runtime-command-receipt-projection-slice.md](391-runtime-command-receipt-projection-slice.md)
 - [392-runner-owned-command-receipt-adoption-slice.md](392-runner-owned-command-receipt-adoption-slice.md)
 - [393-lifecycle-session-command-receipts-slice.md](393-lifecycle-session-command-receipts-slice.md)
+- [394-assignment-command-receipt-timeline-slice.md](394-assignment-command-receipt-timeline-slice.md)
 
 ## Audited Scope
 
@@ -353,7 +354,8 @@ The repository is not fully federated:
   session/conversation intake, and verifies Host projection of the User Node
   conversation without requiring a live model-provider call. The same smoke now
   verifies the per-assignment timeline read model includes real assignment
-  acceptance and runner `started` receipt evidence;
+  acceptance, runner `started` receipt evidence, and completed runtime command
+  receipt entries;
 - the same process smoke now proves two distinct User Nodes assigned to two
   distinct `human_interface` runner processes, with two User Client state
   checks, two signed publishes with distinct User Node pubkeys, and two Host
@@ -436,8 +438,9 @@ The repository is not fully federated:
   receipt events, and Studio/CLI now expose compact receipt summaries for
   operator inspection without scanning the general event stream. Host now also
   exposes a per-assignment timeline read model that joins assignment lifecycle
-  state with runner receipt projection, CLI can inspect it, and Studio groups
-  receipt summaries under projected assignment rows;
+  state with runner receipt projection and assignment-scoped runtime command
+  receipt projection, CLI can inspect it, and Studio groups receipt summaries
+  under projected assignment rows;
 - User Client source-candidate accept/reject now publishes signed
   `source_change.review` A2A messages, and the owning runner applies the review
   to runner-local candidate state before emitting a new `source_change.ref`

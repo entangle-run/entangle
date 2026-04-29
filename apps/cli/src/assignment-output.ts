@@ -14,15 +14,19 @@ export type RuntimeAssignmentCliSummary = {
 };
 
 export type RuntimeAssignmentTimelineCliEntry = {
+  commandEventType?: string;
+  commandId?: string;
   entryKind: string;
   message?: string;
   receiptKind?: string;
+  receiptStatus?: string;
   status?: string;
   timestamp: string;
 };
 
 export type RuntimeAssignmentTimelineCliSummary = {
   assignment: RuntimeAssignmentCliSummary;
+  commandReceiptCount: number;
   receiptCount: number;
   timeline: RuntimeAssignmentTimelineCliEntry[];
 };
@@ -66,12 +70,18 @@ export function projectRuntimeAssignmentTimelineSummary(
 ): RuntimeAssignmentTimelineCliSummary {
   return {
     assignment: projectRuntimeAssignmentSummary(response.assignment),
+    commandReceiptCount: response.commandReceipts.length,
     receiptCount: response.receipts.length,
     timeline: sortRuntimeAssignmentTimelineForCli(response.timeline).map(
       (entry) => ({
+        ...(entry.commandEventType
+          ? { commandEventType: entry.commandEventType }
+          : {}),
+        ...(entry.commandId ? { commandId: entry.commandId } : {}),
         entryKind: entry.entryKind,
         ...(entry.message ? { message: entry.message } : {}),
         ...(entry.receiptKind ? { receiptKind: entry.receiptKind } : {}),
+        ...(entry.receiptStatus ? { receiptStatus: entry.receiptStatus } : {}),
         ...(entry.status ? { status: entry.status } : {}),
         timestamp: entry.timestamp
       })

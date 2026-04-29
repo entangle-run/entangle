@@ -917,6 +917,26 @@ describe("createHostClient", () => {
             createMockResponse({
               body: JSON.stringify({
                 assignment,
+                commandReceipts: [
+                  {
+                    assignmentId: "assignment-alpha",
+                    commandEventType: "runtime.start",
+                    commandId: "cmd-start-alpha",
+                    graphId: "team-alpha",
+                    hostAuthorityPubkey:
+                      "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+                    nodeId: "worker-it",
+                    observedAt: "2026-04-26T10:02:30.000Z",
+                    projection: {
+                      source: "observation_event",
+                      updatedAt: "2026-04-26T10:02:30.000Z"
+                    },
+                    receiptStatus: "completed",
+                    runnerId: "runner-alpha",
+                    runnerPubkey:
+                      "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"
+                  }
+                ],
                 generatedAt: "2026-04-26T10:03:00.000Z",
                 receipts: [
                   {
@@ -949,6 +969,15 @@ describe("createHostClient", () => {
                     receiptKind: "started",
                     runnerId: "runner-alpha",
                     timestamp: "2026-04-26T10:02:00.000Z"
+                  },
+                  {
+                    assignmentId: "assignment-alpha",
+                    commandEventType: "runtime.start",
+                    commandId: "cmd-start-alpha",
+                    entryKind: "runtime.command.receipt",
+                    receiptStatus: "completed",
+                    runnerId: "runner-alpha",
+                    timestamp: "2026-04-26T10:02:30.000Z"
                   }
                 ]
               }),
@@ -1006,6 +1035,12 @@ describe("createHostClient", () => {
     await expect(
       client.getAssignmentTimeline("assignment-alpha")
     ).resolves.toMatchObject({
+      commandReceipts: [
+        {
+          commandEventType: "runtime.start",
+          receiptStatus: "completed"
+        }
+      ],
       receipts: [
         {
           receiptKind: "started"
@@ -1017,6 +1052,10 @@ describe("createHostClient", () => {
         },
         {
           entryKind: "assignment.receipt"
+        },
+        {
+          entryKind: "runtime.command.receipt",
+          receiptStatus: "completed"
         }
       ]
     });

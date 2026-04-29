@@ -165,11 +165,13 @@ Current status:
 - CLI and Studio now expose compact projected assignment receipt counts and
   recent receipt rows for operator inspection.
 - Host now exposes a per-assignment timeline read model built from assignment
-  lifecycle state plus projected runner receipts; CLI can inspect it directly,
-  and Studio groups receipt summaries under assignment rows.
+  lifecycle state plus projected runner receipts and assignment-scoped runtime
+  command receipts; CLI can inspect it directly, and Studio groups receipt
+  summaries under assignment rows.
 - The process-runner smoke now validates that the real joined runner path
-  produces assignment acceptance and `started` receipt evidence visible through
-  the assignment timeline read model.
+  produces assignment acceptance, `started` receipt evidence, and completed
+  runtime command receipt entries visible through the assignment timeline read
+  model.
 
 ### Slice 6: Generic Runner Bootstrap
 
@@ -303,6 +305,7 @@ Implementation record:
 - [391-runtime-command-receipt-projection-slice.md](391-runtime-command-receipt-projection-slice.md)
 - [392-runner-owned-command-receipt-adoption-slice.md](392-runner-owned-command-receipt-adoption-slice.md)
 - [393-lifecycle-session-command-receipts-slice.md](393-lifecycle-session-command-receipts-slice.md)
+- [394-assignment-command-receipt-timeline-slice.md](394-assignment-command-receipt-timeline-slice.md)
 
 Verification:
 
@@ -798,7 +801,8 @@ Current status:
   first user publish, selected conversation inspection, signed source-candidate
   review, and approval response;
 - the same process proof now validates assignment timeline projection for real
-  runner acceptance and lifecycle receipts;
+  runner acceptance, lifecycle receipts, and assignment-scoped runtime command
+  receipts;
 - the same process proof now requests runner-owned wiki publication through
   Host-signed `runtime.wiki.publish`, observes the projected git
   `artifact.ref`, verifies the primary git backend branch head, then requests

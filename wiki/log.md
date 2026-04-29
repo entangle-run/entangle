@@ -4700,3 +4700,14 @@ evidence.
 
 The process-runner smoke now verifies completed lifecycle command receipts for
 stop/start/restart through Host projection.
+
+## [2026-04-29] implementation | Added command receipts to assignment timelines
+
+Added `references/394-assignment-command-receipt-timeline-slice.md`.
+Assignment timeline responses now include assignment-scoped
+`runtime.command.receipt` projection records and timeline entries alongside
+assignment lifecycle entries and runner assignment receipts.
+
+CLI compact assignment timeline output now reports command receipt counts and
+command receipt metadata. The process-runner smoke now verifies completed
+runtime command receipt evidence through the assignment timeline read model.

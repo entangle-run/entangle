@@ -64,6 +64,26 @@ describe("assignment CLI output", () => {
     expect(
       projectRuntimeAssignmentTimelineSummary({
         assignment: assignments[0]!,
+        commandReceipts: [
+          {
+            assignmentId: "assignment-b",
+            commandEventType: "runtime.start",
+            commandId: "cmd-start-b",
+            graphId: "team-alpha",
+            hostAuthorityPubkey:
+              "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+            nodeId: "worker-b",
+            observedAt: "2026-04-26T12:02:30.000Z",
+            projection: {
+              source: "observation_event",
+              updatedAt: "2026-04-26T12:02:30.000Z"
+            },
+            receiptStatus: "completed",
+            runnerId: "runner-b",
+            runnerPubkey:
+              "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"
+          }
+        ],
         generatedAt: "2026-04-26T12:03:00.000Z",
         receipts: [
           {
@@ -91,6 +111,15 @@ describe("assignment CLI output", () => {
           },
           {
             assignmentId: "assignment-b",
+            commandEventType: "runtime.start",
+            commandId: "cmd-start-b",
+            entryKind: "runtime.command.receipt",
+            receiptStatus: "completed",
+            runnerId: "runner-b",
+            timestamp: "2026-04-26T12:02:30.000Z"
+          },
+          {
+            assignmentId: "assignment-b",
             entryKind: "assignment.offered",
             nodeId: "worker-b",
             runnerId: "runner-b",
@@ -103,6 +132,7 @@ describe("assignment CLI output", () => {
       assignment: {
         assignmentId: "assignment-b"
       },
+      commandReceiptCount: 1,
       receiptCount: 1,
       timeline: [
         {
@@ -111,6 +141,12 @@ describe("assignment CLI output", () => {
         {
           entryKind: "assignment.receipt",
           receiptKind: "started"
+        },
+        {
+          commandEventType: "runtime.start",
+          commandId: "cmd-start-b",
+          entryKind: "runtime.command.receipt",
+          receiptStatus: "completed"
         }
       ]
     });

@@ -1359,7 +1359,8 @@ describe("buildHostServer", () => {
         {
           recordRunnerHello,
           recordRuntimeAssignmentAccepted,
-          recordRuntimeAssignmentReceiptObservation
+          recordRuntimeAssignmentReceiptObservation,
+          recordRuntimeCommandReceiptObservation
         }
       ] = await Promise.all([import("./state.js")]);
       const packageDirectory = await createAdmittedPackageDirectory(
@@ -1475,6 +1476,21 @@ describe("buildHostServer", () => {
         runnerId,
         runnerPubkey
       });
+      await recordRuntimeCommandReceiptObservation({
+        assignmentId: "assignment-alpha",
+        commandEventType: "runtime.start",
+        commandId: "cmd-start-alpha",
+        eventType: "runtime.command.receipt",
+        graphId: "team-alpha",
+        hostAuthorityPubkey,
+        message: "Runtime start command completed.",
+        nodeId: "worker-it",
+        observedAt: new Date().toISOString(),
+        protocol: "entangle.observe.v1",
+        runnerId,
+        runnerPubkey,
+        status: "completed"
+      });
 
       const timelineResponse = await server.inject({
         method: "GET",
@@ -1488,8 +1504,22 @@ describe("buildHostServer", () => {
         assignmentId: "assignment-alpha",
         receiptKind: "started"
       });
+      expect(timeline.commandReceipts[0]).toMatchObject({
+        assignmentId: "assignment-alpha",
+        commandEventType: "runtime.start",
+        receiptStatus: "completed"
+      });
       expect(timeline.timeline.map((entry) => entry.entryKind)).toContain(
         "assignment.receipt"
+      );
+      expect(timeline.timeline).toEqual(
+        expect.arrayContaining([
+          expect.objectContaining({
+            commandEventType: "runtime.start",
+            entryKind: "runtime.command.receipt",
+            receiptStatus: "completed"
+          })
+        ])
       );
 
       const projectionResponse = await server.inject({

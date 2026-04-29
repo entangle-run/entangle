@@ -1749,6 +1749,24 @@ describe("federated runtime contracts", () => {
     expect(
       runtimeAssignmentTimelineResponseSchema.parse({
         assignment,
+        commandReceipts: [
+          {
+            assignmentId: "assignment-alpha",
+            commandEventType: "runtime.start",
+            commandId: "cmd-start-alpha",
+            graphId: "team-alpha",
+            hostAuthorityPubkey: authorityPubkey,
+            nodeId: "worker-it",
+            observedAt,
+            projection: {
+              source: "observation_event",
+              updatedAt: observedAt
+            },
+            receiptStatus: "completed",
+            runnerId: "runner-alpha",
+            runnerPubkey
+          }
+        ],
         generatedAt: observedAt,
         receipts: [
           {
@@ -1777,6 +1795,15 @@ describe("federated runtime contracts", () => {
             assignmentId: "assignment-alpha",
             entryKind: "assignment.receipt",
             receiptKind: "started",
+            runnerId: "runner-alpha",
+            timestamp: observedAt
+          },
+          {
+            assignmentId: "assignment-alpha",
+            commandEventType: "runtime.start",
+            commandId: "cmd-start-alpha",
+            entryKind: "runtime.command.receipt",
+            receiptStatus: "completed",
             runnerId: "runner-alpha",
             timestamp: observedAt
           }
