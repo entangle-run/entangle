@@ -12,6 +12,7 @@ import type {
   RuntimeArtifactDiffResponse,
   RuntimeArtifactHistoryResponse,
   RuntimeArtifactPreviewResponse,
+  RuntimeArtifactRestoreResponse,
   RuntimeArtifactSourceChangeProposalResponse,
   RuntimeSourceChangeCandidateDiffResponse,
   RuntimeSourceChangeCandidateFilePreviewResponse,
@@ -31,6 +32,7 @@ import {
   runtimeArtifactDiffResponseSchema,
   runtimeArtifactHistoryResponseSchema,
   runtimeArtifactPreviewResponseSchema,
+  runtimeArtifactRestoreResponseSchema,
   runtimeArtifactSourceChangeProposalResponseSchema,
   runtimeSourceChangeCandidateDiffResponseSchema,
   runtimeSourceChangeCandidateFilePreviewResponseSchema,
@@ -115,6 +117,20 @@ type UserClientArtifactSourceProposalRequest = {
   proposalId?: unknown;
   reason?: unknown;
   targetPath?: unknown;
+};
+
+type UserClientArtifactRestoreRequest = {
+  artifactId?: unknown;
+  conversationId?: unknown;
+  nodeId?: unknown;
+  reason?: unknown;
+  restoreId?: unknown;
+};
+
+type UserClientArtifactRestoreResponse = RuntimeArtifactRestoreResponse & {
+  artifact?: ArtifactRef | undefined;
+  source: "runtime";
+  userNodeId: string;
 };
 
 type UserClientArtifactSourceProposalResponse =
@@ -1316,6 +1332,72 @@ async function buildUserClientArtifactDiff(input: {
     nodeId: input.nodeId,
     source: "unavailable"
   };
+}
+
+async function requestRuntimeArtifactRestore(input: {
+  artifactId: string;
+  hostApi?: RunnerJoinHostApi | undefined;
+  nodeId: string;
+  reason?: string | undefined;
+  restoreId?: string | undefined;
+  userNodeId: string;
+  visibleArtifact?: ArtifactRef | undefined;
+}): Promise<{
+  detail?: UserClientArtifactRestoreResponse;
+  error?: string;
+  statusCode?: number;
+}> {
+  if (!input.hostApi) {
+    return {
+      error: "Host API is not configured for artifact restore requests.",
+      statusCode: 409
+    };
+  }
+
+  try {
+    const response = await fetch(
+      new URL(
+        `/v1/runtimes/${encodeURIComponent(input.nodeId)}/artifacts/${encodeURIComponent(input.artifactId)}/restore`,
+        input.hostApi.baseUrl
+      ),
+      {
+        body: JSON.stringify({
+          ...(input.reason ? { reason: input.reason } : {}),
+          requestedBy: input.userNodeId,
+          ...(input.restoreId ? { restoreId: input.restoreId } : {})
+        }),
+        headers: {
+          ...buildHostApiHeaders(input.hostApi),
+          "content-type": "application/json"
+        },
+        method: "POST"
+      }
+    );
+
+    if (!response.ok) {
+      return {
+        error: `Host artifact restore request failed with HTTP ${response.status}.`,
+        statusCode: response.status
+      };
+    }
+
+    return {
+      detail: {
+        ...runtimeArtifactRestoreResponseSchema.parse(await response.json()),
+        ...(input.visibleArtifact ? { artifact: input.visibleArtifact } : {}),
+        source: "runtime",
+        userNodeId: input.userNodeId
+      }
+    };
+  } catch (error) {
+    return {
+      error:
+        error instanceof Error
+          ? error.message
+          : "Host artifact restore request failed.",
+      statusCode: 502
+    };
+  }
 }
 
 async function requestRuntimeArtifactSourceProposal(input: {
@@ -3004,6 +3086,91 @@ export async function startHumanInterfaceRuntime(input: {
             visibleArtifact: visibleArtifact.artifact
           })
         );
+        return;
+      }
+
+      if (
+        request.method === "POST" &&
+        requestUrl.pathname === "/api/artifacts/restore"
+      ) {
+        let restoreRequest: UserClientArtifactRestoreRequest;
+
+        try {
+          restoreRequest =
+            (await readRequestJson(request)) as UserClientArtifactRestoreRequest;
+        } catch (error) {
+          writeJson(response, 400, {
+            error:
+              error instanceof Error
+                ? error.message
+                : "Artifact restore request is invalid."
+          });
+          return;
+        }
+
+        const artifactId =
+          typeof restoreRequest.artifactId === "string"
+            ? restoreRequest.artifactId.trim()
+            : "";
+        const conversationId =
+          typeof restoreRequest.conversationId === "string"
+            ? restoreRequest.conversationId.trim()
+            : "";
+        const nodeId =
+          typeof restoreRequest.nodeId === "string"
+            ? restoreRequest.nodeId.trim()
+            : "";
+        const reason =
+          typeof restoreRequest.reason === "string" &&
+          restoreRequest.reason.trim().length > 0
+            ? restoreRequest.reason.trim()
+            : undefined;
+        const restoreId =
+          typeof restoreRequest.restoreId === "string" &&
+          restoreRequest.restoreId.trim().length > 0
+            ? restoreRequest.restoreId.trim()
+            : undefined;
+
+        if (!nodeId || !artifactId || !conversationId) {
+          writeJson(response, 400, {
+            error: "Runtime node, artifact id, and conversation are required."
+          });
+          return;
+        }
+
+        const visibleArtifact = await resolveUserClientVisibleArtifactRef({
+          artifactId,
+          conversationId,
+          hostApi: input.hostApi,
+          nodeId,
+          userNodeId: input.context.binding.node.nodeId
+        });
+
+        if ("error" in visibleArtifact) {
+          writeJson(response, visibleArtifact.statusCode, {
+            error: visibleArtifact.error
+          });
+          return;
+        }
+
+        const restore = await requestRuntimeArtifactRestore({
+          artifactId,
+          hostApi: input.hostApi,
+          nodeId,
+          reason,
+          restoreId,
+          userNodeId: input.context.binding.node.nodeId,
+          visibleArtifact: visibleArtifact.artifact
+        });
+
+        if (restore.error || !restore.detail) {
+          writeJson(response, restore.statusCode ?? 502, {
+            error: restore.error ?? "Artifact restore request failed."
+          });
+          return;
+        }
+
+        writeJson(response, 200, restore.detail);
         return;
       }
 

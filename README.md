@@ -112,7 +112,10 @@ branch head plus command receipt. The running User Client can also request
 runner-owned wiki publication for wiki resources visible in the selected User
 Node conversation; that participant path is routed through the Human Interface
 Runtime and Host control boundary with `requestedBy` set to the User Node id,
-and the smoke verifies the resulting projected command receipt.
+and the smoke verifies the resulting projected command receipt. The same smoke
+now also asks the running User Client to request artifact restore for the
+visible source-history artifact and verifies the projected restore command
+receipt.
 The smoke still runs without live model credentials. Live OpenCode
 behavior and real-provider credentials remain manual/operator validation; the
 OpenAI-compatible agent-engine HTTP boundary is now covered by a deterministic
@@ -163,9 +166,9 @@ long shell chain, because Turbo and chained `pnpm --filter` execution left
 Vitest child processes open in this environment while package-directory test
 commands exited cleanly.
 CLI, Studio, and User Client use fork pools so the sequential root gate exits
-cleanly in this environment; CLI is pinned to one worker. Host uses the
-threads pool for the same reason. The other Node packages stay on the default
-pool because that is their stable configuration here.
+cleanly in this environment; CLI is pinned to one worker. Host and Runner use
+the threads pool for the same reason. The other Node packages stay on the
+default pool because that is their stable configuration here.
 
 For manual API-backed testing, add `--keep-running`. The smoke keeps Host and
 all joined runner processes alive, keeps their temporary state roots, prints
@@ -1175,8 +1178,8 @@ The highest-value remaining gaps are:
   history/diff/preview inspection, and backend-cache history/diff for projected
   git refs plus shared multi-target source-history publication presentation
   plus runner-owned artifact restore and source-change proposal operator
-  requests plus User Client visible-artifact proposal/wiki publication requests
-  and explicit runner-owned artifact/source/wiki command completion receipts,
+  requests plus User Client visible-artifact restore/proposal/wiki publication
+  requests and explicit runner-owned artifact/source/wiki command completion receipts,
   richer wiki promotion policy and repository lifecycle
   behavior beyond explicit target publication, source-history merge/reconcile
   workflows, and replicated fallback paths;

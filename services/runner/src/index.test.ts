@@ -1396,6 +1396,23 @@ describe("runner runtime context", () => {
 
         if (
           request.method === "POST" &&
+          request.url === "/v1/runtimes/worker-it/artifacts/artifact-alpha/restore"
+        ) {
+          response.end(
+            JSON.stringify({
+              artifactId: "artifact-alpha",
+              assignmentId: "assignment-alpha",
+              commandId: "cmd-artifact-restore-alpha",
+              nodeId: "worker-it",
+              requestedAt: "2026-04-26T12:05:30.000Z",
+              status: "requested"
+            })
+          );
+          return;
+        }
+
+        if (
+          request.method === "POST" &&
           request.url ===
             "/v1/runtimes/worker-it/artifacts/artifact-alpha/source-change-proposal"
         ) {
@@ -1736,6 +1753,35 @@ describe("runner runtime context", () => {
       });
       expect(jsonArtifactDiffBody.diff.content).toContain("+report");
 
+      const jsonArtifactRestoreResponse = await fetch(
+        new URL("/api/artifacts/restore", handle.clientUrl),
+        {
+          body: JSON.stringify({
+            artifactId: "artifact-alpha",
+            conversationId: "conversation-alpha",
+            nodeId: "worker-it",
+            reason: "Restore visible artifact.",
+            restoreId: "restore-artifact-alpha"
+          }),
+          headers: {
+            "content-type": "application/json"
+          },
+          method: "POST"
+        }
+      );
+      expect(jsonArtifactRestoreResponse.status).toBe(200);
+      await expect(jsonArtifactRestoreResponse.json()).resolves.toMatchObject({
+        artifact: {
+          artifactId: "artifact-alpha",
+          backend: "git"
+        },
+        artifactId: "artifact-alpha",
+        commandId: "cmd-artifact-restore-alpha",
+        nodeId: "worker-it",
+        source: "runtime",
+        userNodeId: "user-main"
+      });
+
       const jsonArtifactProposalResponse = await fetch(
         new URL("/api/artifacts/source-change-proposal", handle.clientUrl),
         {
@@ -1825,6 +1871,26 @@ describe("runner runtime context", () => {
       expect(jsonUnscopedArtifactProposalResponse.status).toBe(400);
       await expect(
         jsonUnscopedArtifactProposalResponse.json()
+      ).resolves.toMatchObject({
+        error: "Runtime node, artifact id, and conversation are required."
+      });
+
+      const jsonUnscopedArtifactRestoreResponse = await fetch(
+        new URL("/api/artifacts/restore", handle.clientUrl),
+        {
+          body: JSON.stringify({
+            artifactId: "artifact-alpha",
+            nodeId: "worker-it"
+          }),
+          headers: {
+            "content-type": "application/json"
+          },
+          method: "POST"
+        }
+      );
+      expect(jsonUnscopedArtifactRestoreResponse.status).toBe(400);
+      await expect(
+        jsonUnscopedArtifactRestoreResponse.json()
       ).resolves.toMatchObject({
         error: "Runtime node, artifact id, and conversation are required."
       });
@@ -2227,6 +2293,20 @@ describe("runner runtime context", () => {
         reason: "JSON review rejected."
       },
       targetNodeId: "worker-it"
+    });
+    const artifactRestoreRequests = hostRequests.filter(
+      (request) =>
+        request.method === "POST" &&
+        request.url === "/v1/runtimes/worker-it/artifacts/artifact-alpha/restore"
+    );
+    expect(artifactRestoreRequests).toHaveLength(1);
+    expect(artifactRestoreRequests[0]).toMatchObject({
+      authorization: "Bearer host-secret"
+    });
+    expect(artifactRestoreRequests[0]?.body).toMatchObject({
+      reason: "Restore visible artifact.",
+      requestedBy: "user-main",
+      restoreId: "restore-artifact-alpha"
     });
     const artifactProposalRequests = hostRequests.filter(
       (request) =>

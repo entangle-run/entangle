@@ -190,6 +190,10 @@ The most accurate current description is:
 - artifact restore, source-history publication/replay, and wiki publication
   now emit the same signed command receipt model, correlated with restore,
   source-history, replay, or wiki artifact result ids where available;
+- the running User Client can now request runner-owned artifact restore for
+  artifacts visible in the selected User Node conversation, and the
+  process-runner smoke proves that path through a completed projected
+  `runtime.artifact.restore` command receipt;
 - lifecycle start/stop/restart and session cancellation now emit
   `runtime.command.receipt` observations as command-id closure while keeping
   assignment receipts and session observations as the domain lifecycle model;

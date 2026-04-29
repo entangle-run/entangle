@@ -214,6 +214,7 @@ same-machine slice records.
 - [411-distributed-proof-tool-ci-smoke-slice.md](411-distributed-proof-tool-ci-smoke-slice.md)
 - [412-user-client-wiki-publication-slice.md](412-user-client-wiki-publication-slice.md)
 - [413-user-client-wiki-publication-process-smoke-slice.md](413-user-client-wiki-publication-process-smoke-slice.md)
+- [414-user-client-artifact-restore-slice.md](414-user-client-artifact-restore-slice.md)
 
 ## Audited Scope
 

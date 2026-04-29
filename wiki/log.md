@@ -4941,4 +4941,19 @@ completed projected `runtime.wiki.publish` command receipt.
 
 The same verification pass pinned Host package tests to the Vitest threads pool
 because the direct package command reproduced a no-output hang under the
-default pool while passing immediately with threads.
+default pool while passing immediately with threads. Runner package tests were
+then pinned to the threads pool for the same root-gate reason after default
+pool execution hung while threads and forks both passed.
+
+## [2026-04-29] implementation | Added User Client artifact restore requests
+
+Added `references/414-user-client-artifact-restore-slice.md`. The Human
+Interface Runtime now exposes a conversation-scoped
+`POST /api/artifacts/restore` route for artifacts visible in the selected User
+Node conversation, forwarding Host artifact restore control with `requestedBy`
+set to the User Node id.
+
+The dedicated User Client now exposes restore controls on artifact cards, and
+the federated process-runner smoke calls the running User Client restore route
+for a visible source-history artifact before waiting for the completed
+projected `runtime.artifact.restore` command receipt.

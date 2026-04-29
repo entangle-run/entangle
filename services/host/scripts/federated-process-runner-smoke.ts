@@ -3275,6 +3275,68 @@ async function main(): Promise<void> {
       `artifact=${sourceHistoryArtifactId}; history=available; diff=available`
     );
 
+    const userClientArtifactRestoreResponse = await fetch(
+      new URL("/api/artifacts/restore", userClientUrl),
+      {
+        body: JSON.stringify({
+          artifactId: sourceHistoryArtifactId,
+          conversationId: userMessage.conversationId,
+          nodeId: "builder",
+          reason:
+            "Process runner smoke requested artifact restore from the User Client.",
+          restoreId: "user-client-restore-source-history-artifact"
+        }),
+        headers: {
+          "content-type": "application/json"
+        },
+        method: "POST"
+      }
+    );
+    await assertResponseOk(
+      userClientArtifactRestoreResponse,
+      "User Client JSON artifact restore"
+    );
+    const userClientArtifactRestoreRequest =
+      runtimeArtifactRestoreResponseSchema.parse(
+        await userClientArtifactRestoreResponse.json()
+      );
+    assertCondition(
+      userClientArtifactRestoreRequest.status === "requested" &&
+        userClientArtifactRestoreRequest.artifactId === sourceHistoryArtifactId,
+      "User Client artifact restore must return a requested restore command for the visible artifact."
+    );
+    printPass(
+      "user-client-artifact-restore-request",
+      `command=${userClientArtifactRestoreRequest.commandId}; ` +
+        `artifact=${sourceHistoryArtifactId}`
+    );
+
+    const projectedUserClientArtifactRestoreReceipt = await waitFor(
+      "Host projected User Client artifact restore command receipt",
+      async () => {
+        const projection = hostProjectionSnapshotSchema.parse(
+          await hostRequest({
+            baseUrl: hostBaseUrl,
+            path: "/v1/projection"
+          })
+        );
+
+        return projection.runtimeCommandReceipts.find(
+          (receipt) =>
+            receipt.commandId === userClientArtifactRestoreRequest.commandId &&
+            receipt.commandEventType === "runtime.artifact.restore" &&
+            receipt.receiptStatus === "completed" &&
+            receipt.restoreId === "user-client-restore-source-history-artifact"
+        );
+      },
+      () => `\nstdout:\n${runnerStdout}\nstderr:\n${runnerStderr}`
+    );
+    printPass(
+      "projected-user-client-artifact-restore-command-receipt",
+      `command=${projectedUserClientArtifactRestoreReceipt.commandId}; ` +
+        `status=${projectedUserClientArtifactRestoreReceipt.receiptStatus}`
+    );
+
     const approvalId = `approval-${runId}`;
     const syntheticApprovalRequestMessageId = await publishSyntheticA2AMessage({
       message: {

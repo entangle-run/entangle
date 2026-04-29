@@ -28,6 +28,7 @@ import {
   publishWikiRepository,
   renderArtifactLocator,
   reviewSourceChangeCandidate,
+  restoreArtifact,
   type UserClientState
 } from "./runtime-api.js";
 
@@ -132,6 +133,8 @@ function ArtifactPreviewAction({
   const [proposalReason, setProposalReason] = useState("");
   const [proposalTargetPath, setProposalTargetPath] = useState("");
   const [preview, setPreview] = useState<string | undefined>();
+  const [restoreReason, setRestoreReason] = useState("");
+  const [restoreRequestId, setRestoreRequestId] = useState("");
   const [status, setStatus] = useState<string | undefined>();
   const nodeId = resolveArtifactPreviewNodeId(message, artifact);
 
@@ -245,6 +248,32 @@ function ArtifactPreviewAction({
     }
   }
 
+  async function requestRestore(): Promise<void> {
+    setStatus("requesting restore");
+    setDiff(undefined);
+    setPreview(undefined);
+
+    try {
+      const response = await restoreArtifact({
+        artifactId: artifact.artifactId,
+        baseUrl,
+        conversationId: message.conversationId,
+        nodeId,
+        ...(restoreReason.trim() ? { reason: restoreReason.trim() } : {}),
+        ...(restoreRequestId.trim()
+          ? { restoreId: restoreRequestId.trim() }
+          : {})
+      });
+
+      setStatus(`restore requested ${response.commandId}`);
+      setRestoreReason("");
+      setRestoreRequestId("");
+      await onRefresh();
+    } catch (error) {
+      setStatus(error instanceof Error ? error.message : "Restore failed.");
+    }
+  }
+
   return (
     <div className="artifact-actions">
       <button onClick={() => void loadPreview()} type="button">
@@ -278,6 +307,21 @@ function ArtifactPreviewAction({
       </label>
       <button onClick={() => void proposeSourceChange()} type="button">
         Propose Source Change
+      </button>
+      <input
+        aria-label="Restore reason"
+        onChange={(event) => setRestoreReason(event.target.value)}
+        placeholder="Restore reason"
+        value={restoreReason}
+      />
+      <input
+        aria-label="Restore request id"
+        onChange={(event) => setRestoreRequestId(event.target.value)}
+        placeholder="Restore id"
+        value={restoreRequestId}
+      />
+      <button onClick={() => void requestRestore()} type="button">
+        Restore Artifact
       </button>
       {status ? <span className="metadata">{status}</span> : null}
       {preview ? <pre className="preview-block">{preview}</pre> : null}

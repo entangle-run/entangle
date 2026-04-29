@@ -2,6 +2,7 @@ import type {
   ArtifactRef,
   RuntimeArtifactDiffResponse,
   RuntimeArtifactHistoryResponse,
+  RuntimeArtifactRestoreResponse,
   RuntimeArtifactSourceChangeProposalResponse,
   RuntimeSourceChangeCandidateFilePreviewResponse,
   RuntimeSourceChangeCandidateInspectionResponse,
@@ -95,6 +96,12 @@ export type UserClientArtifactSourceProposalResponse =
     source: "runtime";
     userNodeId: string;
   };
+
+export type UserClientArtifactRestoreResponse = RuntimeArtifactRestoreResponse & {
+  artifact?: ArtifactRef | undefined;
+  source: "runtime";
+  userNodeId: string;
+};
 
 export type UserClientWikiPublishResponse = RuntimeWikiPublishResponse & {
   source: "runtime";
@@ -308,6 +315,32 @@ export function fetchArtifactDiff(input: {
       baseUrl: input.baseUrl
     }
   );
+}
+
+export function restoreArtifact(input: {
+  artifactId: string;
+  baseUrl: string;
+  conversationId: string;
+  nodeId: string;
+  reason?: string | undefined;
+  restoreId?: string | undefined;
+}): Promise<UserClientArtifactRestoreResponse> {
+  return fetchJson<UserClientArtifactRestoreResponse>("/api/artifacts/restore", {
+    baseUrl: input.baseUrl,
+    init: {
+      body: JSON.stringify({
+        artifactId: input.artifactId,
+        conversationId: input.conversationId,
+        nodeId: input.nodeId,
+        ...(input.reason ? { reason: input.reason } : {}),
+        ...(input.restoreId ? { restoreId: input.restoreId } : {})
+      }),
+      headers: {
+        "content-type": "application/json"
+      },
+      method: "POST"
+    }
+  });
 }
 
 export function proposeArtifactSourceChange(input: {

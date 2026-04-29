@@ -892,9 +892,16 @@ Current status:
 - the running User Client exposes the same request from visible artifact cards
   through a conversation-scoped Human Interface Runtime JSON route and fallback
   HTML form, forwarding to Host with `requestedBy` set to the User Node id;
+- the running User Client can now request runner-owned artifact restore for
+  artifacts visible in the selected User Node conversation, forwarding to Host
+  with `requestedBy` set to the User Node id and preserving runner-owned
+  restore execution;
 - the running User Client exposes wiki publication from visible wiki approval
   cards through a conversation-scoped Human Interface Runtime JSON route,
   forwarding to Host with `requestedBy` set to the User Node id;
+- the process proof now calls the running User Client artifact restore JSON
+  route for a visible source-history artifact and waits for the completed
+  projected `runtime.artifact.restore` command receipt;
 - the process proof now publishes a signed builder-to-User-Node wiki approval
   request, calls the running User Client wiki publication JSON route, and waits
   for the completed projected `runtime.wiki.publish` command receipt;
