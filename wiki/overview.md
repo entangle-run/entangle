@@ -441,6 +441,11 @@ The repository now also contains the first real implementation baseline:
   conversation/session state and the durable `working-context.md` page now
   preserves bounded session-context signals instead of leaving session
   awareness trapped in prompt-time context alone;
+- a source-change-aware refinement of that same synthesis path where optional
+  model-guided memory synthesis now receives bounded current-turn
+  source-change evidence from `RunnerTurnRecord`, including candidate ids,
+  totals, changed-file summaries, preview metadata, and diff availability
+  without copying raw diffs or full file previews into durable memory;
 - a memory-synthesis observability refinement where optional synthesis now
   persists a canonical bounded outcome on `RunnerTurnRecord` and that same
   outcome now surfaces through host-owned runner activity and runtime-trace
@@ -929,8 +934,9 @@ The current implementation-truth audit now lives in
 - continue broadening normalized provider metadata and bounded failure
   reporting only where later provider adapters justify new canonical fields,
   and otherwise deepen model-guided memory maintenance on top of the now
-  stronger session-aware and artifact-aware/artifact-carrying/engine-outcome-aware/
-  execution-insight-carrying bounded runtime inspection surface;
+  stronger session-aware, artifact-aware/artifact-carrying,
+  engine-outcome-aware, execution-insight-carrying, and source-change-aware
+  bounded runtime inspection surface;
 - keep later CLI widening focused only on real operational leverage, not
   surface parity for its own sake;
 - keep Studio host-first as it deepens, so richer operator flows continue to

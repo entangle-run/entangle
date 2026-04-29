@@ -75,6 +75,10 @@ verifies that running User Client source-diff route before submitting
 source-candidate review. The running User Client can now also load changed-file
 preview evidence through the same selected-conversation source-change boundary,
 and the process-runner smoke proves that route against the smoke source file.
+Model-guided runner memory synthesis now receives bounded source-change
+evidence from the completed turn record, so a node wiki can retain durable
+code-change context without copying raw diffs or full file previews into
+long-lived memory.
 
 The file numbers `221` and `222` now appear twice because the federated pivot
 handoff required exact filenames after the Local-era
@@ -446,6 +450,7 @@ files are the active federated redesign pack.
 359. [358-user-client-source-change-visibility-boundary-slice.md](358-user-client-source-change-visibility-boundary-slice.md)
 360. [359-process-smoke-user-client-source-diff-slice.md](359-process-smoke-user-client-source-diff-slice.md)
 361. [360-user-client-source-file-preview-slice.md](360-user-client-source-file-preview-slice.md)
+362. [361-source-change-aware-memory-synthesis-slice.md](361-source-change-aware-memory-synthesis-slice.md)
 
 ## Role of this corpus
 

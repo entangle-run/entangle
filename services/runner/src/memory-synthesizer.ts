@@ -15,7 +15,8 @@ import {
   type EngineToolDefinition,
   type FocusedRegisterEntryState,
   type FocusedRegisterState,
-  type FocusedRegisterTransitionState
+  type FocusedRegisterTransitionState,
+  type RunnerTurnRecord
 } from "@entangle/types";
 import {
   appendSectionBullet,
@@ -46,6 +47,8 @@ const maxWorkingContextListEntries = 6;
 const maxSynthesisArtifacts = 6;
 const maxSynthesisApprovals = 8;
 const maxSynthesisRecentTurns = 4;
+const maxSynthesisSourceChangeFiles = 6;
+const maxSynthesisSourceFilePreviews = 4;
 const maxSynthesisToolObservations = 4;
 const maxFocusedRegisterTransitionHistoryEntries = 60;
 const staleFocusedRegisterCarryThreshold = 3;
@@ -70,6 +73,7 @@ export type RunnerMemorySynthesisInput = {
   recentWorkSummaryPath: string;
   result: AgentEngineTurnResult;
   taskPagePath: string;
+  turnRecord?: RunnerTurnRecord | undefined;
   turnId: string;
 };
 
@@ -149,6 +153,51 @@ function renderCurrentTurnOutcomeForPrompt(
       : []),
     "- tool executions:",
     ...toolExecutionLines
+  ].join("\n");
+}
+
+function renderCurrentSourceChangeForPrompt(
+  turnRecord: RunnerTurnRecord | undefined
+): string {
+  const summary = turnRecord?.sourceChangeSummary;
+
+  if (!summary) {
+    return [
+      "Current source-change evidence:",
+      "- none recorded for this turn"
+    ].join("\n");
+  }
+
+  const changedFiles =
+    summary.files.length > 0
+      ? summary.files.slice(0, maxSynthesisSourceChangeFiles).map(
+          (file) =>
+            `  - ${file.status} \`${file.path}\` +${file.additions} -${file.deletions}`
+        )
+      : ["  - none"];
+  const filePreviewLines =
+    summary.filePreviews.length > 0
+      ? summary.filePreviews
+          .slice(0, maxSynthesisSourceFilePreviews)
+          .map((preview) =>
+            preview.available
+              ? `  - \`${preview.path}\` ${preview.contentType} ${preview.bytesRead} bytes${preview.truncated ? " truncated" : ""}`
+              : `  - \`${preview.path}\` unavailable: ${preview.reason}`
+          )
+      : ["  - none"];
+
+  return [
+    "Current source-change evidence:",
+    `- status: \`${summary.status}\``,
+    `- totals: files=${summary.fileCount} additions=${summary.additions} deletions=${summary.deletions}${summary.truncated ? " truncated" : ""}`,
+    `- candidate ids: ${renderInlineCodeList(
+      turnRecord.sourceChangeCandidateIds
+    )}`,
+    `- diff excerpt: ${summary.diffExcerpt ? "available" : "unavailable"}`,
+    "- changed files:",
+    ...changedFiles,
+    "- bounded file previews:",
+    ...filePreviewLines
   ].join("\n");
 }
 
@@ -1894,6 +1943,7 @@ export async function buildModelGuidedMemorySynthesisTurnRequest(
       "Keep the summary concise, durable, and grounded in the current turn plus the injected memory references.",
       "Preserve only durable session or coordination observations that future turns should retain; do not restate transient workflow state verbatim.",
       "Preserve only durable artifact-backed observations that future turns should retain; do not restate raw file contents.",
+      "Use bounded source-change evidence to retain durable code-change context; do not copy raw diffs or full file previews into memory.",
       "Preserve only durable execution signals that matter beyond this single turn; do not copy transient logs verbatim.",
       "Review the current focused register baseline before deciding what remains open, what remains pending, and what is now resolved.",
       "Treat repeatedly carried open questions and next actions as explicit review candidates: keep them only when they remain concretely active, otherwise narrow them, replace them, or close them through bounded resolutions.",
@@ -1927,6 +1977,7 @@ export async function buildModelGuidedMemorySynthesisTurnRequest(
         focusedRegisterContext.promptBaseline
       ),
       renderCurrentTurnOutcomeForPrompt(input.result),
+      renderCurrentSourceChangeForPrompt(input.turnRecord),
       `Current assistant outcome:\n${assistantSummary}`,
       ...(input.sessionSnapshot
         ? [

@@ -690,6 +690,7 @@ Implementation records:
 - [358-user-client-source-change-visibility-boundary-slice.md](358-user-client-source-change-visibility-boundary-slice.md)
 - [359-process-smoke-user-client-source-diff-slice.md](359-process-smoke-user-client-source-diff-slice.md)
 - [360-user-client-source-file-preview-slice.md](360-user-client-source-file-preview-slice.md)
+- [361-source-change-aware-memory-synthesis-slice.md](361-source-change-aware-memory-synthesis-slice.md)
 
 Current status:
 
@@ -740,6 +741,10 @@ Current status:
   the same selected-conversation source-change visibility gate;
 - the process proof now verifies the running User Client source-change file
   preview route before submitting signed source-candidate review;
+- optional model-guided memory synthesis now consumes bounded source-change
+  evidence from the completed runner turn record, giving each agent node's wiki
+  durable code-change context without copying raw diffs or full file previews
+  into memory;
 - the remaining distributed proof is the three-machine/multi-network demo with
   reachable relay and git service.
 

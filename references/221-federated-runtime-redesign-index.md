@@ -161,6 +161,7 @@ same-machine slice records.
 - [358-user-client-source-change-visibility-boundary-slice.md](358-user-client-source-change-visibility-boundary-slice.md)
 - [359-process-smoke-user-client-source-diff-slice.md](359-process-smoke-user-client-source-diff-slice.md)
 - [360-user-client-source-file-preview-slice.md](360-user-client-source-file-preview-slice.md)
+- [361-source-change-aware-memory-synthesis-slice.md](361-source-change-aware-memory-synthesis-slice.md)
 
 ## Audited Scope
 
@@ -462,6 +463,10 @@ OpenCode remains the default per-node coding engine behind an adapter. Entangle
 must not become a fork of OpenCode; it should operate OpenCode or another
 engine as a replaceable node-local execution brain while Entangle owns graph
 identity, policy, assignment, artifact, memory, projection, and user surfaces.
+Runner-owned memory synthesis now also has bounded current-turn source-change
+evidence from the completed `RunnerTurnRecord`, so a node can remember durable
+code-change context without storing raw diffs or full file previews in its
+wiki.
 
 ## Planned Implementation Slices
 
@@ -616,6 +621,11 @@ session evidence before returning diff evidence, returning file preview
 evidence, or publishing review messages. The process-runner smoke now proves
 the running User Client source-change diff and source file preview routes
 before submitting the signed User Node source-candidate review.
+Optional model-guided memory synthesis now receives bounded source-change
+evidence from the completed turn record, including candidate ids, totals,
+changed-file summaries, preview metadata, and diff availability, while the
+prompt explicitly forbids copying raw diffs or full file previews into durable
+memory.
 Non-primary target publication remains future work. The next blocking
 implementation areas are richer projection-backed source/wiki review services,
 backend-resolved artifact restore/promotion, richer cache policy controls, and

@@ -2878,6 +2878,7 @@ export class RunnerService {
         recentWorkSummaryPath: input.recentWorkSummaryPath,
         result: input.result,
         taskPagePath: input.taskPagePath,
+        turnRecord: input.turnRecord,
         turnId: input.turnId
       });
 

@@ -664,6 +664,11 @@ This repository currently contains:
   conversation/session state and the durable `working-context.md` page now
   preserves bounded session-context signals instead of leaving session
   awareness trapped in prompt-time context alone;
+- a source-change-aware refinement of that same synthesis path where optional
+  model-guided memory synthesis now receives bounded current-turn
+  source-change evidence from `RunnerTurnRecord`, including candidate ids,
+  totals, changed-file summaries, preview metadata, and diff availability
+  without copying raw diffs or full file previews into durable memory;
 - a memory-synthesis observability refinement where optional synthesis now
   persists a canonical bounded outcome on `RunnerTurnRecord` and that same
   outcome now surfaces through host-owned runner activity and runtime-trace
@@ -973,8 +978,9 @@ This repository currently contains:
 The highest-value remaining gaps are:
 
 - richer model-guided memory maintenance on top of the now stronger
-  session-aware and artifact-aware/artifact-carrying/engine-outcome-aware/
-  execution-insight-carrying bounded runtime inspection surface;
+  session-aware, artifact-aware/artifact-carrying, engine-outcome-aware,
+  execution-insight-carrying, and source-change-aware bounded runtime
+  inspection surface;
 - deeper delegated-session runtime semantics beyond the current controlled
   autonomous handoff and runner-local active-conversation reconciliation path,
   especially cross-runtime owner-level synthesis and automated repair

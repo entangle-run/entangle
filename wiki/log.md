@@ -1,5 +1,15 @@
 # Entangle Wiki Log
 
+## [2026-04-29] implementation | Added source-change-aware memory synthesis
+
+Passed the completed runner turn record into optional model-guided memory
+synthesis and added a bounded source-change evidence prompt section with
+candidate ids, totals, changed-file summaries, preview metadata, and diff
+availability. The prompt explicitly keeps raw diffs and full file previews out
+of durable node memory.
+
+Added `references/361-source-change-aware-memory-synthesis-slice.md`.
+
 ## [2026-04-29] implementation | Added User Client source file preview
 
 Added a conversation-scoped runtime-local source-change file preview route to

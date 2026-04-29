@@ -524,6 +524,47 @@ describe("model-guided memory synthesis", () => {
         }
       },
       taskPagePath: memoryUpdate.taskPagePath,
+      turnRecord: {
+        consumedArtifactIds: ["artifact-input"],
+        graphId: "graph-alpha",
+        nodeId: "worker-it",
+        phase: "completed",
+        producedArtifactIds: ["report-turn-005"],
+        sourceChangeCandidateIds: ["source-change-turn-memory-005"],
+        sourceChangeSummary: {
+          additions: 4,
+          checkedAt: "2026-04-24T11:05:00.000Z",
+          deletions: 1,
+          diffExcerpt:
+            "diff --git a/src/recovery.ts b/src/recovery.ts\n+checkpointReady\n",
+          fileCount: 1,
+          filePreviews: [
+            {
+              available: true,
+              bytesRead: 128,
+              content: "export const checkpointReady = true;\n",
+              contentEncoding: "utf8",
+              contentType: "text/plain",
+              path: "src/recovery.ts",
+              truncated: false
+            }
+          ],
+          files: [
+            {
+              additions: 4,
+              deletions: 1,
+              path: "src/recovery.ts",
+              status: "modified"
+            }
+          ],
+          status: "changed",
+          truncated: false
+        },
+        startedAt: "2026-04-24T11:05:00.000Z",
+        triggerKind: "message",
+        turnId: "turn-memory-005",
+        updatedAt: "2026-04-24T11:05:01.000Z"
+      },
       turnId: "turn-memory-005"
     });
 
@@ -582,6 +623,21 @@ describe("model-guided memory synthesis", () => {
     );
     expect(capturedRequest?.interactionPromptParts.join("\n")).toContain(
       "Current turn engine outcome:"
+    );
+    expect(capturedRequest?.interactionPromptParts.join("\n")).toContain(
+      "Current source-change evidence:"
+    );
+    expect(capturedRequest?.interactionPromptParts.join("\n")).toContain(
+      "- candidate ids: `source-change-turn-memory-005`"
+    );
+    expect(capturedRequest?.interactionPromptParts.join("\n")).toContain(
+      "modified `src/recovery.ts` +4 -1"
+    );
+    expect(capturedRequest?.interactionPromptParts.join("\n")).toContain(
+      "`src/recovery.ts` text/plain 128 bytes"
+    );
+    expect(capturedRequest?.interactionPromptParts.join("\n")).toContain(
+      "- diff excerpt: available"
     );
     expect(capturedRequest?.interactionPromptParts.join("\n")).toContain(
       "- provider stop reason: `end_turn`"
