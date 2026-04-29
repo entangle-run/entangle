@@ -27,6 +27,9 @@ const allowStaleRunners = hasFlag("--allow-stale-runners");
 const allowNonRunningRuntimes = hasFlag("--allow-non-running-runtimes");
 const checkRelayHealth =
   hasFlag("--check-relay-health") || readProofProfileBoolean("checkRelayHealth");
+const checkGitBackendHealth =
+  hasFlag("--check-git-backend-health") ||
+  readProofProfileBoolean("checkGitBackendHealth");
 const checkUserClientHealth = hasFlag("--check-user-client-health");
 const requireConversation = hasFlag("--require-conversation");
 const requireArtifactEvidence =
@@ -35,6 +38,7 @@ const requireArtifactEvidence =
 const selfTestRuntimeState =
   (readFlagValue("--self-test-runtime-state") ?? "running").trim() || "running";
 const selfTestSharedUserClientUrl = hasFlag("--self-test-shared-user-client-url");
+const selfTestFileGitBackend = hasFlag("--self-test-file-git-backend");
 const selfTestWithoutArtifactEvidence = hasFlag(
   "--self-test-without-artifact-evidence"
 );
@@ -67,6 +71,11 @@ const reviewerUserNodeId =
 const requestedRelayUrls = splitRepeatedValues(readFlagValues("--relay-url"));
 const relayUrls =
   requestedRelayUrls.length > 0 ? requestedRelayUrls : readProofProfileStringArray("relayUrls");
+const requestedGitServiceRefs = splitRepeatedValues(readFlagValues("--git-service-ref"));
+const gitServiceRefs =
+  requestedGitServiceRefs.length > 0
+    ? requestedGitServiceRefs
+    : readProofProfileStringArray("gitServiceRefs");
 
 const expectedProfiles = [
   {
@@ -111,6 +120,8 @@ Options:
   --allow-non-running-runtimes    Accept runtime projections that are not observed as running.
   --relay-url <url>               Relay URL for optional health checks. May be repeated or comma-separated. Defaults to profile relayUrls.
   --check-relay-health            Open each configured relay WebSocket.
+  --git-service-ref <id>          Git service ref for optional health checks. May be repeated or comma-separated. Defaults to profile gitServiceRefs or Host catalog default.
+  --check-git-backend-health      Check expected Host catalog git services and their public base URLs, and reject file-backed git remotes for distributed proof.
   --check-user-client-health      Fetch /health for projected User Client URLs.
   --require-conversation          Require a projected conversation from the primary User Node to the agent node.
   --require-artifact-evidence     Require projected artifact/source/wiki evidence from the agent node.
@@ -126,6 +137,7 @@ Options:
   --self-test-runtime-state <s>    Runtime observedState to use in the self-test fixture. Default: running
   --self-test-shared-user-client-url
                                   Use one User Client URL for both Human Interface Runtime fixtures.
+  --self-test-file-git-backend     Use a file-backed git service in the self-test fixture.
   --self-test-without-artifact-evidence
                                   Omit projected artifact/source/wiki evidence from the self-test fixture.
   --self-test-wrong-runtime-kind   Make the agent runner advertise the wrong runtime kind.
@@ -272,9 +284,11 @@ async function fetchSnapshot() {
     fetchJson("/v1/assignments"),
     fetchJson("/v1/projection")
   ]);
+  const catalog = checkGitBackendHealth ? await fetchJson("/v1/catalog") : undefined;
 
   return {
     assignments,
+    ...(catalog ? { catalog } : {}),
     projection,
     runners,
     status
@@ -328,6 +342,38 @@ function buildSelfTestSnapshot() {
         status: "active",
         updatedAt: now
       }))
+    },
+    catalog: {
+      catalog: {
+        catalogId: "self-test-catalog",
+        defaults: {
+          gitServiceRef: "gitea",
+          relayProfileRefs: []
+        },
+        gitServices: [
+          {
+            authMode: "ssh_key",
+            baseUrl: "http://gitea.example:3000",
+            defaultNamespace: "team-alpha",
+            displayName: "Self-test Gitea",
+            id: "gitea",
+            provisioning: {
+              mode: "preexisting"
+            },
+            remoteBase: selfTestFileGitBackend
+              ? "file:///tmp/entangle-proof"
+              : "ssh://git@gitea.example:22",
+            transportKind: selfTestFileGitBackend ? "file" : "ssh"
+          }
+        ],
+        modelEndpoints: [],
+        relays: [],
+        schemaVersion: "1"
+      },
+      validation: {
+        issues: [],
+        ok: true
+      }
     },
     projection: {
       assignmentProjections: expectedProfiles.map((profile) => ({
@@ -464,6 +510,30 @@ function countNodeProjectionRecords(snapshot, key, nodeId) {
   ).length;
 }
 
+function getCatalog(snapshot) {
+  return isObject(snapshot.catalog) && isObject(snapshot.catalog.catalog)
+    ? snapshot.catalog.catalog
+    : undefined;
+}
+
+function findGitService(catalog, gitServiceRef) {
+  return getArray(catalog, "gitServices").find(
+    (service) => service?.id === gitServiceRef
+  );
+}
+
+function resolveGitServiceRefs(catalog) {
+  if (gitServiceRefs.length > 0) {
+    return gitServiceRefs;
+  }
+
+  const defaultGitServiceRef = catalog?.defaults?.gitServiceRef;
+  return typeof defaultGitServiceRef === "string" &&
+    defaultGitServiceRef.trim().length > 0
+    ? [defaultGitServiceRef.trim()]
+    : [];
+}
+
 async function checkHealth(url) {
   if (selfTest) {
     return {
@@ -478,6 +548,38 @@ async function checkHealth(url) {
     ok: response.ok,
     status: response.status
   };
+}
+
+async function checkGitServiceBaseUrl(service) {
+  if (selfTest) {
+    return {
+      detail: "self-test git service health",
+      ok: true
+    };
+  }
+
+  const controller = new AbortController();
+  const timer = setTimeout(() => {
+    controller.abort();
+  }, 5000);
+
+  try {
+    const response = await fetch(service.baseUrl, {
+      signal: controller.signal
+    });
+
+    return {
+      detail: `${service.baseUrl} -> HTTP ${response.status}`,
+      ok: response.status < 500
+    };
+  } catch (error) {
+    return {
+      detail: error instanceof Error ? error.message : String(error),
+      ok: false
+    };
+  } finally {
+    clearTimeout(timer);
+  }
 }
 
 async function checkRelay(url) {
@@ -559,6 +661,70 @@ async function evaluateSnapshot(snapshot) {
         health.ok,
         health.detail
       );
+    }
+  }
+
+  if (checkGitBackendHealth) {
+    const catalog = getCatalog(snapshot);
+    addCheck(
+      checks,
+      "git catalog available",
+      Boolean(catalog),
+      catalog ? `catalog=${catalog.catalogId ?? "unknown"}` : "missing catalog"
+    );
+
+    const effectiveGitServiceRefs = resolveGitServiceRefs(catalog);
+    addCheck(
+      checks,
+      "git service refs configured",
+      effectiveGitServiceRefs.length > 0,
+      effectiveGitServiceRefs.length > 0
+        ? `gitServiceRefs=${effectiveGitServiceRefs.join(",")}`
+        : "no git service refs configured"
+    );
+
+    for (const gitServiceRef of effectiveGitServiceRefs) {
+      const gitService = findGitService(catalog, gitServiceRef);
+      addCheck(
+        checks,
+        `git service ${gitServiceRef} exists`,
+        Boolean(gitService),
+        gitService
+          ? `baseUrl=${gitService.baseUrl}; remoteBase=${gitService.remoteBase}`
+          : "missing git service"
+      );
+
+      if (gitService) {
+        const remoteBase = String(gitService.remoteBase ?? "");
+        const transportKind = String(gitService.transportKind ?? "");
+        const nonFileRemote =
+          transportKind !== "file" && !remoteBase.startsWith("file:");
+        addCheck(
+          checks,
+          `git service ${gitServiceRef} non-file remote`,
+          nonFileRemote,
+          `transportKind=${transportKind || "unknown"}; remoteBase=${
+            remoteBase || "unknown"
+          }`
+        );
+
+        if (typeof gitService.baseUrl === "string" && gitService.baseUrl.length > 0) {
+          const health = await checkGitServiceBaseUrl(gitService);
+          addCheck(
+            checks,
+            `git service ${gitServiceRef} base url health`,
+            health.ok,
+            health.detail
+          );
+        } else {
+          addCheck(
+            checks,
+            `git service ${gitServiceRef} base url health`,
+            false,
+            "missing baseUrl"
+          );
+        }
+      }
     }
   }
 

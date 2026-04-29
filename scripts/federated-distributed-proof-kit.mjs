@@ -29,6 +29,8 @@ const writeHostToken = hasFlag("--write-host-token");
 const runnerSecretEnvVar =
   readFlagValue("--runner-secret-env-var") ?? "ENTANGLE_RUNNER_NOSTR_SECRET_KEY";
 const relayUrls = splitRepeatedValues(readFlagValues("--relay-url"));
+const gitServiceRefs = splitRepeatedValues(readFlagValues("--git-service-ref"));
+const checkGitBackendHealth = hasFlag("--check-git-backend-health");
 const heartbeatIntervalMs = readFlagValue("--heartbeat-interval-ms") ?? "1000";
 const requestedAgentEngineKinds = splitRepeatedValues(
   readFlagValues("--agent-engine-kind")
@@ -95,6 +97,8 @@ Options:
   --no-host-token-env-var           Omit Host bearer-token env config for no-auth Hosts.
   --write-host-token                Write the Host token into generated runner/operator env files.
   --relay-url <url>                 Relay URL. May be repeated or comma-separated. Defaults to Host status relays.
+  --git-service-ref <id>            Git service ref expected by the distributed proof. May be repeated or comma-separated.
+  --check-git-backend-health        Include git backend health checks in the generated verifier command and proof profile.
   --heartbeat-interval-ms <ms>      Runner heartbeat interval in generated configs. Default: 1000
   --runner-secret-env-var <envVar>  Env var runners will read for their Nostr secret. Default: ENTANGLE_RUNNER_NOSTR_SECRET_KEY
   --agent-engine-kind <kind>         Agent runner engine kind. May be repeated or comma-separated. Default: opencode_server
@@ -354,12 +358,18 @@ function buildOperatorCommandsScript() {
 }
 
 function buildVerifierCommand() {
-  return [
+  const args = [
     'pnpm ops:distributed-proof-verify --profile "$SCRIPT_DIR/proof-profile.json"',
     '--host-url "$ENTANGLE_HOST_URL"',
     "--check-user-client-health",
     "--require-conversation"
-  ].join(" ");
+  ];
+
+  if (checkGitBackendHealth) {
+    args.push("--check-git-backend-health");
+  }
+
+  return args.join(" ");
 }
 
 function buildProofProfile() {
@@ -374,6 +384,8 @@ function buildProofProfile() {
       runnerId: profile.id,
       runtimeKinds: profile.runtimeKinds
     })),
+    ...(checkGitBackendHealth ? { checkGitBackendHealth: true } : {}),
+    ...(gitServiceRefs.length > 0 ? { gitServiceRefs } : {}),
     hostUrl,
     relayUrls,
     reviewerUserNodeId,
@@ -404,6 +416,7 @@ and network access to the Host API and relay.
 
 Host API: ${hostUrl}
 Relay URLs: ${relayText}
+Git service refs: ${gitServiceRefs.length > 0 ? gitServiceRefs.join(", ") : "Host catalog default"}
 
 | Directory | Runner id | Runtime kinds | Agent engine kinds | Graph node to assign |
 | --- | --- | --- | --- | --- |
@@ -431,7 +444,7 @@ ${runnerRows}
 - \`*/runner.env\`: runner-local Nostr secret and Host token placeholder or value.
 - \`*/start.sh\`: runner-machine start command.
 - \`operator/operator.env\`: Host URL and Host token placeholder or value.
-- \`operator/proof-profile.json\`: machine-readable runner, node, and engine profile for the verifier.
+- \`operator/proof-profile.json\`: machine-readable runner, node, engine, relay, and optional git-service profile for the verifier.
 - \`operator/commands.sh\`: operator commands for trust, assignment, user message, projection, and verification.
 
 The generated runner join configs use the same generic \`entangle-runner join\`

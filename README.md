@@ -254,6 +254,9 @@ After the agent has produced projected work evidence, rerun the verifier with
 source-change, source-history, or wiki ref from the agent node.
 For real multi-machine network checks, add `--check-relay-health`; the verifier
 uses relay URLs from `--relay-url` or the generated proof profile.
+Add `--check-git-backend-health` to require the Host catalog's selected or
+default git service to be present, non-file-backed, and reachable at its public
+`baseUrl`. Pass `--git-service-ref <id>` to verify a specific git service.
 
 CI can verify the proof tooling itself without provisioning external machines:
 
@@ -265,8 +268,9 @@ That smoke checks proof-kit syntax/help/dry-run paths and verifier self-test
 JSON, including the default failure path for non-running runtime observations.
 It also checks that duplicated User Client URLs and wrong runner runtime-kind
 or agent-engine capabilities fail the multi-user proof, and that missing
-artifact evidence or missing relay URLs fail when explicitly required. It does
-not replace the real distributed proof above.
+artifact evidence, missing relay URLs, file-backed git services, or missing git
+service refs fail when explicitly required. It does not replace the real
+distributed proof above.
 
 Managed Docker runners in the federated dev profile use the same join path.
 The Host passes inline join config JSON to the runner container and the runner

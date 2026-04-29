@@ -87,6 +87,11 @@ The verifier must not read Host, runner, or shared workstation files.
 - Widened by `429-distributed-proof-relay-health-verifier-slice.md`: operators
   can pass `--check-relay-health` plus optional `--relay-url <url>` overrides
   to check relay WebSocket reachability from the verifier machine.
+- Widened by
+  `430-distributed-proof-git-backend-health-verifier-slice.md`: operators can
+  pass `--check-git-backend-health` plus optional
+  `--git-service-ref <id>` overrides to check Host catalog git services from
+  the verifier machine and reject file-backed git remotes in distributed proof.
 
 ## Tests Required
 
@@ -103,7 +108,7 @@ Implemented and passed:
   pass when the self-test fixture advertises it, and that verifier self-test can
   load its expected proof profile from a generated-style manifest. It now also
   proves passing and failing artifact-evidence requirements and relay health
-  requirements.
+  requirements plus git backend health success/failure paths.
 - `pnpm ops:check-product-naming`
 - `git diff --check`
 - added-line local-assumption audit from the implementation checklist.
@@ -134,6 +139,10 @@ unchanged.
 - Risk: relay reachability is confused with full relay protocol proof.
   Mitigation: relay health is documented as WebSocket reachability; live
   publish/subscribe behavior remains covered by runner/control smokes.
+- Risk: git base URL reachability is confused with runner push authorization.
+  Mitigation: git backend health is documented as Host catalog and public
+  service reachability; runner-owned publication and projected artifact
+  evidence remain the behavioral proof for artifact handoff.
 
 ## Open Questions
 

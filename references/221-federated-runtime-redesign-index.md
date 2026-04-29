@@ -230,6 +230,7 @@ same-machine slice records.
 - [427-distributed-proof-profile-manifest-slice.md](427-distributed-proof-profile-manifest-slice.md)
 - [428-distributed-proof-artifact-evidence-verifier-slice.md](428-distributed-proof-artifact-evidence-verifier-slice.md)
 - [429-distributed-proof-relay-health-verifier-slice.md](429-distributed-proof-relay-health-verifier-slice.md)
+- [430-distributed-proof-git-backend-health-verifier-slice.md](430-distributed-proof-git-backend-health-verifier-slice.md)
 
 ## Audited Scope
 
@@ -813,7 +814,10 @@ parameterized with the same runner ids, graph node ids, and expected agent
 engine kind through a generated proof profile manifest, while keeping OpenCode
 as the default, and can optionally require projected artifact/source/wiki
 evidence from the agent node after work is produced or relay WebSocket
-reachability for configured proof relays. The remaining blocking implementation
+reachability for configured proof relays. The verifier can also optionally
+check Host catalog git services for distributed-proof suitability by rejecting
+missing or file-backed git services and probing the configured public git
+service base URL from the operator machine. The remaining blocking implementation
 areas are richer
 projection-backed source/wiki review services, infrastructure-backed
 multi-machine proof execution, and deeper production identity/authorization.

@@ -77,3 +77,6 @@ commands are unchanged unless operators add `--check-relay-health` or set
 
 - Should the verifier later publish and read back a signed ephemeral Nostr event
   for a stronger relay protocol proof?
+- Follow-up: `430-distributed-proof-git-backend-health-verifier-slice.md` adds
+  the matching optional Host catalog git backend health check for the same
+  distributed proof workflow.

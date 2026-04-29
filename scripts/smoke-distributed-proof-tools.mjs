@@ -212,6 +212,9 @@ try {
     "http://host.example:7071",
     "--relay-url",
     "ws://relay.example:7777",
+    "--git-service-ref",
+    "gitea",
+    "--check-git-backend-health",
     "--agent-runner",
     "proof-agent-runner",
     "--user-runner",
@@ -235,7 +238,9 @@ try {
       '"agentNodeId":"architect"',
       '"userNodeId":"alice"',
       '"reviewerUserNodeId":"bob"',
-      '"agentEngineKind":"external_process"'
+      '"agentEngineKind":"external_process"',
+      '"checkGitBackendHealth":true',
+      '"gitServiceRefs":["gitea"]'
     ]
   });
 
@@ -249,7 +254,9 @@ try {
         agentEngineKind: "external_process",
         agentNodeId: "architect",
         agentRunnerId: "proof-agent-runner",
+        checkGitBackendHealth: true,
         checkRelayHealth: true,
+        gitServiceRefs: ["gitea"],
         hostUrl: "http://host.example:7071",
         relayUrls: ["ws://relay.example:7777"],
         requireArtifactEvidence: true,
@@ -320,6 +327,47 @@ try {
     }
   );
   verifySelfTestFailureJson(missingRelayJson, "relay urls configured");
+
+  const gitBackendHealthJson = runStep("proof verifier git-backend-health self-test", [
+    "scripts/federated-distributed-proof-verify.mjs",
+    "--self-test",
+    "--json",
+    "--check-git-backend-health",
+    "--git-service-ref",
+    "gitea"
+  ]);
+  verifySelfTestJson(gitBackendHealthJson);
+
+  const fileGitBackendJson = runFailureStep(
+    "proof verifier file-git-backend self-test",
+    [
+      "scripts/federated-distributed-proof-verify.mjs",
+      "--self-test",
+      "--json",
+      "--check-git-backend-health",
+      "--self-test-file-git-backend"
+    ],
+    {
+      mustContain: '"ok": false'
+    }
+  );
+  verifySelfTestFailureJson(fileGitBackendJson, "non-file remote");
+
+  const missingGitServiceJson = runFailureStep(
+    "proof verifier missing-git-service self-test",
+    [
+      "scripts/federated-distributed-proof-verify.mjs",
+      "--self-test",
+      "--json",
+      "--check-git-backend-health",
+      "--git-service-ref",
+      "missing"
+    ],
+    {
+      mustContain: '"ok": false'
+    }
+  );
+  verifySelfTestFailureJson(missingGitServiceJson, "git service missing exists");
 
   const selfTestJson = runStep("proof verifier self-test", [
     "scripts/federated-distributed-proof-verify.mjs",

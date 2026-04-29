@@ -5142,6 +5142,21 @@ flag after the agent has produced work. The distributed proof tool smoke now
 proves both the passing evidence fixture and the missing-evidence failure
 fixture.
 
+## [2026-04-29] test | Added distributed proof git backend health checks
+
+Added `references/430-distributed-proof-git-backend-health-verifier-slice.md`.
+`pnpm ops:distributed-proof-verify` now accepts
+`--check-git-backend-health` and repeated or comma-separated
+`--git-service-ref <id>` values, falling back to `gitServiceRefs` in the proof
+profile or the Host catalog default git service.
+
+The check reads Host `/v1/catalog`, rejects missing or file-backed git services
+for distributed proof, and probes each selected service's public `baseUrl` from
+the operator machine. `pnpm ops:distributed-proof-kit` can now include matching
+git-service refs and health checks in generated proof profiles, and the
+distributed proof tool smoke covers success, file-backed-git failure, and
+missing-git-service failure paths.
+
 ## [2026-04-29] test | Added distributed proof relay health checks
 
 Added `references/429-distributed-proof-relay-health-verifier-slice.md`.

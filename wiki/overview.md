@@ -273,13 +273,17 @@ The verifier can also require projected artifact/source/wiki evidence from the
 agent node after work is produced with `--require-artifact-evidence`.
 It can additionally check configured relay WebSocket reachability with
 `--check-relay-health`.
+It can also check Host catalog git backend suitability with
+`--check-git-backend-health`, rejecting missing or file-backed git services and
+probing the selected public git service `baseUrl` from the operator machine.
 `pnpm ops:smoke-distributed-proof-tools` now gives CI a deterministic
 no-infrastructure check for proof-kit syntax/help/dry-run paths and verifier
 self-test JSON, including non-running runtime rejection and duplicated User
 Client URL rejection plus wrong-runtime-kind and wrong-agent-engine rejection,
 plus proof-kit and verifier non-default expected-agent-engine/profile manifest
 paths, required-artifact-evidence success/failure paths, and relay-health
-success/failure paths before a real distributed proof is attempted.
+success/failure paths plus git-backend-health success/failure paths before a
+real distributed proof is attempted.
 Host runtime synchronization now also preserves observed User Node
 `human_interface` runtime projection records, so a runtime inspection refresh
 does not hide live User Client endpoints for active User Nodes.

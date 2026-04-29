@@ -46,6 +46,9 @@ allowing explicit CLI flags to override profile values when needed.
   lets proof profiles opt into `"requireArtifactEvidence": true`.
 - Follow-up `429-distributed-proof-relay-health-verifier-slice.md` also lets
   proof profiles opt into `"checkRelayHealth": true`.
+- Follow-up `430-distributed-proof-git-backend-health-verifier-slice.md` also
+  lets proof profiles opt into `"checkGitBackendHealth": true` and carry
+  `gitServiceRefs`.
 - The proof kit generated verifier command now uses
   `--profile "$SCRIPT_DIR/proof-profile.json"` and keeps `--host-url
   "$ENTANGLE_HOST_URL"` as an operator-env override.
@@ -86,9 +89,12 @@ script and verifier share the same generated profile file.
 
 ## Open Questions
 
-- Should future distributed proof profiles include artifact backend and relay
-  health expectations so the verifier can validate more than Host/User Client
-  HTTP surfaces? `428-distributed-proof-artifact-evidence-verifier-slice.md`
-  adds the first optional projected work-evidence requirement, but not direct
-  backend health checks. `429-distributed-proof-relay-health-verifier-slice.md`
-  adds optional relay WebSocket reachability checks, but not git backend health.
+- Should future distributed proof profiles include runner-side artifact backend
+  push/pull canaries so the verifier can validate actual runner git
+  credentials, not only Host catalog metadata and operator-machine service
+  reachability? `428-distributed-proof-artifact-evidence-verifier-slice.md`
+  added optional projected work evidence,
+  `429-distributed-proof-relay-health-verifier-slice.md` added optional relay
+  reachability, and
+  `430-distributed-proof-git-backend-health-verifier-slice.md` added optional
+  Host catalog git backend health checks.

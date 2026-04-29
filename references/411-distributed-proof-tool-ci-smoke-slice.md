@@ -29,6 +29,12 @@ multi-machine proof.
   configured;
 - verifier JSON self-test failure when relay health is required without relay
   URLs;
+- verifier JSON self-test pass when git backend health is required and the Host
+  catalog fixture has a selected non-file git service;
+- verifier JSON self-test failure when git backend health sees a file-backed
+  git service;
+- verifier JSON self-test failure when git backend health references a missing
+  git service;
 - verifier JSON self-test with required conversation and User Client health
   checks enabled;
 - verifier JSON self-test failure when runtime observations are non-running by
@@ -94,6 +100,8 @@ tools.
   then runs a missing-artifact-evidence fixture and requires failure.
 - The script runs relay-health verifier self-tests for the configured and
   missing-relay paths.
+- The script runs git-backend-health verifier self-tests for success,
+  file-backed-git failure, and missing-git-service failure paths.
 - The script runs verifier self-test with JSON output, User Client health
   checks, and required conversation checks, then parses the JSON and fails if
   any embedded check fails.
