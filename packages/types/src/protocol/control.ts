@@ -32,6 +32,18 @@ export const entangleControlEventTypeSchema = z.enum([
   "runtime.wiki.publish"
 ]);
 
+export const entangleRuntimeCommandEventTypeSchema = z.enum([
+  "runtime.start",
+  "runtime.stop",
+  "runtime.restart",
+  "runtime.session.cancel",
+  "runtime.artifact.restore",
+  "runtime.artifact.propose_source_change",
+  "runtime.source_history.publish",
+  "runtime.source_history.replay",
+  "runtime.wiki.publish"
+]);
+
 const controlPayloadBaseSchema = z.object({
   hostAuthorityPubkey: nostrPublicKeySchema,
   issuedAt: nonEmptyStringSchema,
@@ -303,6 +315,9 @@ export type EntangleControlProtocol = z.infer<
 >;
 export type EntangleControlEventType = z.infer<
   typeof entangleControlEventTypeSchema
+>;
+export type EntangleRuntimeCommandEventType = z.infer<
+  typeof entangleRuntimeCommandEventTypeSchema
 >;
 export type RunnerHelloAckPayload = z.infer<typeof runnerHelloAckPayloadSchema>;
 export type RuntimeAssignmentOfferPayload = z.infer<

@@ -48,6 +48,7 @@ import {
   type HostProjectionSnapshot,
   assignmentReceiptProjectionRecordSchema,
   type AssignmentReceiptProjectionRecord,
+  runtimeCommandReceiptProjectionRecordSchema,
   observedApprovalActivityRecordSchema,
   observedArtifactActivityRecordSchema,
   observedConversationActivityRecordSchema,
@@ -142,6 +143,7 @@ import {
   assignmentAcceptedObservationPayloadSchema,
   assignmentReceiptPayloadSchema,
   assignmentRejectedObservationPayloadSchema,
+  runtimeCommandReceiptPayloadSchema,
   approvalUpdatedObservationPayloadSchema,
   artifactRefObservationPayloadSchema,
   artifactRefProjectionRecordSchema,
@@ -669,6 +671,10 @@ type RuntimeObservedStateChangedEventInput = Omit<
 >;
 type RuntimeAssignmentReceiptEventInput = Omit<
   Extract<HostEventRecord, { type: "runtime.assignment.receipt" }>,
+  "eventId" | "schemaVersion" | "timestamp"
+>;
+type RuntimeCommandReceiptEventInput = Omit<
+  Extract<HostEventRecord, { type: "runtime.command.receipt" }>,
   "eventId" | "schemaVersion" | "timestamp"
 >;
 type SourceHistoryReplayedEventInput = Omit<
@@ -2553,6 +2559,44 @@ export async function recordRuntimeAssignmentReceiptObservation(
   } satisfies RuntimeAssignmentReceiptEventInput);
 }
 
+export async function recordRuntimeCommandReceiptObservation(
+  input: unknown
+): Promise<HostEventRecord> {
+  await initializeHostState();
+
+  const receipt = runtimeCommandReceiptPayloadSchema.parse(input);
+  await assertRegisteredObservationRunner(receipt);
+
+  return appendHostEvent({
+    ...(receipt.artifactId ? { artifactId: receipt.artifactId } : {}),
+    ...(receipt.assignmentId ? { assignmentId: receipt.assignmentId } : {}),
+    ...(receipt.candidateId ? { candidateId: receipt.candidateId } : {}),
+    category: "runtime",
+    commandEventType: receipt.commandEventType,
+    commandId: receipt.commandId,
+    graphId: receipt.graphId,
+    hostAuthorityPubkey: receipt.hostAuthorityPubkey,
+    message:
+      `Runtime command '${receipt.commandId}' reported ` +
+      `'${receipt.status}' from runner '${receipt.runnerId}'.`,
+    nodeId: receipt.nodeId,
+    observedAt: receipt.observedAt,
+    ...(receipt.proposalId ? { proposalId: receipt.proposalId } : {}),
+    ...(receipt.message ? { receiptMessage: receipt.message } : {}),
+    receiptStatus: receipt.status,
+    ...(receipt.replayId ? { replayId: receipt.replayId } : {}),
+    ...(receipt.restoreId ? { restoreId: receipt.restoreId } : {}),
+    runnerId: receipt.runnerId,
+    runnerPubkey: receipt.runnerPubkey,
+    ...(receipt.sourceHistoryId
+      ? { sourceHistoryId: receipt.sourceHistoryId }
+      : {}),
+    ...(receipt.targetPath ? { targetPath: receipt.targetPath } : {}),
+    type: "runtime.command.receipt",
+    ...(receipt.wikiArtifactId ? { wikiArtifactId: receipt.wikiArtifactId } : {})
+  } satisfies RuntimeCommandReceiptEventInput);
+}
+
 async function assertRegisteredObservationRunner(input: {
   hostAuthorityPubkey: string;
   runnerId: string;
@@ -3474,6 +3518,52 @@ async function listAssignmentReceiptProjectionRecords(): Promise<
     });
 }
 
+async function listRuntimeCommandReceiptProjectionRecords() {
+  const events = (await listHostEvents(500)).events;
+
+  return events
+    .filter((event) => event.type === "runtime.command.receipt")
+    .map((event) =>
+      runtimeCommandReceiptProjectionRecordSchema.parse({
+        ...(event.artifactId ? { artifactId: event.artifactId } : {}),
+        ...(event.assignmentId ? { assignmentId: event.assignmentId } : {}),
+        ...(event.candidateId ? { candidateId: event.candidateId } : {}),
+        commandEventType: event.commandEventType,
+        commandId: event.commandId,
+        graphId: event.graphId,
+        hostAuthorityPubkey: event.hostAuthorityPubkey,
+        nodeId: event.nodeId,
+        observedAt: event.observedAt,
+        projection: {
+          source: "observation_event",
+          updatedAt: event.timestamp
+        },
+        ...(event.proposalId ? { proposalId: event.proposalId } : {}),
+        ...(event.receiptMessage
+          ? { receiptMessage: event.receiptMessage }
+          : {}),
+        receiptStatus: event.receiptStatus,
+        ...(event.replayId ? { replayId: event.replayId } : {}),
+        ...(event.restoreId ? { restoreId: event.restoreId } : {}),
+        runnerId: event.runnerId,
+        runnerPubkey: event.runnerPubkey,
+        ...(event.sourceHistoryId
+          ? { sourceHistoryId: event.sourceHistoryId }
+          : {}),
+        ...(event.targetPath ? { targetPath: event.targetPath } : {}),
+        ...(event.wikiArtifactId
+          ? { wikiArtifactId: event.wikiArtifactId }
+          : {})
+      })
+    )
+    .sort((left, right) => {
+      const timeOrder = right.observedAt.localeCompare(left.observedAt);
+      return timeOrder !== 0
+        ? timeOrder
+        : left.commandId.localeCompare(right.commandId);
+    });
+}
+
 async function listArtifactRefProjectionRecords(): Promise<
   ArtifactRefProjectionRecord[]
 > {
@@ -3817,6 +3907,7 @@ export async function getHostProjectionSnapshot(): Promise<HostProjectionSnapsho
     runnerList,
     assignments,
     assignmentReceipts,
+    runtimeCommandReceipts,
     artifactRefs,
     sourceChangeRefs,
     sourceHistoryRefs,
@@ -3827,6 +3918,7 @@ export async function getHostProjectionSnapshot(): Promise<HostProjectionSnapsho
     listRunnerRegistry(),
     listRuntimeAssignmentRecords(),
     listAssignmentReceiptProjectionRecords(),
+    listRuntimeCommandReceiptProjectionRecords(),
     listArtifactRefProjectionRecords(),
     listSourceChangeRefProjectionRecords(),
     listSourceHistoryRefProjectionRecords(),
@@ -3867,6 +3959,7 @@ export async function getHostProjectionSnapshot(): Promise<HostProjectionSnapsho
     generatedAt: nowIsoString(),
     hostAuthorityPubkey: authority.publicKey,
     runtimes: runtimeProjections,
+    runtimeCommandReceipts,
     runners: runnerList.runners.map((runner) => ({
       assignmentIds: runner.heartbeat?.assignmentIds ?? [],
       hostAuthorityPubkey: runner.registration.hostAuthorityPubkey,

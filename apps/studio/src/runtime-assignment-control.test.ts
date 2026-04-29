@@ -84,6 +84,7 @@ const projection: HostProjectionSnapshot = {
   hostAuthorityPubkey:
     "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
   runtimes: [],
+  runtimeCommandReceipts: [],
   runners: [
     {
       assignmentIds: [],

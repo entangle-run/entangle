@@ -163,14 +163,17 @@ The most accurate current description is:
   progress without scanning generic events or reading runner-local state;
 - artifact source-change proposal requests are now exposed through CLI and
   Studio artifact inspection surfaces, using the same Host-signed runner
-  control path while leaving completion as projected source-change candidate
-  evidence;
+  control path while completion returns as both projected source-change
+  candidate evidence and an explicit signed runtime command receipt;
 - the running User Client can now request that same proposal path for artifacts
   visible in the selected User Node conversation, with the Human Interface
   Runtime enforcing visibility and tagging the request as the User Node;
 - Host now returns an effective proposal id for every artifact source-change
   proposal acknowledgement and sends that same id to the runner as the
   candidate id to create;
+- Host projection now exposes `runtimeCommandReceipts` for runner-signed
+  `runtime.command.receipt` observations, and artifact proposal completion is
+  correlated by command id, effective proposal id, and candidate id;
 - the largest remaining gaps are projection-backed replacement for deep runtime
   detail APIs, object-backed source/wiki mutation services, and the full
   multi-machine distributed proof.
@@ -1008,9 +1011,10 @@ The current implementation-truth audit now lives in
   projected git refs, explicit wiki target publication, and shared
   multi-target source-history publication presentation plus runner-owned
   artifact restore exposed through operator surfaces plus runner-owned
-  artifact source-change proposal operator and User Client requests; the next
-  git gaps are explicit proposal command completion receipts, richer
-  wiki promotion policy and repository lifecycle behavior, source-history
+  artifact source-change proposal operator and User Client requests plus
+  explicit artifact proposal command completion receipts; the next git gaps
+  are broader command receipt adoption, richer wiki promotion policy and
+  repository lifecycle behavior, source-history
   merge/reconcile workflows, and explicit fallback or
   replication behavior,
   while the next deployment-grade gap is

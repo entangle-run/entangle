@@ -210,6 +210,35 @@ function buildAssignmentReceipt(input: {
   }).event;
 }
 
+function buildRuntimeCommandReceipt(input: {
+  hostAuthorityPubkey: string;
+  runnerPubkey: string;
+  runnerSecretKey: Uint8Array;
+}): EntangleObservationEvent {
+  return buildEntangleObservationNostrEvent({
+    payload: {
+      artifactId: "artifact-alpha",
+      assignmentId: "assignment-alpha",
+      candidateId: "artifact-proposal-alpha",
+      commandEventType: "runtime.artifact.propose_source_change",
+      commandId: "cmd-artifact-proposal-alpha",
+      eventType: "runtime.command.receipt",
+      graphId: "graph-alpha",
+      hostAuthorityPubkey: input.hostAuthorityPubkey,
+      message: "Artifact produced a source-change proposal.",
+      nodeId: "worker-it",
+      observedAt: "2026-04-26T12:00:02.500Z",
+      proposalId: "artifact-proposal-alpha",
+      protocol: "entangle.observe.v1",
+      runnerId: "runner-alpha",
+      runnerPubkey: input.runnerPubkey,
+      status: "completed",
+      targetPath: "proposals/report.md"
+    },
+    signerSecretKey: input.runnerSecretKey
+  }).event;
+}
+
 function buildSourceHistoryRef(input: {
   hostAuthorityPubkey: string;
   runnerPubkey: string;
@@ -458,6 +487,19 @@ describe("Host federated control plane", () => {
     expect(receiptResult).toMatchObject({
       action: "recorded",
       eventType: "assignment.receipt",
+      runnerId: "runner-alpha"
+    });
+
+    const commandReceiptResult = await controlPlane.handleObservationEvent(
+      buildRuntimeCommandReceipt({
+        hostAuthorityPubkey: authority.authority.publicKey,
+        runnerPubkey,
+        runnerSecretKey
+      })
+    );
+    expect(commandReceiptResult).toMatchObject({
+      action: "recorded",
+      eventType: "runtime.command.receipt",
       runnerId: "runner-alpha"
     });
 

@@ -23,6 +23,7 @@ export type HostProjectionCliSummary = {
   freshness: string;
   generatedAt: string;
   runtimeCount: number;
+  runtimeCommandReceiptCount: number;
   runtimes: RuntimeProjectionCliSummary[];
   runnerCount: number;
   runningRuntimeCount: number;
@@ -68,6 +69,7 @@ export function projectHostProjectionSummary(
     freshness: projection.freshness,
     generatedAt: projection.generatedAt,
     runtimeCount: projection.runtimes.length,
+    runtimeCommandReceiptCount: projection.runtimeCommandReceipts.length,
     runtimes: sortRuntimeProjectionsForCli(projection.runtimes).map(
       projectRuntimeProjectionSummary
     ),

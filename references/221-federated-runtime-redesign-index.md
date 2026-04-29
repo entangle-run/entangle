@@ -191,6 +191,7 @@ same-machine slice records.
 - [388-artifact-source-proposal-operator-surfaces-slice.md](388-artifact-source-proposal-operator-surfaces-slice.md)
 - [389-user-client-artifact-source-proposal-slice.md](389-user-client-artifact-source-proposal-slice.md)
 - [390-artifact-proposal-correlation-slice.md](390-artifact-proposal-correlation-slice.md)
+- [391-runtime-command-receipt-projection-slice.md](391-runtime-command-receipt-projection-slice.md)
 
 ## Audited Scope
 

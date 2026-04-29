@@ -14,6 +14,7 @@ export type FederationProjectionSummary = {
   failedRuntimeCount: number;
   freshness: string;
   runtimeCount: number;
+  runtimeCommandReceiptCount: number;
   runningRuntimeCount: number;
   runnerCount: number;
   sourceChangeRefCount: number;
@@ -50,6 +51,7 @@ export function summarizeFederationProjection(
         .length ?? 0,
     freshness: projection?.freshness ?? "unknown",
     runtimeCount: projection?.runtimes.length ?? 0,
+    runtimeCommandReceiptCount: projection?.runtimeCommandReceipts.length ?? 0,
     runningRuntimeCount:
       projection?.runtimes.filter((runtime) => runtime.observedState === "running")
         .length ?? 0,

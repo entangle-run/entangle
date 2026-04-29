@@ -66,6 +66,7 @@ const projection: HostProjectionSnapshot = {
       restartGeneration: 0
     }
   ],
+  runtimeCommandReceipts: [],
   runners: [],
   schemaVersion: "1",
   sourceChangeRefs: [],

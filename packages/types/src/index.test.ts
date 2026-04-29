@@ -71,6 +71,8 @@ import {
   runtimeInspectionResponseSchema,
   runtimeMemoryInspectionResponseSchema,
   runtimeMemoryPageInspectionResponseSchema,
+  runtimeCommandReceiptPayloadSchema,
+  runtimeCommandReceiptProjectionRecordSchema,
   runtimeStatusObservationPayloadSchema,
   runtimeRecoveryInspectionResponseSchema,
   runtimeSourceChangeCandidateDiffResponseSchema,
@@ -594,6 +596,54 @@ describe("federated runtime contracts", () => {
         runnerId: "runner-human"
       }).clientUrl
     ).toBe("http://127.0.0.1:4173/");
+  });
+
+  it("accepts runtime command receipt observations and projections", () => {
+    const receipt = runtimeCommandReceiptPayloadSchema.parse({
+      artifactId: "artifact-alpha",
+      assignmentId: "assignment-alpha",
+      candidateId: "artifact-proposal-alpha",
+      commandEventType: "runtime.artifact.propose_source_change",
+      commandId: "cmd-artifact-proposal-alpha",
+      eventType: "runtime.command.receipt",
+      graphId: "team-alpha",
+      hostAuthorityPubkey: authorityPubkey,
+      message: "Artifact produced a source-change proposal.",
+      nodeId: "worker-it",
+      observedAt,
+      proposalId: "artifact-proposal-alpha",
+      protocol: "entangle.observe.v1",
+      runnerId: "runner-alpha",
+      runnerPubkey,
+      status: "completed",
+      targetPath: "proposals/report.md"
+    });
+
+    expect(receipt.status).toBe("completed");
+    expect(receipt.commandId).toBe("cmd-artifact-proposal-alpha");
+    expect(
+      runtimeCommandReceiptProjectionRecordSchema.parse({
+        artifactId: receipt.artifactId,
+        assignmentId: receipt.assignmentId,
+        candidateId: receipt.candidateId,
+        commandEventType: receipt.commandEventType,
+        commandId: receipt.commandId,
+        graphId: receipt.graphId,
+        hostAuthorityPubkey: receipt.hostAuthorityPubkey,
+        nodeId: receipt.nodeId,
+        observedAt: receipt.observedAt,
+        projection: {
+          source: "observation_event",
+          updatedAt: observedAt
+        },
+        proposalId: receipt.proposalId,
+        receiptMessage: receipt.message,
+        receiptStatus: receipt.status,
+        runnerId: receipt.runnerId,
+        runnerPubkey: receipt.runnerPubkey,
+        targetPath: receipt.targetPath
+      }).candidateId
+    ).toBe("artifact-proposal-alpha");
   });
 
   it("accepts signed control assignment offers from Host Authority", () => {
@@ -3018,6 +3068,37 @@ describe("host event contracts", () => {
 
     expect(result.type).toBe("runtime.assignment.receipt");
     expect(result.receiptKind).toBe("started");
+  });
+
+  it("accepts a typed runtime command receipt event", () => {
+    const result = hostEventRecordSchema.parse({
+      artifactId: "artifact-alpha",
+      assignmentId: "assignment-alpha",
+      candidateId: "artifact-proposal-alpha",
+      category: "runtime",
+      commandEventType: "runtime.artifact.propose_source_change",
+      commandId: "cmd-artifact-proposal-alpha",
+      eventId: "runtime-command-receipt-001",
+      graphId: "team-alpha",
+      hostAuthorityPubkey: authorityPubkey,
+      message:
+        "Runtime command 'cmd-artifact-proposal-alpha' reported 'completed' from runner 'runner-alpha'.",
+      nodeId: "worker-it",
+      observedAt,
+      proposalId: "artifact-proposal-alpha",
+      receiptMessage: "Artifact produced a source-change proposal.",
+      receiptStatus: "completed",
+      runnerId: "runner-alpha",
+      runnerPubkey,
+      schemaVersion: "1",
+      targetPath: "proposals/report.md",
+      timestamp: observedAt,
+      type: "runtime.command.receipt"
+    });
+
+    expect(result.type).toBe("runtime.command.receipt");
+    expect(result.receiptStatus).toBe("completed");
+    expect(result.candidateId).toBe("artifact-proposal-alpha");
   });
 
   it("accepts a typed external-principal deleted event", () => {

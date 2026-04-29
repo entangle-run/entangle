@@ -2365,6 +2365,34 @@ async function main(): Promise<void> {
         `files=${projectedArtifactProposalCandidate.sourceChangeSummary.fileCount}`
     );
 
+    const projectedArtifactProposalReceipt = await waitFor(
+      "Host projected artifact proposal command receipt",
+      async () => {
+        const projection = hostProjectionSnapshotSchema.parse(
+          await hostRequest({
+            baseUrl: hostBaseUrl,
+            path: "/v1/projection"
+          })
+        );
+
+        return projection.runtimeCommandReceipts.find(
+          (receipt) =>
+            receipt.commandId === artifactProposalRequest.commandId &&
+            receipt.commandEventType ===
+              "runtime.artifact.propose_source_change" &&
+            receipt.receiptStatus === "completed" &&
+            receipt.candidateId === artifactProposalId
+        );
+      },
+      () => `\nstdout:\n${runnerStdout}\nstderr:\n${runnerStderr}`
+    );
+    printPass(
+      "projected-artifact-proposal-command-receipt",
+      `command=${projectedArtifactProposalReceipt.commandId}; ` +
+        `status=${projectedArtifactProposalReceipt.receiptStatus}; ` +
+        `candidate=${projectedArtifactProposalReceipt.candidateId}`
+    );
+
     const targetedSourceHistoryPublicationRequest =
       runtimeSourceHistoryPublishResponseSchema.parse(
         await hostRequest({

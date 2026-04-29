@@ -105,6 +105,7 @@ const projection: HostProjectionSnapshot = {
       runtimeHandle: "federated:runner-user-a:assignment-user-a"
     }
   ],
+  runtimeCommandReceipts: [],
   runners: [],
   schemaVersion: "1",
   sourceChangeRefs: [],

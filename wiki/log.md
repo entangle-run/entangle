@@ -4665,3 +4665,16 @@ returns it in the request acknowledgement.
 This makes CLI, Studio, and User Client proposal acknowledgements immediately
 actionable: the returned `proposalId` is the source-change candidate id the
 runner is expected to create and project.
+
+## [2026-04-29] implementation | Added runtime command receipt projection
+
+Added `references/391-runtime-command-receipt-projection-slice.md`.
+`entangle.observe.v1` now includes signed `runtime.command.receipt`
+observations, Host records them as typed `runtime.command.receipt` audit
+events, and Host projection exposes bounded `runtimeCommandReceipts`.
+
+Joined runners now emit received/completed/failed command receipts for
+`runtime.artifact.propose_source_change`, correlating the Host command id,
+effective proposal id, and resulting source-change candidate id. The
+process-runner smoke now waits for that completed receipt after verifying the
+projected candidate.

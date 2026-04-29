@@ -6,6 +6,7 @@ import {
 } from "../artifacts/artifact-ref.js";
 import { nostrEventIdSchema, nostrPublicKeySchema } from "../common/crypto.js";
 import { identifierSchema, nonEmptyStringSchema } from "../common/primitives.js";
+import { entangleRuntimeCommandEventTypeSchema } from "../protocol/control.js";
 import { runtimeAssignmentStatusSchema } from "../federation/assignment.js";
 import {
   runnerOperationalStateSchema,
@@ -165,6 +166,24 @@ export const wikiRefProjectionRecordSchema =
     artifactRef: artifactRefSchema
   });
 
+export const runtimeCommandReceiptProjectionRecordSchema =
+  runnerObservationProjectionBaseSchema.extend({
+    artifactId: identifierSchema.optional(),
+    assignmentId: identifierSchema.optional(),
+    candidateId: identifierSchema.optional(),
+    commandEventType: entangleRuntimeCommandEventTypeSchema,
+    commandId: identifierSchema,
+    observedAt: nonEmptyStringSchema,
+    proposalId: identifierSchema.optional(),
+    receiptMessage: nonEmptyStringSchema.optional(),
+    receiptStatus: z.enum(["received", "completed", "failed"]),
+    replayId: identifierSchema.optional(),
+    restoreId: identifierSchema.optional(),
+    sourceHistoryId: identifierSchema.optional(),
+    targetPath: nonEmptyStringSchema.optional(),
+    wikiArtifactId: identifierSchema.optional()
+  });
+
 export const hostProjectionSnapshotSchema = z.object({
   artifactRefs: z.array(artifactRefProjectionRecordSchema).default([]),
   assignmentReceipts: z
@@ -175,6 +194,9 @@ export const hostProjectionSnapshotSchema = z.object({
   generatedAt: nonEmptyStringSchema,
   hostAuthorityPubkey: nostrPublicKeySchema,
   runtimes: z.array(runtimeProjectionRecordSchema).default([]),
+  runtimeCommandReceipts: z
+    .array(runtimeCommandReceiptProjectionRecordSchema)
+    .default([]),
   runners: z.array(runnerProjectionRecordSchema).default([]),
   schemaVersion: z.literal("1"),
   sourceChangeRefs: z.array(sourceChangeRefProjectionRecordSchema).default([]),
@@ -202,6 +224,9 @@ export type AssignmentReceiptProjectionRecord = z.infer<
 >;
 export type RuntimeProjectionRecord = z.infer<
   typeof runtimeProjectionRecordSchema
+>;
+export type RuntimeCommandReceiptProjectionRecord = z.infer<
+  typeof runtimeCommandReceiptProjectionRecordSchema
 >;
 export type UserConversationProjectionRecord = z.infer<
   typeof userConversationProjectionRecordSchema

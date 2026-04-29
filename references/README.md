@@ -549,6 +549,10 @@ files are the active federated redesign pack.
 386. [385-artifact-restore-operator-surfaces-slice.md](385-artifact-restore-operator-surfaces-slice.md)
 387. [386-process-smoke-artifact-restore-slice.md](386-process-smoke-artifact-restore-slice.md)
 388. [387-runner-owned-artifact-source-proposal-slice.md](387-runner-owned-artifact-source-proposal-slice.md)
+389. [388-artifact-source-proposal-operator-surfaces-slice.md](388-artifact-source-proposal-operator-surfaces-slice.md)
+390. [389-user-client-artifact-source-proposal-slice.md](389-user-client-artifact-source-proposal-slice.md)
+391. [390-artifact-proposal-correlation-slice.md](390-artifact-proposal-correlation-slice.md)
+392. [391-runtime-command-receipt-projection-slice.md](391-runtime-command-receipt-projection-slice.md)
 
 ## Role of this corpus
 

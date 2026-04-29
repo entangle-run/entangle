@@ -111,6 +111,7 @@ const projection: HostProjectionSnapshot = {
       statusMessage: "Human Interface Runtime listening"
     }
   ],
+  runtimeCommandReceipts: [],
   runners: [],
   schemaVersion: "1",
   sourceChangeRefs: [],

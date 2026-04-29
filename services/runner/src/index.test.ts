@@ -2744,6 +2744,31 @@ describe("runner runtime context", () => {
         expect.objectContaining({ observedState: "running" })
       ])
     );
+    expect(
+      transport.observations.filter(
+        (payload) =>
+          payload.eventType === "runtime.command.receipt" &&
+          payload.commandId === "cmd-artifact-proposal-alpha"
+      )
+    ).toEqual([
+      expect.objectContaining({
+        artifactId: "artifact-alpha",
+        assignmentId: "assignment-alpha",
+        commandEventType: "runtime.artifact.propose_source_change",
+        proposalId: "artifact-proposal-alpha",
+        status: "received",
+        targetPath: "proposals/report.md"
+      }),
+      expect.objectContaining({
+        artifactId: "artifact-alpha",
+        assignmentId: "assignment-alpha",
+        candidateId: "artifact-proposal-alpha",
+        commandEventType: "runtime.artifact.propose_source_change",
+        proposalId: "artifact-proposal-alpha",
+        status: "completed",
+        targetPath: "proposals/report.md"
+      })
+    ]);
 
     await configured.service.stop();
   });

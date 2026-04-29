@@ -25,6 +25,11 @@ type HeartbeatTimer = ReturnType<typeof setInterval> & {
   unref?: () => void;
 };
 
+type RuntimeCommandControlPayload = Extract<
+  EntangleControlEvent["payload"],
+  { commandId: string; graphId: string; nodeId: string }
+>;
+
 const defaultHeartbeatIntervalMs = 30_000;
 
 export type RunnerJoinTransport = {
@@ -498,7 +503,28 @@ export class RunnerJoinService {
   private async publishRuntimeCommandFailure(input: {
     assignmentId: string | undefined;
     message: string;
+    payload?: RuntimeCommandControlPayload;
+    receipt?: Partial<{
+      artifactId: string;
+      candidateId: string;
+      proposalId: string;
+      replayId: string;
+      restoreId: string;
+      sourceHistoryId: string;
+      targetPath: string;
+      wikiArtifactId: string;
+    }>;
   }): Promise<void> {
+    if (input.payload) {
+      await this.publishRuntimeCommandReceipt({
+        assignmentId: input.assignmentId,
+        message: input.message,
+        payload: input.payload,
+        ...(input.receipt ? { receipt: input.receipt } : {}),
+        status: "failed"
+      });
+    }
+
     if (!input.assignmentId) {
       return;
     }
@@ -509,6 +535,63 @@ export class RunnerJoinService {
       message: input.message,
       observedAt: this.now(),
       receiptKind: "failed"
+    });
+  }
+
+  private publishRuntimeCommandReceipt(input: {
+    assignmentId: string | undefined;
+    message?: string;
+    payload: RuntimeCommandControlPayload;
+    receipt?: Partial<{
+      artifactId: string;
+      candidateId: string;
+      proposalId: string;
+      replayId: string;
+      restoreId: string;
+      sourceHistoryId: string;
+      targetPath: string;
+      wikiArtifactId: string;
+    }>;
+    status: "completed" | "failed" | "received";
+  }): Promise<{
+    event: {
+      envelope: {
+        eventId: string;
+      };
+    };
+  }> {
+    return this.publishObservation({
+      ...(input.receipt?.artifactId
+        ? { artifactId: input.receipt.artifactId }
+        : {}),
+      ...(input.assignmentId ? { assignmentId: input.assignmentId } : {}),
+      ...(input.receipt?.candidateId
+        ? { candidateId: input.receipt.candidateId }
+        : {}),
+      commandEventType: input.payload.eventType,
+      commandId: input.payload.commandId,
+      eventType: "runtime.command.receipt",
+      graphId: input.payload.graphId,
+      ...(input.message ? { message: input.message } : {}),
+      nodeId: input.payload.nodeId,
+      observedAt: this.now(),
+      ...(input.receipt?.proposalId
+        ? { proposalId: input.receipt.proposalId }
+        : {}),
+      ...(input.receipt?.replayId ? { replayId: input.receipt.replayId } : {}),
+      ...(input.receipt?.restoreId
+        ? { restoreId: input.receipt.restoreId }
+        : {}),
+      ...(input.receipt?.sourceHistoryId
+        ? { sourceHistoryId: input.receipt.sourceHistoryId }
+        : {}),
+      status: input.status,
+      ...(input.receipt?.targetPath
+        ? { targetPath: input.receipt.targetPath }
+        : {}),
+      ...(input.receipt?.wikiArtifactId
+        ? { wikiArtifactId: input.receipt.wikiArtifactId }
+        : {})
     });
   }
 
@@ -764,10 +847,28 @@ export class RunnerJoinService {
       await this.publishRuntimeCommandFailure({
         assignmentId: payload.assignmentId,
         message:
-          "Runtime artifact source-change proposal command did not match an accepted assignment."
+          "Runtime artifact source-change proposal command did not match an accepted assignment.",
+        payload,
+        receipt: {
+          artifactId: payload.artifactId,
+          ...(payload.proposalId ? { proposalId: payload.proposalId } : {}),
+          ...(payload.targetPath ? { targetPath: payload.targetPath } : {})
+        }
       });
       return;
     }
+
+    await this.publishRuntimeCommandReceipt({
+      assignmentId: assignment.assignmentId,
+      ...(payload.reason ? { message: payload.reason } : {}),
+      payload,
+      receipt: {
+        artifactId: payload.artifactId,
+        ...(payload.proposalId ? { proposalId: payload.proposalId } : {}),
+        ...(payload.targetPath ? { targetPath: payload.targetPath } : {})
+      },
+      status: "received"
+    });
 
     await this.publishObservation({
       assignmentId: assignment.assignmentId,
@@ -782,7 +883,13 @@ export class RunnerJoinService {
       await this.publishRuntimeCommandFailure({
         assignmentId: assignment.assignmentId,
         message:
-          "Runtime artifact source-change proposal command cannot be applied because the assigned runtime is not running."
+          "Runtime artifact source-change proposal command cannot be applied because the assigned runtime is not running.",
+        payload,
+        receipt: {
+          artifactId: payload.artifactId,
+          ...(payload.proposalId ? { proposalId: payload.proposalId } : {}),
+          ...(payload.targetPath ? { targetPath: payload.targetPath } : {})
+        }
       });
       return;
     }
@@ -803,16 +910,45 @@ export class RunnerJoinService {
           assignmentId: assignment.assignmentId,
           message:
             result.message ??
-            `Artifact '${result.artifactId}' did not produce a source-change proposal.`
+            `Artifact '${result.artifactId}' did not produce a source-change proposal.`,
+          payload,
+          receipt: {
+            artifactId: result.artifactId,
+            ...(result.candidateId ? { candidateId: result.candidateId } : {}),
+            ...(payload.proposalId ? { proposalId: payload.proposalId } : {}),
+            ...(payload.targetPath ? { targetPath: payload.targetPath } : {})
+          }
         });
+        return;
       }
+
+      await this.publishRuntimeCommandReceipt({
+        assignmentId: assignment.assignmentId,
+        message:
+          result.message ??
+          `Artifact '${result.artifactId}' produced source-change proposal '${result.candidateId ?? payload.proposalId ?? payload.commandId}'.`,
+        payload,
+        receipt: {
+          artifactId: result.artifactId,
+          ...(result.candidateId ? { candidateId: result.candidateId } : {}),
+          ...(payload.proposalId ? { proposalId: payload.proposalId } : {}),
+          ...(payload.targetPath ? { targetPath: payload.targetPath } : {})
+        },
+        status: "completed"
+      });
     } catch (error) {
       await this.publishRuntimeCommandFailure({
         assignmentId: assignment.assignmentId,
         message:
           error instanceof Error
             ? error.message
-            : "Runtime artifact source-change proposal command failed."
+            : "Runtime artifact source-change proposal command failed.",
+        payload,
+        receipt: {
+          artifactId: payload.artifactId,
+          ...(payload.proposalId ? { proposalId: payload.proposalId } : {}),
+          ...(payload.targetPath ? { targetPath: payload.targetPath } : {})
+        }
       });
     }
   }

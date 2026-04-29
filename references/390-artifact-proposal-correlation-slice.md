@@ -78,7 +78,9 @@ New clients can now show the effective source-change candidate id immediately.
   Mitigation: Host only names the proposal; the assigned runner still creates
   the candidate and emits projection evidence.
 
-## Open Questions
+## Follow-Up
 
-- Should Host projection later store explicit command-to-candidate receipt
-  records, beyond the shared proposal/candidate id?
+The explicit command-to-candidate receipt record was implemented in
+`391-runtime-command-receipt-projection-slice.md`. Artifact proposal
+completion now projects `runtime.command.receipt` records correlated by
+`commandId`, `proposalId`, and `candidateId`.

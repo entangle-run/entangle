@@ -28,6 +28,7 @@ import {
   sourceHistoryReplayStatusSchema,
   sourceChangeSummarySchema
 } from "../runtime/session-state.js";
+import { entangleRuntimeCommandEventTypeSchema } from "./control.js";
 import { entangleSignedEnvelopeSchema } from "./signed-envelope.js";
 
 export const entangleObserveProtocolSchema = z.literal("entangle.observe.v1");
@@ -38,6 +39,7 @@ export const entangleObservationEventTypeSchema = z.enum([
   "assignment.accepted",
   "assignment.rejected",
   "assignment.receipt",
+  "runtime.command.receipt",
   "runtime.status",
   "conversation.updated",
   "session.updated",
@@ -97,6 +99,32 @@ export const assignmentReceiptPayloadSchema = observedAtPayloadBaseSchema.extend
     "failed"
   ])
 });
+
+export const runtimeCommandReceiptStatusSchema = z.enum([
+  "received",
+  "completed",
+  "failed"
+]);
+
+export const runtimeCommandReceiptPayloadSchema =
+  observedAtPayloadBaseSchema.extend({
+    artifactId: identifierSchema.optional(),
+    assignmentId: identifierSchema.optional(),
+    candidateId: identifierSchema.optional(),
+    commandEventType: entangleRuntimeCommandEventTypeSchema,
+    commandId: identifierSchema,
+    eventType: z.literal("runtime.command.receipt"),
+    graphId: identifierSchema,
+    message: nonEmptyStringSchema.optional(),
+    nodeId: identifierSchema,
+    proposalId: identifierSchema.optional(),
+    replayId: identifierSchema.optional(),
+    restoreId: identifierSchema.optional(),
+    sourceHistoryId: identifierSchema.optional(),
+    status: runtimeCommandReceiptStatusSchema,
+    targetPath: nonEmptyStringSchema.optional(),
+    wikiArtifactId: identifierSchema.optional()
+  });
 
 export const runtimeStatusObservationPayloadSchema =
   observedAtPayloadBaseSchema.extend({
@@ -285,6 +313,7 @@ export const entangleObservationEventPayloadSchema = z.discriminatedUnion(
     assignmentAcceptedObservationPayloadSchema,
     assignmentRejectedObservationPayloadSchema,
     assignmentReceiptPayloadSchema,
+    runtimeCommandReceiptPayloadSchema,
     runtimeStatusObservationPayloadSchema,
     conversationUpdatedObservationPayloadSchema,
     sessionUpdatedObservationPayloadSchema,
@@ -351,6 +380,12 @@ export type AssignmentRejectedObservationPayload = z.infer<
 >;
 export type AssignmentReceiptPayload = z.infer<
   typeof assignmentReceiptPayloadSchema
+>;
+export type RuntimeCommandReceiptStatus = z.infer<
+  typeof runtimeCommandReceiptStatusSchema
+>;
+export type RuntimeCommandReceiptPayload = z.infer<
+  typeof runtimeCommandReceiptPayloadSchema
 >;
 export type RuntimeStatusObservationPayload = z.infer<
   typeof runtimeStatusObservationPayloadSchema

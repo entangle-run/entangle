@@ -33,6 +33,7 @@ import {
   sourceChangeSummarySchema
 } from "../runtime/session-state.js";
 import { entangleA2AMessageTypeSchema } from "../protocol/a2a.js";
+import { entangleRuntimeCommandEventTypeSchema } from "../protocol/control.js";
 import {
   runtimeBackendKindSchema,
   runtimeDesiredStateSchema,
@@ -244,6 +245,36 @@ export const runtimeAssignmentReceiptEventSchema = hostEventBaseSchema.extend({
   runnerId: identifierSchema,
   runnerPubkey: nostrPublicKeySchema,
   type: z.literal("runtime.assignment.receipt")
+});
+
+export const hostRuntimeCommandReceiptStatusSchema = z.enum([
+  "received",
+  "completed",
+  "failed"
+]);
+
+export const runtimeCommandReceiptEventSchema = hostEventBaseSchema.extend({
+  artifactId: identifierSchema.optional(),
+  assignmentId: identifierSchema.optional(),
+  candidateId: identifierSchema.optional(),
+  category: z.literal("runtime"),
+  commandEventType: entangleRuntimeCommandEventTypeSchema,
+  commandId: identifierSchema,
+  graphId: identifierSchema,
+  hostAuthorityPubkey: nostrPublicKeySchema,
+  nodeId: identifierSchema,
+  observedAt: nonEmptyStringSchema,
+  proposalId: identifierSchema.optional(),
+  receiptMessage: nonEmptyStringSchema.optional(),
+  receiptStatus: hostRuntimeCommandReceiptStatusSchema,
+  replayId: identifierSchema.optional(),
+  restoreId: identifierSchema.optional(),
+  runnerId: identifierSchema,
+  runnerPubkey: nostrPublicKeySchema,
+  sourceHistoryId: identifierSchema.optional(),
+  targetPath: nonEmptyStringSchema.optional(),
+  type: z.literal("runtime.command.receipt"),
+  wikiArtifactId: identifierSchema.optional()
 });
 
 export const sessionUpdatedEventSchema = hostEventBaseSchema.extend({
@@ -458,6 +489,7 @@ export const hostEventRecordSchema = z.discriminatedUnion("type", [
   runtimeRecoveryControllerUpdatedEventSchema,
   runtimeObservedStateChangedEventSchema,
   runtimeAssignmentReceiptEventSchema,
+  runtimeCommandReceiptEventSchema,
   sessionUpdatedEventSchema,
   sessionCancellationRequestedEventSchema,
   runnerTurnUpdatedEventSchema,
@@ -529,6 +561,12 @@ export type RuntimeObservedStateChangedEvent = z.infer<
 >;
 export type RuntimeAssignmentReceiptEvent = z.infer<
   typeof runtimeAssignmentReceiptEventSchema
+>;
+export type HostRuntimeCommandReceiptStatus = z.infer<
+  typeof hostRuntimeCommandReceiptStatusSchema
+>;
+export type RuntimeCommandReceiptEvent = z.infer<
+  typeof runtimeCommandReceiptEventSchema
 >;
 export type SessionUpdatedEvent = z.infer<typeof sessionUpdatedEventSchema>;
 export type SessionCancellationRequestedEvent = z.infer<

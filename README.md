@@ -104,9 +104,9 @@ artifact history/diff through the running User Client. It requests
 runner-owned artifact restore for that source-history artifact and verifies
 projected retrieval evidence, requests a runner-owned artifact source-change
 proposal from the published report artifact and verifies the pending candidate
-projection, then requests explicit non-primary source-history target
-publication and verifies the sibling source repository branch head, without
-live model credentials. Live OpenCode
+projection plus the correlated signed command receipt, then requests explicit
+non-primary source-history target publication and verifies the sibling source
+repository branch head, without live model credentials. Live OpenCode
 behavior and real-provider credentials remain manual/operator validation; the
 OpenAI-compatible agent-engine HTTP boundary is now covered by a deterministic
 local provider fixture.
@@ -316,6 +316,10 @@ This repository currently contains:
   Host-signed `runtime.artifact.propose_source_change` commands; the runner
   retrieves the artifact, copies bounded safe content into its source
   workspace, and emits a pending source-change candidate for normal review.
+  The joined runner also emits explicit signed `runtime.command.receipt`
+  observations for artifact proposal received/completed/failed states, and
+  Host projection correlates the command id, effective proposal id, and
+  resulting candidate id.
   Explicit operator replay requests now travel as Host-signed
   `runtime.source_history.replay` commands to the accepted runner assignment
   instead of Host-side filesystem mutations, with both CLI and Studio source
@@ -521,7 +525,8 @@ This repository currently contains:
   CLI/Studio operator surfaces and conversation-scoped User Client artifact
   controls rather than Host writes into runner-local workspaces, and Host
   returns an effective proposal id in every acknowledgement so clients can
-  follow the resulting candidate id;
+  follow the resulting candidate id; Host projection also exposes explicit
+  artifact proposal command receipts correlated to the resulting candidate;
 - host read surfaces for persisted runner turns through
   `GET /v1/runtimes/{nodeId}/turns` and
   `GET /v1/runtimes/{nodeId}/turns/{turnId}`, plus shared host-client and CLI
@@ -1080,8 +1085,8 @@ The highest-value remaining gaps are:
   history/diff/preview inspection, and backend-cache history/diff for projected
   git refs plus shared multi-target source-history publication presentation
   plus runner-owned artifact restore and source-change proposal operator
-  requests plus User Client visible-artifact proposal requests,
-  especially explicit proposal command completion receipts,
+  requests plus User Client visible-artifact proposal requests and explicit
+  artifact proposal command completion receipts,
   richer wiki promotion policy and repository lifecycle
   behavior beyond explicit target publication, source-history merge/reconcile
   workflows, and replicated fallback paths;

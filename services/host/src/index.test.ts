@@ -1802,6 +1802,7 @@ describe("buildHostServer", () => {
         {
           recordArtifactRefObservation,
           recordRunnerHello,
+          recordRuntimeCommandReceiptObservation,
           recordSourceChangeRefObservation,
           recordSourceHistoryRefObservation,
           recordSourceHistoryReplayedObservation,
@@ -1946,6 +1947,25 @@ describe("buildHostServer", () => {
         sourceChangeSummary,
         status: "pending_review"
       });
+      await recordRuntimeCommandReceiptObservation({
+        artifactId: "artifact-alpha",
+        assignmentId: "assignment-alpha",
+        candidateId: "candidate-alpha",
+        commandEventType: "runtime.artifact.propose_source_change",
+        commandId: "cmd-artifact-proposal-alpha",
+        eventType: "runtime.command.receipt",
+        graphId: "team-alpha",
+        hostAuthorityPubkey,
+        message: "Artifact produced a source-change proposal.",
+        nodeId: "worker-it",
+        observedAt,
+        proposalId: "candidate-alpha",
+        protocol: "entangle.observe.v1",
+        runnerId: "runner-alpha",
+        runnerPubkey,
+        status: "completed",
+        targetPath: "proposals/report.md"
+      });
       await recordSourceHistoryRefObservation({
         eventType: "source_history.ref",
         graphId: "team-alpha",
@@ -2053,6 +2073,16 @@ describe("buildHostServer", () => {
           status: "changed"
         },
         status: "pending_review"
+      });
+      expect(projection.runtimeCommandReceipts[0]).toMatchObject({
+        artifactId: "artifact-alpha",
+        assignmentId: "assignment-alpha",
+        candidateId: "candidate-alpha",
+        commandEventType: "runtime.artifact.propose_source_change",
+        commandId: "cmd-artifact-proposal-alpha",
+        nodeId: "worker-it",
+        receiptStatus: "completed",
+        runnerId: "runner-alpha"
       });
       expect(projection.sourceHistoryRefs[0]).toMatchObject({
         history: {
