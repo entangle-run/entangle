@@ -2574,6 +2574,168 @@ describe("RunnerService", () => {
     });
   });
 
+  it("reconciles source history into a diverged workspace with a clean three-way merge", async () => {
+    const fixture = await createRuntimeFixture({
+      remotePublication: "bare_repo"
+    });
+    process.env.ENTANGLE_NOSTR_SECRET_KEY = runnerSecretHex;
+
+    const loadedContext = await loadRuntimeContext(fixture.contextPath);
+    const runtimeContext: EffectiveRuntimeContext = {
+      ...loadedContext,
+      policyContext: {
+        ...loadedContext.policyContext,
+        sourceMutation: {
+          ...loadedContext.policyContext.sourceMutation,
+          applyRequiresApproval: true
+        }
+      }
+    };
+    const statePaths = buildRunnerStatePaths(runtimeContext.workspace.runtimeRoot);
+    const sourceBaseline = await prepareSourceChangeHarvest(runtimeContext);
+
+    if (sourceBaseline.kind !== "ready") {
+      throw new Error("Expected source change harvest baseline to be ready.");
+    }
+
+    await mkdir(path.join(runtimeContext.workspace.sourceWorkspaceRoot!, "src"), {
+      recursive: true
+    });
+    await writeFile(
+      path.join(runtimeContext.workspace.sourceWorkspaceRoot!, "src", "index.ts"),
+      "export const reconciled = true;\n",
+      "utf8"
+    );
+    const sourceHarvest = await harvestSourceChanges(
+      runtimeContext,
+      sourceBaseline
+    );
+
+    if (!sourceHarvest.snapshot) {
+      throw new Error("Expected source change harvest to produce a snapshot.");
+    }
+
+    const sourceCommit = runGitFixtureCommand({
+      args: [
+        "--git-dir",
+        path.join(runtimeContext.workspace.runtimeRoot, "source-snapshot.git"),
+        "commit-tree",
+        sourceHarvest.snapshot.headTree,
+        "-m",
+        "Apply source-history-reconcile-alpha"
+      ],
+      cwd: runtimeContext.workspace.sourceWorkspaceRoot!,
+      env: {
+        GIT_AUTHOR_EMAIL: "worker-it@entangle.invalid",
+        GIT_AUTHOR_NAME: "Worker IT",
+        GIT_COMMITTER_EMAIL: "worker-it@entangle.invalid",
+        GIT_COMMITTER_NAME: "Worker IT"
+      }
+    });
+    const history = sourceHistoryRecordSchema.parse({
+      appliedAt: "2026-04-24T10:17:00.000Z",
+      appliedBy: "reviewer-it",
+      baseTree: sourceHarvest.snapshot.baseTree,
+      branch: "entangle-source-history",
+      candidateId: "source-history-reconcile-alpha",
+      commit: sourceCommit,
+      graphId: runtimeContext.binding.graphId,
+      graphRevisionId: runtimeContext.binding.graphRevisionId,
+      headTree: sourceHarvest.snapshot.headTree,
+      mode: "already_in_workspace",
+      nodeId: "worker-it",
+      sessionId: "session-source-history-reconcile",
+      sourceChangeSummary: sourceHarvest.summary,
+      sourceHistoryId: "source-history-reconcile-alpha",
+      turnId: "turn-source-history-reconcile",
+      updatedAt: "2026-04-24T10:18:00.000Z"
+    });
+    await writeSourceHistoryRecord(statePaths, history);
+    await writeApprovalRecord(statePaths, {
+      approvalId: "approval-source-history-reconcile-alpha",
+      approverNodeIds: ["user-main"],
+      graphId: runtimeContext.binding.graphId,
+      operation: "source_application",
+      reason: "Approve source history reconcile.",
+      requestedAt: "2026-04-24T10:18:30.000Z",
+      requestedByNodeId: "worker-it",
+      resource: {
+        id: "source-history-reconcile-alpha",
+        kind: "source_history",
+        label: "source-history-reconcile-alpha"
+      },
+      sessionId: "session-source-history-reconcile",
+      status: "approved",
+      updatedAt: "2026-04-24T10:18:45.000Z"
+    });
+    await rm(path.join(runtimeContext.workspace.sourceWorkspaceRoot!, "src"), {
+      force: true,
+      recursive: true
+    });
+    await mkdir(path.join(runtimeContext.workspace.sourceWorkspaceRoot!, "docs"), {
+      recursive: true
+    });
+    await writeFile(
+      path.join(runtimeContext.workspace.sourceWorkspaceRoot!, "docs", "local.md"),
+      "local workspace note\n",
+      "utf8"
+    );
+
+    const observedReplays: SourceHistoryReplayRecord[] = [];
+    const service = new RunnerService({
+      context: runtimeContext,
+      observationPublisher: {
+        publishConversationUpdated: () => Promise.resolve(),
+        publishSessionUpdated: () => Promise.resolve(),
+        publishSourceHistoryReplayedObserved: (input) => {
+          observedReplays.push(input.replay);
+          return Promise.resolve();
+        },
+        publishTurnUpdated: () => Promise.resolve()
+      },
+      transport: new InMemoryRunnerTransport()
+    });
+
+    const result = await service.requestSourceHistoryReconcile({
+      approvalId: "approval-source-history-reconcile-alpha",
+      reason: "Merge accepted source history with current workspace.",
+      replayedAt: "2026-04-24T10:20:00.000Z",
+      replayedBy: "operator-main",
+      replayId: "reconcile-source-history-alpha",
+      sourceHistoryId: "source-history-reconcile-alpha"
+    });
+    const [replayRecord] = await listSourceHistoryReplayRecords(statePaths);
+    const reconciledFile = await readFile(
+      path.join(runtimeContext.workspace.sourceWorkspaceRoot!, "src", "index.ts"),
+      "utf8"
+    );
+    const localFile = await readFile(
+      path.join(runtimeContext.workspace.sourceWorkspaceRoot!, "docs", "local.md"),
+      "utf8"
+    );
+
+    expect(result).toMatchObject({
+      replayId: "reconcile-source-history-alpha",
+      replayStatus: "merged",
+      sourceHistoryId: "source-history-reconcile-alpha"
+    });
+    expect(replayRecord).toMatchObject({
+      approvalId: "approval-source-history-reconcile-alpha",
+      replayedBy: "operator-main",
+      replayId: "reconcile-source-history-alpha",
+      replayedFileCount: 2,
+      status: "merged"
+    });
+    expect(replayRecord?.mergedTree).toMatch(/^[0-9a-f]{40,64}$/u);
+    expect(reconciledFile).toBe("export const reconciled = true;\n");
+    expect(localFile).toBe("local workspace note\n");
+    expect(observedReplays[0]).toMatchObject({
+      replayId: "reconcile-source-history-alpha",
+      sourceHistoryId: "source-history-reconcile-alpha",
+      status: "merged"
+    });
+  });
+
   it("applies approved approval responses and completes unblocked waiting sessions", async () => {
     const fixture = await createRuntimeFixture();
     process.env.ENTANGLE_NOSTR_SECRET_KEY = runnerSecretHex;

@@ -73,6 +73,8 @@ import {
   runtimeSourceHistoryReplayInspectionResponseSchema,
   runtimeSourceHistoryReplayListQuerySchema,
   runtimeSourceHistoryReplayListResponseSchema,
+  runtimeSourceHistoryReconcileRequestSchema,
+  runtimeSourceHistoryReconcileResponseSchema,
   runtimeSourceHistoryReplayRequestSchema,
   runtimeSourceHistoryReplayResponseSchema,
   runtimeWikiPublishRequestSchema,
@@ -175,6 +177,8 @@ import {
   type RuntimeSourceHistoryReplayInspectionResponse,
   type RuntimeSourceHistoryReplayListQuery,
   type RuntimeSourceHistoryReplayListResponse,
+  type RuntimeSourceHistoryReconcileRequest,
+  type RuntimeSourceHistoryReconcileResponse,
   type RuntimeSourceHistoryReplayRequest,
   type RuntimeSourceHistoryReplayResponse,
   type RuntimeWikiPublishRequest,
@@ -1323,6 +1327,28 @@ export function createHostClient(options: HostClientOptions) {
           }
         ),
         runtimeSourceHistoryReplayResponseSchema
+      );
+    },
+
+    async reconcileRuntimeSourceHistory(
+      nodeId: string,
+      sourceHistoryId: string,
+      request: RuntimeSourceHistoryReconcileRequest = {}
+    ): Promise<RuntimeSourceHistoryReconcileResponse> {
+      return parseResponse(
+        await hostFetch(
+          `${baseUrl}/v1/runtimes/${nodeId}/source-history/${sourceHistoryId}/reconcile`,
+          {
+            method: "POST",
+            headers: {
+              "content-type": "application/json"
+            },
+            body: JSON.stringify(
+              runtimeSourceHistoryReconcileRequestSchema.parse(request)
+            )
+          }
+        ),
+        runtimeSourceHistoryReconcileResponseSchema
       );
     },
 

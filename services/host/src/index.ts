@@ -95,6 +95,8 @@ import {
   runtimeSourceHistoryReplayInspectionResponseSchema,
   runtimeSourceHistoryReplayListQuerySchema,
   runtimeSourceHistoryReplayListResponseSchema,
+  runtimeSourceHistoryReconcileRequestSchema,
+  runtimeSourceHistoryReconcileResponseSchema,
   runtimeSourceHistoryReplayRequestSchema,
   runtimeSourceHistoryReplayResponseSchema,
   runtimeWikiPublishRequestSchema,
@@ -349,6 +351,18 @@ type HostFederatedAssignmentPublisher = {
     target?: SourceHistoryPublicationTarget;
   }): Promise<unknown>;
   publishRuntimeSourceHistoryReplay?(input: {
+    approvalId?: string;
+    assignment: RuntimeAssignmentRecord;
+    authRequired?: boolean;
+    commandId: string;
+    correlationId?: string;
+    reason?: string;
+    relayUrls: string[];
+    replayedBy?: string;
+    replayId?: string;
+    sourceHistoryId: string;
+  }): Promise<unknown>;
+  publishRuntimeSourceHistoryReconcile?(input: {
     approvalId?: string;
     assignment: RuntimeAssignmentRecord;
     authRequired?: boolean;
@@ -940,6 +954,43 @@ async function publishRuntimeSourceHistoryReplayCommandFromHost(
 
   const commandId = `cmd-source-history-replay-${randomUUID()}`;
   await options.federatedControlPlane.publishRuntimeSourceHistoryReplay({
+    ...(input.approvalId ? { approvalId: input.approvalId } : {}),
+    assignment: input.assignment,
+    ...(options.federatedControlAuthRequired !== undefined
+      ? { authRequired: options.federatedControlAuthRequired }
+      : {}),
+    commandId,
+    ...(input.reason ? { reason: input.reason } : {}),
+    relayUrls: options.federatedControlRelayUrls,
+    ...(input.replayedBy ? { replayedBy: input.replayedBy } : {}),
+    ...(input.replayId ? { replayId: input.replayId } : {}),
+    sourceHistoryId: input.sourceHistoryId
+  });
+
+  return commandId;
+}
+
+async function publishRuntimeSourceHistoryReconcileCommandFromHost(
+  options: HostServerOptions,
+  input: {
+    approvalId?: string;
+    assignment: RuntimeAssignmentRecord;
+    reason?: string;
+    replayedBy?: string;
+    replayId?: string;
+    sourceHistoryId: string;
+  }
+): Promise<string | undefined> {
+  if (
+    !options.federatedControlPlane?.publishRuntimeSourceHistoryReconcile ||
+    !options.federatedControlRelayUrls ||
+    options.federatedControlRelayUrls.length === 0
+  ) {
+    return undefined;
+  }
+
+  const commandId = `cmd-source-history-reconcile-${randomUUID()}`;
+  await options.federatedControlPlane.publishRuntimeSourceHistoryReconcile({
     ...(input.approvalId ? { approvalId: input.approvalId } : {}),
     assignment: input.assignment,
     ...(options.federatedControlAuthRequired !== undefined
@@ -3378,6 +3429,95 @@ export async function buildHostServer(options: HostServerOptions = {}) {
       }
 
       return runtimeSourceHistoryReplayResponseSchema.parse({
+        assignmentId: assignment.assignmentId,
+        commandId,
+        nodeId: params.nodeId,
+        requestedAt: new Date().toISOString(),
+        sourceHistoryId: params.sourceHistoryId,
+        status: "requested"
+      });
+    }
+  );
+
+  server.post(
+    "/v1/runtimes/:nodeId/source-history/:sourceHistoryId/reconcile",
+    async (request, reply) => {
+      const params = request.params as { nodeId: string; sourceHistoryId: string };
+      const body = parseRequestInput(
+        runtimeSourceHistoryReconcileRequestSchema,
+        request.body ?? {},
+        {
+          detailsKey: "bodyIssues",
+          message:
+            "Request body did not match the expected source-history reconcile schema."
+        }
+      );
+      const inspection = await getRuntimeInspection(params.nodeId);
+
+      if (!inspection) {
+        reply.status(404);
+        return hostErrorResponseSchema.parse({
+          code: "not_found",
+          message: `Runtime '${params.nodeId}' was not found in the active graph.`
+        });
+      }
+
+      const historyInspection = await getRuntimeSourceHistoryInspection({
+        nodeId: params.nodeId,
+        sourceHistoryId: params.sourceHistoryId
+      });
+
+      if (!historyInspection) {
+        reply.status(404);
+        return hostErrorResponseSchema.parse({
+          code: "not_found",
+          message: `Source history entry '${params.sourceHistoryId}' was not found for runtime '${params.nodeId}'.`
+        });
+      }
+
+      const assignment = selectFederatedRuntimeControlAssignment({
+        assignments: (await listRuntimeAssignments()).assignments,
+        nodeId: params.nodeId
+      });
+
+      if (!assignment) {
+        throw new HostHttpError({
+          code: "conflict",
+          details: {
+            nodeId: params.nodeId,
+            sourceHistoryId: params.sourceHistoryId
+          },
+          message:
+            `Source history reconcile for runtime '${params.nodeId}' requires ` +
+            "an accepted federated runner assignment.",
+          statusCode: 409
+        });
+      }
+
+      const commandId =
+        await publishRuntimeSourceHistoryReconcileCommandFromHost(options, {
+          ...(body.approvalId ? { approvalId: body.approvalId } : {}),
+          assignment,
+          ...(body.reason ? { reason: body.reason } : {}),
+          ...(body.replayedBy ? { replayedBy: body.replayedBy } : {}),
+          ...(body.replayId ? { replayId: body.replayId } : {}),
+          sourceHistoryId: params.sourceHistoryId
+        });
+
+      if (!commandId) {
+        throw new HostHttpError({
+          code: "conflict",
+          details: {
+            nodeId: params.nodeId,
+            sourceHistoryId: params.sourceHistoryId
+          },
+          message:
+            "Federated source-history reconcile requires an active Host control plane and relay configuration.",
+          statusCode: 409
+        });
+      }
+
+      return runtimeSourceHistoryReconcileResponseSchema.parse({
         assignmentId: assignment.assignmentId,
         commandId,
         nodeId: params.nodeId,

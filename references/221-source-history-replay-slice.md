@@ -51,13 +51,15 @@ side effect.
   recorded as `already_in_workspace` without rewriting files.
 - If the workspace has diverged from both `baseTree` and `headTree`, the replay
   is recorded as `unavailable` instead of overwriting user work.
+- The later `450-source-history-reconcile-control-slice.md` adds a separate
+  runner-owned reconcile command for diverged workspaces that can merge cleanly.
 - Replay never grants publish rights and never bypasses source-history
   publication policy.
 
 ## Boundaries
 
-- This is not a merge engine. Diverged workspaces require a future explicit
-  merge/reconcile workflow.
+- Replay itself is not a merge engine. Diverged workspaces that should preserve
+  local changes use the explicit `runtime.source_history.reconcile` workflow.
 - This does not replace artifact restore/promotion; artifact workflows remain
   the generic artifact handoff path.
 - This does not yet replay wiki repositories.
@@ -67,7 +69,6 @@ side effect.
 ## Remaining Work
 
 - Wiki restore/promotion behavior.
-- Explicit merge/reconcile flow for diverged source workspaces.
 - Richer Studio guidance for creating the exact scoped approval.
 - Fallback/replication behavior across publication targets.
 

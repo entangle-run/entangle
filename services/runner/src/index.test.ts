@@ -484,6 +484,42 @@ function buildRuntimeSourceHistoryReplayEvent(
   };
 }
 
+function buildRuntimeSourceHistoryReconcileEvent(
+  assignment: RuntimeAssignmentRecord
+): EntangleControlEvent {
+  return {
+    envelope: {
+      createdAt: "2026-04-26T12:00:06.500Z",
+      eventId: "aeaeaeaeaeaeaeaeaeaeaeaeaeaeaeaeaeaeaeaeaeaeaeaeaeaeaeaeaeaeaeae",
+      payloadHash:
+        "cfcfcfcfcfcfcfcfcfcfcfcfcfcfcfcfcfcfcfcfcfcfcfcfcfcfcfcfcfcfcfcf",
+      protocol: "entangle.control.v1",
+      recipientPubkey: runnerPublicKey,
+      schemaVersion: "1",
+      signature:
+        "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+      signerPubkey: hostPublicKey
+    },
+    payload: {
+      approvalId: "approval-source-history-reconcile-alpha",
+      assignmentId: assignment.assignmentId,
+      commandId: "cmd-source-history-reconcile-alpha",
+      eventType: "runtime.source_history.reconcile",
+      graphId: assignment.graphId,
+      hostAuthorityPubkey: hostPublicKey,
+      issuedAt: "2026-04-26T12:00:06.500Z",
+      nodeId: assignment.nodeId,
+      protocol: "entangle.control.v1",
+      reason: "Reconcile source history",
+      replayedBy: "operator-main",
+      replayId: "reconcile-source-history-alpha",
+      runnerId: assignment.runnerId,
+      runnerPubkey: runnerPublicKey,
+      sourceHistoryId: "source-history-alpha"
+    }
+  };
+}
+
 function buildRuntimeWikiPublishEvent(
   assignment: RuntimeAssignmentRecord
 ): EntangleControlEvent {
@@ -3258,6 +3294,7 @@ describe("runner runtime context", () => {
     const runtimeArtifactSourceChangeProposals: string[] = [];
     const runtimeSourceHistoryPublications: string[] = [];
     const runtimeSourceHistoryReplays: string[] = [];
+    const runtimeSourceHistoryReconciles: string[] = [];
     const runtimeWikiPublications: string[] = [];
     const runtimeWikiPageUpserts: string[] = [];
     process.env.ENTANGLE_RUNNER_NOSTR_SECRET_KEY = runnerSecretHex;
@@ -3336,6 +3373,16 @@ describe("runner runtime context", () => {
                 sourceHistoryId: request.sourceHistoryId
               });
             },
+            reconcileSourceHistory: (request) => {
+              runtimeSourceHistoryReconciles.push(
+                `${request.sourceHistoryId}:${request.replayId ?? "generated"}:${request.approvalId ?? "none"}`
+              );
+              return Promise.resolve({
+                replayId: request.replayId ?? "generated",
+                replayStatus: "merged",
+                sourceHistoryId: request.sourceHistoryId
+              });
+            },
             runtimeContextPath,
             stop: () => {
               runtimeStops.push(runtimeContextPath);
@@ -3360,6 +3407,7 @@ describe("runner runtime context", () => {
     );
     await transport.dispatch(buildRuntimeSourceHistoryPublishEvent(assignment));
     await transport.dispatch(buildRuntimeSourceHistoryReplayEvent(assignment));
+    await transport.dispatch(buildRuntimeSourceHistoryReconcileEvent(assignment));
     await transport.dispatch(buildRuntimeWikiPublishEvent(assignment));
     await transport.dispatch(buildRuntimeWikiUpsertPageEvent(assignment));
 
@@ -3384,6 +3432,9 @@ describe("runner runtime context", () => {
     ]);
     expect(runtimeSourceHistoryReplays).toEqual([
       "source-history-alpha:replay-source-history-alpha:approval-source-history-replay-alpha"
+    ]);
+    expect(runtimeSourceHistoryReconciles).toEqual([
+      "source-history-alpha:reconcile-source-history-alpha:approval-source-history-reconcile-alpha"
     ]);
     expect(runtimeWikiPublications).toEqual([
       "retry:operator-main:wiki-public"
@@ -3485,6 +3536,13 @@ describe("runner runtime context", () => {
           commandEventType: "runtime.source_history.replay",
           commandId: "cmd-source-history-replay-alpha",
           replayId: "replay-source-history-alpha",
+          sourceHistoryId: "source-history-alpha",
+          status: "completed"
+        }),
+        expect.objectContaining({
+          commandEventType: "runtime.source_history.reconcile",
+          commandId: "cmd-source-history-reconcile-alpha",
+          replayId: "reconcile-source-history-alpha",
           sourceHistoryId: "source-history-alpha",
           status: "completed"
         }),

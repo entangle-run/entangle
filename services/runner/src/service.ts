@@ -35,7 +35,8 @@ import type {
   SessionRecord,
   SourceHistoryRecord,
   SourceHistoryPublicationTarget,
-  SourceHistoryReplayRecord
+  SourceHistoryReplayRecord,
+  SourceHistoryReplayStatus
 } from "@entangle/types";
 import {
   agentEngineTurnResultSchema,
@@ -105,6 +106,7 @@ import { buildSourceChangeCandidateRecord } from "./source-change-candidates.js"
 import {
   applyAcceptedSourceChangeCandidate,
   publishSourceHistoryToGitTarget,
+  reconcileSourceHistoryToWorkspace,
   replaySourceHistoryToWorkspace
 } from "./source-history.js";
 import {
@@ -133,7 +135,7 @@ export type RunnerSourceHistoryPublicationCommandResult = {
 export type RunnerSourceHistoryReplayCommandResult = {
   message?: string;
   replayId: string;
-  replayStatus: "already_in_workspace" | "replayed" | "unavailable";
+  replayStatus: SourceHistoryReplayStatus;
   sourceHistoryId: string;
 };
 
@@ -2649,6 +2651,62 @@ export class RunnerService {
     });
 
     const replay = await replaySourceHistoryToWorkspace({
+      ...(input.approvalId ? { approvalId: input.approvalId } : {}),
+      context: this.context,
+      history,
+      ...(input.reason ? { reason: input.reason } : {}),
+      replayedAt: input.replayedAt ?? new Date().toISOString(),
+      ...(input.replayedBy ? { replayedBy: input.replayedBy } : {}),
+      ...(input.replayId ? { replayId: input.replayId } : {}),
+      statePaths
+    });
+
+    await this.publishSourceHistoryReplayObservation(replay.replay);
+
+    return {
+      ...(replay.replayed ? {} : { message: replay.reason }),
+      replayId: replay.replay.replayId,
+      replayStatus: replay.replay.status,
+      sourceHistoryId: replay.replay.sourceHistoryId
+    };
+  }
+
+  async requestSourceHistoryReconcile(input: {
+    approvalId?: string;
+    reason?: string;
+    replayedAt?: string;
+    replayedBy?: string;
+    replayId?: string;
+    sourceHistoryId: string;
+  }): Promise<RunnerSourceHistoryReplayCommandResult> {
+    const statePaths =
+      this.statePaths ??
+      (await ensureRunnerStatePaths(this.context.workspace.runtimeRoot));
+    this.statePaths = statePaths;
+    const history = await readSourceHistoryRecord(
+      statePaths,
+      input.sourceHistoryId
+    );
+
+    if (!history) {
+      throw new Error(
+        `Source history '${input.sourceHistoryId}' was not found for runtime '${this.context.binding.node.nodeId}'.`
+      );
+    }
+
+    if (history.nodeId !== this.context.binding.node.nodeId) {
+      throw new Error(
+        `Source history '${input.sourceHistoryId}' belongs to node '${history.nodeId}', not '${this.context.binding.node.nodeId}'.`
+      );
+    }
+
+    await this.assertSourceHistoryReplayApproval({
+      ...(input.approvalId ? { approvalId: input.approvalId } : {}),
+      history,
+      statePaths
+    });
+
+    const replay = await reconcileSourceHistoryToWorkspace({
       ...(input.approvalId ? { approvalId: input.approvalId } : {}),
       context: this.context,
       history,

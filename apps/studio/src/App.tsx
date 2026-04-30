@@ -200,6 +200,7 @@ import {
   createEmptyRuntimeSourceHistoryPublicationDraft,
   createEmptyRuntimeSourceHistoryReplayDraft,
   formatRuntimeSourceHistoryPublicationRequestSummary,
+  formatRuntimeSourceHistoryReconcileRequestSummary,
   formatRuntimeSourceHistoryReplayRequestSummary,
   formatRuntimeSourceHistoryDetailLines,
   formatRuntimeSourceHistoryLabel,
@@ -2462,6 +2463,54 @@ export function App() {
           normalizeError(
             caught,
             "Unknown error while requesting source history replay."
+          )
+        );
+      });
+    } finally {
+      setPendingSourceHistoryReplay(false);
+    }
+  }, [
+    client,
+    refreshSelectedRuntimeDetails,
+    selectedRuntimeId,
+    selectedSourceHistoryInspection,
+    sourceHistoryReplayDraft
+  ]);
+
+  const requestRuntimeSourceHistoryReconcile = useCallback(async () => {
+    if (!selectedRuntimeId || !selectedSourceHistoryInspection) {
+      return;
+    }
+
+    const sourceHistoryId =
+      selectedSourceHistoryInspection.entry.sourceHistoryId;
+
+    setPendingSourceHistoryReplay(true);
+    setSourceHistoryReplayError(null);
+    setLastSourceHistoryReplaySummary(null);
+
+    try {
+      const response = await client.reconcileRuntimeSourceHistory(
+        selectedRuntimeId,
+        sourceHistoryId,
+        buildRuntimeSourceHistoryReplayRequest(sourceHistoryReplayDraft)
+      );
+
+      startTransition(() => {
+        setLastSourceHistoryReplaySummary(
+          formatRuntimeSourceHistoryReconcileRequestSummary(response)
+        );
+        setSourceHistoryReplayDraft(createEmptyRuntimeSourceHistoryReplayDraft());
+        setSourceHistoryReplayError(null);
+      });
+
+      await refreshSelectedRuntimeDetails(selectedRuntimeId);
+    } catch (caught: unknown) {
+      startTransition(() => {
+        setSourceHistoryReplayError(
+          normalizeError(
+            caught,
+            "Unknown error while requesting source history reconcile."
           )
         );
       });
@@ -6673,6 +6722,18 @@ export function App() {
                               {pendingSourceHistoryReplay
                                 ? "Requesting..."
                                 : "Request Replay"}
+                            </button>
+                            <button
+                              className="action-button secondary"
+                              disabled={pendingSourceHistoryReplay}
+                              onClick={() => {
+                                void requestRuntimeSourceHistoryReconcile();
+                              }}
+                              type="button"
+                            >
+                              {pendingSourceHistoryReplay
+                                ? "Requesting..."
+                                : "Request Reconcile"}
                             </button>
                             {lastSourceHistoryReplaySummary ? (
                               <span className="panel-caption">

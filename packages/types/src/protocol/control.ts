@@ -29,6 +29,7 @@ export const entangleControlEventTypeSchema = z.enum([
   "runtime.artifact.propose_source_change",
   "runtime.source_history.publish",
   "runtime.source_history.replay",
+  "runtime.source_history.reconcile",
   "runtime.wiki.upsert_page",
   "runtime.wiki.publish"
 ]);
@@ -42,6 +43,7 @@ export const entangleRuntimeCommandEventTypeSchema = z.enum([
   "runtime.artifact.propose_source_change",
   "runtime.source_history.publish",
   "runtime.source_history.replay",
+  "runtime.source_history.reconcile",
   "runtime.wiki.upsert_page",
   "runtime.wiki.publish"
 ]);
@@ -245,6 +247,11 @@ export const runtimeSourceHistoryReplayPayloadSchema =
     sourceHistoryId: identifierSchema
   });
 
+export const runtimeSourceHistoryReconcilePayloadSchema =
+  runtimeSourceHistoryReplayPayloadSchema.extend({
+    eventType: z.literal("runtime.source_history.reconcile")
+  });
+
 export const runtimeWikiPublishPayloadSchema = controlPayloadBaseSchema.extend({
   assignmentId: identifierSchema.optional(),
   commandId: identifierSchema,
@@ -285,6 +292,7 @@ export const entangleControlEventPayloadSchema = z.discriminatedUnion(
     runtimeArtifactSourceChangeProposalPayloadSchema,
     runtimeSourceHistoryPublishPayloadSchema,
     runtimeSourceHistoryReplayPayloadSchema,
+    runtimeSourceHistoryReconcilePayloadSchema,
     runtimeWikiUpsertPagePayloadSchema,
     runtimeWikiPublishPayloadSchema
   ]
@@ -359,6 +367,9 @@ export type RuntimeArtifactRestorePayload = z.infer<
 >;
 export type RuntimeSourceHistoryReplayPayload = z.infer<
   typeof runtimeSourceHistoryReplayPayloadSchema
+>;
+export type RuntimeSourceHistoryReconcilePayload = z.infer<
+  typeof runtimeSourceHistoryReconcilePayloadSchema
 >;
 export type RuntimeWikiPublishPayload = z.infer<
   typeof runtimeWikiPublishPayloadSchema

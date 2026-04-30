@@ -457,6 +457,8 @@ export async function createConfiguredRunnerJoinService(
           },
           publishSourceHistory: (request) =>
             configured.service.requestSourceHistoryPublication(request),
+          reconcileSourceHistory: (request) =>
+            configured.service.requestSourceHistoryReconcile(request),
           proposeSourceChangeFromArtifact: (request) =>
             configured.service.requestArtifactSourceChangeProposal(request),
           publishWikiRepository: (request) =>

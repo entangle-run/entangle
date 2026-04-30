@@ -5386,3 +5386,16 @@ append through `host-client.upsertRuntimeWikiPage`.
 The form sends page path, mode, content, reason, and requestedBy through Host,
 so Studio stays on the same Host-signed control path as CLI and the User Client
 instead of writing runner memory directly.
+
+## [2026-04-29] runtime | Added source-history reconcile control
+
+Added `references/450-source-history-reconcile-control-slice.md`.
+Entangle now has `runtime.source_history.reconcile` as a separate Host-signed
+runner control command for diverged source workspaces that can merge cleanly.
+
+The runner keeps the same `source_application` approval checks as replay,
+computes a Git three-way tree merge from source-history base, current
+workspace, and source-history head trees, applies clean merged trees in the
+runner-owned workspace, records `merged` replay records with `mergedTree`, and
+emits `source_history.replayed` projection evidence plus command receipts.
+Host API, host-client, CLI, and Studio now expose the reconcile request path.

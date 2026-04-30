@@ -148,6 +148,13 @@ The most accurate current description is:
   the same live relay and joined runner path; Host now projects
   `source_history.replayed` outcomes into typed replay records for API, CLI,
   and Studio inspection without runner-local file access;
+- explicit source-history reconcile is now a sibling Host-signed
+  `runtime.source_history.reconcile` command for diverged but cleanly
+  mergeable source workspaces; the runner applies the same
+  `source_application` approval checks as replay, uses Git three-way tree
+  merge against the recorded base/current/head trees, records clean outcomes
+  as `merged` replay records with `mergedTree`, and still emits projection
+  evidence instead of letting Host mutate source files;
 - explicit wiki repository publication is now a Host-signed
   `runtime.wiki.publish` control command to the accepted runner assignment; the
   runner syncs and publishes its wiki repository from runner-owned state to the

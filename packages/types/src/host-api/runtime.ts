@@ -468,6 +468,12 @@ export const runtimeSourceHistoryReplayResponseSchema = z.object({
   status: z.literal("requested")
 });
 
+export const runtimeSourceHistoryReconcileRequestSchema =
+  runtimeSourceHistoryReplayRequestSchema;
+
+export const runtimeSourceHistoryReconcileResponseSchema =
+  runtimeSourceHistoryReplayResponseSchema;
+
 export const runtimeSourceChangeCandidateDiffSchema = z.discriminatedUnion(
   "available",
   [
@@ -645,6 +651,12 @@ export type RuntimeSourceHistoryReplayRequest = z.input<
 >;
 export type RuntimeSourceHistoryReplayResponse = z.infer<
   typeof runtimeSourceHistoryReplayResponseSchema
+>;
+export type RuntimeSourceHistoryReconcileRequest = z.input<
+  typeof runtimeSourceHistoryReconcileRequestSchema
+>;
+export type RuntimeSourceHistoryReconcileResponse = z.infer<
+  typeof runtimeSourceHistoryReconcileResponseSchema
 >;
 export type RuntimeSourceChangeCandidateDiff = z.infer<
   typeof runtimeSourceChangeCandidateDiffSchema

@@ -732,6 +732,16 @@ describe("Host federated control plane", () => {
       replayId: "replay-source-history-alpha",
       sourceHistoryId: "source-history-alpha"
     });
+    await controlPlane.publishRuntimeSourceHistoryReconcile({
+      approvalId: "approval-source-history-reconcile-alpha",
+      assignment,
+      commandId: "cmd-source-history-reconcile-alpha",
+      reason: "Reconcile source history.",
+      relayUrls,
+      replayedBy: "operator-main",
+      replayId: "reconcile-source-history-alpha",
+      sourceHistoryId: "source-history-alpha"
+    });
     await controlPlane.publishRuntimeWikiPublish({
       assignment,
       commandId: "cmd-wiki-publish-alpha",
@@ -863,6 +873,21 @@ describe("Host federated control plane", () => {
         sourceHistoryId: "source-history-alpha"
       }),
       expect.objectContaining({
+        approvalId: "approval-source-history-reconcile-alpha",
+        assignmentId: "assignment-alpha",
+        commandId: "cmd-source-history-reconcile-alpha",
+        eventType: "runtime.source_history.reconcile",
+        graphId: "federated-smoke-graph",
+        hostAuthorityPubkey: authority.authority.publicKey,
+        issuedAt: "2026-04-26T12:00:11.000Z",
+        nodeId: "builder",
+        replayedBy: "operator-main",
+        replayId: "reconcile-source-history-alpha",
+        runnerId: "runner-alpha",
+        runnerPubkey,
+        sourceHistoryId: "source-history-alpha"
+      }),
+      expect.objectContaining({
         assignmentId: "assignment-alpha",
         commandId: "cmd-wiki-publish-alpha",
         eventType: "runtime.wiki.publish",
@@ -901,6 +926,7 @@ describe("Host federated control plane", () => {
       }
     });
     expect(transport.publishedControlEvents.map((event) => event.relayUrls)).toEqual([
+      relayUrls,
       relayUrls,
       relayUrls,
       relayUrls,

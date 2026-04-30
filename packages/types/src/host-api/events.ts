@@ -30,6 +30,7 @@ import {
   sessionLifecycleStateSchema,
   sessionCancellationRequestStatusSchema,
   sourceHistoryApplicationModeSchema,
+  sourceHistoryReplayStatusSchema,
   sourceChangeSummarySchema
 } from "../runtime/session-state.js";
 import { entangleA2AMessageTypeSchema } from "../protocol/a2a.js";
@@ -398,7 +399,7 @@ export const sourceHistoryReplayedEventSchema = hostEventBaseSchema.extend({
   historyId: identifierSchema,
   nodeId: identifierSchema,
   replayId: identifierSchema,
-  replayStatus: z.enum(["already_in_workspace", "replayed", "unavailable"]),
+  replayStatus: sourceHistoryReplayStatusSchema,
   turnId: identifierSchema,
   type: z.literal("source_history.replayed")
 });

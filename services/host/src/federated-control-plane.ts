@@ -618,6 +618,46 @@ export class HostFederatedControlPlane {
     });
   }
 
+  publishRuntimeSourceHistoryReconcile(input: {
+    approvalId?: string;
+    assignment: RuntimeAssignmentRecord;
+    authRequired?: boolean;
+    commandId: string;
+    correlationId?: string;
+    reason?: string;
+    relayUrls: string[];
+    replayedBy?: string;
+    replayId?: string;
+    sourceHistoryId: string;
+  }): Promise<EntangleNostrPublishedEvent<EntangleControlEvent>> {
+    return this.input.transport.publishControlEvent({
+      ...(input.authRequired !== undefined
+        ? { authRequired: input.authRequired }
+        : {}),
+      ...(input.correlationId !== undefined
+        ? { correlationId: input.correlationId }
+        : {}),
+      payload: {
+        ...(input.approvalId ? { approvalId: input.approvalId } : {}),
+        assignmentId: input.assignment.assignmentId,
+        commandId: input.commandId,
+        eventType: "runtime.source_history.reconcile",
+        graphId: input.assignment.graphId,
+        hostAuthorityPubkey: input.assignment.hostAuthorityPubkey,
+        issuedAt: this.now(),
+        nodeId: input.assignment.nodeId,
+        protocol: "entangle.control.v1",
+        ...(input.reason ? { reason: input.reason } : {}),
+        ...(input.replayedBy ? { replayedBy: input.replayedBy } : {}),
+        ...(input.replayId ? { replayId: input.replayId } : {}),
+        runnerId: input.assignment.runnerId,
+        runnerPubkey: input.assignment.runnerPubkey,
+        sourceHistoryId: input.sourceHistoryId
+      },
+      relayUrls: input.relayUrls
+    });
+  }
+
   publishRuntimeWikiPublish(input: {
     assignment: RuntimeAssignmentRecord;
     authRequired?: boolean;

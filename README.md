@@ -468,7 +468,11 @@ This repository currently contains:
   history detail using that Host request path and with observed
   `source_history.replayed` outcomes now projected through Host API,
   host-client, CLI replay inspection commands, and Studio federation summary
-  counts. Node-configured source mutation
+  counts. Diverged but cleanly mergeable source workspaces can now use the
+  sibling Host-signed `runtime.source_history.reconcile` command; the runner
+  applies the same source-application approval policy, performs a Git
+  three-way tree merge, records successful merges as `merged` replay records
+  with `mergedTree`, and reports conflicts as `unavailable`. Node-configured source mutation
   policy is still able to require approved runtime
   approval ids before source application or source publication, and with
   accepted approval ids persisted on source records after validating approval

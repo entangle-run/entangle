@@ -7780,6 +7780,15 @@ describe("buildHostServer", () => {
       replayId?: string;
       sourceHistoryId: string;
     }> = [];
+    const reconcileRequests: Array<{
+      approvalId?: string;
+      assignment: RuntimeAssignmentRecord;
+      reason?: string;
+      relayUrls: string[];
+      replayedBy?: string;
+      replayId?: string;
+      sourceHistoryId: string;
+    }> = [];
     const wikiPublishRequests: Array<{
       assignment: RuntimeAssignmentRecord;
       reason?: string;
@@ -7842,6 +7851,15 @@ describe("buildHostServer", () => {
       relayUrls: string[];
       requestedBy?: string;
     };
+    type SourceHistoryReplayPublishInput = {
+      approvalId?: string;
+      assignment: RuntimeAssignmentRecord;
+      reason?: string;
+      relayUrls: string[];
+      replayedBy?: string;
+      replayId?: string;
+      sourceHistoryId: string;
+    };
     const server = await createTestServer({
       federatedControlPlane: {
         publishRuntimeAssignmentOffer: () => Promise.resolve(),
@@ -7887,6 +7905,20 @@ describe("buildHostServer", () => {
         },
         publishRuntimeSourceHistoryReplay: (input) => {
           replayRequests.push({
+            ...(input.approvalId ? { approvalId: input.approvalId } : {}),
+            assignment: input.assignment,
+            ...(input.reason ? { reason: input.reason } : {}),
+            relayUrls: input.relayUrls,
+            ...(input.replayedBy ? { replayedBy: input.replayedBy } : {}),
+            ...(input.replayId ? { replayId: input.replayId } : {}),
+            sourceHistoryId: input.sourceHistoryId
+          });
+          return Promise.resolve();
+        },
+        publishRuntimeSourceHistoryReconcile: (
+          input: SourceHistoryReplayPublishInput
+        ) => {
+          reconcileRequests.push({
             ...(input.approvalId ? { approvalId: input.approvalId } : {}),
             assignment: input.assignment,
             ...(input.reason ? { reason: input.reason } : {}),
@@ -8269,6 +8301,43 @@ describe("buildHostServer", () => {
         relayUrls: ["ws://relay.example"],
         replayedBy: "operator-main",
         replayId: "replay-source-history-alpha",
+        sourceHistoryId: "source-history-candidate-alpha"
+      });
+
+      const reconcileResponse = await server.inject({
+        method: "POST",
+        payload: {
+          approvalId: "approval-source-history-reconcile-alpha",
+          reason: "Operator requested source reconcile.",
+          replayedBy: "operator-main",
+          replayId: "reconcile-source-history-alpha"
+        },
+        url:
+          "/v1/runtimes/worker-it/source-history/" +
+          "source-history-candidate-alpha/reconcile"
+      });
+
+      expect(reconcileResponse.statusCode).toBe(200);
+      expect(
+        runtimeSourceHistoryReplayResponseSchema.parse(reconcileResponse.json())
+      ).toMatchObject({
+        assignmentId: "assignment-alpha",
+        nodeId: "worker-it",
+        sourceHistoryId: "source-history-candidate-alpha",
+        status: "requested"
+      });
+      expect(reconcileRequests).toHaveLength(1);
+      expect(reconcileRequests[0]?.assignment).toMatchObject({
+        assignmentId: "assignment-alpha",
+        nodeId: "worker-it",
+        runnerId: "runner-alpha"
+      });
+      expect(reconcileRequests[0]).toMatchObject({
+        approvalId: "approval-source-history-reconcile-alpha",
+        reason: "Operator requested source reconcile.",
+        relayUrls: ["ws://relay.example"],
+        replayedBy: "operator-main",
+        replayId: "reconcile-source-history-alpha",
         sourceHistoryId: "source-history-candidate-alpha"
       });
 

@@ -971,6 +971,43 @@ async function persistSourceHistoryReplay(input: {
   return input.record;
 }
 
+async function mergeSourceHistoryTrees(input: {
+  baseTree: string;
+  currentTree: string;
+  gitDir: string;
+  headTree: string;
+  sourceWorkspaceRoot: string;
+}): Promise<string> {
+  const output = await runGitCommand(
+    input.sourceWorkspaceRoot,
+    [
+      "merge-tree",
+      "--write-tree",
+      "--no-messages",
+      "--merge-base",
+      input.baseTree,
+      input.currentTree,
+      input.headTree
+    ],
+    {
+      gitDir: input.gitDir,
+      workTree: input.sourceWorkspaceRoot
+    }
+  );
+  const [tree] = output
+    .split(/\r?\n/u)
+    .map((line) => line.trim())
+    .filter((line) => line.length > 0);
+
+  if (!tree || !/^[0-9a-f]{40,64}$/u.test(tree)) {
+    throw new Error(
+      `Git source-history reconcile produced an invalid merge tree '${output}'.`
+    );
+  }
+
+  return tree;
+}
+
 async function createSourceHistoryCommit(input: {
   candidate: SourceChangeCandidateRecord;
   context: EffectiveRuntimeContext;
@@ -1374,6 +1411,197 @@ export async function replaySourceHistoryToWorkspace(input: {
   } catch (error) {
     return persistUnavailable(
       `Source history entry '${input.history.sourceHistoryId}' could not be replayed: ` +
+        sanitizeRuntimePathError(input.context, error)
+    );
+  }
+}
+
+export async function reconcileSourceHistoryToWorkspace(input: {
+  approvalId?: string;
+  context: EffectiveRuntimeContext;
+  history: SourceHistoryRecord;
+  reason?: string;
+  replayedAt: string;
+  replayedBy?: string;
+  replayId?: string;
+  statePaths: RunnerStatePaths;
+}): Promise<SourceHistoryReplayResult> {
+  const replayId = buildSourceHistoryReplayId({
+    replayId: input.replayId,
+    sourceHistoryId: input.history.sourceHistoryId
+  });
+  const baseRecord = {
+    ...(input.approvalId ? { approvalId: input.approvalId } : {}),
+    baseTree: input.history.baseTree,
+    candidateId: input.history.candidateId,
+    commit: input.history.commit,
+    createdAt: input.replayedAt,
+    graphId: input.history.graphId,
+    graphRevisionId: input.history.graphRevisionId,
+    headTree: input.history.headTree,
+    nodeId: input.history.nodeId,
+    ...(input.reason ? { reason: input.reason } : {}),
+    ...(input.replayedBy ? { replayedBy: input.replayedBy } : {}),
+    replayId,
+    sourceHistoryId: input.history.sourceHistoryId,
+    turnId: input.history.turnId,
+    updatedAt: input.replayedAt
+  };
+  const persistUnavailable = async (
+    unavailableReason: string
+  ): Promise<SourceHistoryReplayResult> => {
+    const replay = await persistSourceHistoryReplay({
+      record: sourceHistoryReplayRecordSchema.parse({
+        ...baseRecord,
+        status: "unavailable",
+        unavailableReason
+      }),
+      statePaths: input.statePaths
+    });
+
+    return {
+      history: input.history,
+      reason: unavailableReason,
+      replay,
+      replayed: false
+    };
+  };
+  const sourceWorkspaceRoot = input.context.workspace.sourceWorkspaceRoot;
+
+  if (!sourceWorkspaceRoot) {
+    return persistUnavailable(
+      `Runtime '${input.context.binding.node.nodeId}' does not have a configured source workspace root.`
+    );
+  }
+
+  if (
+    !pathIsInsideRoot({
+      candidatePath: sourceWorkspaceRoot,
+      rootPath: input.context.workspace.root
+    })
+  ) {
+    return persistUnavailable(
+      `Runtime '${input.context.binding.node.nodeId}' source workspace is outside the node workspace root.`
+    );
+  }
+
+  const gitDir = path.join(
+    input.context.workspace.runtimeRoot,
+    "source-snapshot.git"
+  );
+
+  try {
+    if (!(await pathIsDirectory(gitDir))) {
+      return persistUnavailable(
+        `Source history entry '${input.history.sourceHistoryId}' cannot be reconciled because its shadow git repository is missing.`
+      );
+    }
+
+    if (!(await pathIsDirectory(sourceWorkspaceRoot))) {
+      return persistUnavailable(
+        `Runtime '${input.context.binding.node.nodeId}' source workspace is not a directory.`
+      );
+    }
+
+    await runGitCommand(sourceWorkspaceRoot, [
+      "cat-file",
+      "-e",
+      `${input.history.commit}^{commit}`
+    ], {
+      gitDir,
+      workTree: sourceWorkspaceRoot
+    });
+    await runGitCommand(sourceWorkspaceRoot, [
+      "cat-file",
+      "-e",
+      `${input.history.baseTree}^{tree}`
+    ], {
+      gitDir,
+      workTree: sourceWorkspaceRoot
+    });
+    await runGitCommand(sourceWorkspaceRoot, [
+      "cat-file",
+      "-e",
+      `${input.history.headTree}^{tree}`
+    ], {
+      gitDir,
+      workTree: sourceWorkspaceRoot
+    });
+
+    const currentTree = await writeCurrentSourceWorkspaceTree({
+      gitDir,
+      sourceWorkspaceRoot
+    });
+    let mergedTree: string | undefined;
+    let targetTree = input.history.headTree;
+    const status =
+      currentTree === input.history.headTree
+        ? "already_in_workspace"
+        : currentTree === input.history.baseTree
+          ? "replayed"
+          : "merged";
+
+    if (status === "merged") {
+      try {
+        mergedTree = await mergeSourceHistoryTrees({
+          baseTree: input.history.baseTree,
+          currentTree,
+          gitDir,
+          headTree: input.history.headTree,
+          sourceWorkspaceRoot
+        });
+        targetTree = mergedTree;
+      } catch (error) {
+        return persistUnavailable(
+          `Source history entry '${input.history.sourceHistoryId}' cannot be reconciled with the current source workspace: ` +
+            sanitizeRuntimePathError(input.context, error)
+        );
+      }
+    }
+
+    const replayedFileCount = await countSourceHistoryTreeFiles({
+      gitDir,
+      runtimeRoot: input.context.workspace.runtimeRoot,
+      tree: targetTree
+    });
+
+    if (status !== "already_in_workspace") {
+      await replaceSourceWorkspaceWithTree({
+        gitDir,
+        headTree: targetTree,
+        sourceWorkspaceRoot
+      });
+      const replayedTree = await writeCurrentSourceWorkspaceTree({
+        gitDir,
+        sourceWorkspaceRoot
+      });
+
+      if (replayedTree !== targetTree) {
+        return persistUnavailable(
+          `Source history entry '${input.history.sourceHistoryId}' did not reconcile cleanly to the source workspace.`
+        );
+      }
+    }
+
+    const replay = await persistSourceHistoryReplay({
+      record: sourceHistoryReplayRecordSchema.parse({
+        ...baseRecord,
+        ...(mergedTree ? { mergedTree } : {}),
+        replayedFileCount,
+        replayedPath: sourceWorkspaceRoot,
+        status
+      }),
+      statePaths: input.statePaths
+    });
+
+    return {
+      history: input.history,
+      replay,
+      replayed: true
+    };
+  } catch (error) {
+    return persistUnavailable(
+      `Source history entry '${input.history.sourceHistoryId}' could not be reconciled: ` +
         sanitizeRuntimePathError(input.context, error)
     );
   }

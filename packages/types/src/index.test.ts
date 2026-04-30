@@ -86,6 +86,7 @@ import {
   runtimeSourceHistoryInspectionResponseSchema,
   runtimeSourceHistoryListResponseSchema,
   runtimeSourceHistoryPublishRequestSchema,
+  sourceHistoryReplayRecordSchema,
   runtimeTurnInspectionResponseSchema,
   runtimeTurnListResponseSchema,
   runtimeWikiPublishRequestSchema,
@@ -924,6 +925,29 @@ describe("federated runtime contracts", () => {
         sourceHistoryId: "source-history-alpha"
       }
     });
+    const sourceHistoryReconcile = entangleControlEventSchema.parse({
+      envelope: buildSignedEnvelope({
+        protocol: "entangle.control.v1",
+        recipientPubkey: runnerPubkey,
+        signerPubkey: authorityPubkey
+      }),
+      payload: {
+        approvalId: "approval-source-history-reconcile-alpha",
+        assignmentId: "assignment-alpha",
+        commandId: "cmd-source-history-reconcile-alpha",
+        eventType: "runtime.source_history.reconcile",
+        graphId: "team-alpha",
+        hostAuthorityPubkey: authorityPubkey,
+        issuedAt: observedAt,
+        nodeId: "worker-it",
+        protocol: "entangle.control.v1",
+        replayedBy: "operator-main",
+        replayId: "reconcile-source-history-alpha",
+        runnerId: "runner-alpha",
+        runnerPubkey,
+        sourceHistoryId: "source-history-alpha"
+      }
+    });
     const wikiPublish = entangleControlEventSchema.parse({
       envelope: buildSignedEnvelope({
         protocol: "entangle.control.v1",
@@ -1002,6 +1026,9 @@ describe("federated runtime contracts", () => {
     });
     expect(sourceHistoryReplay.payload.eventType).toBe(
       "runtime.source_history.replay"
+    );
+    expect(sourceHistoryReconcile.payload.eventType).toBe(
+      "runtime.source_history.reconcile"
     );
     expect(wikiPublish.payload.eventType).toBe("runtime.wiki.publish");
     expect(wikiPublish.payload).toMatchObject({
@@ -1641,6 +1668,28 @@ describe("federated runtime contracts", () => {
     expect(sourceHistoryReplayObservation.payload.eventType).toBe(
       "source_history.replayed"
     );
+    expect(
+      sourceHistoryReplayRecordSchema.parse({
+        approvalId: "approval-source-history-reconcile-alpha",
+        baseTree: "tree-base-alpha",
+        candidateId: "source-change-turn-alpha",
+        commit: "commit-source-history-alpha",
+        createdAt: observedAt,
+        graphId: "team-alpha",
+        graphRevisionId: "team-alpha-rev-1",
+        headTree: "tree-head-alpha",
+        mergedTree: "tree-merged-alpha",
+        nodeId: "worker-it",
+        replayedBy: "operator-main",
+        replayedFileCount: 2,
+        replayedPath: "/workspace/source",
+        replayId: "reconcile-source-history-alpha",
+        sourceHistoryId: "source-history-source-change-turn-alpha",
+        status: "merged",
+        turnId: "turn-alpha",
+        updatedAt: observedAt
+      }).status
+    ).toBe("merged");
   });
 
   it("accepts Host Authority API responses and status summaries", () => {

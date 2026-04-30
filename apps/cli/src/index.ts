@@ -33,6 +33,7 @@ import {
   runtimeAssignmentRevokeRequestSchema,
   runtimeRecoveryPolicyMutationRequestSchema,
   runtimeSourceHistoryPublishRequestSchema,
+  runtimeSourceHistoryReconcileRequestSchema,
   runtimeSourceHistoryReplayRequestSchema,
   runtimeWikiPublishRequestSchema,
   runtimeWikiUpsertPageRequestSchema,
@@ -3792,6 +3793,49 @@ hostRuntimesCommand
       });
       printJson(
         await client.replayRuntimeSourceHistory(
+          nodeId,
+          sourceHistoryId,
+          request
+        )
+      );
+    }
+  );
+
+hostRuntimesCommand
+  .command("source-history-reconcile")
+  .argument("<nodeId>", "Node identifier in the active graph.")
+  .argument(
+    "<sourceHistoryId>",
+    "Source history entry identifier to reconcile with the current workspace."
+  )
+  .option("--approval-id <approvalId>", "Approved source_application approval id.")
+  .option("--reason <reason>", "Operator-visible reconcile reason.")
+  .option("--replayed-by <operatorId>", "Operator id requesting reconcile.")
+  .option("--replay-id <replayId>", "Stable replay/reconcile request id.")
+  .description(
+    "Ask the assigned runner to merge one source history entry into the current workspace through federated control."
+  )
+  .action(
+    async (
+      nodeId: string,
+      sourceHistoryId: string,
+      options: {
+        approvalId?: string;
+        reason?: string;
+        replayedBy?: string;
+        replayId?: string;
+      },
+      command: Command
+    ) => {
+      const client = createCliHostClient(command);
+      const request = runtimeSourceHistoryReconcileRequestSchema.parse({
+        ...(options.approvalId ? { approvalId: options.approvalId } : {}),
+        ...(options.reason ? { reason: options.reason } : {}),
+        ...(options.replayedBy ? { replayedBy: options.replayedBy } : {}),
+        ...(options.replayId ? { replayId: options.replayId } : {})
+      });
+      printJson(
+        await client.reconcileRuntimeSourceHistory(
           nodeId,
           sourceHistoryId,
           request

@@ -420,6 +420,13 @@ Current status:
   assignment; the runner validates source-application approval policy, refuses
   diverged workspace trees, persists runner-local replay records, and emits
   `source_history.replayed` evidence;
+- explicit source-history reconcile now uses a separate Host-signed
+  `runtime.source_history.reconcile` control command to the accepted runner
+  assignment; it keeps the same source-application approval policy as replay
+  but, for diverged workspaces, attempts a Git three-way tree merge between
+  the recorded `baseTree`, the current workspace tree, and the source-history
+  `headTree`, recording clean integrations as `merged` replay records with
+  `mergedTree` evidence and conflicts as `unavailable`;
 - `source_history.replayed` evidence is now reduced into typed Host projection
   records exposed through `sourceHistoryReplays`, Host replay list/detail APIs,
   host-client, CLI replay inspection commands, and Studio federation summary
@@ -713,6 +720,7 @@ Implementation record:
 - [340-federated-source-history-replay-control-slice.md](340-federated-source-history-replay-control-slice.md)
 - [341-studio-source-history-replay-control-slice.md](341-studio-source-history-replay-control-slice.md)
 - [342-projected-source-history-replay-read-model-slice.md](342-projected-source-history-replay-read-model-slice.md)
+- [450-source-history-reconcile-control-slice.md](450-source-history-reconcile-control-slice.md)
 - [346-runner-owned-wiki-publication-control-slice.md](346-runner-owned-wiki-publication-control-slice.md)
 - [347-studio-wiki-publication-control-slice.md](347-studio-wiki-publication-control-slice.md)
 - [379-runner-owned-source-history-target-publication-slice.md](379-runner-owned-source-history-target-publication-slice.md)

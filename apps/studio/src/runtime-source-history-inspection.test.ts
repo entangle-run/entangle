@@ -6,6 +6,7 @@ import {
   createEmptyRuntimeSourceHistoryPublicationDraft,
   createEmptyRuntimeSourceHistoryReplayDraft,
   formatRuntimeSourceHistoryPublicationRequestSummary,
+  formatRuntimeSourceHistoryReconcileRequestSummary,
   formatRuntimeSourceHistoryReplayRequestSummary,
   formatRuntimeSourceHistoryDetailLines,
   formatRuntimeSourceHistoryLabel,
@@ -198,6 +199,18 @@ describe("runtime source history Studio helpers", () => {
       })
     ).toBe(
       "source-history-alpha requested on assignment-alpha (cmd-source-history-replay-alpha)"
+    );
+    expect(
+      formatRuntimeSourceHistoryReconcileRequestSummary({
+        assignmentId: "assignment-alpha",
+        commandId: "cmd-source-history-reconcile-alpha",
+        nodeId: "worker-it",
+        requestedAt: "2026-04-28T00:00:00.000Z",
+        sourceHistoryId: "source-history-alpha",
+        status: "requested"
+      })
+    ).toBe(
+      "source-history-alpha reconcile requested on assignment-alpha (cmd-source-history-reconcile-alpha)"
     );
   });
 });

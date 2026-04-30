@@ -305,6 +305,7 @@ export const sourceHistoryRecordSchema = z.object({
 
 export const sourceHistoryReplayStatusSchema = z.enum([
   "already_in_workspace",
+  "merged",
   "replayed",
   "unavailable"
 ]);
@@ -319,6 +320,7 @@ export const sourceHistoryReplayRecordSchema = z
     graphId: identifierSchema,
     graphRevisionId: identifierSchema,
     headTree: nonEmptyStringSchema,
+    mergedTree: nonEmptyStringSchema.optional(),
     nodeId: identifierSchema,
     reason: nonEmptyStringSchema.optional(),
     replayedBy: identifierSchema.optional(),
@@ -358,6 +360,24 @@ export const sourceHistoryReplayRecordSchema = z
         message:
           "Unavailable source-history replay records must include unavailableReason.",
         path: ["unavailableReason"]
+      });
+    }
+
+    if (value.status === "merged" && !value.mergedTree) {
+      context.addIssue({
+        code: z.ZodIssueCode.custom,
+        message:
+          "Merged source-history replay records must include mergedTree.",
+        path: ["mergedTree"]
+      });
+    }
+
+    if (value.status !== "merged" && value.mergedTree) {
+      context.addIssue({
+        code: z.ZodIssueCode.custom,
+        message:
+          "Only merged source-history replay records may include mergedTree.",
+        path: ["mergedTree"]
       });
     }
   });

@@ -9,7 +9,8 @@ import type {
   RunnerJoinConfig,
   RunnerJoinStatus,
   SessionCancellationRequestRecord,
-  SourceHistoryPublicationTarget
+  SourceHistoryPublicationTarget,
+  SourceHistoryReplayStatus
 } from "@entangle/types";
 import {
   runnerJoinStatusSchema,
@@ -123,7 +124,20 @@ export type RunnerAssignmentRuntimeHandle = {
   }): Promise<{
     message?: string;
     replayId: string;
-    replayStatus: "already_in_workspace" | "replayed" | "unavailable";
+    replayStatus: SourceHistoryReplayStatus;
+    sourceHistoryId: string;
+  }>;
+  reconcileSourceHistory?(request: {
+    approvalId?: string;
+    reason?: string;
+    replayedAt?: string;
+    replayedBy?: string;
+    replayId?: string;
+    sourceHistoryId: string;
+  }): Promise<{
+    message?: string;
+    replayId: string;
+    replayStatus: SourceHistoryReplayStatus;
     sourceHistoryId: string;
   }>;
   publishWikiRepository?(request: {
@@ -331,6 +345,11 @@ export class RunnerJoinService {
       return;
     }
 
+    if (payload.eventType === "runtime.source_history.reconcile") {
+      await this.handleRuntimeSourceHistoryReconcileCommand(payload);
+      return;
+    }
+
     if (payload.eventType === "runtime.wiki.publish") {
       await this.handleRuntimeWikiPublishCommand(payload);
       return;
@@ -486,6 +505,7 @@ export class RunnerJoinService {
           | "runtime.session.cancel"
           | "runtime.source_history.publish"
           | "runtime.source_history.replay"
+          | "runtime.source_history.reconcile"
           | "runtime.start"
           | "runtime.stop"
           | "runtime.wiki.publish"
@@ -1309,6 +1329,115 @@ export class RunnerJoinService {
           error instanceof Error
             ? error.message
             : "Runtime source-history replay command failed.",
+        payload,
+        receipt: {
+          ...(payload.replayId ? { replayId: payload.replayId } : {}),
+          sourceHistoryId: payload.sourceHistoryId
+        }
+      });
+    }
+  }
+
+  private async handleRuntimeSourceHistoryReconcileCommand(
+    payload: Extract<
+      EntangleControlEvent["payload"],
+      { eventType: "runtime.source_history.reconcile" }
+    >
+  ): Promise<void> {
+    const assignment = this.resolveRuntimeCommandAssignment(payload);
+
+    if (!assignment) {
+      await this.publishRuntimeCommandFailure({
+        assignmentId: payload.assignmentId,
+        message:
+          "Runtime source-history reconcile command did not match an accepted assignment.",
+        payload,
+        receipt: {
+          ...(payload.replayId ? { replayId: payload.replayId } : {}),
+          sourceHistoryId: payload.sourceHistoryId
+        }
+      });
+      return;
+    }
+
+    await this.publishRuntimeCommandReceipt({
+      assignmentId: assignment.assignmentId,
+      ...(payload.reason ? { message: payload.reason } : {}),
+      payload,
+      receipt: {
+        ...(payload.replayId ? { replayId: payload.replayId } : {}),
+        sourceHistoryId: payload.sourceHistoryId
+      },
+      status: "received"
+    });
+
+    await this.publishObservation({
+      assignmentId: assignment.assignmentId,
+      eventType: "assignment.receipt",
+      message: payload.reason,
+      observedAt: this.now(),
+      receiptKind: "received"
+    });
+
+    const handle = this.assignmentRuntimeHandles.get(assignment.assignmentId);
+    if (!handle?.reconcileSourceHistory) {
+      await this.publishRuntimeCommandFailure({
+        assignmentId: assignment.assignmentId,
+        message:
+          "Runtime source-history reconcile command cannot be applied because the assigned runtime is not running.",
+        payload,
+        receipt: {
+          ...(payload.replayId ? { replayId: payload.replayId } : {}),
+          sourceHistoryId: payload.sourceHistoryId
+        }
+      });
+      return;
+    }
+
+    try {
+      const result = await handle.reconcileSourceHistory({
+        ...(payload.approvalId ? { approvalId: payload.approvalId } : {}),
+        ...(payload.reason ? { reason: payload.reason } : {}),
+        replayedAt: payload.issuedAt,
+        ...(payload.replayedBy ? { replayedBy: payload.replayedBy } : {}),
+        ...(payload.replayId ? { replayId: payload.replayId } : {}),
+        sourceHistoryId: payload.sourceHistoryId
+      });
+
+      if (result.replayStatus === "unavailable") {
+        await this.publishRuntimeCommandFailure({
+          assignmentId: assignment.assignmentId,
+          message:
+            result.message ??
+            `Source history '${result.sourceHistoryId}' reconcile '${result.replayId}' is unavailable.`,
+          payload,
+          receipt: {
+            replayId: result.replayId,
+            sourceHistoryId: result.sourceHistoryId
+          }
+        });
+        return;
+      }
+
+      await this.publishRuntimeCommandReceipt({
+        assignmentId: assignment.assignmentId,
+        message:
+          result.message ??
+          `Source history '${result.sourceHistoryId}' reconcile '${result.replayId}' completed.`,
+        payload,
+        receipt: {
+          replayId: result.replayId,
+          sourceHistoryId: result.sourceHistoryId
+        },
+        status: "completed"
+      });
+    } catch (error) {
+      await this.publishRuntimeCommandFailure({
+        assignmentId: assignment.assignmentId,
+        message:
+          error instanceof Error
+            ? error.message
+            : "Runtime source-history reconcile command failed.",
         payload,
         receipt: {
           ...(payload.replayId ? { replayId: payload.replayId } : {}),

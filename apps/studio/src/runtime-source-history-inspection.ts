@@ -1,6 +1,7 @@
 import type {
   RuntimeSourceHistoryPublishRequest,
   RuntimeSourceHistoryPublishResponse,
+  RuntimeSourceHistoryReconcileResponse,
   RuntimeSourceHistoryReplayRequest,
   RuntimeSourceHistoryReplayResponse
 } from "@entangle/types";
@@ -108,6 +109,12 @@ export function formatRuntimeSourceHistoryReplayRequestSummary(
   response: RuntimeSourceHistoryReplayResponse
 ): string {
   return `${response.sourceHistoryId} requested on ${response.assignmentId} (${response.commandId})`;
+}
+
+export function formatRuntimeSourceHistoryReconcileRequestSummary(
+  response: RuntimeSourceHistoryReconcileResponse
+): string {
+  return `${response.sourceHistoryId} reconcile requested on ${response.assignmentId} (${response.commandId})`;
 }
 
 export function formatRuntimeSourceHistoryPublicationRequestSummary(
