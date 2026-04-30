@@ -428,7 +428,9 @@ This repository currently contains:
   persisted turn outcomes, including `policy_denied` results when OpenCode
   one-shot CLI auto-rejects a permission request, plus bounded generic tool
   evidence from OpenCode JSON events, including tool titles, redacted input
-  summaries, output summaries, durations, and call ids, with the federated dev
+  summaries, output summaries, durations, and call ids, plus adapter-local
+  OpenCode session continuity for later turns in the same Entangle session,
+  with the federated dev
   runner image now installing pinned `opencode-ai@1.14.20` and verifying
   `opencode --version` during image build, and with host runtime inspection
   exposing a generic agent-runtime summary for effective mode, engine profile,

@@ -5457,3 +5457,14 @@ User Client JSON API after an initial participant-scoped wiki page replacement.
 The proof forwards `expectedCurrentSha256`, waits for runner-signed
 `runtime.wiki.upsert_page` receipt hashes, and verifies projected patched
 `wiki.ref` preview content without Host filesystem access.
+
+## [2026-04-29] runtime | Added OpenCode session continuity
+
+Added `references/456-opencode-session-continuity-slice.md`. The OpenCode
+adapter now stores a runner-local map from Entangle session ids to observed
+OpenCode session ids under the node engine-state workspace.
+
+Later turns for the same Entangle session pass `--session` to `opencode run`,
+so the coding engine keeps its own session context while Entangle continues to
+own graph coordination, messages, artifacts, wiki state, and User Node
+communication.

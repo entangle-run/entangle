@@ -4,7 +4,7 @@ import type {
   SpawnOptionsWithoutStdio
 } from "node:child_process";
 import { constants as fsConstants } from "node:fs";
-import { access, mkdir } from "node:fs/promises";
+import { access, mkdir, readFile, writeFile } from "node:fs/promises";
 import path from "node:path";
 import type { Readable } from "node:stream";
 import {
@@ -68,6 +68,7 @@ const maxToolSummaryObjectEntries = 20;
 const maxToolSummaryDepth = 4;
 const maxToolTitleCharacters = 240;
 const defaultOpenCodeProcessTimeoutMs = 120_000;
+const opencodeSessionMapFileName = "entangle-opencode-session-map.json";
 const opencodeAutoRejectedPermissionPattern =
   /permission requested:\s*([^(;]+?)\s*\((.*?)\);\s*auto-rejecting/i;
 const sensitiveSummaryKeyPattern =
@@ -257,6 +258,74 @@ async function prepareOpenCodeRuntime(input: {
   }
 
   return runtimePaths;
+}
+
+function buildOpenCodeSessionMapPath(runtimePaths: OpenCodeRuntimePaths): string {
+  return path.join(runtimePaths.engineStateRoot, opencodeSessionMapFileName);
+}
+
+async function readOpenCodeSessionMap(
+  runtimePaths: OpenCodeRuntimePaths
+): Promise<Record<string, string>> {
+  const mapPath = buildOpenCodeSessionMapPath(runtimePaths);
+
+  try {
+    const raw = await readFile(mapPath, "utf8");
+    const parsed = JSON.parse(raw) as unknown;
+
+    if (!isRecord(parsed)) {
+      return {};
+    }
+
+    return Object.fromEntries(
+      Object.entries(parsed).filter(
+        (entry): entry is [string, string] =>
+          typeof entry[1] === "string" && entry[1].trim().length > 0
+      )
+    );
+  } catch (error) {
+    if (
+      isRecord(error) &&
+      typeof error.code === "string" &&
+      error.code === "ENOENT"
+    ) {
+      return {};
+    }
+
+    throw new AgentEngineExecutionError(
+      "OpenCode session continuity map could not be read.",
+      {
+        cause: error,
+        classification: "configuration_error"
+      }
+    );
+  }
+}
+
+async function findMappedOpenCodeSessionId(input: {
+  entangleSessionId: string;
+  runtimePaths: OpenCodeRuntimePaths;
+}): Promise<string | undefined> {
+  const sessionMap = await readOpenCodeSessionMap(input.runtimePaths);
+  const mappedSessionId = sessionMap[input.entangleSessionId]?.trim();
+
+  return mappedSessionId && mappedSessionId.length > 0
+    ? mappedSessionId
+    : undefined;
+}
+
+async function writeMappedOpenCodeSessionId(input: {
+  entangleSessionId: string;
+  openCodeSessionId: string;
+  runtimePaths: OpenCodeRuntimePaths;
+}): Promise<void> {
+  const sessionMap = await readOpenCodeSessionMap(input.runtimePaths);
+  sessionMap[input.entangleSessionId] = input.openCodeSessionId;
+  await writeFile(
+    buildOpenCodeSessionMapPath(input.runtimePaths),
+    `${JSON.stringify(sessionMap, null, 2)}\n`,
+    "utf8"
+  );
 }
 
 export function buildOpenCodePrompt(request: AgentEngineTurnRequest): string {
@@ -909,6 +978,7 @@ async function probeOpenCodeServerHealth(input: {
 
 function buildOpenCodeArgs(input: {
   context: EffectiveRuntimeContext;
+  mappedSessionId?: string | undefined;
   request: AgentEngineTurnRequest;
   workspace: string;
 }): string[] {
@@ -927,6 +997,10 @@ function buildOpenCodeArgs(input: {
 
   if (baseUrl) {
     args.push("--attach", baseUrl);
+  }
+
+  if (input.mappedSessionId) {
+    args.push("--session", input.mappedSessionId);
   }
 
   if (agent) {
@@ -995,8 +1069,13 @@ export function createOpenCodeAgentEngine(input: {
         context: input.runtimeContext,
         workspace
       });
+      const mappedSessionId = await findMappedOpenCodeSessionId({
+        entangleSessionId: normalizedRequest.sessionId,
+        runtimePaths
+      });
       const args = buildOpenCodeArgs({
         context: input.runtimeContext,
+        ...(mappedSessionId ? { mappedSessionId } : {}),
         request: normalizedRequest,
         workspace
       });
@@ -1058,6 +1137,14 @@ export function createOpenCodeAgentEngine(input: {
         ...(options?.abortSignal ? { abortSignal: options.abortSignal } : {}),
         timeoutMs: processTimeoutMs
       });
+
+      if (output.engineSessionId) {
+        await writeMappedOpenCodeSessionId({
+          entangleSessionId: normalizedRequest.sessionId,
+          openCodeSessionId: output.engineSessionId,
+          runtimePaths
+        });
+      }
 
       const rejectedPermissions = output.permissionObservations.filter(
         (permissionObservation) =>

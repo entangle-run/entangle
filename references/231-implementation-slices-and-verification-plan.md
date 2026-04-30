@@ -776,10 +776,14 @@ Implementation record:
 - [289-opencode-server-health-probe-slice.md](289-opencode-server-health-probe-slice.md)
   verifies attached OpenCode server health and version before launching
   `opencode run --attach`.
+- [456-opencode-session-continuity-slice.md](456-opencode-session-continuity-slice.md)
+  maps Entangle session ids to adapter-local OpenCode session ids and passes
+  `--session` on later turns so node-local coding context carries forward.
 
 Verification:
 
 - OpenCode adapter tests using mocked server/SDK;
+- session continuity mapping tests;
 - permission bridge tests;
 - cancellation tests;
 - source/artifact/wiki observation tests;

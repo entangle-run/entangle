@@ -1,5 +1,5 @@
 import { EventEmitter } from "node:events";
-import { rm } from "node:fs/promises";
+import { readFile, rm, writeFile } from "node:fs/promises";
 import path from "node:path";
 import { PassThrough } from "node:stream";
 import { afterEach, describe, expect, it, vi } from "vitest";
@@ -302,6 +302,69 @@ describe("OpenCode runner engine adapter", () => {
     });
     expect(mock.calls[1]!.readStdin()).toContain(
       "Review the current workspace"
+    );
+    await expect(
+      readFile(
+        path.join(
+          fixture.context.workspace.engineStateRoot!,
+          "entangle-opencode-session-map.json"
+        ),
+        "utf8"
+      )
+    ).resolves.toContain('"session-alpha": "opencode-session"');
+  });
+
+  it("continues a mapped OpenCode session for later turns", async () => {
+    const fixture = await createRuntimeFixture();
+    const sessionMapPath = path.join(
+      fixture.context.workspace.engineStateRoot!,
+      "entangle-opencode-session-map.json"
+    );
+    await writeFile(
+      sessionMapPath,
+      `${JSON.stringify(
+        {
+          "session-alpha": "previous-opencode-session"
+        },
+        null,
+        2
+      )}\n`,
+      "utf8"
+    );
+    const mock = createMockOpenCodeSpawn({
+      processes: [
+        {
+          stdout: "0.10.0\n"
+        },
+        {
+          stdoutLines: [
+            JSON.stringify({
+              part: {
+                text: "Continued the existing engine session."
+              },
+              sessionID: "next-opencode-session",
+              type: "text"
+            })
+          ]
+        }
+      ]
+    });
+    const engine = createOpenCodeAgentEngine({
+      runtimeContext: fixture.context,
+      spawn: mock.spawn
+    });
+
+    const result = await engine.executeTurn(buildTurnRequest());
+
+    expect(result).toMatchObject({
+      assistantMessages: ["Continued the existing engine session."],
+      engineSessionId: "next-opencode-session"
+    });
+    expect(mock.calls[1]!.args).toEqual(
+      expect.arrayContaining(["--session", "previous-opencode-session"])
+    );
+    await expect(readFile(sessionMapPath, "utf8")).resolves.toContain(
+      '"session-alpha": "next-opencode-session"'
     );
   });
 
