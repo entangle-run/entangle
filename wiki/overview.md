@@ -212,6 +212,11 @@ The most accurate current description is:
   through a completed projected `runtime.source_history.publish` command
   receipt; target-specific publication requests must match a visible
   `source_history_publication` resource in that conversation;
+- the running User Client can now request runner-owned source-history
+  reconcile for visible plain `source_history` resources in the selected User
+  Node conversation, forwarding `approvalId` when present; target-specific
+  `source_history_publication` resources are intentionally not accepted for
+  reconcile because reconcile can mutate the runner-owned source workspace;
 - Host now returns an effective proposal id for every artifact source-change
   proposal acknowledgement and sends that same id to the runner as the
   candidate id to create;
@@ -1157,9 +1162,9 @@ The current implementation-truth audit now lives in
   Client visible source-history publication requests plus target-specific
   source-history/wiki publication visibility checks plus explicit
   runner-owned artifact/source/wiki command completion receipts plus User
-  Client and Studio wiki page upsert; the next git gaps are richer
-  collaborative wiki patch/diff semantics and repository lifecycle behavior,
-  source-history merge/reconcile workflows, and explicit fallback or
+  Client and Studio wiki page upsert plus User Client source-history reconcile;
+  the next git gaps are richer collaborative wiki patch/diff semantics,
+  repository lifecycle behavior, and explicit fallback or
   replication behavior,
   while the next deployment-grade gap is
   non-disposable local-profile upgrade and repair behavior for older Gitea

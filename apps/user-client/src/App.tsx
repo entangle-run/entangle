@@ -30,6 +30,7 @@ import {
   publishSourceHistory,
   publishUserMessage,
   publishWikiRepository,
+  reconcileSourceHistory,
   renderArtifactLocator,
   reviewSourceChangeCandidate,
   restoreArtifact,
@@ -637,9 +638,11 @@ function SourceHistoryResourceCards({
   state?: UserClientState | undefined;
 }) {
   const [publishReason, setPublishReason] = useState("");
+  const [reconcileReason, setReconcileReason] = useState("");
   const [retryFailedPublication, setRetryFailedPublication] = useState(false);
   const [status, setStatus] = useState<string | undefined>();
   const resource = message.approval?.resource;
+  const canReconcile = resource?.kind === "source_history";
   const refs =
     resource?.kind === "source_history" ||
     resource?.kind === "source_history_publication"
@@ -687,6 +690,32 @@ function SourceHistoryResourceCards({
     }
   }
 
+  async function requestReconcile(input: {
+    sourceHistoryId: string;
+  }): Promise<void> {
+    setStatus(`requesting reconcile ${input.sourceHistoryId}`);
+
+    try {
+      const response = await reconcileSourceHistory({
+        ...(message.approval?.approvalId
+          ? { approvalId: message.approval.approvalId }
+          : {}),
+        baseUrl,
+        conversationId: message.conversationId,
+        nodeId: message.fromNodeId,
+        ...(reconcileReason.trim() ? { reason: reconcileReason.trim() } : {}),
+        sourceHistoryId: input.sourceHistoryId
+      });
+
+      setStatus(`source-history reconcile requested ${response.commandId}`);
+      await onRefresh();
+    } catch (error) {
+      setStatus(
+        error instanceof Error ? error.message : "Source-history reconcile failed."
+      );
+    }
+  }
+
   return (
     <div className="artifact-list">
       {refs.map((ref) => {
@@ -721,6 +750,18 @@ function SourceHistoryResourceCards({
             >
               Publish Source History
             </button>
+            {canReconcile ? (
+              <button
+                onClick={() =>
+                  void requestReconcile({
+                    sourceHistoryId: ref.sourceHistoryId
+                  })
+                }
+                type="button"
+              >
+                Reconcile Source History
+              </button>
+            ) : null}
           </div>
         );
       })}
@@ -731,6 +772,14 @@ function SourceHistoryResourceCards({
           placeholder="Publication reason"
           value={publishReason}
         />
+        {canReconcile ? (
+          <input
+            aria-label="Source-history reconcile reason"
+            onChange={(event) => setReconcileReason(event.target.value)}
+            placeholder="Reconcile reason"
+            value={reconcileReason}
+          />
+        ) : null}
         <label className="inline-checkbox">
           <input
             checked={retryFailedPublication}

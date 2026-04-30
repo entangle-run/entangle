@@ -5399,3 +5399,15 @@ workspace, and source-history head trees, applies clean merged trees in the
 runner-owned workspace, records `merged` replay records with `mergedTree`, and
 emits `source_history.replayed` projection evidence plus command receipts.
 Host API, host-client, CLI, and Studio now expose the reconcile request path.
+
+## [2026-04-29] user-node | Added User Client source-history reconcile
+
+Added `references/451-user-client-source-history-reconcile-slice.md`. The
+running User Client now exposes source-history reconcile for selected
+conversations that contain a visible plain `source_history` approval resource
+from the target runtime node.
+
+The Human Interface Runtime forwards the request through Host with the User
+Node as requester and preserves `approvalId` when present. Target-specific
+`source_history_publication` resources remain limited to publication so a
+publication approval cannot authorize source workspace mutation.

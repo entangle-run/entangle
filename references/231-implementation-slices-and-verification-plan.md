@@ -519,6 +519,11 @@ Current status:
   Host with `requestedBy` set to the User Node id; target-specific requests now
   require a matching visible `source_history_publication` resource instead of
   granting arbitrary target publication from a generic source-history resource;
+- the running User Client can now request runner-owned source-history reconcile
+  for visible plain `source_history` resources, forwarding the visible
+  `approvalId` when present and deliberately rejecting
+  `source_history_publication` resources for reconcile so publication approval
+  cannot authorize source workspace mutation;
 - Host now returns an effective proposal id for every artifact source-change
   proposal request and sends that same id to the runner, so request
   acknowledgements identify the candidate id to follow;
@@ -974,6 +979,10 @@ Current status:
   JSON route with the target encoded by the visible
   `source_history_publication` resource, and waits for the completed projected
   `runtime.source_history.publish` command receipt;
+- User Client source-history reconcile is covered at the Human Interface
+  Runtime boundary with JSON and fallback HTML tests; the full process proof
+  should add that path once it can drive an agent-emitted `source_history`
+  approval record and an approved User Node response before reconcile;
 - Host-generated artifact source-change proposal ids now derive from the
   command id when omitted by callers and are returned in the response
   acknowledgement as the runner candidate id to follow;

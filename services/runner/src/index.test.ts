@@ -1429,6 +1429,36 @@ describe("runner runtime context", () => {
                   toPubkey: runnerPublicKey,
                   turnId: "turn-source-history",
                   userNodeId: "user-main"
+                },
+                {
+                  approval: {
+                    approvalId: "approval-source-history-reconcile",
+                    approverNodeIds: ["user-main"],
+                    operation: "source_application",
+                    resource: {
+                      id: "source-history-turn-alpha",
+                      kind: "source_history",
+                      label: "source-history-turn-alpha"
+                    }
+                  },
+                  conversationId: "conversation-alpha",
+                  createdAt: "2026-04-26T12:02:50.000Z",
+                  direction: "inbound",
+                  eventId:
+                    "acacacacacacacacacacacacacacacacacacacacacacacacacacacacacacacac",
+                  fromNodeId: "worker-it",
+                  fromPubkey: remotePublicKey,
+                  messageType: "approval.request",
+                  peerNodeId: "worker-it",
+                  publishedRelays: [],
+                  relayUrls: [],
+                  schemaVersion: "1",
+                  sessionId: "session-alpha",
+                  summary: "Review source-history reconcile.",
+                  toNodeId: "user-main",
+                  toPubkey: runnerPublicKey,
+                  turnId: "turn-source-history-reconcile",
+                  userNodeId: "user-main"
                 }
               ],
               userNodeId: "user-main"
@@ -1706,6 +1736,24 @@ describe("runner runtime context", () => {
               commandId: "cmd-source-history-publish-alpha",
               nodeId: "worker-it",
               requestedAt: "2026-04-26T12:06:45.000Z",
+              sourceHistoryId: "source-history-turn-alpha",
+              status: "requested"
+            })
+          );
+          return;
+        }
+
+        if (
+          request.method === "POST" &&
+          request.url ===
+            "/v1/runtimes/worker-it/source-history/source-history-turn-alpha/reconcile"
+        ) {
+          response.end(
+            JSON.stringify({
+              assignmentId: "assignment-alpha",
+              commandId: "cmd-source-history-reconcile-alpha",
+              nodeId: "worker-it",
+              requestedAt: "2026-04-26T12:06:50.000Z",
               sourceHistoryId: "source-history-turn-alpha",
               status: "requested"
             })
@@ -2253,6 +2301,41 @@ describe("runner runtime context", () => {
         userNodeId: "user-main"
       });
 
+      const jsonSourceHistoryReconcileResponse = await fetch(
+        new URL("/api/source-history/reconcile", handle.clientUrl),
+        {
+          body: JSON.stringify({
+            approvalId: "approval-source-history-reconcile",
+            conversationId: "conversation-alpha",
+            nodeId: "worker-it",
+            reason: "Reconcile reviewed source history.",
+            replayId: "reconcile-source-history-turn-alpha",
+            sourceHistoryId: "source-history-turn-alpha"
+          }),
+          headers: {
+            "content-type": "application/json"
+          },
+          method: "POST"
+        }
+      );
+      expect(jsonSourceHistoryReconcileResponse.status).toBe(200);
+      await expect(
+        jsonSourceHistoryReconcileResponse.json()
+      ).resolves.toMatchObject({
+        commandId: "cmd-source-history-reconcile-alpha",
+        nodeId: "worker-it",
+        source: "runtime",
+        sourceHistoryId: "source-history-turn-alpha",
+        sourceHistoryRefs: [
+          {
+            nodeId: "worker-it",
+            sourceHistoryId: "source-history-turn-alpha"
+          }
+        ],
+        status: "requested",
+        userNodeId: "user-main"
+      });
+
       const jsonMismatchedSourceHistoryPublishResponse = await fetch(
         new URL("/api/source-history/publish", handle.clientUrl),
         {
@@ -2367,6 +2450,26 @@ describe("runner runtime context", () => {
       expect(jsonUnscopedSourceHistoryPublishResponse.status).toBe(400);
       await expect(
         jsonUnscopedSourceHistoryPublishResponse.json()
+      ).resolves.toMatchObject({
+        error: "Runtime node, source-history id, and conversation are required."
+      });
+
+      const jsonUnscopedSourceHistoryReconcileResponse = await fetch(
+        new URL("/api/source-history/reconcile", handle.clientUrl),
+        {
+          body: JSON.stringify({
+            nodeId: "worker-it",
+            sourceHistoryId: "source-history-turn-alpha"
+          }),
+          headers: {
+            "content-type": "application/json"
+          },
+          method: "POST"
+        }
+      );
+      expect(jsonUnscopedSourceHistoryReconcileResponse.status).toBe(400);
+      await expect(
+        jsonUnscopedSourceHistoryReconcileResponse.json()
       ).resolves.toMatchObject({
         error: "Runtime node, source-history id, and conversation are required."
       });
@@ -2516,14 +2619,18 @@ describe("runner runtime context", () => {
       expect(pageBody).toContain("approval-alpha");
       expect(pageBody).toContain("approval-wiki");
       expect(pageBody).toContain("approval-source-history");
+      expect(pageBody).toContain("approval-source-history-reconcile");
       expect(pageBody).toContain(
         "source_history_publication:source-history-turn-alpha|gitea|team-alpha|graph-alpha-public"
       );
+      expect(pageBody).toContain("source_history:source-history-turn-alpha");
       expect(pageBody).toContain(
         "publication target gitea/team-alpha/graph-alpha-public"
       );
       expect(pageBody).toContain("Publish source history");
       expect(pageBody).toContain("/source-history/publish");
+      expect(pageBody).toContain("Reconcile source history");
+      expect(pageBody).toContain("/source-history/reconcile");
       expect(pageBody).toContain(
         "wiki_repository_publication:worker-it|gitea|team-alpha|wiki-public"
       );
@@ -2666,6 +2773,29 @@ describe("runner runtime context", () => {
       expect(sourceHistoryPublishResponse.status).toBe(200);
       expect(sourceHistoryPublishBody).toContain(
         "Requested source-history publication cmd-source-history-publish-alpha"
+      );
+
+      const sourceHistoryReconcileResponse = await fetch(
+        new URL("/source-history/reconcile", handle.clientUrl),
+        {
+          body: new URLSearchParams({
+            approvalId: "approval-source-history-reconcile",
+            conversationId: "conversation-alpha",
+            nodeId: "worker-it",
+            reason: "Reconcile reviewed source history.",
+            sourceHistoryId: "source-history-turn-alpha"
+          }),
+          headers: {
+            "content-type": "application/x-www-form-urlencoded"
+          },
+          method: "POST"
+        }
+      );
+      const sourceHistoryReconcileBody =
+        await sourceHistoryReconcileResponse.text();
+      expect(sourceHistoryReconcileResponse.status).toBe(200);
+      expect(sourceHistoryReconcileBody).toContain(
+        "Requested source-history reconcile cmd-source-history-reconcile-alpha"
       );
 
       const publishResponse = await fetch(new URL("/messages", handle.clientUrl), {
@@ -2874,6 +3004,23 @@ describe("runner runtime context", () => {
         }
       });
     }
+    const sourceHistoryReconcileRequests = hostRequests.filter(
+      (request) =>
+        request.method === "POST" &&
+        request.url ===
+          "/v1/runtimes/worker-it/source-history/source-history-turn-alpha/reconcile"
+    );
+    expect(sourceHistoryReconcileRequests).toHaveLength(2);
+    for (const request of sourceHistoryReconcileRequests) {
+      expect(request).toMatchObject({
+        authorization: "Bearer host-secret"
+      });
+      expect(request.body).toMatchObject({
+        approvalId: "approval-source-history-reconcile",
+        reason: "Reconcile reviewed source history.",
+        replayedBy: "user-main"
+      });
+    }
     const publishRequest = hostRequests.find(
       (request) =>
         request.method === "POST" &&
@@ -2920,7 +3067,7 @@ describe("runner runtime context", () => {
       conversationId: "conversation-alpha",
       messageType: "read.receipt",
       parentMessageId:
-        "abababababababababababababababababababababababababababababababab",
+        "acacacacacacacacacacacacacacacacacacacacacacacacacacacacacacacac",
       responsePolicy: {
         closeOnResult: true,
         maxFollowups: 0,

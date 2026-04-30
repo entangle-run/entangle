@@ -123,7 +123,10 @@ source-history approval request to the User Node, asks the running User Client
 to request source-history publication for that visible resource, and verifies
 both projected command receipts. Target-specific source-history publication
 requests from the User Client must match the `source_history_publication`
-resource visible in the selected User Node conversation.
+resource visible in the selected User Node conversation. The running User
+Client can also request source-history reconcile for visible plain
+`source_history` resources; publication-target resources are not accepted for
+reconcile because reconcile can mutate the runner-owned source workspace.
 The smoke still runs without live model credentials. Live OpenCode
 behavior and real-provider credentials remain manual/operator validation; the
 OpenAI-compatible agent-engine HTTP boundary is now covered by a deterministic

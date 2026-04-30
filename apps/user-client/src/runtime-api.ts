@@ -8,6 +8,7 @@ import type {
   RuntimeSourceChangeCandidateFilePreviewResponse,
   RuntimeSourceChangeCandidateInspectionResponse,
   RuntimeSourceHistoryPublishResponse,
+  RuntimeSourceHistoryReconcileResponse,
   RuntimeWikiPublishResponse,
   RuntimeWikiUpsertPageResponse,
   SourceChangeRefProjectionRecord,
@@ -123,6 +124,13 @@ export type UserClientWikiPageUpsertResponse = RuntimeWikiUpsertPageResponse & {
 
 export type UserClientSourceHistoryPublishResponse =
   RuntimeSourceHistoryPublishResponse & {
+    source: "runtime";
+    sourceHistoryRefs: SourceHistoryRefProjectionRecord[];
+    userNodeId: string;
+  };
+
+export type UserClientSourceHistoryReconcileResponse =
+  RuntimeSourceHistoryReconcileResponse & {
     source: "runtime";
     sourceHistoryRefs: SourceHistoryRefProjectionRecord[];
     userNodeId: string;
@@ -468,6 +476,37 @@ export function publishSourceHistory(input: {
           retryFailedPublication: input.retryFailedPublication ?? false,
           sourceHistoryId: input.sourceHistoryId,
           ...(input.target ? { target: input.target } : {})
+        }),
+        headers: {
+          "content-type": "application/json"
+        },
+        method: "POST"
+      }
+    }
+  );
+}
+
+export function reconcileSourceHistory(input: {
+  approvalId?: string | undefined;
+  baseUrl: string;
+  conversationId: string;
+  nodeId: string;
+  reason?: string | undefined;
+  replayId?: string | undefined;
+  sourceHistoryId: string;
+}): Promise<UserClientSourceHistoryReconcileResponse> {
+  return fetchJson<UserClientSourceHistoryReconcileResponse>(
+    "/api/source-history/reconcile",
+    {
+      baseUrl: input.baseUrl,
+      init: {
+        body: JSON.stringify({
+          ...(input.approvalId ? { approvalId: input.approvalId } : {}),
+          conversationId: input.conversationId,
+          nodeId: input.nodeId,
+          ...(input.reason ? { reason: input.reason } : {}),
+          ...(input.replayId ? { replayId: input.replayId } : {}),
+          sourceHistoryId: input.sourceHistoryId
         }),
         headers: {
           "content-type": "application/json"

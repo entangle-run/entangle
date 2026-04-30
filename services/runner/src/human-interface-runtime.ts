@@ -19,6 +19,7 @@ import type {
   RuntimeSourceChangeCandidateFilePreviewResponse,
   RuntimeSourceChangeCandidateInspectionResponse,
   RuntimeSourceHistoryPublishResponse,
+  RuntimeSourceHistoryReconcileResponse,
   RuntimeWikiPublishResponse,
   RuntimeWikiUpsertPageResponse,
   SourceChangeRefProjectionRecord,
@@ -42,6 +43,7 @@ import {
   runtimeSourceChangeCandidateDiffResponseSchema,
   runtimeSourceChangeCandidateFilePreviewResponseSchema,
   runtimeSourceHistoryPublishResponseSchema,
+  runtimeSourceHistoryReconcileResponseSchema,
   runtimeWikiPublishResponseSchema,
   runtimeWikiUpsertPageResponseSchema,
   sourceHistoryPublicationTargetSchema,
@@ -190,6 +192,22 @@ type UserClientSourceHistoryPublishRequest = {
 
 type UserClientSourceHistoryPublishResponse =
   RuntimeSourceHistoryPublishResponse & {
+    source: "runtime";
+    sourceHistoryRefs: SourceHistoryRefProjectionRecord[];
+    userNodeId: string;
+  };
+
+type UserClientSourceHistoryReconcileRequest = {
+  approvalId?: unknown;
+  conversationId?: unknown;
+  nodeId?: unknown;
+  reason?: unknown;
+  replayId?: unknown;
+  sourceHistoryId?: unknown;
+};
+
+type UserClientSourceHistoryReconcileResponse =
+  RuntimeSourceHistoryReconcileResponse & {
     source: "runtime";
     sourceHistoryRefs: SourceHistoryRefProjectionRecord[];
     userNodeId: string;
@@ -1112,6 +1130,7 @@ async function resolveUserClientVisibleWikiPage(input: {
 }
 
 async function resolveUserClientVisibleSourceHistoryRefs(input: {
+  allowPublicationResources?: boolean | undefined;
   conversationId?: string | undefined;
   hostApi?: RunnerJoinHostApi | undefined;
   nodeId: string;
@@ -1121,7 +1140,7 @@ async function resolveUserClientVisibleSourceHistoryRefs(input: {
 }): Promise<UserClientVisibleSourceHistoryRefs> {
   if (!input.conversationId) {
     return {
-      error: "Conversation id is required for source-history publication.",
+      error: "Conversation id is required for source-history operation.",
       statusCode: 400
     };
   }
@@ -1145,7 +1164,8 @@ async function resolveUserClientVisibleSourceHistoryRefs(input: {
     return message.direction === "inbound" &&
       message.fromNodeId === input.nodeId &&
       (resource?.kind === "source_history" ||
-        resource?.kind === "source_history_publication")
+        (input.allowPublicationResources !== false &&
+          resource?.kind === "source_history_publication"))
       ? [resource]
       : [];
   });
@@ -2030,6 +2050,76 @@ async function requestRuntimeSourceHistoryPublication(input: {
   }
 }
 
+async function requestRuntimeSourceHistoryReconcile(input: {
+  approvalId?: string | undefined;
+  hostApi?: RunnerJoinHostApi | undefined;
+  nodeId: string;
+  reason?: string | undefined;
+  replayId?: string | undefined;
+  sourceHistoryId: string;
+  sourceHistoryRefs: SourceHistoryRefProjectionRecord[];
+  userNodeId: string;
+}): Promise<{
+  detail?: UserClientSourceHistoryReconcileResponse;
+  error?: string;
+  statusCode?: number;
+}> {
+  if (!input.hostApi) {
+    return {
+      error: "Host API is not configured for source-history reconcile.",
+      statusCode: 409
+    };
+  }
+
+  try {
+    const response = await fetch(
+      new URL(
+        `/v1/runtimes/${encodeURIComponent(input.nodeId)}/source-history/${encodeURIComponent(input.sourceHistoryId)}/reconcile`,
+        input.hostApi.baseUrl
+      ),
+      {
+        body: JSON.stringify({
+          ...(input.approvalId ? { approvalId: input.approvalId } : {}),
+          ...(input.reason ? { reason: input.reason } : {}),
+          ...(input.replayId ? { replayId: input.replayId } : {}),
+          replayedBy: input.userNodeId
+        }),
+        headers: {
+          ...buildHostApiHeaders(input.hostApi),
+          "content-type": "application/json"
+        },
+        method: "POST"
+      }
+    );
+
+    if (!response.ok) {
+      return {
+        error: `Host source-history reconcile request failed with HTTP ${response.status}.`,
+        statusCode: response.status
+      };
+    }
+
+    return {
+      detail: {
+        ...runtimeSourceHistoryReconcileResponseSchema.parse(
+          await response.json()
+        ),
+        source: "runtime",
+        sourceHistoryRefs: input.sourceHistoryRefs,
+        userNodeId: input.userNodeId
+      }
+    };
+  } catch (error) {
+    return {
+      error:
+        error instanceof Error
+          ? error.message
+          : "Host source-history reconcile request failed.",
+      statusCode: 502
+    };
+  }
+}
+
 async function buildUserClientSourceChangeDiff(input: {
   candidateId: string;
   hostApi?: RunnerJoinHostApi | undefined;
@@ -2749,6 +2839,7 @@ function renderApprovalResource(
       : "";
 
   return `<div class="message-meta">resource ${escapeHtml(resourceLabel)}${resource.label ? ` - ${escapeHtml(resource.label)}` : ""}</div>${renderSourceChangeSummary(sourceChangeRef)}${renderSourceHistoryRefCards({
+    approvalId: message.approval?.approvalId,
     conversationId: message.conversationId,
     nodeId: message.fromNodeId,
     refs: relatedSourceHistoryRefs,
@@ -2834,6 +2925,7 @@ function renderArtifactRefs(message: UserNodeMessageRecord): string {
 }
 
 function renderSourceHistoryRefCards(input: {
+  approvalId?: string | undefined;
   conversationId: string;
   nodeId: string;
   refs: SourceHistoryRefProjectionRecord[];
@@ -2875,6 +2967,20 @@ function renderSourceHistoryRefCards(input: {
             </label>
             <button type="submit">Publish source history</button>
           </form>
+          ${
+            input.resource.kind === "source_history"
+              ? `<form class="artifact-proposal-actions" method="post" action="/source-history/reconcile">
+            <input type="hidden" name="nodeId" value="${escapeHtml(input.nodeId)}" />
+            <input type="hidden" name="sourceHistoryId" value="${escapeHtml(ref.sourceHistoryId)}" />
+            <input type="hidden" name="conversationId" value="${escapeHtml(input.conversationId)}" />
+            ${input.approvalId ? `<input type="hidden" name="approvalId" value="${escapeHtml(input.approvalId)}" />` : ""}
+            <label>Reason
+              <input name="reason" placeholder="why this source history should be reconciled" />
+            </label>
+            <button type="submit">Reconcile source history</button>
+          </form>`
+              : ""
+          }
         </div>`;
       })
       .join("")}
@@ -4281,6 +4387,101 @@ export async function startHumanInterfaceRuntime(input: {
       }
 
       if (
+        request.method === "POST" &&
+        requestUrl.pathname === "/api/source-history/reconcile"
+      ) {
+        let reconcileRequest: UserClientSourceHistoryReconcileRequest;
+
+        try {
+          reconcileRequest =
+            (await readRequestJson(request)) as UserClientSourceHistoryReconcileRequest;
+        } catch (error) {
+          writeJson(response, 400, {
+            error:
+              error instanceof Error
+                ? error.message
+                : "Source-history reconcile request is invalid."
+          });
+          return;
+        }
+
+        const conversationId =
+          typeof reconcileRequest.conversationId === "string"
+            ? reconcileRequest.conversationId.trim()
+            : "";
+        const nodeId =
+          typeof reconcileRequest.nodeId === "string"
+            ? reconcileRequest.nodeId.trim()
+            : "";
+        const reason =
+          typeof reconcileRequest.reason === "string" &&
+          reconcileRequest.reason.trim().length > 0
+            ? reconcileRequest.reason.trim()
+            : undefined;
+        const approvalId =
+          typeof reconcileRequest.approvalId === "string" &&
+          reconcileRequest.approvalId.trim().length > 0
+            ? reconcileRequest.approvalId.trim()
+            : undefined;
+        const replayId =
+          typeof reconcileRequest.replayId === "string" &&
+          reconcileRequest.replayId.trim().length > 0
+            ? reconcileRequest.replayId.trim()
+            : undefined;
+        const sourceHistoryId =
+          typeof reconcileRequest.sourceHistoryId === "string"
+            ? reconcileRequest.sourceHistoryId.trim()
+            : "";
+
+        if (!nodeId || !sourceHistoryId || !conversationId) {
+          writeJson(response, 400, {
+            error:
+              "Runtime node, source-history id, and conversation are required."
+          });
+          return;
+        }
+
+        const visibleSourceHistoryRefs =
+          await resolveUserClientVisibleSourceHistoryRefs({
+            allowPublicationResources: false,
+            conversationId,
+            hostApi: input.hostApi,
+            nodeId,
+            sourceHistoryId,
+            userNodeId: input.context.binding.node.nodeId
+          });
+
+        if ("error" in visibleSourceHistoryRefs) {
+          writeJson(response, visibleSourceHistoryRefs.statusCode, {
+            error: visibleSourceHistoryRefs.error
+          });
+          return;
+        }
+
+        const reconcile = await requestRuntimeSourceHistoryReconcile({
+          ...(approvalId ? { approvalId } : {}),
+          hostApi: input.hostApi,
+          nodeId,
+          reason,
+          ...(replayId ? { replayId } : {}),
+          sourceHistoryId,
+          sourceHistoryRefs: visibleSourceHistoryRefs.sourceHistoryRefs,
+          userNodeId: input.context.binding.node.nodeId
+        });
+
+        if (reconcile.error || !reconcile.detail) {
+          writeJson(response, reconcile.statusCode ?? 502, {
+            error:
+              reconcile.error ?? "Source-history reconcile request failed."
+          });
+          return;
+        }
+
+        writeJson(response, 200, reconcile.detail);
+        return;
+      }
+
+      if (
         request.method === "GET" &&
         requestUrl.pathname === "/api/source-change-candidates/diff"
       ) {
@@ -4974,6 +5175,114 @@ export async function startHumanInterfaceRuntime(input: {
                 error instanceof Error
                   ? error.message
                   : "Source-history publication request failed.",
+              selectedConversationId: selectedConversationIdForError
+            })
+          );
+        }
+        return;
+      }
+
+      if (
+        request.method === "POST" &&
+        requestUrl.pathname === "/source-history/reconcile"
+      ) {
+        let selectedConversationIdForError: string | undefined;
+
+        try {
+          const form = new URLSearchParams(await readRequestBody(request));
+          const conversationId = form.get("conversationId")?.trim() ?? "";
+          const nodeId = form.get("nodeId")?.trim() ?? "";
+          const reason = form.get("reason")?.trim() || undefined;
+          const approvalId = form.get("approvalId")?.trim() || undefined;
+          const sourceHistoryId = form.get("sourceHistoryId")?.trim() ?? "";
+          selectedConversationIdForError = conversationId;
+
+          if (!nodeId || !sourceHistoryId || !conversationId) {
+            writeHtml(
+              response,
+              400,
+              await renderHome({
+                context: input.context,
+                hostApi: input.hostApi,
+                notice:
+                  "Runtime node, source-history id, and conversation are required.",
+                selectedConversationId: conversationId
+              })
+            );
+            return;
+          }
+
+          const visibleSourceHistoryRefs =
+            await resolveUserClientVisibleSourceHistoryRefs({
+              allowPublicationResources: false,
+              conversationId,
+              hostApi: input.hostApi,
+              nodeId,
+              sourceHistoryId,
+              userNodeId: input.context.binding.node.nodeId
+            });
+
+          if ("error" in visibleSourceHistoryRefs) {
+            writeHtml(
+              response,
+              visibleSourceHistoryRefs.statusCode,
+              await renderHome({
+                context: input.context,
+                hostApi: input.hostApi,
+                notice: visibleSourceHistoryRefs.error,
+                selectedConversationId: conversationId
+              })
+            );
+            return;
+          }
+
+          const reconcile = await requestRuntimeSourceHistoryReconcile({
+            ...(approvalId ? { approvalId } : {}),
+            hostApi: input.hostApi,
+            nodeId,
+            reason,
+            sourceHistoryId,
+            sourceHistoryRefs: visibleSourceHistoryRefs.sourceHistoryRefs,
+            userNodeId: input.context.binding.node.nodeId
+          });
+
+          if (reconcile.error || !reconcile.detail) {
+            writeHtml(
+              response,
+              reconcile.statusCode ?? 502,
+              await renderHome({
+                context: input.context,
+                hostApi: input.hostApi,
+                notice:
+                  reconcile.error ??
+                  "Source-history reconcile request failed.",
+                selectedConversationId: conversationId
+              })
+            );
+            return;
+          }
+
+          writeHtml(
+            response,
+            200,
+            await renderHome({
+              context: input.context,
+              hostApi: input.hostApi,
+              notice: `Requested source-history reconcile ${reconcile.detail.commandId} for ${reconcile.detail.sourceHistoryId}.`,
+              selectedConversationId: conversationId
+            })
+          );
+        } catch (error) {
+          writeHtml(
+            response,
+            500,
+            await renderHome({
+              context: input.context,
+              hostApi: input.hostApi,
+              notice:
+                error instanceof Error
+                  ? error.message
+                  : "Source-history reconcile request failed.",
               selectedConversationId: selectedConversationIdForError
             })
           );

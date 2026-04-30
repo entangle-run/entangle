@@ -139,6 +139,8 @@ Findings:
 
 ## Open Questions
 
-- Whether User Client participant surfaces should request reconcile directly
-  from visible source-history resources, or whether reconcile should remain an
-  operator-only repair workflow until collaborative conflict UI exists.
+- Resolved by
+  [451-user-client-source-history-reconcile-slice.md](451-user-client-source-history-reconcile-slice.md):
+  User Client participant surfaces may request reconcile directly, but only for
+  visible plain `source_history` resources. Target-specific
+  `source_history_publication` resources remain limited to publication.

@@ -197,13 +197,16 @@ same participant boundary, and the process-runner smoke proves that path with
 a signed builder approval request and a completed projected
 `runtime.source_history.publish` command receipt. Target-specific participant
 requests now require the selected conversation to contain a matching
-`source_history_publication` resource. Host now returns an
-effective proposal id even when callers omit one, and sends that same id in the
-runner control payload so acknowledgements can be followed to the projected
-candidate. The running User Client can now also request runner-owned wiki
-publication for wiki resources visible in the selected User Node conversation,
-with the Human Interface Runtime enforcing conversation visibility and setting
-`requestedBy` to the User Node id; the process-runner smoke now proves that
+`source_history_publication` resource. The running User Client can now also
+request source-history reconcile for visible plain `source_history` resources;
+publication-target resources are intentionally not accepted for reconcile
+because reconcile can mutate the runner-owned source workspace. Host now
+returns an effective proposal id even when callers omit one, and sends that
+same id in the runner control payload so acknowledgements can be followed to
+the projected candidate. The running User Client can now also request
+runner-owned wiki publication for wiki resources visible in the selected User
+Node conversation, with the Human Interface Runtime enforcing conversation
+visibility and setting `requestedBy` to the User Node id; the process-runner smoke now proves that
 path through a signed builder wiki approval request, the running User Client
 JSON route, and a completed projected `runtime.wiki.publish` command receipt.
 Target-specific participant wiki publication requests now require the selected
@@ -716,6 +719,7 @@ files are the active federated redesign pack.
 449. [448-user-client-wiki-page-upsert-slice.md](448-user-client-wiki-page-upsert-slice.md)
 450. [449-studio-wiki-page-upsert-slice.md](449-studio-wiki-page-upsert-slice.md)
 451. [450-source-history-reconcile-control-slice.md](450-source-history-reconcile-control-slice.md)
+452. [451-user-client-source-history-reconcile-slice.md](451-user-client-source-history-reconcile-slice.md)
 
 ## Role of this corpus
 

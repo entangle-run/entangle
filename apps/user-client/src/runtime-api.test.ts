@@ -14,6 +14,7 @@ import {
   proposeArtifactSourceChange,
   publishSourceHistory,
   publishWikiRepository,
+  reconcileSourceHistory,
   restoreArtifact,
   reviewSourceChangeCandidate,
   upsertWikiPage
@@ -185,6 +186,15 @@ describe("user client runtime API helpers", () => {
         repositoryName: "graph-alpha-public"
       }
     });
+    await reconcileSourceHistory({
+      approvalId: "approval-source-history-alpha",
+      baseUrl: "http://127.0.0.1:4300",
+      conversationId: "conversation-alpha",
+      nodeId: "worker-it",
+      reason: "reconcile source history",
+      replayId: "reconcile-alpha",
+      sourceHistoryId: "source-history-alpha"
+    });
     await fetchSourceChangeDiff({
       baseUrl: "http://127.0.0.1:4300",
       candidateId: "candidate-alpha",
@@ -299,25 +309,39 @@ describe("user client runtime API helpers", () => {
       }
     });
     expect(fetchMock.mock.calls[8]?.[0]).toBe(
-      "http://127.0.0.1:4300/api/source-change-candidates/diff?candidateId=candidate-alpha&conversationId=conversation-alpha&nodeId=worker-it"
+      "http://127.0.0.1:4300/api/source-history/reconcile"
     );
-    expect(fetchMock.mock.calls[9]?.[0]).toBe(
-      "http://127.0.0.1:4300/api/source-change-candidates/file?candidateId=candidate-alpha&conversationId=conversation-alpha&nodeId=worker-it&path=src%2Findex.ts"
-    );
-    expect(fetchMock.mock.calls[10]?.[0]).toBe(
-      "http://127.0.0.1:4300/api/conversations/conversation-alpha/read"
-    );
-    expect(fetchMock.mock.calls[10]?.[1]).toMatchObject({
+    expect(fetchMock.mock.calls[8]?.[1]).toMatchObject({
       method: "POST"
     });
+    expect(JSON.parse(fetchMock.mock.calls[8]?.[1]?.body as string)).toEqual({
+      approvalId: "approval-source-history-alpha",
+      conversationId: "conversation-alpha",
+      nodeId: "worker-it",
+      reason: "reconcile source history",
+      replayId: "reconcile-alpha",
+      sourceHistoryId: "source-history-alpha"
+    });
+    expect(fetchMock.mock.calls[9]?.[0]).toBe(
+      "http://127.0.0.1:4300/api/source-change-candidates/diff?candidateId=candidate-alpha&conversationId=conversation-alpha&nodeId=worker-it"
+    );
+    expect(fetchMock.mock.calls[10]?.[0]).toBe(
+      "http://127.0.0.1:4300/api/source-change-candidates/file?candidateId=candidate-alpha&conversationId=conversation-alpha&nodeId=worker-it&path=src%2Findex.ts"
+    );
     expect(fetchMock.mock.calls[11]?.[0]).toBe(
-      "http://127.0.0.1:4300/api/source-change-candidates/review"
+      "http://127.0.0.1:4300/api/conversations/conversation-alpha/read"
     );
     expect(fetchMock.mock.calls[11]?.[1]).toMatchObject({
       method: "POST"
     });
+    expect(fetchMock.mock.calls[12]?.[0]).toBe(
+      "http://127.0.0.1:4300/api/source-change-candidates/review"
+    );
+    expect(fetchMock.mock.calls[12]?.[1]).toMatchObject({
+      method: "POST"
+    });
     expect(
-      JSON.parse(fetchMock.mock.calls[11]?.[1]?.body as string)
+      JSON.parse(fetchMock.mock.calls[12]?.[1]?.body as string)
     ).toMatchObject({
       candidateId: "candidate-alpha",
       conversationId: "conversation-alpha",
