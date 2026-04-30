@@ -27,7 +27,6 @@ Missing surfaces:
 - deeper per-relay transport diagnostics;
 - richer User Node runtime reassignment workflow controls in Studio;
 - rich Human Interface Runtime visibility beyond the projected runtime row;
-- durable user-node inbox/outbox projection;
 
 Recently added:
 
@@ -120,6 +119,10 @@ Recently added:
   and Studio shows it in the selected-runtime inspector.
 - Studio no longer exposes a selected-runtime session/task launch card; signed
   participant task launch belongs to User Client or CLI User Node surfaces.
+- User Node inbox/outbox projection is implemented through durable Host
+  message records, projected `userConversations`, inbox/conversation/message
+  APIs, CLI output, and the runner-served User Client; the previous missing
+  item was stale documentation.
 
 ## Target Model
 

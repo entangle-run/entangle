@@ -733,6 +733,7 @@ files are the active federated redesign pack.
 460. [459-opencode-permission-mode-slice.md](459-opencode-permission-mode-slice.md)
 461. [460-agent-runtime-permission-mode-visibility-slice.md](460-agent-runtime-permission-mode-visibility-slice.md)
 462. [461-studio-user-launch-boundary-slice.md](461-studio-user-launch-boundary-slice.md)
+463. [462-user-node-inbox-outbox-projection-audit.md](462-user-node-inbox-outbox-projection-audit.md)
 
 ## Role of this corpus
 

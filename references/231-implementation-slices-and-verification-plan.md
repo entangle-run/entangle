@@ -827,6 +827,10 @@ Implementation record:
 - [461-studio-user-launch-boundary-slice.md](461-studio-user-launch-boundary-slice.md)
   removes Studio's selected-runtime session-launch card so participant task
   launch stays in User Client/CLI signed User Node surfaces.
+- [462-user-node-inbox-outbox-projection-audit.md](462-user-node-inbox-outbox-projection-audit.md)
+  records that durable User Node inbox/outbox projection is already implemented
+  through Host message records, projected conversations, User Client, and CLI
+  surfaces.
 
 Verification:
 
@@ -883,6 +887,11 @@ Studio's selected-runtime inspector.
 Studio no longer exposes a selected-runtime session/task launch card. It keeps
 session trace, cancellation, and inspection surfaces, while participant task
 publication remains in User Client/CLI signed User Node paths.
+
+The previously listed durable User Node inbox/outbox projection gap is closed
+in the current implementation. Remaining User Node surface work is now focused
+on richer runtime reassignment/health panels and participant-side source/wiki
+review depth.
 
 ### Slice 13: Product Naming Migration
 

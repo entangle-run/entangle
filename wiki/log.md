@@ -5510,3 +5510,11 @@ Added `references/461-studio-user-launch-boundary-slice.md`. Studio no longer
 shows the selected-runtime `Launch Session` card. Session traces and
 cancellation remain available to operators, while participant task launch stays
 in the User Client or CLI signed User Node surfaces.
+
+## [2026-04-29] documentation | Closed stale User Node inbox/outbox gap
+
+Added `references/462-user-node-inbox-outbox-projection-audit.md`. The
+Studio/CLI surface plan no longer lists durable User Node inbox/outbox
+projection as missing because Host already persists inbound/outbound User Node
+message records, projects `userConversations`, and exposes them through
+User Client and CLI surfaces.
