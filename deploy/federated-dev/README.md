@@ -254,6 +254,8 @@ Add `--check-git-backend-health` to require the Host catalog's selected or
 default git service to be present, non-file-backed, and reachable at its public
 `baseUrl`; pass `--git-service-ref <id>` when the proof should check a
 specific git service.
+Generate the kit with `--check-published-git-ref` when the operator machine
+should also run `git ls-remote` against projected post-work git artifact refs.
 
 To prepare an extra generic runner against an already-running Host without
 using the smoke script, write a Host-derived join config and start the runner:

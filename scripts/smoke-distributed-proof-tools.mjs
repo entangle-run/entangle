@@ -220,6 +220,7 @@ try {
     "gitea",
     "--check-relay-health",
     "--check-git-backend-health",
+    "--check-published-git-ref",
     "--agent-runner",
     "proof-agent-runner",
     "--user-runner",
@@ -248,6 +249,7 @@ try {
       '"agentEngineKind":"external_process"',
       '"checkRelayHealth":true',
       '"checkGitBackendHealth":true',
+      '"checkPublishedGitRef":true',
       '"checkUserClientHealth":true',
       '"gitServiceRefs":["gitea"]',
       '"requireConversation":true',
@@ -282,6 +284,7 @@ try {
         agentNodeId: "architect",
         agentRunnerId: "proof-agent-runner",
         checkGitBackendHealth: true,
+        checkPublishedGitRef: true,
         checkRelayHealth: true,
         checkUserClientHealth: true,
         gitServiceRefs: ["gitea"],
@@ -437,6 +440,17 @@ try {
   );
   verifySelfTestJson(publishedGitArtifactJson);
 
+  const publishedGitRefJson = runStep(
+    "proof verifier published-git-ref self-test",
+    [
+      "scripts/federated-distributed-proof-verify.mjs",
+      "--self-test",
+      "--json",
+      "--check-published-git-ref"
+    ]
+  );
+  verifySelfTestJson(publishedGitRefJson);
+
   const missingArtifactEvidenceJson = runFailureStep(
     "proof verifier missing-artifact-evidence self-test",
     [
@@ -469,6 +483,21 @@ try {
     missingPublishedGitArtifactJson,
     "published git artifact"
   );
+
+  const wrongPublishedGitRefJson = runFailureStep(
+    "proof verifier wrong-published-git-ref self-test",
+    [
+      "scripts/federated-distributed-proof-verify.mjs",
+      "--self-test",
+      "--json",
+      "--check-published-git-ref",
+      "--self-test-wrong-published-git-ref"
+    ],
+    {
+      mustContain: '"ok": false'
+    }
+  );
+  verifySelfTestFailureJson(wrongPublishedGitRefJson, "published git ref");
 
   const relayHealthJson = runStep("proof verifier relay-health self-test", [
     "scripts/federated-distributed-proof-verify.mjs",

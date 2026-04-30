@@ -56,6 +56,10 @@ keep OpenCode as the default agent engine.
   [`440-distributed-proof-published-git-evidence-slice.md`](440-distributed-proof-published-git-evidence-slice.md)
   extends the same contract with profile-driven published git artifact
   verification for post-work proof profiles.
+- Follow-up
+  [`441-distributed-proof-published-git-ref-check-slice.md`](441-distributed-proof-published-git-ref-check-slice.md)
+  extends the same contract with opt-in verifier-side `git ls-remote` checks
+  for published git artifact refs.
 
 ## Tests Required
 

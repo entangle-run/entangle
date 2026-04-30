@@ -5284,3 +5284,16 @@ Generated distributed proof kits now write
 at that stricter profile, so post-work proof verifies both projected work
 evidence and git-backed publication evidence. The proof-tool smoke now covers
 passing and missing published-git-evidence self-tests.
+
+## [2026-04-29] test | Added distributed proof git ref checks
+
+Added `references/441-distributed-proof-published-git-ref-check-slice.md`.
+`pnpm ops:distributed-proof-verify` now accepts
+`--check-published-git-ref`, which runs `git ls-remote` against projected
+published git artifact refs from the expected agent node when the operator
+machine has git reachability and credentials.
+
+`pnpm ops:distributed-proof-kit --check-published-git-ref` now writes that
+requirement into the generated post-work profile and verifier script. The
+proof-tool smoke covers passing and wrong-commit self-test paths, while URL
+credentials are redacted from verifier details.

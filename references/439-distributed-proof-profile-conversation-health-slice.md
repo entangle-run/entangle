@@ -90,3 +90,5 @@ silently weaken a generated profile.
   Follow-up `440-distributed-proof-published-git-evidence-slice.md` adds
   another optional positive requirement, `requirePublishedGitArtifact`, but does
   not change the current "unset or require" model.
+  Follow-up `441-distributed-proof-published-git-ref-check-slice.md` adds the
+  optional check flag `checkPublishedGitRef` under the same model.

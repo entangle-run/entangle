@@ -1,5 +1,6 @@
 #!/usr/bin/env node
 
+import { spawnSync } from "node:child_process";
 import { readFileSync } from "node:fs";
 import { setTimeout as delay } from "node:timers/promises";
 import { normalizeDistributedProofProfile } from "./distributed-proof-profile.mjs";
@@ -31,6 +32,9 @@ const checkRelayHealth =
 const checkGitBackendHealth =
   hasFlag("--check-git-backend-health") ||
   readProofProfileBoolean("checkGitBackendHealth");
+const checkPublishedGitRefHealth =
+  hasFlag("--check-published-git-ref") ||
+  readProofProfileBoolean("checkPublishedGitRef");
 const checkUserClientHealth =
   hasFlag("--check-user-client-health") ||
   readProofProfileBoolean("checkUserClientHealth");
@@ -52,6 +56,7 @@ const selfTestWithoutArtifactEvidence = hasFlag(
 );
 const selfTestWrongRuntimeKind = hasFlag("--self-test-wrong-runtime-kind");
 const selfTestWrongAgentEngineKind = hasFlag("--self-test-wrong-agent-engine-kind");
+const selfTestWrongPublishedGitRef = hasFlag("--self-test-wrong-published-git-ref");
 const agentRunnerId =
   readFlagValue("--agent-runner") ??
   readProofProfileString("agentRunnerId") ??
@@ -131,6 +136,7 @@ Options:
   --check-relay-health            Open each configured relay WebSocket.
   --git-service-ref <id>          Git service ref for optional health checks. May be repeated or comma-separated. Defaults to profile gitServiceRefs or Host catalog default.
   --check-git-backend-health      Check expected Host catalog git services and their public base URLs, and reject file-backed git remotes for distributed proof.
+  --check-published-git-ref       Run git ls-remote against projected published git artifact refs from the agent node.
   --check-user-client-health      Fetch /health for projected User Client URLs. Defaults to profile checkUserClientHealth.
   --require-conversation          Require a projected conversation from the primary User Node to the agent node. Defaults to profile requireConversation.
   --require-artifact-evidence     Require projected artifact/source/wiki evidence from the agent node.
@@ -154,6 +160,8 @@ Options:
   --self-test-wrong-runtime-kind   Make the agent runner advertise the wrong runtime kind.
   --self-test-wrong-agent-engine-kind
                                   Make the agent runner advertise the wrong agent engine kind.
+  --self-test-wrong-published-git-ref
+                                  Make the published git ref self-test fixture advertise the wrong commit.
   -h, --help                      Show this help.
 
 Examples:
@@ -340,7 +348,10 @@ async function fetchSnapshot() {
     fetchJson("/v1/assignments"),
     fetchJson("/v1/projection")
   ]);
-  const catalog = checkGitBackendHealth ? await fetchJson("/v1/catalog") : undefined;
+  const catalog =
+    checkGitBackendHealth || checkPublishedGitRefHealth
+      ? await fetchJson("/v1/catalog")
+      : undefined;
 
   return {
     assignments,
@@ -353,6 +364,7 @@ async function fetchSnapshot() {
 
 function buildSelfTestSnapshot() {
   const now = new Date().toISOString();
+  const publishedGitCommit = selfTestWrongPublishedGitRef ? "missing123" : "abc123";
   const artifactEvidence = selfTestWithoutArtifactEvidence
     ? {}
     : {
@@ -372,7 +384,7 @@ function buildSelfTestSnapshot() {
                 backend: "git",
                 locator: {
                   branch: "main",
-                  commit: "abc123",
+                  commit: publishedGitCommit,
                   gitServiceRef: "gitea",
                   namespace: "team-alpha",
                   path: "reports/self-test.md",
@@ -387,7 +399,7 @@ function buildSelfTestSnapshot() {
               backend: "git",
               locator: {
                 branch: "main",
-                commit: "abc123",
+                commit: publishedGitCommit,
                 gitServiceRef: "gitea",
                 namespace: "team-alpha",
                 path: "reports/self-test.md",
@@ -649,6 +661,133 @@ function countPublishedSourceHistoryRefs(snapshot, nodeId) {
   return getArray(snapshot.projection, "sourceHistoryRefs").filter(
     (record) => record?.nodeId === nodeId && isPublishedSourceHistoryRecord(record)
   ).length;
+}
+
+function buildGitRemoteUrl(input) {
+  const parsed = new URL(input.remoteBase);
+  const basePath = parsed.pathname.replace(/\/+$/, "");
+  parsed.pathname = `${basePath}/${input.namespace}/${input.repositoryName}.git`;
+  return parsed.toString();
+}
+
+function resolveGitRemoteUrlForArtifact(snapshot, artifactRef, artifactRecord) {
+  const publicationRemoteUrl = artifactRecord?.publication?.remoteUrl;
+  if (typeof publicationRemoteUrl === "string" && publicationRemoteUrl.length > 0) {
+    return publicationRemoteUrl;
+  }
+
+  const locator = artifactRef?.locator;
+  if (
+    artifactRef?.backend !== "git" ||
+    !locator?.gitServiceRef ||
+    !locator?.namespace ||
+    !locator?.repositoryName
+  ) {
+    return undefined;
+  }
+
+  const catalog = getCatalog(snapshot);
+  const gitService = findGitService(catalog, locator.gitServiceRef);
+  if (!gitService?.remoteBase) {
+    return undefined;
+  }
+
+  return buildGitRemoteUrl({
+    namespace: locator.namespace,
+    remoteBase: gitService.remoteBase,
+    repositoryName: locator.repositoryName
+  });
+}
+
+function collectPublishedGitArtifactChecks(snapshot, nodeId) {
+  return getArray(snapshot.projection, "artifactRefs")
+    .filter((record) => record?.nodeId === nodeId && isPublishedGitArtifactRecord(record))
+    .map((record) => {
+      const artifactRef = record.artifactRef ?? record.artifactRecord?.ref;
+      return {
+        artifactId: artifactRef?.artifactId ?? record.artifactId ?? "unknown",
+        branch: artifactRef?.locator?.branch,
+        commit: artifactRef?.locator?.commit,
+        remoteUrl: resolveGitRemoteUrlForArtifact(
+          snapshot,
+          artifactRef,
+          record.artifactRecord
+        )
+      };
+    });
+}
+
+function redactUrlCredentials(value) {
+  try {
+    const parsed = new URL(value);
+    if (parsed.username || parsed.password) {
+      parsed.username = parsed.username ? "***" : "";
+      parsed.password = parsed.password ? "***" : "";
+    }
+    return parsed.toString();
+  } catch {
+    return value;
+  }
+}
+
+function verifyPublishedGitRef(input) {
+  if (!input.remoteUrl || !input.branch || !input.commit) {
+    return {
+      detail: `artifact=${input.artifactId}; missing remoteUrl, branch, or commit`,
+      ok: false
+    };
+  }
+
+  const safeRemoteUrl = redactUrlCredentials(input.remoteUrl);
+
+  if (selfTest) {
+    const ok = input.branch === "main" && input.commit === "abc123";
+    return {
+      detail: ok
+        ? `self-test ${safeRemoteUrl} ${input.branch} -> ${input.commit}`
+        : `self-test missing ${safeRemoteUrl} ${input.branch} -> ${input.commit}`,
+      ok
+    };
+  }
+
+  const result = spawnSync(
+    "git",
+    ["ls-remote", input.remoteUrl, input.branch, `refs/heads/${input.branch}`],
+    {
+      encoding: "utf8",
+      timeout: 10000
+    }
+  );
+
+  if (result.error) {
+    return {
+      detail: `${safeRemoteUrl} ${input.branch}: ${result.error.message}`,
+      ok: false
+    };
+  }
+
+  if (result.status !== 0) {
+    const stderr = redactUrlCredentials(result.stderr?.trim() ?? "");
+    return {
+      detail: `${safeRemoteUrl} ${input.branch}: git ls-remote exited ${
+        result.status ?? "unknown"
+      }${stderr ? `: ${stderr}` : ""}`,
+      ok: false
+    };
+  }
+
+  const refs = result.stdout
+    .split("\n")
+    .map((line) => line.trim())
+    .filter(Boolean);
+  const found = refs.some((line) => line.startsWith(`${input.commit}\t`));
+
+  return {
+    detail: found
+      ? `${safeRemoteUrl} ${input.branch} contains ${input.commit}`
+      : `${safeRemoteUrl} ${input.branch} did not advertise ${input.commit}`,
+    ok: found
+  };
 }
 
 function getCatalog(snapshot) {
@@ -1075,6 +1214,31 @@ async function evaluateSnapshot(snapshot) {
       `publishedGitArtifactRefs=${publishedGitArtifactRefCount}; ` +
         `publishedSourceHistoryRefs=${publishedSourceHistoryRefCount}`
     );
+  }
+
+  if (checkPublishedGitRefHealth) {
+    const publishedGitArtifactChecks = collectPublishedGitArtifactChecks(
+      snapshot,
+      agentNodeId
+    );
+    addCheck(
+      checks,
+      `published git refs configured ${agentNodeId}`,
+      publishedGitArtifactChecks.length > 0,
+      publishedGitArtifactChecks.length > 0
+        ? `artifactRefs=${publishedGitArtifactChecks.length}`
+        : "no projected published git artifact refs with locators"
+    );
+
+    for (const publishedRef of publishedGitArtifactChecks) {
+      const refCheck = verifyPublishedGitRef(publishedRef);
+      addCheck(
+        checks,
+        `published git ref ${publishedRef.artifactId}`,
+        refCheck.ok,
+        refCheck.detail
+      );
+    }
   }
 
   return {

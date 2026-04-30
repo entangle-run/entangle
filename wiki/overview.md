@@ -287,6 +287,10 @@ The verifier can also require projected artifact/source/wiki evidence from the
 agent node after work is produced with `--require-artifact-evidence`.
 It can now also require published git artifact or source-history publication
 evidence from that agent node with `--require-published-git-artifact`.
+When proof kits are generated with `--check-published-git-ref`, the verifier
+can also run `git ls-remote` from the operator machine against projected
+published git artifact refs and require the advertised branch to contain the
+projected commit.
 It can additionally check configured relay WebSocket reachability with
 `--check-relay-health`.
 It can also check Host catalog git backend suitability with
@@ -299,7 +303,8 @@ Client URL rejection plus wrong-runtime-kind and wrong-agent-engine rejection,
 plus proof-kit and verifier non-default expected-agent-engine/profile manifest
 paths, invalid proof-profile failure paths, proof-kit relay-health generation
 paths, generated post-work artifact-verifier paths, required-artifact-evidence
-success/failure paths, published-git-artifact success/failure paths, custom
+success/failure paths, published-git-artifact success/failure paths,
+published-git-ref success/failure paths, custom
 proof-profile assignment ids, and relay-health
 success/failure paths plus git-backend-health success/failure paths before a
 real distributed proof is attempted.

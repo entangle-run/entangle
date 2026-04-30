@@ -108,3 +108,6 @@ script and verifier share the same generated profile file.
   `440-distributed-proof-published-git-evidence-slice.md` now adds optional
   projected published-git evidence from the agent node, but a direct
   runner-credential push/pull canary remains a future hardening step.
+  `441-distributed-proof-published-git-ref-check-slice.md` adds optional
+  operator-machine `git ls-remote` validation for projected published git refs,
+  which proves remote visibility when the operator has git access.

@@ -43,6 +43,9 @@ optional relay/git health settings as the main operator command path.
 - Follow-up `440-distributed-proof-published-git-evidence-slice.md` now points
   that script at a stricter `operator/proof-profile-post-work.json` manifest
   and also requires published git artifact/source-history publication evidence.
+- Follow-up `441-distributed-proof-published-git-ref-check-slice.md` lets
+  generated kits opt into verifier-side `git ls-remote` checks for post-work
+  published git artifact refs.
 - `operator/commands.sh` now delegates its final verification step to
   `operator/verify-topology.sh`.
 - The generated README documents the post-work verifier step and the new files.

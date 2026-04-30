@@ -4690,6 +4690,7 @@ describe("distributed proof profile contracts", () => {
         }
       ],
       checkGitBackendHealth: true,
+      checkPublishedGitRef: true,
       checkUserClientHealth: true,
       gitServiceRefs: ["gitea"],
       hostUrl: "http://host.example:7071",
@@ -4704,6 +4705,7 @@ describe("distributed proof profile contracts", () => {
 
     expect(result.agentEngineKind).toBe("opencode_server");
     expect(result.assignments).toHaveLength(3);
+    expect(result.checkPublishedGitRef).toBe(true);
     expect(result.checkUserClientHealth).toBe(true);
     expect(result.requireConversation).toBe(true);
     expect(result.requireArtifactEvidence).toBe(true);

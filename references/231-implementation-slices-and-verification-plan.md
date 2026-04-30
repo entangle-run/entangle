@@ -1097,7 +1097,10 @@ Current status:
   separate post-work proof profile requiring projected work evidence plus a
   published git artifact or source-history publication from the agent node, and
   the proof-tool smoke covers the passing and missing published-git-evidence
-  paths;
+  paths. When generated with `--check-published-git-ref`, proof kits now also
+  encode a post-work verifier check that runs `git ls-remote` from the operator
+  machine against projected published git artifact locators and checks the
+  advertised branch commit;
 - runtime-context runner startup and the Human Interface Runtime now support
   mounted-file identity secret delivery as well as env-var delivery, matching
   generic runner join behavior;

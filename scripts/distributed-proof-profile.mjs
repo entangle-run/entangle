@@ -38,6 +38,7 @@ export function normalizeDistributedProofProfile(value, options = {}) {
   copyOptionalEnum(profile, value, "agentEngineKind", sourceLabel, agentEngineKinds);
   copyOptionalBoolean(profile, value, "checkRelayHealth", sourceLabel);
   copyOptionalBoolean(profile, value, "checkGitBackendHealth", sourceLabel);
+  copyOptionalBoolean(profile, value, "checkPublishedGitRef", sourceLabel);
   copyOptionalBoolean(profile, value, "checkUserClientHealth", sourceLabel);
   copyOptionalBoolean(profile, value, "requireConversation", sourceLabel);
   copyOptionalBoolean(profile, value, "requireArtifactEvidence", sourceLabel);

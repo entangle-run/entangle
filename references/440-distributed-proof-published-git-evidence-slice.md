@@ -91,10 +91,16 @@ default for immediate verification after assignment and task publication.
 - Risk: projected evidence could still be malformed or point at an unreachable
   git backend.
   Mitigation: combine this check with `--check-git-backend-health` for
-  operator-machine git service reachability. A future runner-side canary can
-  prove push/pull with runner credentials directly.
+  operator-machine git service reachability.
+  `441-distributed-proof-published-git-ref-check-slice.md` adds an optional
+  verifier-side `git ls-remote` check for projected published git artifact
+  refs. A direct runner-side push/pull canary can still prove runner
+  credentials more explicitly later.
 
 ## Open Questions
 
 - Should the next proof-hardening slice verify a concrete git ref by cloning or
   fetching the projected locator from the verifier machine?
+  `441-distributed-proof-published-git-ref-check-slice.md` now verifies the
+  advertised branch commit with `git ls-remote`; full clone/fetch and artifact
+  path inspection remain future options.

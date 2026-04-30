@@ -271,6 +271,8 @@ uses relay URLs from `--relay-url` or the generated proof profile.
 Add `--check-git-backend-health` to require the Host catalog's selected or
 default git service to be present, non-file-backed, and reachable at its public
 `baseUrl`. Pass `--git-service-ref <id>` to verify a specific git service.
+Generate the kit with `--check-published-git-ref` when the operator machine
+should also run `git ls-remote` against projected post-work git artifact refs.
 
 CI can verify the proof tooling itself without provisioning external machines:
 

@@ -33,6 +33,7 @@ const relayUrls = splitRepeatedValues(readFlagValues("--relay-url"));
 const gitServiceRefs = splitRepeatedValues(readFlagValues("--git-service-ref"));
 const checkRelayHealth = hasFlag("--check-relay-health");
 const checkGitBackendHealth = hasFlag("--check-git-backend-health");
+const checkPublishedGitRef = hasFlag("--check-published-git-ref");
 const heartbeatIntervalMs = readFlagValue("--heartbeat-interval-ms") ?? "1000";
 const requestedAgentEngineKinds = splitRepeatedValues(
   readFlagValues("--agent-engine-kind")
@@ -102,6 +103,7 @@ Options:
   --check-relay-health              Include relay WebSocket health checks in the generated verifier command and proof profile. Requires at least one --relay-url.
   --git-service-ref <id>            Git service ref expected by the distributed proof. May be repeated or comma-separated.
   --check-git-backend-health        Include git backend health checks in the generated verifier command and proof profile.
+  --check-published-git-ref         Include git ls-remote checks for post-work published git artifact refs.
   --heartbeat-interval-ms <ms>      Runner heartbeat interval in generated configs. Default: 1000
   --runner-secret-env-var <envVar>  Env var runners will read for their Nostr secret. Default: ENTANGLE_RUNNER_NOSTR_SECRET_KEY
   --agent-engine-kind <kind>         Agent runner engine kind. May be repeated or comma-separated. Default: opencode_server
@@ -379,6 +381,9 @@ function buildVerifierCommand(options = {}) {
   if (options.requireArtifactEvidence) {
     args.push("--require-artifact-evidence");
     args.push("--require-published-git-artifact");
+    if (checkPublishedGitRef) {
+      args.push("--check-published-git-ref");
+    }
   }
 
   return args.join(" ");
@@ -429,6 +434,7 @@ function buildProofProfile(options = {}) {
     })),
     ...(checkRelayHealth ? { checkRelayHealth: true } : {}),
     ...(checkGitBackendHealth ? { checkGitBackendHealth: true } : {}),
+    ...(options.checkPublishedGitRef ? { checkPublishedGitRef: true } : {}),
     checkUserClientHealth: true,
     ...(gitServiceRefs.length > 0 ? { gitServiceRefs } : {}),
     hostUrl,
@@ -492,6 +498,9 @@ ${runnerRows}
    projected artifact, source-change, source-history, or wiki evidence plus
    published git artifact/source-history publication evidence from the agent
    node.
+   If this kit was generated with \`--check-published-git-ref\`, the post-work
+   verifier also runs \`git ls-remote\` from the operator machine against
+   projected published git artifact locators.
 
 ## Files
 
@@ -530,6 +539,7 @@ async function writeKit() {
     console.log(
       `[dry-run] operator post-work proof profile: ${JSON.stringify(
         buildProofProfile({
+          checkPublishedGitRef,
           requireArtifactEvidence: true,
           requirePublishedGitArtifact: true
         })
@@ -567,6 +577,7 @@ async function writeKit() {
     path.join(operatorDir, "proof-profile-post-work.json"),
     `${JSON.stringify(
       buildProofProfile({
+        checkPublishedGitRef,
         requireArtifactEvidence: true,
         requirePublishedGitArtifact: true
       }),

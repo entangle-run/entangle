@@ -18,6 +18,7 @@ export const distributedProofProfileSchema = z
     agentRunnerId: identifierSchema.default("distributed-agent-runner"),
     assignments: z.array(distributedProofAssignmentProfileSchema).default([]),
     checkGitBackendHealth: z.boolean().optional(),
+    checkPublishedGitRef: z.boolean().optional(),
     checkRelayHealth: z.boolean().optional(),
     checkUserClientHealth: z.boolean().optional(),
     gitServiceRefs: z.array(identifierSchema).default([]),

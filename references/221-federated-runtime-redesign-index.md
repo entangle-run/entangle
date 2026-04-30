@@ -241,6 +241,7 @@ same-machine slice records.
 - [438-studio-assignment-related-navigation-slice.md](438-studio-assignment-related-navigation-slice.md)
 - [439-distributed-proof-profile-conversation-health-slice.md](439-distributed-proof-profile-conversation-health-slice.md)
 - [440-distributed-proof-published-git-evidence-slice.md](440-distributed-proof-published-git-evidence-slice.md)
+- [441-distributed-proof-published-git-ref-check-slice.md](441-distributed-proof-published-git-ref-check-slice.md)
 
 ## Audited Scope
 
@@ -840,7 +841,10 @@ scripts already enforced, so profile-only verification does not silently weaken
 the proof. Generated proof kits now also write a separate post-work profile
 that requires both projected work evidence and a published git artifact or
 source-history publication from the agent node, tightening the proof that
-runner-owned work handoff reached a git-backed substrate. The remaining blocking implementation
+runner-owned work handoff reached a git-backed substrate. The verifier can now
+also optionally run `git ls-remote` from the operator machine against projected
+published git artifact locators to prove the advertised branch contains the
+projected commit. The remaining blocking implementation
 areas are richer
 projection-backed source/wiki review services, infrastructure-backed
 multi-machine proof execution, and deeper production identity/authorization.
