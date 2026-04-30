@@ -2006,6 +2006,7 @@ describe("runtime inspection host API contracts", () => {
       agentRuntime: {
         defaultAgent: "general",
         engineKind: "opencode_server",
+        enginePermissionMode: "auto_reject",
         engineProfileDisplayName: "OpenCode",
         engineProfileRef: "opencode-default",
         lastEngineSessionId: "opencode-session-alpha",
@@ -2064,6 +2065,7 @@ describe("runtime inspection host API contracts", () => {
     });
 
     expect(result.agentRuntime?.engineProfileRef).toBe("opencode-default");
+    expect(result.agentRuntime?.enginePermissionMode).toBe("auto_reject");
     expect("contextPath" in result).toBe(false);
     expect(result.agentRuntime?.lastEngineSessionId).toBe(
       "opencode-session-alpha"

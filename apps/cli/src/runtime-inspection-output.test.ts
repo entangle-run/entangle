@@ -6,6 +6,7 @@ function createRuntime(): RuntimeInspectionResponse {
   return {
     agentRuntime: {
       engineKind: "opencode_server",
+      enginePermissionMode: "auto_reject",
       engineProfileRef: "opencode-default",
       lastEngineSessionId: "opencode-session-alpha",
       lastEngineVersion: "0.10.0",
@@ -87,6 +88,9 @@ describe("runtime inspection CLI summary projection", () => {
     );
     expect(projectRuntimeInspectionSummary(createRuntime()).detailLines).toContain(
       "agent runtime coding_agent / opencode_server / opencode-default"
+    );
+    expect(projectRuntimeInspectionSummary(createRuntime()).detailLines).toContain(
+      "engine permission mode auto_reject"
     );
     expect(projectRuntimeInspectionSummary(createRuntime()).detailLines).toContain(
       "last engine version 0.10.0"

@@ -1100,7 +1100,9 @@ function buildDefaultCatalog(): DeploymentResourceCatalog {
       : process.env.ENTANGLE_DEFAULT_AGENT_ENGINE_PERMISSION_MODE ===
           "auto_reject"
         ? "auto_reject"
-        : undefined;
+        : agentEngineKind === "opencode_server"
+          ? "auto_reject"
+          : undefined;
 
   const modelEndpointId = process.env.ENTANGLE_DEFAULT_MODEL_ENDPOINT_ID?.trim();
   const modelBaseUrl = process.env.ENTANGLE_DEFAULT_MODEL_BASE_URL?.trim();
@@ -6354,6 +6356,12 @@ async function buildRuntimeAgentRuntimeInspection(
   return runtimeAgentRuntimeInspectionSchema.parse({
     ...(defaultAgent ? { defaultAgent } : {}),
     engineKind: context.agentRuntimeContext.engineProfile.kind,
+    ...(context.agentRuntimeContext.engineProfile.permissionMode
+      ? {
+          enginePermissionMode:
+            context.agentRuntimeContext.engineProfile.permissionMode
+        }
+      : {}),
     engineProfileDisplayName:
       context.agentRuntimeContext.engineProfile.displayName,
     engineProfileRef: context.agentRuntimeContext.engineProfileRef,

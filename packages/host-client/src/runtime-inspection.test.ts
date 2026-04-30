@@ -16,6 +16,7 @@ function createRuntime(
     agentRuntime: {
       defaultAgent: "general",
       engineKind: "opencode_server",
+      enginePermissionMode: "auto_reject",
       engineProfileDisplayName: "OpenCode",
       engineProfileRef: "opencode-default",
       lastEngineSessionId: "opencode-session-alpha",
@@ -130,6 +131,9 @@ describe("runtime inspection presentation helpers", () => {
     );
     expect(formatRuntimeInspectionDetailLines(runtime)).toContain(
       "agent runtime coding_agent / opencode_server / opencode-default"
+    );
+    expect(formatRuntimeInspectionDetailLines(runtime)).toContain(
+      "engine permission mode auto_reject"
     );
     expect(formatRuntimeInspectionDetailLines(runtime)).toContain(
       "last engine session opencode-session-alpha"

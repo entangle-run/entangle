@@ -15,7 +15,10 @@ import {
   enginePolicyOperationSchema
 } from "../engine/turn-contract.js";
 import { nodeAgentRuntimeModeSchema } from "../graph/graph-spec.js";
-import { agentEngineProfileKindSchema } from "../resources/catalog.js";
+import {
+  agentEnginePermissionModeSchema,
+  agentEngineProfileKindSchema
+} from "../resources/catalog.js";
 import { effectiveRuntimeContextSchema } from "../runtime/runtime-context.js";
 import { runtimeSecretDeliverySchema } from "../runtime/secret-delivery.js";
 import {
@@ -41,6 +44,7 @@ import {
 export const runtimeAgentRuntimeInspectionSchema = z.object({
   defaultAgent: identifierSchema.optional(),
   engineKind: agentEngineProfileKindSchema.optional(),
+  enginePermissionMode: agentEnginePermissionModeSchema.optional(),
   engineProfileDisplayName: nonEmptyStringSchema.optional(),
   engineProfileRef: identifierSchema.optional(),
   lastEngineFailureClassification:

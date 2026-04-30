@@ -362,6 +362,9 @@ The repository is not fully federated:
 - OpenCode engine profiles now support an explicit `permissionMode`; the
   adapter keeps conservative `auto_reject` behavior by default and passes
   `--dangerously-skip-permissions` only for opt-in `auto_approve` profiles;
+- Host runtime inspection now projects the resolved engine permission mode, and
+  shared host-client, CLI, and Studio runtime views display it with the
+  selected engine profile;
 - the OpenAI-compatible internal `agent-engine` adapter now has deterministic
   local HTTP fixture coverage for the real `fetch` provider path, including
   bearer-token auth, plain chat completion, tool-loop continuation, and 429

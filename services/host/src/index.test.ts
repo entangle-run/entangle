@@ -9582,6 +9582,7 @@ describe("buildHostServer", () => {
         runtimeInspectionResponseSchema.parse(runtimeResponse.json()).agentRuntime
       ).toMatchObject({
         engineKind: "opencode_server",
+        enginePermissionMode: "auto_reject",
         engineProfileRef: "opencode-default",
         mode: "coding_agent",
         stateScope: "node"

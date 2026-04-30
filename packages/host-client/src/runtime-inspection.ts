@@ -92,6 +92,12 @@ export function formatRuntimeInspectionDetailLines(
       detailLines.push(`default agent ${runtime.agentRuntime.defaultAgent}`);
     }
 
+    if (runtime.agentRuntime.enginePermissionMode) {
+      detailLines.push(
+        `engine permission mode ${runtime.agentRuntime.enginePermissionMode}`
+      );
+    }
+
     if (runtime.agentRuntime.lastEngineSessionId) {
       detailLines.push(
         `last engine session ${runtime.agentRuntime.lastEngineSessionId}`

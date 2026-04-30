@@ -788,6 +788,9 @@ Implementation record:
 - [459-opencode-permission-mode-slice.md](459-opencode-permission-mode-slice.md)
   adds typed OpenCode permission-mode configuration and maps opt-in
   `auto_approve` profiles to `--dangerously-skip-permissions`.
+- [460-agent-runtime-permission-mode-visibility-slice.md](460-agent-runtime-permission-mode-visibility-slice.md)
+  exposes the resolved engine permission mode through Host runtime inspection,
+  shared host-client formatting, CLI summaries, and Studio's runtime inspector.
 
 Verification:
 
@@ -796,6 +799,7 @@ Verification:
 - federated process smoke for same-session OpenCode continuation;
 - Host CORS/preflight tests for Studio development origins;
 - OpenCode permission-mode schema and adapter tests;
+- runtime inspection permission-mode contract and presentation tests;
 - permission bridge tests;
 - cancellation tests;
 - source/artifact/wiki observation tests;
@@ -868,6 +872,10 @@ reading the full projection JSON. Studio can now open a selected assignment
 timeline in the Federation panel through the same Host endpoint and render a
 compact operational summary for that assignment with related navigation to the
 runtime, runner, source-history, and command receipt panels.
+
+Shared runtime inspection now also displays the selected agent engine
+permission mode in host-client detail lines, CLI runtime summaries, and
+Studio's selected-runtime inspector.
 
 ### Slice 13: Product Naming Migration
 

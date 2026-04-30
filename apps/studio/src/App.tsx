@@ -5529,6 +5529,13 @@ export function App() {
                     </dd>
                   </div>
                   <div>
+                    <dt>Permission mode</dt>
+                    <dd>
+                      {selectedRuntime?.agentRuntime?.enginePermissionMode ??
+                        (selectedRuntime ? "not reported" : "loading")}
+                    </dd>
+                  </div>
+                  <div>
                     <dt>Pending approvals</dt>
                     <dd>
                       {selectedRuntime?.agentRuntime

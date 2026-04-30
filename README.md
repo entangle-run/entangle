@@ -442,7 +442,9 @@ This repository currently contains:
   one-shot CLI auto-rejects a permission request, with engine profiles now
   carrying explicit `permissionMode` configuration so operators can opt an
   OpenCode node into `auto_approve` when runner sandboxing and Entangle review
-  policy make that acceptable, plus bounded generic tool evidence from
+  policy make that acceptable, with Host runtime inspection, CLI summaries,
+  and Studio's runtime inspector showing the resolved permission mode, plus
+  bounded generic tool evidence from
   OpenCode JSON events, including tool titles, redacted input
   summaries, output summaries, durations, and call ids, plus adapter-local
   OpenCode session continuity for later turns in the same Entangle session,

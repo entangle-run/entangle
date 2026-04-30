@@ -116,6 +116,9 @@ Recently added:
 - Host now supports configured CORS for browser-based Studio development via
   `ENTANGLE_HOST_CORS_ORIGINS`, and the process-runner demo prints a Studio
   startup command with the live Host URL and operator token.
+- Shared runtime inspection now includes the resolved agent engine permission
+  mode; CLI runtime summaries inherit it from the shared host-client formatter,
+  and Studio shows it in the selected-runtime inspector.
 
 ## Target Model
 
@@ -125,7 +128,8 @@ Studio is the operator/admin surface:
   projection health, transport health, artifacts, source, memory, and
   lifecycle;
 - User Node identity/runtime health, active conversations, pending approval
-  counts, and a link to open the User Client for a running User Node.
+  counts, engine permission posture for agent runtimes, and a link to open the
+  User Client for a running User Node.
 
 The selected User Node inbox, conversations, replies, approvals,
 artifact/source/wiki review, and session/thread context belong in the User

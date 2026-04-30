@@ -5496,3 +5496,10 @@ The OpenCode adapter preserves conservative auto-reject behavior by default and
 adds `--dangerously-skip-permissions` only for explicit `auto_approve`
 profiles. The default catalog can set this through
 `ENTANGLE_DEFAULT_AGENT_ENGINE_PERMISSION_MODE`.
+
+## [2026-04-29] studio | Surfaced agent runtime permission mode
+
+Added `references/460-agent-runtime-permission-mode-visibility-slice.md`.
+Host runtime inspection now includes the resolved engine permission mode when
+available, shared host-client detail lines render it, CLI runtime summaries
+inherit that output, and Studio displays it in the selected-runtime inspector.
