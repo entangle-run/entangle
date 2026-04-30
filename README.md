@@ -314,7 +314,8 @@ This repository currently contains:
   graph state under `.entangle/host`;
 - an optional bootstrap host operator-token boundary through
   `ENTANGLE_HOST_OPERATOR_TOKEN` or multiple records in
-  `ENTANGLE_HOST_OPERATOR_TOKENS_JSON`, with bearer-token propagation through
+  `ENTANGLE_HOST_OPERATOR_TOKENS_JSON`; multi-operator records may carry raw
+  `token` values or `tokenSha256` hashes, with bearer-token propagation through
   the shared host client, CLI, and Studio for same-machine profiles that should
   not expose an open mutation surface, plus typed `security` audit events for
   protected mutation requests through `host.operator_request.completed`, and

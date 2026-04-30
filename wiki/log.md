@@ -5321,3 +5321,11 @@ host-client can call `listHostEvents` with either the old numeric limit or the
 new query object. CLI `entangle host events list` sends the same filters to
 Host, while watch mode gained matching operator/status filters for live local
 inspection.
+
+## [2026-04-29] security | Added hashed bootstrap operator tokens
+
+Added `references/444-hashed-bootstrap-operator-token-slice.md`.
+`ENTANGLE_HOST_OPERATOR_TOKENS_JSON` records can now use `tokenSha256` instead
+of raw `token` material. Host normalizes bootstrap operator principals to
+SHA-256 token hashes internally and still preserves existing single-token and
+raw multi-token compatibility.

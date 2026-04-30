@@ -1,3 +1,4 @@
+import { createHash } from "node:crypto";
 import {
   identifierSchema,
   operatorRoleSchema,
@@ -8,7 +9,7 @@ import {
 export type HostOperatorPrincipal = {
   operatorId: string;
   operatorRole: OperatorRole;
-  token: string;
+  tokenHash: string;
 };
 
 type HostOperatorTokenRecord = {
@@ -16,6 +17,7 @@ type HostOperatorTokenRecord = {
   operatorRole?: unknown;
   role?: unknown;
   token?: unknown;
+  tokenSha256?: unknown;
 };
 
 function normalizeOperatorToken(token: string | undefined): string | undefined {
@@ -23,6 +25,59 @@ function normalizeOperatorToken(token: string | undefined): string | undefined {
   return normalizedToken && normalizedToken.length > 0
     ? normalizedToken
     : undefined;
+}
+
+function hashOperatorToken(token: string): string {
+  return createHash("sha256").update(token, "utf8").digest("hex");
+}
+
+function normalizeTokenSha256(value: unknown): string | undefined {
+  if (typeof value !== "string") {
+    return undefined;
+  }
+
+  const normalizedHash = value.trim().toLowerCase();
+  return /^[a-f0-9]{64}$/.test(normalizedHash) ? normalizedHash : undefined;
+}
+
+function resolveTokenHashFromRecord(input: {
+  index: number;
+  record: HostOperatorTokenRecord;
+}): string {
+  const hasConfiguredTokenHash = Object.prototype.hasOwnProperty.call(
+    input.record,
+    "tokenSha256"
+  );
+  const token =
+    typeof input.record.token === "string"
+      ? normalizeOperatorToken(input.record.token)
+      : undefined;
+  const tokenHash = token ? hashOperatorToken(token) : undefined;
+  const configuredTokenHash = normalizeTokenSha256(input.record.tokenSha256);
+
+  if (hasConfiguredTokenHash && !configuredTokenHash) {
+    throw new Error(
+      `ENTANGLE_HOST_OPERATOR_TOKENS_JSON record ${input.index} tokenSha256 must be a 64-character SHA-256 hex digest.`
+    );
+  }
+
+  if (!tokenHash && !configuredTokenHash) {
+    throw new Error(
+      `ENTANGLE_HOST_OPERATOR_TOKENS_JSON record ${input.index} must include a non-empty token or a 64-character tokenSha256.`
+    );
+  }
+
+  if (
+    tokenHash &&
+    configuredTokenHash &&
+    tokenHash !== configuredTokenHash
+  ) {
+    throw new Error(
+      `ENTANGLE_HOST_OPERATOR_TOKENS_JSON record ${input.index} token does not match tokenSha256.`
+    );
+  }
+
+  return tokenHash ?? configuredTokenHash!;
 }
 
 function normalizeOperatorId(operatorId: unknown): string {
@@ -80,23 +135,16 @@ function parseOperatorTokenRecords(
     }
 
     const tokenRecord = record as HostOperatorTokenRecord;
-    const token =
-      typeof tokenRecord.token === "string"
-        ? normalizeOperatorToken(tokenRecord.token)
-        : undefined;
-
-    if (!token) {
-      throw new Error(
-        `ENTANGLE_HOST_OPERATOR_TOKENS_JSON record ${index} must include a non-empty token.`
-      );
-    }
 
     return {
       operatorId: normalizeOperatorId(tokenRecord.operatorId),
       operatorRole: normalizeOperatorRole(
         tokenRecord.operatorRole ?? tokenRecord.role
       ),
-      token
+      tokenHash: resolveTokenHashFromRecord({
+        index,
+        record: tokenRecord
+      })
     };
   });
 }
@@ -105,13 +153,13 @@ function assertUniqueOperatorTokens(principals: HostOperatorPrincipal[]) {
   const seenTokens = new Set<string>();
 
   for (const principal of principals) {
-    if (seenTokens.has(principal.token)) {
+    if (seenTokens.has(principal.tokenHash)) {
       throw new Error(
         "Host operator token configuration contains duplicate token values."
       );
     }
 
-    seenTokens.add(principal.token);
+    seenTokens.add(principal.tokenHash);
   }
 }
 
@@ -125,7 +173,7 @@ export function resolveHostOperatorPrincipalsFromEnv(
     principals.push({
       operatorId: normalizeOperatorId(env.ENTANGLE_HOST_OPERATOR_ID),
       operatorRole: normalizeOperatorRole(env.ENTANGLE_HOST_OPERATOR_ROLE),
-      token: singleToken
+      tokenHash: hashOperatorToken(singleToken)
     });
   }
 
@@ -178,7 +226,10 @@ export function resolveHostOperatorPrincipalForRequest(input: {
   const bearerToken = extractBearerToken(input.authorization);
 
   if (bearerToken) {
-    return input.principals.find((principal) => principal.token === bearerToken);
+    const bearerTokenHash = hashOperatorToken(bearerToken);
+    return input.principals.find(
+      (principal) => principal.tokenHash === bearerTokenHash
+    );
   }
 
   if (!isWebSocketUpgrade(input.upgrade)) {
@@ -191,12 +242,15 @@ export function resolveHostOperatorPrincipalForRequest(input: {
     return undefined;
   }
 
-  return input.principals.find((principal) => principal.token === accessToken);
+  const accessTokenHash = hashOperatorToken(accessToken);
+  return input.principals.find(
+    (principal) => principal.tokenHash === accessTokenHash
+  );
 }
 
 export function resolveUnauthorizedOperatorAuditPrincipal(
   principals: HostOperatorPrincipal[]
-): Omit<HostOperatorPrincipal, "token"> {
+): Omit<HostOperatorPrincipal, "tokenHash"> {
   if (principals.length === 1) {
     const principal = principals[0]!;
 

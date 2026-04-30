@@ -60,6 +60,9 @@ contract should remain compatible.
   ]
   ```
 
+- Follow-up `444-hashed-bootstrap-operator-token-slice.md` lets records use a
+  `tokenSha256` hash instead of raw `token` material.
+
 - Host rejects malformed multi-token configuration at startup/status
   resolution rather than silently weakening the protected boundary.
 - Duplicate token values are rejected because they would make audit

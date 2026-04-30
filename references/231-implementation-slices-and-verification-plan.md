@@ -464,7 +464,8 @@ Current status:
   Hosts can now also opt into multiple bootstrap operator tokens through
   `ENTANGLE_HOST_OPERATOR_TOKENS_JSON`, with each token resolving to a distinct
   operator id and role for status, authorization, and request-audit
-  attribution;
+  attribution; multi-token records can use `tokenSha256` hashes instead of raw
+  token values;
 - token-protected Hosts now enforce the bootstrap `viewer` role as read-only
   while keeping `operator`, `admin`, and `owner` compatible with existing Host
   mutation behavior, and protected mutation audit events now include
@@ -983,8 +984,9 @@ Current status:
 - Host status exposes bootstrap operator security mode and normalized
   bootstrap attribution; token-protected Hosts now enforce `viewer` as a
   read-only bootstrap role, can distinguish multiple configured bootstrap
-  operator tokens, and record matched operator identity/role on protected
-  mutation audit events while keeping production identity/authorization as an
+  operator tokens, can compare hash-only token records, and record matched
+  operator identity/role on protected mutation audit events while keeping
+  production identity/authorization as an
   explicit remaining hardening track; host-client and CLI summary output now
   presents those audit events with operator id, role, method, path, status, and
   auth mode;

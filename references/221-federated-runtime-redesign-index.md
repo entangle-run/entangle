@@ -825,8 +825,10 @@ generic event-type label. Protected Hosts can now also opt into multiple
 bootstrap operator bearer tokens through `ENTANGLE_HOST_OPERATOR_TOKENS_JSON`;
 each token resolves to a distinct operator id and role for authorization,
 status, and request-audit attribution while preserving the existing
-single-token environment contract. This remains bootstrap authorization, not
-final production RBAC. Host event listing now also applies category, node,
+single-token environment contract. Those records can use `tokenSha256` hashes
+instead of raw token values for process-configuration hardening. This remains
+bootstrap authorization, not final production RBAC. Host event listing now also
+applies category, node,
 operator, status-code, and type-prefix filters before limit slicing, so CLI and
 host-client audit inspection do not lose older matching events behind unrelated
 recent trace records.

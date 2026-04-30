@@ -331,7 +331,8 @@ Host status now also reports the active bootstrap operator security posture:
 tokenless deployments report `none`, single-token
 `ENTANGLE_HOST_OPERATOR_TOKEN` deployments report normalized operator id and
 bootstrap role, and `ENTANGLE_HOST_OPERATOR_TOKENS_JSON` deployments report a
-tokenless list of bootstrap operator ids and roles.
+tokenless list of bootstrap operator ids and roles. Multi-token records can
+use `tokenSha256` instead of raw token values.
 CLI can now generate a Host-derived `runner-join.json` with
 `entangle runners join-config`, and the runner package advertises
 `entangle-runner join --config` for generic runner startup outside smoke

@@ -75,9 +75,10 @@ Shared host-client and CLI event summaries now render those audit events with
 operator id, role, method, path, status, and auth mode. Protected Hosts can now
 also distinguish multiple configured bootstrap operator bearer tokens through
 `ENTANGLE_HOST_OPERATOR_TOKENS_JSON`, exposing only tokenless operator ids and
-roles in Host status. Host event list APIs now apply category, node, operator,
-status-code, and type-prefix filters before limit slicing so audit inspection
-does not depend only on client-side filtering of the newest event tail.
+roles in Host status and allowing hash-only `tokenSha256` records. Host event
+list APIs now apply category, node, operator, status-code, and type-prefix
+filters before limit slicing so audit inspection does not depend only on
+client-side filtering of the newest event tail.
 Generated distributed proof profiles are now covered by a package-level
 contract and script-side validation, so malformed schema versions or
 assignment/runtime-kind mismatches fail before Host inspection.
@@ -691,6 +692,7 @@ files are the active federated redesign pack.
 442. [441-distributed-proof-published-git-ref-check-slice.md](441-distributed-proof-published-git-ref-check-slice.md)
 443. [442-bootstrap-multi-operator-auth-slice.md](442-bootstrap-multi-operator-auth-slice.md)
 444. [443-host-event-server-filtering-slice.md](443-host-event-server-filtering-slice.md)
+445. [444-hashed-bootstrap-operator-token-slice.md](444-hashed-bootstrap-operator-token-slice.md)
 
 ## Role of this corpus
 

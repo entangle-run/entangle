@@ -11,6 +11,7 @@ import {
   writeFile
 } from "node:fs/promises";
 import { spawn } from "node:child_process";
+import { createHash } from "node:crypto";
 import os from "node:os";
 import path from "node:path";
 import { pathToFileURL } from "node:url";
@@ -485,6 +486,10 @@ function buildGitPrincipalRecord(
       mode: "none" as const
     }
   };
+}
+
+function sha256Hex(value: string): string {
+  return createHash("sha256").update(value, "utf8").digest("hex");
 }
 
 function resolveFetchUrl(input: MockFetchInput): URL {
@@ -1234,6 +1239,75 @@ describe("buildHostServer", () => {
 
     await expect(createTestServer()).rejects.toThrow(
       "Host operator token configuration contains duplicate token values."
+    );
+  });
+
+  it("authorizes hashed bootstrap operator token records without raw token config", async () => {
+    process.env.ENTANGLE_HOST_OPERATOR_TOKENS_JSON = JSON.stringify([
+      {
+        operatorId: "ops-admin",
+        operatorRole: "admin",
+        tokenSha256: sha256Hex("admin-secret")
+      }
+    ]);
+    const server = await createTestServer();
+
+    try {
+      const authorizedResponse = await server.inject({
+        headers: {
+          authorization: "Bearer admin-secret"
+        },
+        method: "GET",
+        url: "/v1/host/status"
+      });
+
+      expect(authorizedResponse.statusCode).toBe(200);
+      expect(hostStatusResponseSchema.parse(authorizedResponse.json()).security).toEqual({
+        operatorAuthMode: "bootstrap_operator_token",
+        operatorId: "ops-admin",
+        operatorRole: "admin"
+      });
+
+      const invalidResponse = await server.inject({
+        headers: {
+          authorization: "Bearer wrong-secret"
+        },
+        method: "GET",
+        url: "/v1/host/status"
+      });
+
+      expect(invalidResponse.statusCode).toBe(401);
+    } finally {
+      await server.close();
+    }
+  });
+
+  it("rejects invalid hashed bootstrap operator token records", async () => {
+    process.env.ENTANGLE_HOST_OPERATOR_TOKENS_JSON = JSON.stringify([
+      {
+        operatorId: "ops-admin",
+        operatorRole: "admin",
+        tokenSha256: "not-a-sha256-digest"
+      }
+    ]);
+
+    await expect(createTestServer()).rejects.toThrow(
+      "ENTANGLE_HOST_OPERATOR_TOKENS_JSON record 0 tokenSha256 must be a 64-character SHA-256 hex digest."
+    );
+  });
+
+  it("rejects bootstrap operator records when raw token and hash do not match", async () => {
+    process.env.ENTANGLE_HOST_OPERATOR_TOKENS_JSON = JSON.stringify([
+      {
+        operatorId: "ops-admin",
+        operatorRole: "admin",
+        token: "admin-secret",
+        tokenSha256: sha256Hex("other-secret")
+      }
+    ]);
+
+    await expect(createTestServer()).rejects.toThrow(
+      "ENTANGLE_HOST_OPERATOR_TOKENS_JSON record 0 token does not match tokenSha256."
     );
   });
 
