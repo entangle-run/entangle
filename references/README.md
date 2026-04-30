@@ -92,6 +92,10 @@ extends that path to running User Nodes: the User Client now sends
 conversation-scoped wiki page mutation requests through the Human Interface
 Runtime, which requires a visible `wiki_page` resource and forwards to Host
 with `requestedBy` set to the User Node id.
+[449-studio-wiki-page-upsert-slice.md](449-studio-wiki-page-upsert-slice.md)
+adds the matching Studio operator form over `host-client.upsertRuntimeWikiPage`,
+keeping admin page mutation on the same Host control boundary as CLI and User
+Client workflows.
 Generated distributed proof profiles are now covered by a package-level
 contract and script-side validation, so malformed schema versions or
 assignment/runtime-kind mismatches fail before Host inspection.

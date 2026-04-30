@@ -1,6 +1,8 @@
 import type {
   RuntimeWikiPublishRequest,
-  RuntimeWikiPublishResponse
+  RuntimeWikiPublishResponse,
+  RuntimeWikiUpsertPageRequest,
+  RuntimeWikiUpsertPageResponse
 } from "@entangle/types";
 
 export type RuntimeWikiPublicationDraft = {
@@ -12,6 +14,14 @@ export type RuntimeWikiPublicationDraft = {
   targetRepositoryName: string;
 };
 
+export type RuntimeWikiPageUpsertDraft = {
+  content: string;
+  mode: "append" | "replace";
+  path: string;
+  reason: string;
+  requestedBy: string;
+};
+
 export function createEmptyRuntimeWikiPublicationDraft(): RuntimeWikiPublicationDraft {
   return {
     reason: "",
@@ -20,6 +30,16 @@ export function createEmptyRuntimeWikiPublicationDraft(): RuntimeWikiPublication
     targetGitServiceRef: "",
     targetNamespace: "",
     targetRepositoryName: ""
+  };
+}
+
+export function createEmptyRuntimeWikiPageUpsertDraft(): RuntimeWikiPageUpsertDraft {
+  return {
+    content: "",
+    mode: "replace",
+    path: "",
+    reason: "",
+    requestedBy: ""
   };
 }
 
@@ -64,4 +84,26 @@ export function formatRuntimeWikiPublicationRequestSummary(
   response: RuntimeWikiPublishResponse
 ): string {
   return `Wiki publication requested on ${response.assignmentId} (${response.commandId})`;
+}
+
+export function buildRuntimeWikiPageUpsertRequest(
+  draft: RuntimeWikiPageUpsertDraft
+): RuntimeWikiUpsertPageRequest {
+  return {
+    content: draft.content,
+    mode: draft.mode,
+    path: draft.path.trim(),
+    ...(optionalTrimmed(draft.reason)
+      ? { reason: optionalTrimmed(draft.reason) }
+      : {}),
+    ...(optionalTrimmed(draft.requestedBy)
+      ? { requestedBy: optionalTrimmed(draft.requestedBy) }
+      : {})
+  };
+}
+
+export function formatRuntimeWikiPageUpsertRequestSummary(
+  response: RuntimeWikiUpsertPageResponse
+): string {
+  return `Wiki page ${response.path} requested on ${response.assignmentId} (${response.commandId})`;
 }

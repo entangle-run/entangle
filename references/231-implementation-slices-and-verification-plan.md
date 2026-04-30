@@ -329,6 +329,7 @@ Implementation record:
 - [446-runner-test-gate-fork-stability-slice.md](446-runner-test-gate-fork-stability-slice.md)
 - [447-runner-owned-wiki-page-upsert-slice.md](447-runner-owned-wiki-page-upsert-slice.md)
 - [448-user-client-wiki-page-upsert-slice.md](448-user-client-wiki-page-upsert-slice.md)
+- [449-studio-wiki-page-upsert-slice.md](449-studio-wiki-page-upsert-slice.md)
 
 Verification:
 
@@ -533,6 +534,9 @@ Current status:
   Human Interface Runtime normalizes the page path, forwards through Host with
   `requestedBy` set to the User Node id, and the process-runner smoke waits for
   the projected command receipt and page `wiki.ref`;
+- Studio now exposes the same runner-owned wiki page upsert path from the
+  Runtime Memory panel through `host-client.upsertRuntimeWikiPage`, keeping
+  operator page mutation aligned with CLI and User Client control boundaries;
 - lifecycle start/stop/restart and session cancellation commands now also emit
   signed `runtime.command.receipt` observations, with session cancellation
   receipts carrying cancellation/session correlation ids;

@@ -505,7 +505,8 @@ This repository currently contains:
   mutation path without Host writing runner files. The running User Client can
   now request the same mutation path for visible `wiki_page` resources in the
   selected User Node conversation, with the Human Interface Runtime forwarding
-  through Host as the User Node. Public deep runtime reads
+  through Host as the User Node. Studio's Runtime Memory panel now exposes the
+  same Host control path for operators. Public deep runtime reads
   for accepted federated
   assignments now ignore Host-local runtime files and use projected
   runner evidence instead, while non-federated adapter reads remain available.

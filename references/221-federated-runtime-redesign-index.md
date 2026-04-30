@@ -782,6 +782,8 @@ The running User Client can now request that same page upsert path for visible
 Interface Runtime normalizes the page path, forwards through Host with
 `requestedBy` set to the User Node id, and the process-runner smoke validates
 the projected receipt plus page `wiki.ref`.
+Studio's Runtime Memory panel now exposes the same Host/runner control path
+for operators through `host-client.upsertRuntimeWikiPage`.
 Per-assignment
 timelines now group assignment lifecycle state and
 runner receipts for Host API, CLI, and Studio summary inspection. Public deep

@@ -5376,3 +5376,13 @@ The Human Interface Runtime normalizes the page path, forwards to Host with
 `wiki.ref` evidence, and command receipts. The process-runner smoke now covers
 the live User Client JSON route and waits for projected receipt plus page
 `wiki.ref` evidence.
+
+## [2026-04-29] studio | Added operator wiki page upsert
+
+Added `references/449-studio-wiki-page-upsert-slice.md`. Studio's Runtime
+Memory panel now has an operator form for runner-owned wiki page replacement or
+append through `host-client.upsertRuntimeWikiPage`.
+
+The form sends page path, mode, content, reason, and requestedBy through Host,
+so Studio stays on the same Host-signed control path as CLI and the User Client
+instead of writing runner memory directly.

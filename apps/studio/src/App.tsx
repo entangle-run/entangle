@@ -208,9 +208,13 @@ import {
   type RuntimeSourceHistoryReplayDraft
 } from "./runtime-source-history-inspection.js";
 import {
+  buildRuntimeWikiPageUpsertRequest,
   buildRuntimeWikiPublicationRequest,
+  createEmptyRuntimeWikiPageUpsertDraft,
   createEmptyRuntimeWikiPublicationDraft,
+  formatRuntimeWikiPageUpsertRequestSummary,
   formatRuntimeWikiPublicationRequestSummary,
+  type RuntimeWikiPageUpsertDraft,
   type RuntimeWikiPublicationDraft
 } from "./runtime-wiki-publication.js";
 import {
@@ -641,6 +645,15 @@ export function App() {
   const [lastWikiPublicationSummary, setLastWikiPublicationSummary] =
     useState<string | null>(null);
   const [pendingWikiPublication, setPendingWikiPublication] = useState(false);
+  const [wikiPageUpsertDraft, setWikiPageUpsertDraft] =
+    useState<RuntimeWikiPageUpsertDraft>(
+      createEmptyRuntimeWikiPageUpsertDraft
+    );
+  const [wikiPageUpsertError, setWikiPageUpsertError] =
+    useState<string | null>(null);
+  const [lastWikiPageUpsertSummary, setLastWikiPageUpsertSummary] =
+    useState<string | null>(null);
+  const [pendingWikiPageUpsert, setPendingWikiPageUpsert] = useState(false);
   const [selectedTurns, setSelectedTurns] = useState<RunnerTurnRecord[]>([]);
   const [turnError, setTurnError] = useState<string | null>(null);
   const [selectedTurnId, setSelectedTurnId] = useState<string | null>(null);
@@ -2558,6 +2571,49 @@ export function App() {
     wikiPublicationDraft
   ]);
 
+  const requestRuntimeWikiPageUpsert = useCallback(async () => {
+    if (!selectedRuntimeId || !wikiPageUpsertDraft.path.trim()) {
+      return;
+    }
+
+    setPendingWikiPageUpsert(true);
+    setWikiPageUpsertError(null);
+    setLastWikiPageUpsertSummary(null);
+
+    try {
+      const response = await client.upsertRuntimeWikiPage(
+        selectedRuntimeId,
+        buildRuntimeWikiPageUpsertRequest(wikiPageUpsertDraft)
+      );
+
+      startTransition(() => {
+        setLastWikiPageUpsertSummary(
+          formatRuntimeWikiPageUpsertRequestSummary(response)
+        );
+        setWikiPageUpsertDraft(createEmptyRuntimeWikiPageUpsertDraft());
+        setWikiPageUpsertError(null);
+      });
+
+      await refreshSelectedRuntimeDetails(selectedRuntimeId);
+    } catch (caught: unknown) {
+      startTransition(() => {
+        setWikiPageUpsertError(
+          normalizeError(
+            caught,
+            "Unknown error while requesting wiki page update."
+          )
+        );
+      });
+    } finally {
+      setPendingWikiPageUpsert(false);
+    }
+  }, [
+    client,
+    refreshSelectedRuntimeDetails,
+    selectedRuntimeId,
+    wikiPageUpsertDraft
+  ]);
+
   const requestRuntimeArtifactRestore = useCallback(async () => {
     if (!selectedRuntimeId || !selectedArtifactInspection) {
       return;
@@ -3094,6 +3150,10 @@ export function App() {
       setWikiPublicationError(null);
       setLastWikiPublicationSummary(null);
       setPendingWikiPublication(false);
+      setWikiPageUpsertDraft(createEmptyRuntimeWikiPageUpsertDraft());
+      setWikiPageUpsertError(null);
+      setLastWikiPageUpsertSummary(null);
+      setPendingWikiPageUpsert(false);
       setTurnError(null);
       setSelectedTurns([]);
       setSelectedTurnId(null);
@@ -3173,6 +3233,10 @@ export function App() {
     setWikiPublicationError(null);
     setLastWikiPublicationSummary(null);
     setPendingWikiPublication(false);
+    setWikiPageUpsertDraft(createEmptyRuntimeWikiPageUpsertDraft());
+    setWikiPageUpsertError(null);
+    setLastWikiPageUpsertSummary(null);
+    setPendingWikiPageUpsert(false);
     setTurnError(null);
     setSelectedTurns([]);
     setSelectedTurnId(null);
@@ -6753,6 +6817,116 @@ export function App() {
                       </div>
                       {wikiPublicationError ? (
                         <p className="error-box">{wikiPublicationError}</p>
+                      ) : null}
+                    </form>
+
+                    <form
+                      className="stacked-form"
+                      onSubmit={(event) => {
+                        event.preventDefault();
+                        void requestRuntimeWikiPageUpsert();
+                      }}
+                    >
+                      <div className="field-grid">
+                        <label className="field">
+                          <span>Page Path</span>
+                          <input
+                            disabled={pendingWikiPageUpsert}
+                            onChange={(event) => {
+                              setWikiPageUpsertDraft((current) => ({
+                                ...current,
+                                path: event.target.value
+                              }));
+                            }}
+                            placeholder="operator/notes.md"
+                            value={wikiPageUpsertDraft.path}
+                          />
+                        </label>
+                        <label className="field">
+                          <span>Mode</span>
+                          <select
+                            disabled={pendingWikiPageUpsert}
+                            onChange={(event) => {
+                              setWikiPageUpsertDraft((current) => ({
+                                ...current,
+                                mode:
+                                  event.target.value === "append"
+                                    ? "append"
+                                    : "replace"
+                              }));
+                            }}
+                            value={wikiPageUpsertDraft.mode}
+                          >
+                            <option value="replace">Replace</option>
+                            <option value="append">Append</option>
+                          </select>
+                        </label>
+                        <label className="field">
+                          <span>Requested By</span>
+                          <input
+                            disabled={pendingWikiPageUpsert}
+                            onChange={(event) => {
+                              setWikiPageUpsertDraft((current) => ({
+                                ...current,
+                                requestedBy: event.target.value
+                              }));
+                            }}
+                            placeholder="operator id"
+                            value={wikiPageUpsertDraft.requestedBy}
+                          />
+                        </label>
+                        <label className="field">
+                          <span>Reason</span>
+                          <input
+                            disabled={pendingWikiPageUpsert}
+                            onChange={(event) => {
+                              setWikiPageUpsertDraft((current) => ({
+                                ...current,
+                                reason: event.target.value
+                              }));
+                            }}
+                            placeholder="operator update reason"
+                            value={wikiPageUpsertDraft.reason}
+                          />
+                        </label>
+                      </div>
+                      <label className="field">
+                        <span>Markdown Content</span>
+                        <textarea
+                          disabled={pendingWikiPageUpsert}
+                          onChange={(event) => {
+                            setWikiPageUpsertDraft((current) => ({
+                              ...current,
+                              content: event.target.value
+                            }));
+                          }}
+                          placeholder="# Runtime note"
+                          rows={5}
+                          value={wikiPageUpsertDraft.content}
+                        />
+                      </label>
+                      <div className="action-row">
+                        <button
+                          className="action-button"
+                          disabled={
+                            !selectedRuntimeId ||
+                            !wikiPageUpsertDraft.path.trim() ||
+                            pendingWikiPageUpsert
+                          }
+                          type="submit"
+                        >
+                          {pendingWikiPageUpsert
+                            ? "Requesting..."
+                            : "Update Wiki Page"}
+                        </button>
+                        {lastWikiPageUpsertSummary ? (
+                          <span className="panel-caption">
+                            {lastWikiPageUpsertSummary}
+                          </span>
+                        ) : null}
+                      </div>
+                      {wikiPageUpsertError ? (
+                        <p className="error-box">{wikiPageUpsertError}</p>
                       ) : null}
                     </form>
 
