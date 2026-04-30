@@ -79,7 +79,9 @@ Non-federated/local adapter mutation is not reintroduced.
 
 ## Open questions
 
-- User Client/Human Interface Runtime should decide whether participant wiki
-  page edits target the User Node's own wiki only or visible peer-node wiki
-  resources.
+- [448-user-client-wiki-page-upsert-slice.md](448-user-client-wiki-page-upsert-slice.md)
+  resolved the first participant policy: User Client page edits target visible
+  peer-node `wiki_page` resources in the selected conversation and are
+  forwarded with `requestedBy` set to the User Node id.
+- User-owned personal wiki mutation remains a separate future policy question.
 - Source merge/reconcile workflows remain outside this slice.

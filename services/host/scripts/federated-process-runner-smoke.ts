@@ -51,6 +51,7 @@ import {
   runtimeTurnInspectionResponseSchema,
   runtimeTurnListResponseSchema,
   runtimeWikiPublishResponseSchema,
+  runtimeWikiUpsertPageResponseSchema,
   sessionInspectionResponseSchema,
   sessionListResponseSchema,
   sessionRecordSchema,
@@ -3195,6 +3196,185 @@ async function main(): Promise<void> {
         `repository=${projectedUserClientWikiArtifact.repositoryName}; ` +
         `commit=${projectedUserClientWikiArtifact.commit.slice(0, 12)}`
     );
+
+    const userClientWikiPagePath = "operator/user-client-note.md";
+    const wikiPageApprovalId = `approval-wiki-page-${runId}`;
+    const syntheticWikiPageApprovalRequestMessageId =
+      await publishSyntheticA2AMessage({
+        message: {
+          constraints: {
+            approvalRequiredBeforeAction: false
+          },
+          conversationId: userMessage.conversationId,
+          fromNodeId: "builder",
+          fromPubkey: materializedContext.identityContext.publicKey,
+          graphId: materializedContext.binding.graphId,
+          intent: "Request User Node approval for wiki page mutation.",
+          messageType: "approval.request",
+          parentMessageId: userMessage.eventId,
+          protocol: "entangle.a2a.v1",
+          responsePolicy: {
+            closeOnResult: false,
+            maxFollowups: 1,
+            responseRequired: true
+          },
+          sessionId: userMessage.sessionId,
+          toNodeId: "user",
+          toPubkey: materializedUserContext.identityContext.publicKey,
+          turnId: `${turnId}-wiki-page-approval-request`,
+          work: {
+            artifactRefs: [],
+            metadata: {
+              approval: {
+                approvalId: wikiPageApprovalId,
+                approverNodeIds: ["user"],
+                operation: "wiki_update",
+                resource: {
+                  id: userClientWikiPagePath,
+                  kind: "wiki_page",
+                  label: userClientWikiPagePath
+                }
+              }
+            },
+            summary:
+              "Process runner smoke: approve builder wiki page mutation."
+          }
+        },
+        relayUrls,
+        senderSecretKeyHex: builderIdentitySecret.secretKey
+      });
+    const wikiPageApprovalConversationDetail = await waitFor(
+      "Host User Node inbound wiki page approval request",
+      async () => {
+        const detail = userNodeConversationResponseSchema.parse(
+          await hostRequest({
+            baseUrl: hostBaseUrl,
+            path: `/v1/user-nodes/user/inbox/${userMessage.conversationId}`
+          })
+        );
+
+        return detail.messages.some(
+          (message) =>
+            message.messageType === "approval.request" &&
+            message.approval?.approvalId === wikiPageApprovalId &&
+            message.approval.resource?.kind === "wiki_page"
+        )
+          ? detail
+          : undefined;
+      },
+      () => `\nstdout:\n${userRunnerStdout}\nstderr:\n${userRunnerStderr}`
+    );
+    const wikiPageApprovalRecord =
+      wikiPageApprovalConversationDetail.messages.find(
+        (message) =>
+          message.eventId === syntheticWikiPageApprovalRequestMessageId &&
+          message.approval?.approvalId === wikiPageApprovalId
+      );
+    if (!wikiPageApprovalRecord) {
+      throw new Error(
+        "User Node conversation detail must include the inbound wiki page approval request."
+      );
+    }
+    assertSignerMatchesFromPubkey(
+      wikiPageApprovalRecord,
+      "Host User Node wiki page approval request record"
+    );
+    printPass("user-node-wiki-page-approval-request", wikiPageApprovalId);
+
+    const userClientWikiPageUpsertResponse = await fetch(
+      new URL("/api/wiki/pages", userClientUrl),
+      {
+        body: JSON.stringify({
+          content:
+            "# User Client Note\n\nProcess runner smoke wrote this through the User Client.",
+          conversationId: userMessage.conversationId,
+          mode: "replace",
+          nodeId: "builder",
+          path: `/${userClientWikiPagePath}`,
+          reason:
+            "Process runner smoke requested wiki page mutation from the User Client."
+        }),
+        headers: {
+          "content-type": "application/json"
+        },
+        method: "POST"
+      }
+    );
+    await assertResponseOk(
+      userClientWikiPageUpsertResponse,
+      "User Client JSON wiki page mutation"
+    );
+    const userClientWikiPageUpsertRaw =
+      (await userClientWikiPageUpsertResponse.json()) as {
+        path?: string;
+        source?: string;
+        userNodeId?: string;
+      };
+    const userClientWikiPageUpsertRequest =
+      runtimeWikiUpsertPageResponseSchema.parse(userClientWikiPageUpsertRaw);
+    assertCondition(
+      userClientWikiPageUpsertRaw.source === "runtime" &&
+        userClientWikiPageUpsertRaw.userNodeId === "user" &&
+        userClientWikiPageUpsertRequest.path === userClientWikiPagePath,
+      "User Client wiki page mutation response must identify runtime source, User Node, and normalized page path."
+    );
+    printPass(
+      "user-client-wiki-page-upsert-request",
+      `command=${userClientWikiPageUpsertRequest.commandId}; ` +
+        `page=${userClientWikiPageUpsertRequest.path}`
+    );
+
+    const projectedUserClientWikiPageReceipt = await waitFor(
+      "Host projected User Client wiki page mutation command receipt",
+      async () => {
+        const projection = hostProjectionSnapshotSchema.parse(
+          await hostRequest({
+            baseUrl: hostBaseUrl,
+            path: "/v1/projection"
+          })
+        );
+
+        return projection.runtimeCommandReceipts.find(
+          (receipt) =>
+            receipt.commandId === userClientWikiPageUpsertRequest.commandId &&
+            receipt.commandEventType === "runtime.wiki.upsert_page" &&
+            receipt.receiptStatus !== "received"
+        );
+      },
+      () => `\nstdout:\n${runnerStdout}\nstderr:\n${runnerStderr}`
+    );
+    assertCondition(
+      projectedUserClientWikiPageReceipt.receiptStatus === "completed" &&
+        projectedUserClientWikiPageReceipt.wikiPagePath === userClientWikiPagePath,
+      `User Client wiki page mutation command must complete for ${userClientWikiPagePath}; got ` +
+        `${projectedUserClientWikiPageReceipt.receiptStatus}: ` +
+        `${projectedUserClientWikiPageReceipt.receiptMessage ?? "no receipt message"}`
+    );
+    printPass(
+      "projected-user-client-wiki-page-command-receipt",
+      `command=${projectedUserClientWikiPageReceipt.commandId}; ` +
+        `page=${projectedUserClientWikiPageReceipt.wikiPagePath ?? "missing"}`
+    );
+
+    await waitFor(
+      "Host projected User Client wiki page ref",
+      async () => {
+        const projection = hostProjectionSnapshotSchema.parse(
+          await hostRequest({
+            baseUrl: hostBaseUrl,
+            path: "/v1/projection"
+          })
+        );
+
+        return projection.wikiRefs.find(
+          (ref) =>
+            ref.nodeId === "builder" &&
+            ref.artifactRef.locator.path === `/${userClientWikiPagePath}`
+        );
+      },
+      () => `\nstdout:\n${runnerStdout}\nstderr:\n${runnerStderr}`
+    );
+    printPass("projected-user-client-wiki-page-ref", userClientWikiPagePath);
 
     const syntheticAgentMessageId = await publishSyntheticA2AMessage({
       message: {

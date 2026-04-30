@@ -163,6 +163,11 @@ The most accurate current description is:
   wiki repository, emits `wiki.ref` evidence, and reports command receipts
   correlated by `wikiPagePath`, with Host API, host-client, and CLI request
   support;
+- the running User Client can now request that same wiki page replacement or
+  append path for visible `wiki_page` resources in the selected User Node
+  conversation, with the Human Interface Runtime forwarding through Host as
+  the User Node and the process-runner smoke validating receipt plus page
+  `wiki.ref` evidence;
 - joined runners now publish session/conversation observations for later
   lifecycle transitions after handoffs, coordination result/close, approval
   request/response, completion, cancellation, and failure paths;
@@ -215,9 +220,9 @@ The most accurate current description is:
   `runtime.command.receipt` observations as command-id closure while keeping
   assignment receipts and session observations as the domain lifecycle model;
 - the largest remaining gaps are projection-backed replacement for deep runtime
-  detail APIs, source merge/reconcile services, participant-scoped wiki editing
-  policy on top of runner-owned page upsert, and infrastructure-backed
-  multi-machine proof execution.
+  detail APIs, source merge/reconcile services, collaborative wiki patch/diff
+  semantics on top of participant-scoped page upsert, and
+  infrastructure-backed multi-machine proof execution.
 
 The Human Interface Runtime now has a first usable running User Client for
 human graph participants. It can inspect projected inbox state, publish
@@ -1142,9 +1147,9 @@ The current implementation-truth audit now lives in
   artifact source-change proposal operator and User Client requests plus User
   Client visible source-history publication requests plus target-specific
   source-history/wiki publication visibility checks plus explicit
-  runner-owned artifact/source/wiki command completion receipts; the
-  next git gaps are richer wiki promotion policy and repository lifecycle
-  behavior, source-history
+  runner-owned artifact/source/wiki command completion receipts plus User
+  Client visible wiki page upsert; the next git gaps are richer collaborative
+  wiki patch/diff semantics and repository lifecycle behavior, source-history
   merge/reconcile workflows, and explicit fallback or
   replication behavior,
   while the next deployment-grade gap is

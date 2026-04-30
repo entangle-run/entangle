@@ -33,6 +33,7 @@ import {
   renderArtifactLocator,
   reviewSourceChangeCandidate,
   restoreArtifact,
+  upsertWikiPage,
   type UserClientState
 } from "./runtime-api.js";
 
@@ -138,6 +139,23 @@ function wikiPublicationTargetForRef(input: {
   }
 
   return undefined;
+}
+
+function normalizeWikiPagePath(value: string): string {
+  return value.trim().replace(/^\/+/u, "");
+}
+
+function resolveWikiPagePath(input: {
+  refs: WikiRefProjectionRecord[];
+  resource: NonNullable<UserNodeMessageRecord["approval"]>["resource"];
+}): string {
+  if (input.resource?.kind === "wiki_page") {
+    return normalizeWikiPagePath(input.resource.id);
+  }
+
+  const pageRef = input.refs.find((ref) => ref.artifactRef.locator.path !== "/");
+
+  return pageRef ? normalizeWikiPagePath(pageRef.artifactRef.locator.path) : "";
 }
 
 function formatGitRepositoryTargetSelector(
@@ -739,6 +757,9 @@ function WikiResourceCards({
   state?: UserClientState | undefined;
 }) {
   const [publishReason, setPublishReason] = useState("");
+  const [pageContent, setPageContent] = useState("");
+  const [pageMode, setPageMode] = useState<"append" | "replace">("replace");
+  const [pagePath, setPagePath] = useState("");
   const [retryFailedPublication, setRetryFailedPublication] = useState(false);
   const [status, setStatus] = useState<string | undefined>();
   const resource = message.approval?.resource;
@@ -752,8 +773,15 @@ function WikiResourceCards({
             wikiRefMatchesResource({ ref, resource })
         )
       : [];
+  const canUpsertPage = resource?.kind === "wiki_page";
+  const effectivePagePath =
+    pagePath ||
+    resolveWikiPagePath({
+      refs,
+      resource
+    });
 
-  if (refs.length === 0) {
+  if (refs.length === 0 && !canUpsertPage) {
     return null;
   }
 
@@ -784,6 +812,29 @@ function WikiResourceCards({
     }
   }
 
+  async function requestPageUpsert(): Promise<void> {
+    setStatus(`requesting wiki page ${pageMode}`);
+
+    try {
+      const response = await upsertWikiPage({
+        baseUrl,
+        content: pageContent,
+        conversationId: message.conversationId,
+        mode: pageMode,
+        nodeId: message.fromNodeId,
+        path: effectivePagePath,
+        ...(publishReason.trim() ? { reason: publishReason.trim() } : {})
+      });
+
+      setStatus(`wiki page ${response.path} requested ${response.commandId}`);
+      await onRefresh();
+    } catch (error) {
+      setStatus(
+        error instanceof Error ? error.message : "Wiki page update failed."
+      );
+    }
+  }
+
   return (
     <div className="artifact-list">
       {refs.map((ref) => {
@@ -810,26 +861,61 @@ function WikiResourceCards({
           placeholder="Publication reason"
           value={publishReason}
         />
-        <label className="inline-checkbox">
-          <input
-            checked={retryFailedPublication}
-            onChange={(event) => setRetryFailedPublication(event.target.checked)}
-            type="checkbox"
-          />
-          <span>Retry failed</span>
-        </label>
-        <button
-          onClick={() => {
-            const target = refs
-              .map((ref) => wikiPublicationTargetForRef({ ref, resource }))
-              .find((candidate) => candidate !== undefined);
+        {refs.length > 0 ? (
+          <>
+            <label className="inline-checkbox">
+              <input
+                checked={retryFailedPublication}
+                onChange={(event) =>
+                  setRetryFailedPublication(event.target.checked)
+                }
+                type="checkbox"
+              />
+              <span>Retry failed</span>
+            </label>
+            <button
+              onClick={() => {
+                const target = refs
+                  .map((ref) => wikiPublicationTargetForRef({ ref, resource }))
+                  .find((candidate) => candidate !== undefined);
 
-            void requestPublication(target);
-          }}
-          type="button"
-        >
-          Publish Wiki
-        </button>
+                void requestPublication(target);
+              }}
+              type="button"
+            >
+              Publish Wiki
+            </button>
+          </>
+        ) : null}
+        {canUpsertPage ? (
+          <>
+            <input
+              aria-label="Wiki page path"
+              onChange={(event) => setPagePath(event.target.value)}
+              placeholder="Page path"
+              value={effectivePagePath}
+            />
+            <textarea
+              aria-label="Wiki page content"
+              onChange={(event) => setPageContent(event.target.value)}
+              placeholder="Markdown content"
+              value={pageContent}
+            />
+            <label className="inline-checkbox">
+              <input
+                checked={pageMode === "append"}
+                onChange={(event) =>
+                  setPageMode(event.target.checked ? "append" : "replace")
+                }
+                type="checkbox"
+              />
+              <span>Append</span>
+            </label>
+            <button onClick={() => void requestPageUpsert()} type="button">
+              Update Page
+            </button>
+          </>
+        ) : null}
         {status ? <span className="metadata">{status}</span> : null}
       </div>
     </div>

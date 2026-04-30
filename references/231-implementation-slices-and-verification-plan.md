@@ -328,6 +328,7 @@ Implementation record:
 - [401-root-test-gate-reliability-slice.md](401-root-test-gate-reliability-slice.md)
 - [446-runner-test-gate-fork-stability-slice.md](446-runner-test-gate-fork-stability-slice.md)
 - [447-runner-owned-wiki-page-upsert-slice.md](447-runner-owned-wiki-page-upsert-slice.md)
+- [448-user-client-wiki-page-upsert-slice.md](448-user-client-wiki-page-upsert-slice.md)
 
 Verification:
 
@@ -527,6 +528,11 @@ Current status:
   `runtime.wiki.upsert_page` commands to the accepted runner assignment, with
   path validation inside the runner wiki root, wiki repository sync, `wiki.ref`
   evidence, and command receipts correlated by `wikiPagePath`;
+- the running User Client can now request the same wiki page replacement/append
+  path from visible `wiki_page` resources in the selected conversation; the
+  Human Interface Runtime normalizes the page path, forwards through Host with
+  `requestedBy` set to the User Node id, and the process-runner smoke waits for
+  the projected command receipt and page `wiki.ref`;
 - lifecycle start/stop/restart and session cancellation commands now also emit
   signed `runtime.command.receipt` observations, with session cancellation
   receipts carrying cancellation/session correlation ids;
@@ -534,9 +540,9 @@ Current status:
   assignment, node, runner, command type, status, and limit filters;
 - Studio can inspect per-assignment timeline entries through the Host
   assignment timeline endpoint, keeping operator drilldown aligned with CLI;
-- richer source merge/reconcile endpoints and participant-scoped wiki editing
-  policy still need protocol-backed replacement on top of the first wiki page
-  upsert command.
+- richer source merge/reconcile endpoints and collaborative wiki patch/diff
+  semantics still need protocol-backed replacement on top of the first
+  participant-scoped wiki page upsert command.
 
 ### Slice 9: User Node Runtime
 

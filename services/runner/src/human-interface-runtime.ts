@@ -20,6 +20,7 @@ import type {
   RuntimeSourceChangeCandidateInspectionResponse,
   RuntimeSourceHistoryPublishResponse,
   RuntimeWikiPublishResponse,
+  RuntimeWikiUpsertPageResponse,
   SourceChangeRefProjectionRecord,
   SourceHistoryPublicationTarget,
   SourceHistoryRefProjectionRecord,
@@ -42,6 +43,7 @@ import {
   runtimeSourceChangeCandidateFilePreviewResponseSchema,
   runtimeSourceHistoryPublishResponseSchema,
   runtimeWikiPublishResponseSchema,
+  runtimeWikiUpsertPageResponseSchema,
   sourceHistoryPublicationTargetSchema,
   userNodeConversationResponseSchema,
   userNodeConversationReadResponseSchema,
@@ -162,6 +164,21 @@ type UserClientWikiPublishResponse = RuntimeWikiPublishResponse & {
   wikiRefs: WikiRefProjectionRecord[];
 };
 
+type UserClientWikiPageUpsertRequest = {
+  content?: unknown;
+  conversationId?: unknown;
+  mode?: unknown;
+  nodeId?: unknown;
+  path?: unknown;
+  reason?: unknown;
+};
+
+type UserClientWikiPageUpsertResponse = RuntimeWikiUpsertPageResponse & {
+  source: "runtime";
+  userNodeId: string;
+  wikiRefs: WikiRefProjectionRecord[];
+};
+
 type UserClientSourceHistoryPublishRequest = {
   conversationId?: unknown;
   nodeId?: unknown;
@@ -198,6 +215,16 @@ type UserClientVisibleSourceChange =
 
 type UserClientVisibleWikiRefs =
   | {
+      wikiRefs: WikiRefProjectionRecord[];
+    }
+  | {
+      error: string;
+      statusCode: number;
+    };
+
+type UserClientVisibleWikiPage =
+  | {
+      path: string;
       wikiRefs: WikiRefProjectionRecord[];
     }
   | {
@@ -924,6 +951,164 @@ async function resolveUserClientVisibleWikiRefs(input: {
   }
 
   return { wikiRefs };
+}
+
+function normalizeUserClientWikiPagePath(pagePath: string): string | undefined {
+  const trimmedPath = pagePath.trim().replace(/^\/+/u, "");
+
+  if (
+    trimmedPath.length === 0 ||
+    trimmedPath.includes("\\") ||
+    trimmedPath.includes("\0")
+  ) {
+    return undefined;
+  }
+
+  const rawSegments = trimmedPath.split("/");
+
+  if (rawSegments.includes("..")) {
+    return undefined;
+  }
+
+  const normalizedPath = path.posix.normalize(trimmedPath);
+  const segments = normalizedPath.split("/");
+
+  if (
+    normalizedPath === "." ||
+    normalizedPath.startsWith("../") ||
+    path.posix.isAbsolute(normalizedPath) ||
+    segments.includes("..") ||
+    !normalizedPath.endsWith(".md")
+  ) {
+    return undefined;
+  }
+
+  return normalizedPath;
+}
+
+function wikiPageResourceAllowsPath(input: {
+  path: string;
+  resource: ApprovalResource;
+}): boolean {
+  if (input.resource.kind !== "wiki_page") {
+    return false;
+  }
+
+  return normalizeUserClientWikiPagePath(input.resource.id) === input.path;
+}
+
+function wikiRefMatchesPagePath(input: {
+  path: string;
+  ref: WikiRefProjectionRecord;
+}): boolean {
+  return (
+    normalizeUserClientWikiPagePath(input.ref.artifactRef.locator.path) ===
+    input.path
+  );
+}
+
+async function resolveUserClientVisibleWikiPage(input: {
+  conversationId?: string | undefined;
+  hostApi?: RunnerJoinHostApi | undefined;
+  nodeId: string;
+  path: string;
+  userNodeId: string;
+}): Promise<UserClientVisibleWikiPage> {
+  if (!input.conversationId) {
+    return {
+      error: "Conversation id is required for wiki page mutation.",
+      statusCode: 400
+    };
+  }
+
+  const normalizedPath = normalizeUserClientWikiPagePath(input.path);
+
+  if (!normalizedPath) {
+    return {
+      error: "Wiki page path must be a POSIX markdown path inside the wiki.",
+      statusCode: 400
+    };
+  }
+
+  const conversation = await fetchUserNodeConversation({
+    conversationId: input.conversationId,
+    hostApi: input.hostApi,
+    userNodeId: input.userNodeId
+  });
+
+  if (conversation.error || !conversation.detail) {
+    return {
+      error: conversation.error ?? "Conversation detail is unavailable.",
+      statusCode: 502
+    };
+  }
+
+  const wikiPageResources = conversation.detail.messages.flatMap((message) => {
+    const resource = message.approval?.resource;
+
+    return message.direction === "inbound" &&
+      message.fromNodeId === input.nodeId &&
+      resource?.kind === "wiki_page"
+      ? [resource]
+      : [];
+  });
+
+  if (wikiPageResources.length === 0) {
+    return {
+      error: "Wiki page resource is not visible in the selected User Node conversation.",
+      statusCode: 403
+    };
+  }
+
+  const directResourceVisible = wikiPageResources.some((resource) =>
+    wikiPageResourceAllowsPath({
+      path: normalizedPath,
+      resource
+    })
+  );
+  const projection = await fetchHostProjection({ hostApi: input.hostApi });
+
+  if (projection.error || !projection.detail) {
+    if (directResourceVisible) {
+      return {
+        path: normalizedPath,
+        wikiRefs: []
+      };
+    }
+
+    return {
+      error: projection.error ?? "Host projection is unavailable.",
+      statusCode: 502
+    };
+  }
+
+  const matchingWikiRefs = projection.detail.wikiRefs.filter(
+    (ref) =>
+      ref.nodeId === input.nodeId &&
+      (wikiRefMatchesPagePath({
+        path: normalizedPath,
+        ref
+      }) ||
+        wikiPageResources.some((resource) => resource.id === ref.artifactId))
+  );
+  const refVisible = matchingWikiRefs.some((ref) =>
+    wikiRefMatchesPagePath({
+      path: normalizedPath,
+      ref
+    })
+  );
+
+  if (!directResourceVisible && !refVisible) {
+    return {
+      error: "Wiki page is not visible in the selected User Node conversation.",
+      statusCode: 403
+    };
+  }
+
+  return {
+    path: normalizedPath,
+    wikiRefs: matchingWikiRefs
+  };
 }
 
 async function resolveUserClientVisibleSourceHistoryRefs(input: {
@@ -1703,6 +1888,75 @@ async function requestRuntimeWikiPublication(input: {
         error instanceof Error
           ? error.message
           : "Host wiki publication request failed.",
+      statusCode: 502
+    };
+  }
+}
+
+async function requestRuntimeWikiPageUpsert(input: {
+  content: string;
+  hostApi?: RunnerJoinHostApi | undefined;
+  mode: "append" | "replace";
+  nodeId: string;
+  path: string;
+  reason?: string | undefined;
+  userNodeId: string;
+  wikiRefs: WikiRefProjectionRecord[];
+}): Promise<{
+  detail?: UserClientWikiPageUpsertResponse;
+  error?: string;
+  statusCode?: number;
+}> {
+  if (!input.hostApi) {
+    return {
+      error: "Host API is not configured for wiki page mutation.",
+      statusCode: 409
+    };
+  }
+
+  try {
+    const response = await fetch(
+      new URL(
+        `/v1/runtimes/${encodeURIComponent(input.nodeId)}/wiki/pages`,
+        input.hostApi.baseUrl
+      ),
+      {
+        body: JSON.stringify({
+          content: input.content,
+          mode: input.mode,
+          path: input.path,
+          ...(input.reason ? { reason: input.reason } : {}),
+          requestedBy: input.userNodeId
+        }),
+        headers: {
+          ...buildHostApiHeaders(input.hostApi),
+          "content-type": "application/json"
+        },
+        method: "POST"
+      }
+    );
+
+    if (!response.ok) {
+      return {
+        error: `Host wiki page mutation request failed with HTTP ${response.status}.`,
+        statusCode: response.status
+      };
+    }
+
+    return {
+      detail: {
+        ...runtimeWikiUpsertPageResponseSchema.parse(await response.json()),
+        source: "runtime",
+        userNodeId: input.userNodeId,
+        wikiRefs: input.wikiRefs
+      }
+    };
+  } catch (error) {
+    return {
+      error:
+        error instanceof Error
+          ? error.message
+          : "Host wiki page mutation request failed.",
       statusCode: 502
     };
   }
@@ -3729,6 +3983,111 @@ export async function startHumanInterfaceRuntime(input: {
         }
 
         writeJson(response, 200, proposal.detail);
+        return;
+      }
+
+      if (
+        request.method === "POST" &&
+        requestUrl.pathname === "/api/wiki/pages"
+      ) {
+        let upsertRequest: UserClientWikiPageUpsertRequest;
+
+        try {
+          upsertRequest =
+            (await readRequestJson(request)) as UserClientWikiPageUpsertRequest;
+        } catch (error) {
+          writeJson(response, 400, {
+            error:
+              error instanceof Error
+                ? error.message
+                : "Wiki page mutation request is invalid."
+          });
+          return;
+        }
+
+        const conversationId =
+          typeof upsertRequest.conversationId === "string"
+            ? upsertRequest.conversationId.trim()
+            : "";
+        const nodeId =
+          typeof upsertRequest.nodeId === "string"
+            ? upsertRequest.nodeId.trim()
+            : "";
+        const pagePath =
+          typeof upsertRequest.path === "string"
+            ? upsertRequest.path.trim()
+            : "";
+        const content =
+          typeof upsertRequest.content === "string"
+            ? upsertRequest.content
+            : undefined;
+        const mode =
+          upsertRequest.mode === undefined
+            ? "replace"
+            : upsertRequest.mode === "append" || upsertRequest.mode === "replace"
+              ? upsertRequest.mode
+              : undefined;
+        const reason =
+          typeof upsertRequest.reason === "string" &&
+          upsertRequest.reason.trim().length > 0
+            ? upsertRequest.reason.trim()
+            : undefined;
+
+        if (!nodeId || !conversationId) {
+          writeJson(response, 400, {
+            error: "Runtime node and conversation are required."
+          });
+          return;
+        }
+
+        if (content === undefined) {
+          writeJson(response, 400, {
+            error: "Wiki page content is required."
+          });
+          return;
+        }
+
+        if (!mode) {
+          writeJson(response, 400, {
+            error: "Wiki page mutation mode is invalid."
+          });
+          return;
+        }
+
+        const visibleWikiPage = await resolveUserClientVisibleWikiPage({
+          conversationId,
+          hostApi: input.hostApi,
+          nodeId,
+          path: pagePath,
+          userNodeId: input.context.binding.node.nodeId
+        });
+
+        if ("error" in visibleWikiPage) {
+          writeJson(response, visibleWikiPage.statusCode, {
+            error: visibleWikiPage.error
+          });
+          return;
+        }
+
+        const mutation = await requestRuntimeWikiPageUpsert({
+          content,
+          hostApi: input.hostApi,
+          mode,
+          nodeId,
+          path: visibleWikiPage.path,
+          reason,
+          userNodeId: input.context.binding.node.nodeId,
+          wikiRefs: visibleWikiPage.wikiRefs
+        });
+
+        if (mutation.error || !mutation.detail) {
+          writeJson(response, mutation.statusCode ?? 502, {
+            error: mutation.error ?? "Wiki page mutation request failed."
+          });
+          return;
+        }
+
+        writeJson(response, 200, mutation.detail);
         return;
       }
 

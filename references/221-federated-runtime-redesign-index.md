@@ -650,9 +650,10 @@ for delegated sessions without copying transcripts.
     repositories, explicit wiki publication can target a resolved git
     repository selector from the runner's artifact context, and the first
     runner-owned wiki page upsert command now replaces/appends markdown pages
-    without Host filesystem writes. Source merge/reconcile services,
-    participant-scoped wiki editing policy, and richer memory promotion remain
-    open.
+    without Host filesystem writes; the User Client can request that page
+    upsert path for visible `wiki_page` resources in the selected User Node
+    conversation. Source merge/reconcile services, collaborative wiki patch/diff
+    semantics, and richer memory promotion remain open.
 12. Studio and CLI operator/user-node federation surfaces. CLI and Studio now
     both expose first-pass assignment offer and revoke operations through
     Host-owned APIs.
@@ -776,6 +777,11 @@ Runner-owned wiki page upsert now has Host API, host-client, and CLI request
 surfaces over `runtime.wiki.upsert_page`; the runner writes only inside its
 own wiki root, updates the wiki index, synchronizes the wiki git repository,
 and emits `wiki.ref` plus command-receipt projection evidence.
+The running User Client can now request that same page upsert path for visible
+`wiki_page` resources in the selected User Node conversation; the Human
+Interface Runtime normalizes the page path, forwards through Host with
+`requestedBy` set to the User Node id, and the process-runner smoke validates
+the projected receipt plus page `wiki.ref`.
 Per-assignment
 timelines now group assignment lifecycle state and
 runner receipts for Host API, CLI, and Studio summary inspection. Public deep
@@ -875,7 +881,7 @@ also optionally run `git ls-remote` from the operator machine against projected
 published git artifact locators to prove the advertised branch contains the
 projected commit. The remaining blocking implementation
 areas are richer
-projection-backed source review and merge/reconcile services,
-participant-scoped wiki editing policy on top of the runner-owned page upsert
-command, infrastructure-backed multi-machine proof execution, and deeper
+projection-backed source review and merge/reconcile services, collaborative
+wiki patch/diff semantics on top of the participant-scoped page upsert command,
+infrastructure-backed multi-machine proof execution, and deeper
 production identity/authorization beyond the scoped bootstrap-token boundary.

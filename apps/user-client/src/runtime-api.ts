@@ -9,6 +9,7 @@ import type {
   RuntimeSourceChangeCandidateInspectionResponse,
   RuntimeSourceHistoryPublishResponse,
   RuntimeWikiPublishResponse,
+  RuntimeWikiUpsertPageResponse,
   SourceChangeRefProjectionRecord,
   SourceChangeSummary,
   SourceHistoryPublicationTarget,
@@ -109,6 +110,12 @@ export type UserClientArtifactRestoreResponse = RuntimeArtifactRestoreResponse &
 };
 
 export type UserClientWikiPublishResponse = RuntimeWikiPublishResponse & {
+  source: "runtime";
+  userNodeId: string;
+  wikiRefs: WikiRefProjectionRecord[];
+};
+
+export type UserClientWikiPageUpsertResponse = RuntimeWikiUpsertPageResponse & {
   source: "runtime";
   userNodeId: string;
   wikiRefs: WikiRefProjectionRecord[];
@@ -403,6 +410,34 @@ export function publishWikiRepository(input: {
         ...(input.reason ? { reason: input.reason } : {}),
         retryFailedPublication: input.retryFailedPublication ?? false,
         ...(input.target ? { target: input.target } : {})
+      }),
+      headers: {
+        "content-type": "application/json"
+      },
+      method: "POST"
+    }
+  });
+}
+
+export function upsertWikiPage(input: {
+  baseUrl: string;
+  content: string;
+  conversationId: string;
+  mode?: "append" | "replace" | undefined;
+  nodeId: string;
+  path: string;
+  reason?: string | undefined;
+}): Promise<UserClientWikiPageUpsertResponse> {
+  return fetchJson<UserClientWikiPageUpsertResponse>("/api/wiki/pages", {
+    baseUrl: input.baseUrl,
+    init: {
+      body: JSON.stringify({
+        content: input.content,
+        conversationId: input.conversationId,
+        mode: input.mode ?? "replace",
+        nodeId: input.nodeId,
+        path: input.path,
+        ...(input.reason ? { reason: input.reason } : {})
       }),
       headers: {
         "content-type": "application/json"

@@ -87,6 +87,11 @@ adds Host-signed `runtime.wiki.upsert_page`, runner-local path validation,
 wiki repository sync, `wiki.ref` evidence, command receipts correlated by
 `wikiPagePath`, host-client support, and the first CLI operator command for
 protocol-backed wiki page mutation without Host filesystem writes.
+[448-user-client-wiki-page-upsert-slice.md](448-user-client-wiki-page-upsert-slice.md)
+extends that path to running User Nodes: the User Client now sends
+conversation-scoped wiki page mutation requests through the Human Interface
+Runtime, which requires a visible `wiki_page` resource and forwards to Host
+with `requestedBy` set to the User Node id.
 Generated distributed proof profiles are now covered by a package-level
 contract and script-side validation, so malformed schema versions or
 assignment/runtime-kind mismatches fail before Host inspection.

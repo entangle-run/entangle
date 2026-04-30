@@ -1129,6 +1129,37 @@ describe("runner runtime context", () => {
                   },
                   runnerId: "runner-alpha",
                   runnerPubkey: remotePublicKey
+                },
+                {
+                  artifactId: "wiki-page-alpha",
+                  artifactPreview: {
+                    available: true,
+                    bytesRead: 22,
+                    content: "# Operator Notes\n\nOld.",
+                    contentEncoding: "utf8",
+                    contentType: "text/markdown",
+                    truncated: false
+                  },
+                  artifactRef: {
+                    artifactId: "wiki-page-alpha",
+                    artifactKind: "knowledge_summary",
+                    backend: "wiki",
+                    contentSummary: "Operator notes page.",
+                    locator: {
+                      nodeId: "worker-it",
+                      path: "/operator/notes.md"
+                    },
+                    status: "materialized"
+                  },
+                  graphId: "graph-alpha",
+                  hostAuthorityPubkey: hostPublicKey,
+                  nodeId: "worker-it",
+                  projection: {
+                    source: "observation_event",
+                    updatedAt: "2026-04-26T12:02:40.000Z"
+                  },
+                  runnerId: "runner-alpha",
+                  runnerPubkey: remotePublicKey
                 }
               ]
             })
@@ -1300,6 +1331,36 @@ describe("runner runtime context", () => {
                   toNodeId: "user-main",
                   toPubkey: runnerPublicKey,
                   turnId: "turn-wiki",
+                  userNodeId: "user-main"
+                },
+                {
+                  approval: {
+                    approvalId: "approval-wiki-page",
+                    approverNodeIds: ["user-main"],
+                    operation: "wiki_update",
+                    resource: {
+                      id: "operator/notes.md",
+                      kind: "wiki_page",
+                      label: "operator/notes.md"
+                    }
+                  },
+                  conversationId: "conversation-alpha",
+                  createdAt: "2026-04-26T12:02:35.000Z",
+                  direction: "inbound",
+                  eventId:
+                    "fefefefefefefefefefefefefefefefefefefefefefefefefefefefefefefefe",
+                  fromNodeId: "worker-it",
+                  fromPubkey: remotePublicKey,
+                  messageType: "approval.request",
+                  peerNodeId: "worker-it",
+                  publishedRelays: [],
+                  relayUrls: [],
+                  schemaVersion: "1",
+                  sessionId: "session-alpha",
+                  summary: "Review wiki page update.",
+                  toNodeId: "user-main",
+                  toPubkey: runnerPublicKey,
+                  turnId: "turn-wiki-page",
                   userNodeId: "user-main"
                 },
                 {
@@ -1570,6 +1631,36 @@ describe("runner runtime context", () => {
 
         if (
           request.method === "POST" &&
+          request.url === "/v1/runtimes/worker-it/wiki/pages"
+        ) {
+          response.end(
+            JSON.stringify({
+              assignmentId: "assignment-alpha",
+              commandId: "cmd-wiki-upsert-page-alpha",
+              mode:
+                typeof requestRecord.body === "object" &&
+                requestRecord.body !== null &&
+                "mode" in requestRecord.body &&
+                requestRecord.body.mode === "append"
+                  ? "append"
+                  : "replace",
+              nodeId: "worker-it",
+              path:
+                typeof requestRecord.body === "object" &&
+                requestRecord.body !== null &&
+                "path" in requestRecord.body &&
+                typeof requestRecord.body.path === "string"
+                  ? requestRecord.body.path
+                  : "operator/notes.md",
+              requestedAt: "2026-04-26T12:06:35.000Z",
+              status: "requested"
+            })
+          );
+          return;
+        }
+
+        if (
+          request.method === "POST" &&
           request.url ===
             "/v1/runtimes/worker-it/source-history/source-history-turn-alpha/publish"
         ) {
@@ -1752,6 +1843,10 @@ describe("runner runtime context", () => {
         wikiRefs: [
           {
             artifactId: "wiki-alpha",
+            nodeId: "worker-it"
+          },
+          {
+            artifactId: "wiki-page-alpha",
             nodeId: "worker-it"
           }
         ],
@@ -1992,8 +2087,68 @@ describe("runner runtime context", () => {
           {
             artifactId: "wiki-alpha",
             nodeId: "worker-it"
+          },
+          {
+            artifactId: "wiki-page-alpha",
+            nodeId: "worker-it"
           }
         ]
+      });
+
+      const jsonWikiPageUpsertResponse = await fetch(
+        new URL("/api/wiki/pages", handle.clientUrl),
+        {
+          body: JSON.stringify({
+            content: "# Operator Notes\n\nNew durable note.",
+            conversationId: "conversation-alpha",
+            mode: "replace",
+            nodeId: "worker-it",
+            path: "/operator/notes.md",
+            reason: "Update reviewed wiki page."
+          }),
+          headers: {
+            "content-type": "application/json"
+          },
+          method: "POST"
+        }
+      );
+      expect(jsonWikiPageUpsertResponse.status).toBe(200);
+      await expect(jsonWikiPageUpsertResponse.json()).resolves.toMatchObject({
+        commandId: "cmd-wiki-upsert-page-alpha",
+        mode: "replace",
+        nodeId: "worker-it",
+        path: "operator/notes.md",
+        source: "runtime",
+        status: "requested",
+        userNodeId: "user-main",
+        wikiRefs: [
+          {
+            artifactId: "wiki-page-alpha",
+            nodeId: "worker-it"
+          }
+        ]
+      });
+
+      const jsonMismatchedWikiPageUpsertResponse = await fetch(
+        new URL("/api/wiki/pages", handle.clientUrl),
+        {
+          body: JSON.stringify({
+            content: "# Hidden\n",
+            conversationId: "conversation-alpha",
+            nodeId: "worker-it",
+            path: "hidden/page.md"
+          }),
+          headers: {
+            "content-type": "application/json"
+          },
+          method: "POST"
+        }
+      );
+      expect(jsonMismatchedWikiPageUpsertResponse.status).toBe(403);
+      await expect(
+        jsonMismatchedWikiPageUpsertResponse.json()
+      ).resolves.toMatchObject({
+        error: "Wiki page is not visible in the selected User Node conversation."
       });
 
       const jsonMismatchedWikiPublishResponse = await fetch(
@@ -2645,6 +2800,21 @@ describe("runner runtime context", () => {
         namespace: "team-alpha",
         repositoryName: "wiki-public"
       }
+    });
+    const wikiPageUpsertRequest = hostRequests.find(
+      (request) =>
+        request.method === "POST" &&
+        request.url === "/v1/runtimes/worker-it/wiki/pages"
+    );
+    expect(wikiPageUpsertRequest).toMatchObject({
+      authorization: "Bearer host-secret"
+    });
+    expect(wikiPageUpsertRequest?.body).toMatchObject({
+      content: "# Operator Notes\n\nNew durable note.",
+      mode: "replace",
+      path: "operator/notes.md",
+      reason: "Update reviewed wiki page.",
+      requestedBy: "user-main"
     });
     const sourceHistoryPublishRequests = hostRequests.filter(
       (request) =>

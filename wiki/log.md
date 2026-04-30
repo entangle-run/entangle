@@ -5363,3 +5363,16 @@ replaces or appends content, updates the wiki index, synchronizes the wiki git
 repository, emits `wiki.ref` evidence, and reports command receipts correlated
 by `wikiPagePath`. host-client and CLI now expose the same control path without
 reintroducing Host filesystem writes into runner wiki state.
+
+## [2026-04-29] runtime | Added User Client wiki page upsert
+
+Added `references/448-user-client-wiki-page-upsert-slice.md`. The running User
+Client now exposes `POST /api/wiki/pages` for selected conversations that
+contain a visible inbound `wiki_page` resource from the target node.
+
+The Human Interface Runtime normalizes the page path, forwards to Host with
+`requestedBy` set to the User Node id, and still relies on Host-signed
+`runtime.wiki.upsert_page` plus runner-owned wiki file writes, repository sync,
+`wiki.ref` evidence, and command receipts. The process-runner smoke now covers
+the live User Client JSON route and waits for projected receipt plus page
+`wiki.ref` evidence.

@@ -15,7 +15,8 @@ import {
   publishSourceHistory,
   publishWikiRepository,
   restoreArtifact,
-  reviewSourceChangeCandidate
+  reviewSourceChangeCandidate,
+  upsertWikiPage
 } from "./runtime-api.js";
 
 afterEach(() => {
@@ -164,6 +165,15 @@ describe("user client runtime API helpers", () => {
         repositoryName: "wiki-public"
       }
     });
+    await upsertWikiPage({
+      baseUrl: "http://127.0.0.1:4300",
+      content: "# Working Context\n\nUpdated.",
+      conversationId: "conversation-alpha",
+      mode: "replace",
+      nodeId: "worker-it",
+      path: "operator/notes.md",
+      reason: "update reviewed page"
+    });
     await publishSourceHistory({
       baseUrl: "http://127.0.0.1:4300",
       conversationId: "conversation-alpha",
@@ -259,12 +269,26 @@ describe("user client runtime API helpers", () => {
       }
     });
     expect(fetchMock.mock.calls[6]?.[0]).toBe(
-      "http://127.0.0.1:4300/api/source-history/publish"
+      "http://127.0.0.1:4300/api/wiki/pages"
     );
     expect(fetchMock.mock.calls[6]?.[1]).toMatchObject({
       method: "POST"
     });
     expect(JSON.parse(fetchMock.mock.calls[6]?.[1]?.body as string)).toEqual({
+      content: "# Working Context\n\nUpdated.",
+      conversationId: "conversation-alpha",
+      mode: "replace",
+      nodeId: "worker-it",
+      path: "operator/notes.md",
+      reason: "update reviewed page"
+    });
+    expect(fetchMock.mock.calls[7]?.[0]).toBe(
+      "http://127.0.0.1:4300/api/source-history/publish"
+    );
+    expect(fetchMock.mock.calls[7]?.[1]).toMatchObject({
+      method: "POST"
+    });
+    expect(JSON.parse(fetchMock.mock.calls[7]?.[1]?.body as string)).toEqual({
       conversationId: "conversation-alpha",
       nodeId: "worker-it",
       reason: "publish source history",
@@ -274,26 +298,26 @@ describe("user client runtime API helpers", () => {
         repositoryName: "graph-alpha-public"
       }
     });
-    expect(fetchMock.mock.calls[7]?.[0]).toBe(
+    expect(fetchMock.mock.calls[8]?.[0]).toBe(
       "http://127.0.0.1:4300/api/source-change-candidates/diff?candidateId=candidate-alpha&conversationId=conversation-alpha&nodeId=worker-it"
     );
-    expect(fetchMock.mock.calls[8]?.[0]).toBe(
+    expect(fetchMock.mock.calls[9]?.[0]).toBe(
       "http://127.0.0.1:4300/api/source-change-candidates/file?candidateId=candidate-alpha&conversationId=conversation-alpha&nodeId=worker-it&path=src%2Findex.ts"
     );
-    expect(fetchMock.mock.calls[9]?.[0]).toBe(
-      "http://127.0.0.1:4300/api/conversations/conversation-alpha/read"
-    );
-    expect(fetchMock.mock.calls[9]?.[1]).toMatchObject({
-      method: "POST"
-    });
     expect(fetchMock.mock.calls[10]?.[0]).toBe(
-      "http://127.0.0.1:4300/api/source-change-candidates/review"
+      "http://127.0.0.1:4300/api/conversations/conversation-alpha/read"
     );
     expect(fetchMock.mock.calls[10]?.[1]).toMatchObject({
       method: "POST"
     });
+    expect(fetchMock.mock.calls[11]?.[0]).toBe(
+      "http://127.0.0.1:4300/api/source-change-candidates/review"
+    );
+    expect(fetchMock.mock.calls[11]?.[1]).toMatchObject({
+      method: "POST"
+    });
     expect(
-      JSON.parse(fetchMock.mock.calls[10]?.[1]?.body as string)
+      JSON.parse(fetchMock.mock.calls[11]?.[1]?.body as string)
     ).toMatchObject({
       candidateId: "candidate-alpha",
       conversationId: "conversation-alpha",
