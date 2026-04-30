@@ -80,6 +80,13 @@ and enforcing explicit route-level Host permissions when scoped tokens opt in.
 Host event list APIs now apply category, node, operator, status-code, and
 type-prefix filters before limit slicing so audit inspection does not depend
 only on client-side filtering of the newest event tail.
+Runner-owned wiki publication now also has a sibling runner-owned wiki page
+mutation command:
+[447-runner-owned-wiki-page-upsert-slice.md](447-runner-owned-wiki-page-upsert-slice.md)
+adds Host-signed `runtime.wiki.upsert_page`, runner-local path validation,
+wiki repository sync, `wiki.ref` evidence, command receipts correlated by
+`wikiPagePath`, host-client support, and the first CLI operator command for
+protocol-backed wiki page mutation without Host filesystem writes.
 Generated distributed proof profiles are now covered by a package-level
 contract and script-side validation, so malformed schema versions or
 assignment/runtime-kind mismatches fail before Host inspection.

@@ -496,7 +496,14 @@ This repository currently contains:
   to the primary git target by default or to an explicit resolved git target
   selector and emitting `artifact.ref` projection evidence, now covered in the
   process-boundary smoke by checking the projected artifact ref and matching
-  primary git branch head. Public deep runtime reads for accepted federated
+  primary git branch head. Runner-owned wiki page replacement/append now uses
+  the sibling Host-signed `runtime.wiki.upsert_page` command: the accepted
+  runner validates markdown page paths inside its own `memory/wiki` root,
+  writes the page, updates the wiki index, synchronizes the wiki git
+  repository, emits `wiki.ref` evidence, and reports command receipts
+  correlated by `wikiPagePath`; Host API, host-client, and CLI expose that
+  mutation path without Host writing runner files. Public deep runtime reads
+  for accepted federated
   assignments now ignore Host-local runtime files and use projected
   runner evidence instead, while non-federated adapter reads remain available.
   Bounded engine-request
@@ -1248,9 +1255,10 @@ The highest-value remaining gaps are:
   requests plus User Client visible source-history publication requests and
   target-specific source-history/wiki publication visibility checks and
   explicit runner-owned artifact/source/wiki command completion receipts,
-  richer wiki promotion policy and repository lifecycle
-  behavior beyond explicit target publication, source-history merge/reconcile
-  workflows, and replicated fallback paths;
+  first runner-owned wiki page upsert support, richer participant-scoped wiki
+  editing policy and repository lifecycle behavior beyond explicit target
+  publication, source-history merge/reconcile workflows, and replicated
+  fallback paths;
 - production identity and authorization beyond the bootstrap operator-token
   boundary, multi-token attribution, visible status summary, route-level
   bootstrap permissions, and coarse read-only `viewer` enforcement, including

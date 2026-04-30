@@ -291,7 +291,8 @@ export const runtimeCommandReceiptEventSchema = hostEventBaseSchema.extend({
   sourceHistoryId: identifierSchema.optional(),
   targetPath: nonEmptyStringSchema.optional(),
   type: z.literal("runtime.command.receipt"),
-  wikiArtifactId: identifierSchema.optional()
+  wikiArtifactId: identifierSchema.optional(),
+  wikiPagePath: nonEmptyStringSchema.optional()
 });
 
 export const sessionUpdatedEventSchema = hostEventBaseSchema.extend({

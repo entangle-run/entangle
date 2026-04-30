@@ -183,7 +183,8 @@ export const runtimeCommandReceiptProjectionRecordSchema =
     sessionId: identifierSchema.optional(),
     sourceHistoryId: identifierSchema.optional(),
     targetPath: nonEmptyStringSchema.optional(),
-    wikiArtifactId: identifierSchema.optional()
+    wikiArtifactId: identifierSchema.optional(),
+    wikiPagePath: nonEmptyStringSchema.optional()
   });
 
 export const hostProjectionSnapshotSchema = z.object({

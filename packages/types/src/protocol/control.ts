@@ -29,6 +29,7 @@ export const entangleControlEventTypeSchema = z.enum([
   "runtime.artifact.propose_source_change",
   "runtime.source_history.publish",
   "runtime.source_history.replay",
+  "runtime.wiki.upsert_page",
   "runtime.wiki.publish"
 ]);
 
@@ -41,6 +42,7 @@ export const entangleRuntimeCommandEventTypeSchema = z.enum([
   "runtime.artifact.propose_source_change",
   "runtime.source_history.publish",
   "runtime.source_history.replay",
+  "runtime.wiki.upsert_page",
   "runtime.wiki.publish"
 ]);
 
@@ -255,6 +257,19 @@ export const runtimeWikiPublishPayloadSchema = controlPayloadBaseSchema.extend({
   target: gitRepositoryTargetSelectorSchema.optional()
 });
 
+export const runtimeWikiUpsertPagePayloadSchema = controlPayloadBaseSchema.extend({
+  assignmentId: identifierSchema.optional(),
+  commandId: identifierSchema,
+  content: z.string().max(128 * 1024),
+  eventType: z.literal("runtime.wiki.upsert_page"),
+  graphId: identifierSchema,
+  mode: z.enum(["append", "replace"]).default("replace"),
+  nodeId: identifierSchema,
+  path: nonEmptyStringSchema,
+  reason: nonEmptyStringSchema.optional(),
+  requestedBy: identifierSchema.optional()
+});
+
 export const entangleControlEventPayloadSchema = z.discriminatedUnion(
   "eventType",
   [
@@ -270,6 +285,7 @@ export const entangleControlEventPayloadSchema = z.discriminatedUnion(
     runtimeArtifactSourceChangeProposalPayloadSchema,
     runtimeSourceHistoryPublishPayloadSchema,
     runtimeSourceHistoryReplayPayloadSchema,
+    runtimeWikiUpsertPagePayloadSchema,
     runtimeWikiPublishPayloadSchema
   ]
 );

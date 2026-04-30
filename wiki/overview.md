@@ -156,6 +156,13 @@ The most accurate current description is:
   control path; the process-runner smoke now verifies both primary and
   non-primary wiki target publication over the live relay and joined runner
   path;
+- runner-owned wiki page replacement/append is now a Host-signed
+  `runtime.wiki.upsert_page` control command to the accepted runner
+  assignment; the runner validates markdown page paths inside its own
+  `memory/wiki` root, writes the page, updates the wiki index, synchronizes the
+  wiki repository, emits `wiki.ref` evidence, and reports command receipts
+  correlated by `wikiPagePath`, with Host API, host-client, and CLI request
+  support;
 - joined runners now publish session/conversation observations for later
   lifecycle transitions after handoffs, coordination result/close, approval
   request/response, completion, cancellation, and failure paths;
@@ -208,8 +215,9 @@ The most accurate current description is:
   `runtime.command.receipt` observations as command-id closure while keeping
   assignment receipts and session observations as the domain lifecycle model;
 - the largest remaining gaps are projection-backed replacement for deep runtime
-  detail APIs, object-backed source/wiki mutation services, and
-  infrastructure-backed multi-machine proof execution.
+  detail APIs, source merge/reconcile services, participant-scoped wiki editing
+  policy on top of runner-owned page upsert, and infrastructure-backed
+  multi-machine proof execution.
 
 The Human Interface Runtime now has a first usable running User Client for
 human graph participants. It can inspect projected inbox state, publish

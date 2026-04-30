@@ -125,7 +125,8 @@ export const runtimeCommandReceiptPayloadSchema =
     sourceHistoryId: identifierSchema.optional(),
     status: runtimeCommandReceiptStatusSchema,
     targetPath: nonEmptyStringSchema.optional(),
-    wikiArtifactId: identifierSchema.optional()
+    wikiArtifactId: identifierSchema.optional(),
+    wikiPagePath: nonEmptyStringSchema.optional()
   });
 
 export const runtimeStatusObservationPayloadSchema =

@@ -3327,6 +3327,66 @@ describe("createHostClient", () => {
     ]);
   });
 
+  it("posts runner-owned runtime wiki page upsert requests", async () => {
+    const requests: { body?: string; method?: string; url: string }[] = [];
+    const client = createHostClient({
+      baseUrl: "http://entangle-host.test",
+      fetchImpl: (url, init) => {
+        requests.push({
+          body: init?.body,
+          method: init?.method,
+          url
+        });
+
+        return Promise.resolve(
+          createMockResponse({
+            body: JSON.stringify({
+              assignmentId: "assignment-alpha",
+              commandId: "cmd-wiki-upsert-page-alpha",
+              mode: "append",
+              nodeId: "worker-it",
+              path: "operator/notes.md",
+              requestedAt: "2026-04-24T10:10:00.000Z",
+              status: "requested"
+            }),
+            ok: true,
+            status: 200
+          })
+        );
+      }
+    });
+
+    await expect(
+      client.upsertRuntimeWikiPage("worker-it", {
+        content: "Follow up from the operator.\n",
+        mode: "append",
+        path: "operator/notes.md",
+        reason: "Append an operator note.",
+        requestedBy: "operator-main"
+      })
+    ).resolves.toMatchObject({
+      assignmentId: "assignment-alpha",
+      commandId: "cmd-wiki-upsert-page-alpha",
+      mode: "append",
+      nodeId: "worker-it",
+      path: "operator/notes.md",
+      status: "requested"
+    });
+    expect(requests).toEqual([
+      {
+        body: JSON.stringify({
+          content: "Follow up from the operator.\n",
+          mode: "append",
+          path: "operator/notes.md",
+          reason: "Append an operator note.",
+          requestedBy: "operator-main"
+        }),
+        method: "POST",
+        url: "http://entangle-host.test/v1/runtimes/worker-it/wiki/pages"
+      }
+    ]);
+  });
+
   it("parses runtime recovery policy mutation responses from the host surface", async () => {
     const client = createHostClient({
       baseUrl: "http://entangle-host.test",

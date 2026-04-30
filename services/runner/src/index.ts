@@ -461,6 +461,8 @@ export async function createConfiguredRunnerJoinService(
             configured.service.requestArtifactSourceChangeProposal(request),
           publishWikiRepository: (request) =>
             configured.service.requestWikiRepositoryPublication(request),
+          upsertWikiPage: (request) =>
+            configured.service.requestWikiPageUpsert(request),
           replaySourceHistory: (request) =>
             configured.service.requestSourceHistoryReplay(request),
           restoreArtifact: (request) =>

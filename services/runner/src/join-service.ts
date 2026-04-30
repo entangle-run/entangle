@@ -137,6 +137,19 @@ export type RunnerAssignmentRuntimeHandle = {
     message?: string;
     publicationState?: "failed" | "not_requested" | "published";
   }>;
+  upsertWikiPage?(request: {
+    commandId?: string;
+    content: string;
+    mode?: "append" | "replace";
+    path: string;
+    reason?: string;
+    requestedAt?: string;
+    requestedBy?: string;
+  }): Promise<{
+    message?: string;
+    path: string;
+    syncStatus?: "committed" | "failed" | "not_configured" | "unchanged";
+  }>;
   runtimeContextPath: string;
   runtimeRoot?: string;
   stop(): Promise<void>;
@@ -320,6 +333,11 @@ export class RunnerJoinService {
 
     if (payload.eventType === "runtime.wiki.publish") {
       await this.handleRuntimeWikiPublishCommand(payload);
+      return;
+    }
+
+    if (payload.eventType === "runtime.wiki.upsert_page") {
+      await this.handleRuntimeWikiUpsertPageCommand(payload);
     }
   }
 
@@ -470,7 +488,8 @@ export class RunnerJoinService {
           | "runtime.source_history.replay"
           | "runtime.start"
           | "runtime.stop"
-          | "runtime.wiki.publish";
+          | "runtime.wiki.publish"
+          | "runtime.wiki.upsert_page";
       }
     >
   ): RuntimeAssignmentRecord | undefined {
@@ -515,6 +534,7 @@ export class RunnerJoinService {
       sourceHistoryId: string;
       targetPath: string;
       wikiArtifactId: string;
+      wikiPagePath: string;
     }>;
   }): Promise<void> {
     if (input.payload) {
@@ -555,6 +575,7 @@ export class RunnerJoinService {
       sourceHistoryId: string;
       targetPath: string;
       wikiArtifactId: string;
+      wikiPagePath: string;
     }>;
     status: "completed" | "failed" | "received";
   }): Promise<{
@@ -601,6 +622,9 @@ export class RunnerJoinService {
         : {}),
       ...(input.receipt?.wikiArtifactId
         ? { wikiArtifactId: input.receipt.wikiArtifactId }
+        : {}),
+      ...(input.receipt?.wikiPagePath
+        ? { wikiPagePath: input.receipt.wikiPagePath }
         : {})
     });
   }
@@ -1380,6 +1404,110 @@ export class RunnerJoinService {
             ? error.message
             : "Runtime wiki publication command failed.",
         payload
+      });
+    }
+  }
+
+  private async handleRuntimeWikiUpsertPageCommand(
+    payload: Extract<
+      EntangleControlEvent["payload"],
+      { eventType: "runtime.wiki.upsert_page" }
+    >
+  ): Promise<void> {
+    const assignment = this.resolveRuntimeCommandAssignment(payload);
+
+    if (!assignment) {
+      await this.publishRuntimeCommandFailure({
+        assignmentId: payload.assignmentId,
+        message:
+          "Runtime wiki page mutation command did not match an accepted assignment.",
+        payload,
+        receipt: {
+          wikiPagePath: payload.path
+        }
+      });
+      return;
+    }
+
+    await this.publishRuntimeCommandReceipt({
+      assignmentId: assignment.assignmentId,
+      ...(payload.reason ? { message: payload.reason } : {}),
+      payload,
+      receipt: {
+        wikiPagePath: payload.path
+      },
+      status: "received"
+    });
+
+    await this.publishObservation({
+      assignmentId: assignment.assignmentId,
+      eventType: "assignment.receipt",
+      message: payload.reason,
+      observedAt: this.now(),
+      receiptKind: "received"
+    });
+
+    const handle = this.assignmentRuntimeHandles.get(assignment.assignmentId);
+    if (!handle?.upsertWikiPage) {
+      await this.publishRuntimeCommandFailure({
+        assignmentId: assignment.assignmentId,
+        message:
+          "Runtime wiki page mutation command cannot be applied because the assigned runtime is not running.",
+        payload,
+        receipt: {
+          wikiPagePath: payload.path
+        }
+      });
+      return;
+    }
+
+    try {
+      const result = await handle.upsertWikiPage({
+        commandId: payload.commandId,
+        content: payload.content,
+        mode: payload.mode,
+        path: payload.path,
+        ...(payload.reason ? { reason: payload.reason } : {}),
+        requestedAt: payload.issuedAt,
+        ...(payload.requestedBy ? { requestedBy: payload.requestedBy } : {})
+      });
+
+      if (result.syncStatus === "failed" || result.syncStatus === "not_configured") {
+        await this.publishRuntimeCommandFailure({
+          assignmentId: assignment.assignmentId,
+          message:
+            result.message ??
+            `Wiki page '${result.path}' was updated but repository sync failed.`,
+          payload,
+          receipt: {
+            wikiPagePath: result.path
+          }
+        });
+        return;
+      }
+
+      await this.publishRuntimeCommandReceipt({
+        assignmentId: assignment.assignmentId,
+        message:
+          result.message ??
+          `Wiki page '${result.path}' ${payload.mode === "append" ? "appended" : "replaced"}.`,
+        payload,
+        receipt: {
+          wikiPagePath: result.path
+        },
+        status: "completed"
+      });
+    } catch (error) {
+      await this.publishRuntimeCommandFailure({
+        assignmentId: assignment.assignmentId,
+        message:
+          error instanceof Error
+            ? error.message
+            : "Runtime wiki page mutation command failed.",
+        payload,
+        receipt: {
+          wikiPagePath: payload.path
+        }
       });
     }
   }

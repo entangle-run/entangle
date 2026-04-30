@@ -327,6 +327,7 @@ Implementation record:
 - [399-studio-assignment-timeline-drilldown-slice.md](399-studio-assignment-timeline-drilldown-slice.md)
 - [401-root-test-gate-reliability-slice.md](401-root-test-gate-reliability-slice.md)
 - [446-runner-test-gate-fork-stability-slice.md](446-runner-test-gate-fork-stability-slice.md)
+- [447-runner-owned-wiki-page-upsert-slice.md](447-runner-owned-wiki-page-upsert-slice.md)
 
 Verification:
 
@@ -522,6 +523,10 @@ Current status:
   publication commands now use the same command receipt model, so operators can
   close the Host command loop through `runtimeCommandReceipts` while still
   relying on artifact/source/wiki domain observations for content evidence;
+- runner-owned wiki page replacement/append now travels through Host-signed
+  `runtime.wiki.upsert_page` commands to the accepted runner assignment, with
+  path validation inside the runner wiki root, wiki repository sync, `wiki.ref`
+  evidence, and command receipts correlated by `wikiPagePath`;
 - lifecycle start/stop/restart and session cancellation commands now also emit
   signed `runtime.command.receipt` observations, with session cancellation
   receipts carrying cancellation/session correlation ids;
@@ -529,7 +534,9 @@ Current status:
   assignment, node, runner, command type, status, and limit filters;
 - Studio can inspect per-assignment timeline entries through the Host
   assignment timeline endpoint, keeping operator drilldown aligned with CLI;
-- richer source/wiki mutation endpoints still need protocol-backed replacement.
+- richer source merge/reconcile endpoints and participant-scoped wiki editing
+  policy still need protocol-backed replacement on top of the first wiki page
+  upsert command.
 
 ### Slice 9: User Node Runtime
 

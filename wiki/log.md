@@ -5351,3 +5351,15 @@ The same runner suite passed directly with
 `--pool=forks --maxWorkers=1 --testTimeout=30000`, so the runner package test
 script now uses that single-fork profile. This is a verification tooling
 change only; runtime behavior and protocol contracts are unchanged.
+
+## [2026-04-29] runtime | Added runner-owned wiki page upsert
+
+Added `references/447-runner-owned-wiki-page-upsert-slice.md`.
+Host now exposes `POST /v1/runtimes/:nodeId/wiki/pages` and publishes signed
+`runtime.wiki.upsert_page` commands to the accepted runner assignment.
+
+The runner validates POSIX markdown paths inside its own `memory/wiki` root,
+replaces or appends content, updates the wiki index, synchronizes the wiki git
+repository, emits `wiki.ref` evidence, and reports command receipts correlated
+by `wikiPagePath`. host-client and CLI now expose the same control path without
+reintroducing Host filesystem writes into runner wiki state.

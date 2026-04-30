@@ -521,6 +521,42 @@ function buildRuntimeWikiPublishEvent(
   };
 }
 
+function buildRuntimeWikiUpsertPageEvent(
+  assignment: RuntimeAssignmentRecord
+): EntangleControlEvent {
+  return {
+    envelope: {
+      createdAt: "2026-04-26T12:00:08.000Z",
+      eventId: "cbcbcbcbcbcbcbcbcbcbcbcbcbcbcbcbcbcbcbcbcbcbcbcbcbcbcbcbcbcbcbcb",
+      payloadHash:
+        "dfdfdfdfdfdfdfdfdfdfdfdfdfdfdfdfdfdfdfdfdfdfdfdfdfdfdfdfdfdfdfdf",
+      protocol: "entangle.control.v1",
+      recipientPubkey: runnerPublicKey,
+      schemaVersion: "1",
+      signature:
+        "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+      signerPubkey: hostPublicKey
+    },
+    payload: {
+      assignmentId: assignment.assignmentId,
+      commandId: "cmd-wiki-upsert-page-alpha",
+      content: "# Operator Note\n\nPersist this in runner memory.\n",
+      eventType: "runtime.wiki.upsert_page",
+      graphId: assignment.graphId,
+      hostAuthorityPubkey: hostPublicKey,
+      issuedAt: "2026-04-26T12:00:08.000Z",
+      mode: "replace",
+      nodeId: assignment.nodeId,
+      path: "operator/notes.md",
+      protocol: "entangle.control.v1",
+      reason: "Update wiki page",
+      requestedBy: "operator-main",
+      runnerId: assignment.runnerId,
+      runnerPubkey: runnerPublicKey
+    }
+  };
+}
+
 describe("runner runtime context", () => {
   const stubEngine: AgentEngine = {
     executeTurn(request) {
@@ -3053,6 +3089,7 @@ describe("runner runtime context", () => {
     const runtimeSourceHistoryPublications: string[] = [];
     const runtimeSourceHistoryReplays: string[] = [];
     const runtimeWikiPublications: string[] = [];
+    const runtimeWikiPageUpserts: string[] = [];
     process.env.ENTANGLE_RUNNER_NOSTR_SECRET_KEY = runnerSecretHex;
 
     const configured = await createConfiguredRunnerJoinService(
@@ -3089,6 +3126,15 @@ describe("runner runtime context", () => {
               return Promise.resolve({
                 artifactId: "wiki-worker-it-abc123",
                 publicationState: "published"
+              });
+            },
+            upsertWikiPage: (request) => {
+              runtimeWikiPageUpserts.push(
+                `${request.path}:${request.mode ?? "replace"}:${request.requestedBy ?? "unknown"}:${request.commandId ?? "generated"}:${request.content.length}`
+              );
+              return Promise.resolve({
+                path: request.path,
+                syncStatus: "committed"
               });
             },
             restoreArtifact: (request) => {
@@ -3145,6 +3191,7 @@ describe("runner runtime context", () => {
     await transport.dispatch(buildRuntimeSourceHistoryPublishEvent(assignment));
     await transport.dispatch(buildRuntimeSourceHistoryReplayEvent(assignment));
     await transport.dispatch(buildRuntimeWikiPublishEvent(assignment));
+    await transport.dispatch(buildRuntimeWikiUpsertPageEvent(assignment));
 
     expect(runtimeStarts).toEqual([
       "/runner/assignments/assignment-alpha/runtime-context.json",
@@ -3170,6 +3217,9 @@ describe("runner runtime context", () => {
     ]);
     expect(runtimeWikiPublications).toEqual([
       "retry:operator-main:wiki-public"
+    ]);
+    expect(runtimeWikiPageUpserts).toEqual([
+      "operator/notes.md:replace:operator-main:cmd-wiki-upsert-page-alpha:48"
     ]);
     expect(
       transport.observations.filter(
@@ -3273,6 +3323,12 @@ describe("runner runtime context", () => {
           commandId: "cmd-wiki-publish-alpha",
           status: "completed",
           wikiArtifactId: "wiki-worker-it-abc123"
+        }),
+        expect.objectContaining({
+          commandEventType: "runtime.wiki.upsert_page",
+          commandId: "cmd-wiki-upsert-page-alpha",
+          status: "completed",
+          wikiPagePath: "operator/notes.md"
         })
       ])
     );

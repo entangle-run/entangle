@@ -656,6 +656,46 @@ export class HostFederatedControlPlane {
     });
   }
 
+  publishRuntimeWikiUpsertPage(input: {
+    assignment: RuntimeAssignmentRecord;
+    authRequired?: boolean;
+    commandId: string;
+    content: string;
+    correlationId?: string;
+    mode?: "append" | "replace";
+    path: string;
+    reason?: string;
+    relayUrls: string[];
+    requestedBy?: string;
+  }): Promise<EntangleNostrPublishedEvent<EntangleControlEvent>> {
+    return this.input.transport.publishControlEvent({
+      ...(input.authRequired !== undefined
+        ? { authRequired: input.authRequired }
+        : {}),
+      ...(input.correlationId !== undefined
+        ? { correlationId: input.correlationId }
+        : {}),
+      payload: {
+        assignmentId: input.assignment.assignmentId,
+        commandId: input.commandId,
+        content: input.content,
+        eventType: "runtime.wiki.upsert_page",
+        graphId: input.assignment.graphId,
+        hostAuthorityPubkey: input.assignment.hostAuthorityPubkey,
+        issuedAt: this.now(),
+        mode: input.mode ?? "replace",
+        nodeId: input.assignment.nodeId,
+        path: input.path,
+        protocol: "entangle.control.v1",
+        ...(input.reason ? { reason: input.reason } : {}),
+        ...(input.requestedBy ? { requestedBy: input.requestedBy } : {}),
+        runnerId: input.assignment.runnerId,
+        runnerPubkey: input.assignment.runnerPubkey
+      },
+      relayUrls: input.relayUrls
+    });
+  }
+
   private publishRunnerHelloAck(input: {
     authRequired?: boolean;
     hostAuthorityPubkey: string;

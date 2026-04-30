@@ -381,6 +381,111 @@ describe("RunnerService", () => {
     expect(observedWikiRefs[0]?.previewContent).toContain("# Wiki Index");
   });
 
+  it("applies runner-owned wiki page upserts and emits wiki refs", async () => {
+    const fixture = await createRuntimeFixture();
+    const context = await loadRuntimeContext(fixture.contextPath);
+    const observedWikiRefs: Array<{
+      artifactId: string;
+      path: string;
+      previewContent?: string;
+    }> = [];
+    const service = new RunnerService({
+      context,
+      observationPublisher: {
+        publishConversationUpdated: () => Promise.resolve(),
+        publishSessionUpdated: () => Promise.resolve(),
+        publishTurnUpdated: () => Promise.resolve(),
+        publishWikiRefObserved: (record) => {
+          observedWikiRefs.push({
+            artifactId: record.artifactRef.artifactId,
+            path: record.artifactRef.locator.path,
+            ...(record.artifactPreview?.available
+              ? { previewContent: record.artifactPreview.content }
+              : {})
+          });
+          return Promise.resolve();
+        }
+      },
+      transport: new InMemoryRunnerTransport()
+    });
+
+    const result = await service.requestWikiPageUpsert({
+      commandId: "cmd-wiki-upsert-page-alpha",
+      content: "# Operator Note\n\nPersist this in runner memory.\n",
+      mode: "replace",
+      path: "operator/notes.md",
+      reason: "Record durable operator context.",
+      requestedBy: "operator-main"
+    });
+
+    expect(result).toMatchObject({
+      path: "operator/notes.md",
+      syncStatus: "committed"
+    });
+    await expect(
+      readFile(
+        path.join(context.workspace.memoryRoot, "wiki", "operator", "notes.md"),
+        "utf8"
+      )
+    ).resolves.toBe("# Operator Note\n\nPersist this in runner memory.\n");
+    await expect(
+      readFile(path.join(context.workspace.memoryRoot, "wiki", "index.md"), "utf8")
+    ).resolves.toContain("- [operator/notes.md](operator/notes.md)");
+    expect(
+      runGitFixtureCommand({
+        args: ["rev-parse", "--verify", "HEAD"],
+        cwd: context.workspace.wikiRepositoryRoot!
+      })
+    ).toMatch(/^[a-f0-9]{40}$/u);
+    expect(observedWikiRefs).toEqual([
+      expect.objectContaining({
+        artifactId: "wiki-cmd-wiki-upsert-page-alpha",
+        path: "/operator/notes.md",
+        previewContent: "# Operator Note\n\nPersist this in runner memory.\n"
+      })
+    ]);
+
+    await service.requestWikiPageUpsert({
+      commandId: "cmd-wiki-upsert-page-beta",
+      content: "Second note.\n",
+      mode: "append",
+      path: "operator/notes.md"
+    });
+    await expect(
+      readFile(
+        path.join(context.workspace.memoryRoot, "wiki", "operator", "notes.md"),
+        "utf8"
+      )
+    ).resolves.toBe(
+      "# Operator Note\n\nPersist this in runner memory.\n\nSecond note.\n"
+    );
+  });
+
+  it("rejects invalid runner-owned wiki page paths", async () => {
+    const fixture = await createRuntimeFixture();
+    const context = await loadRuntimeContext(fixture.contextPath);
+    const service = new RunnerService({
+      context,
+      transport: new InMemoryRunnerTransport()
+    });
+
+    for (const pagePath of [
+      "",
+      "/absolute.md",
+      "../escape.md",
+      "folder/../note.md",
+      "bad\\path.md",
+      "not-markdown.txt"
+    ]) {
+      await expect(
+        service.requestWikiPageUpsert({
+          content: "Invalid.",
+          path: pagePath
+        })
+      ).rejects.toThrow();
+    }
+  });
+
   it("cancels an active engine turn when an external cancellation request is observed", async () => {
     const fixture = await createRuntimeFixture();
     const context = await loadRuntimeContext(fixture.contextPath);

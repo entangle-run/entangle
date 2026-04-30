@@ -79,6 +79,7 @@ import {
   runtimeSourceHistoryReplayListResponseSchema,
   runtimeSourceHistoryReplayResponseSchema,
   runtimeWikiPublishResponseSchema,
+  runtimeWikiUpsertPageResponseSchema,
   runtimeTurnInspectionResponseSchema,
   runtimeTurnListResponseSchema,
   runnerRegistryInspectionResponseSchema,
@@ -7787,6 +7788,15 @@ describe("buildHostServer", () => {
       retryFailedPublication: boolean;
       target?: GitRepositoryTargetSelector;
     }> = [];
+    const wikiPageUpsertRequests: Array<{
+      assignment: RuntimeAssignmentRecord;
+      content: string;
+      mode?: "append" | "replace";
+      path: string;
+      reason?: string;
+      relayUrls: string[];
+      requestedBy?: string;
+    }> = [];
     const artifactRestoreRequests: Array<{
       artifactRef: ArtifactRef;
       assignment: RuntimeAssignmentRecord;
@@ -7822,6 +7832,15 @@ describe("buildHostServer", () => {
       relayUrls: string[];
       requestedBy?: string;
       targetPath?: string;
+    };
+    type WikiPageUpsertPublishInput = {
+      assignment: RuntimeAssignmentRecord;
+      content: string;
+      mode?: "append" | "replace";
+      path: string;
+      reason?: string;
+      relayUrls: string[];
+      requestedBy?: string;
     };
     const server = await createTestServer({
       federatedControlPlane: {
@@ -7886,6 +7905,18 @@ describe("buildHostServer", () => {
             ...(input.requestedBy ? { requestedBy: input.requestedBy } : {}),
             retryFailedPublication: input.retryFailedPublication,
             ...(input.target ? { target: input.target } : {})
+          });
+          return Promise.resolve();
+        },
+        publishRuntimeWikiUpsertPage: (input: WikiPageUpsertPublishInput) => {
+          wikiPageUpsertRequests.push({
+            assignment: input.assignment,
+            content: input.content,
+            mode: input.mode,
+            path: input.path,
+            ...(input.reason ? { reason: input.reason } : {}),
+            relayUrls: input.relayUrls,
+            ...(input.requestedBy ? { requestedBy: input.requestedBy } : {})
           });
           return Promise.resolve();
         }
@@ -8239,6 +8270,45 @@ describe("buildHostServer", () => {
         replayedBy: "operator-main",
         replayId: "replay-source-history-alpha",
         sourceHistoryId: "source-history-candidate-alpha"
+      });
+
+      const wikiPageUpsertResponse = await server.inject({
+        method: "POST",
+        payload: {
+          content: "# Operator Note\n\nPersist this in runner memory.\n",
+          mode: "replace",
+          path: "operator/notes.md",
+          reason: "Operator requested wiki page update.",
+          requestedBy: "operator-main"
+        },
+        url: "/v1/runtimes/worker-it/wiki/pages"
+      });
+
+      expect(wikiPageUpsertResponse.statusCode).toBe(200);
+      expect(
+        runtimeWikiUpsertPageResponseSchema.parse(
+          wikiPageUpsertResponse.json()
+        )
+      ).toMatchObject({
+        assignmentId: "assignment-alpha",
+        mode: "replace",
+        nodeId: "worker-it",
+        path: "operator/notes.md",
+        status: "requested"
+      });
+      expect(wikiPageUpsertRequests).toHaveLength(1);
+      expect(wikiPageUpsertRequests[0]?.assignment).toMatchObject({
+        assignmentId: "assignment-alpha",
+        nodeId: "worker-it",
+        runnerId: "runner-alpha"
+      });
+      expect(wikiPageUpsertRequests[0]).toMatchObject({
+        content: "# Operator Note\n\nPersist this in runner memory.\n",
+        mode: "replace",
+        path: "operator/notes.md",
+        reason: "Operator requested wiki page update.",
+        relayUrls: ["ws://relay.example"],
+        requestedBy: "operator-main"
       });
 
       const wikiPublishResponse = await server.inject({

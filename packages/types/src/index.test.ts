@@ -660,7 +660,8 @@ describe("federated runtime contracts", () => {
       runnerPubkey,
       sessionId: "session-alpha",
       status: "completed",
-      targetPath: "proposals/report.md"
+      targetPath: "proposals/report.md",
+      wikiPagePath: "operator/notes.md"
     });
 
     expect(receipt.status).toBe("completed");
@@ -687,7 +688,8 @@ describe("federated runtime contracts", () => {
         runnerId: receipt.runnerId,
         runnerPubkey: receipt.runnerPubkey,
         sessionId: receipt.sessionId,
-        targetPath: receipt.targetPath
+        targetPath: receipt.targetPath,
+        wikiPagePath: receipt.wikiPagePath
       }).candidateId
     ).toBe("artifact-proposal-alpha");
   });
@@ -947,6 +949,30 @@ describe("federated runtime contracts", () => {
         }
       }
     });
+    const wikiUpsertPage = entangleControlEventSchema.parse({
+      envelope: buildSignedEnvelope({
+        protocol: "entangle.control.v1",
+        recipientPubkey: runnerPubkey,
+        signerPubkey: authorityPubkey
+      }),
+      payload: {
+        assignmentId: "assignment-alpha",
+        commandId: "cmd-wiki-upsert-page-alpha",
+        content: "# Operator Note\n\nPersist this in runner memory.\n",
+        eventType: "runtime.wiki.upsert_page",
+        graphId: "team-alpha",
+        hostAuthorityPubkey: authorityPubkey,
+        issuedAt: observedAt,
+        mode: "replace",
+        nodeId: "worker-it",
+        path: "operator/notes.md",
+        protocol: "entangle.control.v1",
+        reason: "Update runner-owned wiki page.",
+        requestedBy: "operator-main",
+        runnerId: "runner-alpha",
+        runnerPubkey
+      }
+    });
 
     expect(start.payload.eventType).toBe("runtime.start");
     expect(stop.payload.eventType).toBe("runtime.stop");
@@ -982,6 +1008,11 @@ describe("federated runtime contracts", () => {
       target: {
         repositoryName: "wiki-public"
       }
+    });
+    expect(wikiUpsertPage.payload.eventType).toBe("runtime.wiki.upsert_page");
+    expect(wikiUpsertPage.payload).toMatchObject({
+      mode: "replace",
+      path: "operator/notes.md"
     });
   });
 
@@ -3217,13 +3248,15 @@ describe("host event contracts", () => {
       sessionId: "session-alpha",
       targetPath: "proposals/report.md",
       timestamp: observedAt,
-      type: "runtime.command.receipt"
+      type: "runtime.command.receipt",
+      wikiPagePath: "operator/notes.md"
     });
 
     expect(result.type).toBe("runtime.command.receipt");
     expect(result.receiptStatus).toBe("completed");
     expect(result.sessionId).toBe("session-alpha");
     expect(result.candidateId).toBe("artifact-proposal-alpha");
+    expect(result.wikiPagePath).toBe("operator/notes.md");
   });
 
   it("accepts a typed external-principal deleted event", () => {

@@ -528,7 +528,11 @@ The repository is not fully federated:
   publishes its runner-owned wiki repository to the primary git target by
   default or to an explicit resolved git target selector, persists the artifact
   record, and emits `artifact.ref` projection evidence without Host filesystem
-  access;
+  access. Operators can also request bounded wiki page replacement or append
+  through the Host-signed `runtime.wiki.upsert_page` command; the assigned
+  runner validates the page path inside its own `memory/wiki` root,
+  synchronizes its wiki repository, emits `wiki.ref` evidence, and reports
+  `runtime.command.receipt` records correlated by `wikiPagePath`;
 - Studio and CLI public operator surfaces no longer expose direct Host approval
   decisions or source-candidate review mutations. CLI now exposes signed User
   Node source review through `entangle review-source-candidate` and generic
@@ -643,9 +647,12 @@ for delegated sessions without copying transcripts.
     source-history publish/replay and wiki publication requests
     now use Host-signed runner-executed control commands; explicit
     source-history publication can target policy-gated non-primary git
-    repositories, and explicit wiki publication can target a resolved git
-    repository selector from the runner's artifact context. Complete
-    source/wiki mutation services and richer memory promotion remain open.
+    repositories, explicit wiki publication can target a resolved git
+    repository selector from the runner's artifact context, and the first
+    runner-owned wiki page upsert command now replaces/appends markdown pages
+    without Host filesystem writes. Source merge/reconcile services,
+    participant-scoped wiki editing policy, and richer memory promotion remain
+    open.
 12. Studio and CLI operator/user-node federation surfaces. CLI and Studio now
     both expose first-pass assignment offer and revoke operations through
     Host-owned APIs.
@@ -765,6 +772,10 @@ Studio request surfaces over the same control boundary, including optional git
 target selectors for non-primary repositories. The process-runner smoke now
 verifies both default primary wiki publication and explicit non-primary wiki
 target publication over the live relay and real joined runner path.
+Runner-owned wiki page upsert now has Host API, host-client, and CLI request
+surfaces over `runtime.wiki.upsert_page`; the runner writes only inside its
+own wiki root, updates the wiki index, synchronizes the wiki git repository,
+and emits `wiki.ref` plus command-receipt projection evidence.
 Per-assignment
 timelines now group assignment lifecycle state and
 runner receipts for Host API, CLI, and Studio summary inspection. Public deep
@@ -864,6 +875,7 @@ also optionally run `git ls-remote` from the operator machine against projected
 published git artifact locators to prove the advertised branch contains the
 projected commit. The remaining blocking implementation
 areas are richer
-projection-backed source/wiki review services, infrastructure-backed
-multi-machine proof execution, and deeper production identity/authorization
-beyond the scoped bootstrap-token boundary.
+projection-backed source review and merge/reconcile services,
+participant-scoped wiki editing policy on top of the runner-owned page upsert
+command, infrastructure-backed multi-machine proof execution, and deeper
+production identity/authorization beyond the scoped bootstrap-token boundary.

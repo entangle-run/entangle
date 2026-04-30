@@ -35,6 +35,7 @@ import {
   runtimeSourceHistoryPublishRequestSchema,
   runtimeSourceHistoryReplayRequestSchema,
   runtimeWikiPublishRequestSchema,
+  runtimeWikiUpsertPageRequestSchema,
   sessionCancellationMutationRequestSchema,
   type SessionInspectionResponse,
   sessionLaunchRequestSchema,
@@ -3796,6 +3797,57 @@ hostRuntimesCommand
           request
         )
       );
+    }
+  );
+
+hostRuntimesCommand
+  .command("wiki-upsert-page")
+  .argument("<nodeId>", "Node identifier in the active graph.")
+  .argument("<path>", "POSIX markdown page path inside the runtime wiki.")
+  .option("--content <markdown>", "Markdown content to write.")
+  .option("--content-file <path>", "Read markdown content from a local file.")
+  .option("--append", "Append content to the page instead of replacing it.")
+  .option("--reason <reason>", "Operator-visible mutation reason.")
+  .option("--requested-by <operatorId>", "Operator id requesting the mutation.")
+  .description(
+    "Ask the assigned runner to upsert a wiki page through federated control."
+  )
+  .action(
+    async (
+      nodeId: string,
+      pagePath: string,
+      options: {
+        append?: boolean;
+        content?: string;
+        contentFile?: string;
+        reason?: string;
+        requestedBy?: string;
+      },
+      command: Command
+    ) => {
+      if (options.content !== undefined && options.contentFile) {
+        throw new Error("Use either --content or --content-file, not both.");
+      }
+
+      const content =
+        options.content ??
+        (options.contentFile
+          ? await readFile(path.resolve(options.contentFile), "utf8")
+          : undefined);
+
+      if (content === undefined) {
+        throw new Error("Wiki page mutation requires --content or --content-file.");
+      }
+
+      const client = createCliHostClient(command);
+      const request = runtimeWikiUpsertPageRequestSchema.parse({
+        content,
+        mode: options.append ? "append" : "replace",
+        path: pagePath,
+        ...(options.reason ? { reason: options.reason } : {}),
+        ...(options.requestedBy ? { requestedBy: options.requestedBy } : {})
+      });
+      printJson(await client.upsertRuntimeWikiPage(nodeId, request));
     }
   );
 

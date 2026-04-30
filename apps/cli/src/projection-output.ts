@@ -42,6 +42,7 @@ export type RuntimeCommandReceiptCliSummary = {
   observedAt: string;
   receiptStatus: string;
   runnerId: string;
+  wikiPagePath?: string;
 };
 
 export type RuntimeCommandReceiptCliFilters = {
@@ -159,6 +160,7 @@ export function projectRuntimeCommandReceiptSummary(
     commandId: receipt.commandId,
     nodeId: receipt.nodeId,
     observedAt: receipt.observedAt,
+    ...(receipt.wikiPagePath ? { wikiPagePath: receipt.wikiPagePath } : {}),
     receiptStatus: receipt.receiptStatus,
     runnerId: receipt.runnerId
   };

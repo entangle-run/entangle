@@ -434,6 +434,24 @@ export const runtimeWikiPublishResponseSchema = z.object({
   status: z.literal("requested")
 });
 
+export const runtimeWikiUpsertPageRequestSchema = z.object({
+  content: z.string().max(128 * 1024),
+  mode: z.enum(["append", "replace"]).default("replace"),
+  path: nonEmptyStringSchema,
+  reason: nonEmptyStringSchema.optional(),
+  requestedBy: identifierSchema.optional()
+});
+
+export const runtimeWikiUpsertPageResponseSchema = z.object({
+  assignmentId: identifierSchema,
+  commandId: identifierSchema,
+  mode: z.enum(["append", "replace"]),
+  nodeId: identifierSchema,
+  path: nonEmptyStringSchema,
+  requestedAt: nonEmptyStringSchema,
+  status: z.literal("requested")
+});
+
 export const runtimeSourceHistoryReplayRequestSchema = z.object({
   approvalId: identifierSchema.optional(),
   reason: nonEmptyStringSchema.optional(),
@@ -615,6 +633,12 @@ export type RuntimeWikiPublishRequest = z.input<
 >;
 export type RuntimeWikiPublishResponse = z.infer<
   typeof runtimeWikiPublishResponseSchema
+>;
+export type RuntimeWikiUpsertPageRequest = z.input<
+  typeof runtimeWikiUpsertPageRequestSchema
+>;
+export type RuntimeWikiUpsertPageResponse = z.infer<
+  typeof runtimeWikiUpsertPageResponseSchema
 >;
 export type RuntimeSourceHistoryReplayRequest = z.input<
   typeof runtimeSourceHistoryReplayRequestSchema

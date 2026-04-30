@@ -1,4 +1,4 @@
-import { randomUUID } from "node:crypto";
+import { createHash, randomUUID } from "node:crypto";
 import {
   copyFile,
   lstat,
@@ -87,7 +87,12 @@ import {
   RunnerArtifactRetrievalError,
   type RunnerArtifactBackend
 } from "./artifact-backend.js";
-import { performPostTurnMemoryUpdate } from "./memory-maintenance.js";
+import {
+  appendSectionBullet,
+  performPostTurnMemoryUpdate,
+  readTextFileOrDefault,
+  writeTextFile
+} from "./memory-maintenance.js";
 import {
   buildArtifactInputsFromMaterializedRecords,
   type RunnerMemorySynthesizer
@@ -136,6 +141,12 @@ export type RunnerWikiPublicationCommandResult = {
   artifactId?: string;
   message?: string;
   publicationState?: "failed" | "not_requested" | "published";
+};
+
+export type RunnerWikiPageUpsertCommandResult = {
+  message?: string;
+  path: string;
+  syncStatus?: "committed" | "failed" | "not_configured" | "unchanged";
 };
 
 export type RunnerArtifactRestoreCommandResult = {
@@ -1806,6 +1817,130 @@ async function readWikiRepositoryPreview(
   };
 }
 
+function resolveWikiPageRelativePath(pagePath: string): string {
+  const trimmedPath = pagePath.trim();
+
+  if (
+    trimmedPath.length === 0 ||
+    trimmedPath.includes("\\") ||
+    trimmedPath.includes("\0") ||
+    path.posix.isAbsolute(trimmedPath)
+  ) {
+    throw new Error("Wiki page path must be a non-empty POSIX markdown path.");
+  }
+
+  const rawSegments = trimmedPath.split("/");
+
+  if (rawSegments.includes("..")) {
+    throw new Error("Wiki page path must stay inside the runtime wiki root.");
+  }
+
+  const normalizedPath = path.posix.normalize(trimmedPath);
+  const segments = normalizedPath.split("/");
+
+  if (
+    normalizedPath === "." ||
+    normalizedPath.startsWith("../") ||
+    segments.includes("..")
+  ) {
+    throw new Error("Wiki page path must stay inside the runtime wiki root.");
+  }
+
+  if (!normalizedPath.endsWith(".md")) {
+    throw new Error("Wiki page path must end with '.md'.");
+  }
+
+  return normalizedPath;
+}
+
+function resolveWikiPageAbsolutePath(input: {
+  context: EffectiveRuntimeContext;
+  relativePath: string;
+}): string {
+  const wikiRoot = path.join(input.context.workspace.memoryRoot, "wiki");
+  const absolutePath = path.join(
+    wikiRoot,
+    ...input.relativePath.split(path.posix.sep)
+  );
+  const relativeToRoot = path.relative(wikiRoot, absolutePath);
+
+  if (
+    relativeToRoot === "" ||
+    relativeToRoot.startsWith("..") ||
+    path.isAbsolute(relativeToRoot)
+  ) {
+    throw new Error("Wiki page path must stay inside the runtime wiki root.");
+  }
+
+  return absolutePath;
+}
+
+function buildWikiPageArtifactId(input: {
+  commandId?: string;
+  nodeId: string;
+  relativePath: string;
+}): string {
+  if (input.commandId) {
+    return `wiki-${input.commandId}`;
+  }
+
+  const digest = createHash("sha256")
+    .update(`${input.nodeId}:${input.relativePath}`)
+    .digest("hex")
+    .slice(0, 16);
+
+  return `wiki-page-${input.nodeId}-${digest}`;
+}
+
+async function readWikiPagePreview(input: {
+  absolutePath: string;
+}): Promise<ArtifactContentPreview> {
+  try {
+    const file = await open(input.absolutePath, "r");
+
+    try {
+      const buffer = Buffer.alloc(wikiPreviewMaxBytes + 1);
+      const { bytesRead } = await file.read(
+        buffer,
+        0,
+        wikiPreviewMaxBytes + 1,
+        0
+      );
+      const truncated = bytesRead > wikiPreviewMaxBytes;
+      const previewBuffer = buffer.subarray(
+        0,
+        Math.min(bytesRead, wikiPreviewMaxBytes)
+      );
+
+      if (previewBuffer.includes(0)) {
+        return {
+          available: false,
+          reason: "Wiki page preview is unavailable because the page is not text."
+        };
+      }
+
+      return {
+        available: true,
+        bytesRead: previewBuffer.length,
+        content: previewBuffer.toString("utf8"),
+        contentEncoding: "utf8",
+        contentType: "text/markdown",
+        truncated
+      };
+    } finally {
+      await file.close();
+    }
+  } catch (error) {
+    return {
+      available: false,
+      reason:
+        error instanceof Error
+          ? error.message
+          : "Wiki page preview is unavailable."
+    };
+  }
+}
+
 export class RunnerService {
   private readonly cancellationPollIntervalMs: number;
   private readonly artifactBackend: RunnerArtifactBackend;
@@ -2389,6 +2524,92 @@ export class RunnerService {
     return {
       artifactId: publication.artifact.ref.artifactId,
       publicationState: publication.artifact.publication?.state ?? "published"
+    };
+  }
+
+  async requestWikiPageUpsert(input: {
+    commandId?: string;
+    content: string;
+    mode?: "append" | "replace";
+    path: string;
+    reason?: string;
+    requestedAt?: string;
+    requestedBy?: string;
+  }): Promise<RunnerWikiPageUpsertCommandResult> {
+    const statePaths =
+      this.statePaths ??
+      (await ensureRunnerStatePaths(this.context.workspace.runtimeRoot));
+    this.statePaths = statePaths;
+    const relativePath = resolveWikiPageRelativePath(input.path);
+    const absolutePath = resolveWikiPageAbsolutePath({
+      context: this.context,
+      relativePath
+    });
+    const wikiRoot = path.join(this.context.workspace.memoryRoot, "wiki");
+    const indexPath = path.join(wikiRoot, "index.md");
+    const mode = input.mode ?? "replace";
+    const nextContent =
+      mode === "append"
+        ? [
+            (
+              await readTextFileOrDefault(absolutePath, "")
+            ).trimEnd(),
+            input.content.trimEnd()
+          ]
+            .filter((part) => part.length > 0)
+            .join("\n\n") + "\n"
+        : `${input.content.trimEnd()}\n`;
+    await writeTextFile(absolutePath, nextContent);
+
+    const currentIndex = await readTextFileOrDefault(indexPath, "# Wiki Index\n");
+    await writeTextFile(
+      indexPath,
+      appendSectionBullet(
+        currentIndex,
+        "Managed Pages",
+        `- [${relativePath}](${relativePath})`
+      )
+    );
+
+    const sync = await syncWikiRepository(this.context, {
+      turnId: input.commandId ?? `wiki-page-${relativePath}`
+    });
+
+    if (sync.status === "committed" || sync.status === "unchanged") {
+      const artifactRef: ArtifactRef = {
+        artifactId: buildWikiPageArtifactId({
+          ...(input.commandId ? { commandId: input.commandId } : {}),
+          nodeId: this.context.binding.node.nodeId,
+          relativePath
+        }),
+        artifactKind: "knowledge_summary",
+        backend: "wiki",
+        contentSummary:
+          `Wiki page '${relativePath}' ${mode === "append" ? "appended" : "replaced"}.`,
+        createdByNodeId: this.context.binding.node.nodeId,
+        locator: {
+          nodeId: this.context.binding.node.nodeId,
+          path: `/${relativePath}`
+        },
+        preferred: false,
+        status: "materialized"
+      };
+      await this.publishWikiRefObservation(
+        artifactRef,
+        sync.syncedAt,
+        await readWikiPagePreview({ absolutePath })
+      );
+    }
+
+    return {
+      ...(sync.status === "failed" || sync.status === "not_configured"
+        ? { message: sync.reason }
+        : {
+            message:
+              `Wiki page '${relativePath}' ${mode === "append" ? "appended" : "replaced"} and repository sync ${sync.status}.`
+          }),
+      path: relativePath,
+      syncStatus: sync.status
     };
   }
 

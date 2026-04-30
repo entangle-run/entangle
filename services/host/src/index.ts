@@ -99,6 +99,8 @@ import {
   runtimeSourceHistoryReplayResponseSchema,
   runtimeWikiPublishRequestSchema,
   runtimeWikiPublishResponseSchema,
+  runtimeWikiUpsertPageRequestSchema,
+  runtimeWikiUpsertPageResponseSchema,
   runtimeTurnInspectionResponseSchema,
   runtimeTurnListResponseSchema,
   runnerRegistryInspectionResponseSchema,
@@ -368,6 +370,18 @@ type HostFederatedAssignmentPublisher = {
     requestedBy?: string;
     retryFailedPublication?: boolean;
     target?: GitRepositoryTargetSelector;
+  }): Promise<unknown>;
+  publishRuntimeWikiUpsertPage?(input: {
+    assignment: RuntimeAssignmentRecord;
+    authRequired?: boolean;
+    commandId: string;
+    content: string;
+    correlationId?: string;
+    mode?: "append" | "replace";
+    path: string;
+    reason?: string;
+    relayUrls: string[];
+    requestedBy?: string;
   }): Promise<unknown>;
 };
 
@@ -972,6 +986,43 @@ async function publishRuntimeWikiPublishCommandFromHost(
     ...(input.requestedBy ? { requestedBy: input.requestedBy } : {}),
     retryFailedPublication: input.retryFailedPublication ?? false,
     ...(input.target ? { target: input.target } : {})
+  });
+
+  return commandId;
+}
+
+async function publishRuntimeWikiUpsertPageCommandFromHost(
+  options: HostServerOptions,
+  input: {
+    assignment: RuntimeAssignmentRecord;
+    content: string;
+    mode?: "append" | "replace";
+    path: string;
+    reason?: string;
+    requestedBy?: string;
+  }
+): Promise<string | undefined> {
+  if (
+    !options.federatedControlPlane?.publishRuntimeWikiUpsertPage ||
+    !options.federatedControlRelayUrls ||
+    options.federatedControlRelayUrls.length === 0
+  ) {
+    return undefined;
+  }
+
+  const commandId = `cmd-wiki-upsert-page-${randomUUID()}`;
+  await options.federatedControlPlane.publishRuntimeWikiUpsertPage({
+    assignment: input.assignment,
+    ...(options.federatedControlAuthRequired !== undefined
+      ? { authRequired: options.federatedControlAuthRequired }
+      : {}),
+    commandId,
+    content: input.content,
+    mode: input.mode ?? "replace",
+    path: input.path,
+    ...(input.reason ? { reason: input.reason } : {}),
+    relayUrls: options.federatedControlRelayUrls,
+    ...(input.requestedBy ? { requestedBy: input.requestedBy } : {})
   });
 
   return commandId;
@@ -2672,6 +2723,79 @@ export async function buildHostServer(options: HostServerOptions = {}) {
 
     return runtimeMemoryPageInspectionResponseSchema.parse(pageInspection);
   });
+
+  server.post(
+    "/v1/runtimes/:nodeId/wiki/pages",
+    async (request, reply) => {
+      const params = request.params as { nodeId: string };
+      const body = parseRequestInput(
+        runtimeWikiUpsertPageRequestSchema,
+        request.body ?? {},
+        {
+          detailsKey: "bodyIssues",
+          message: "Request body did not match the expected wiki page schema."
+        }
+      );
+      const inspection = await getRuntimeInspection(params.nodeId);
+
+      if (!inspection) {
+        reply.status(404);
+        return hostErrorResponseSchema.parse({
+          code: "not_found",
+          message: `Runtime '${params.nodeId}' was not found in the active graph.`
+        });
+      }
+
+      const assignment = selectFederatedRuntimeControlAssignment({
+        assignments: (await listRuntimeAssignments()).assignments,
+        nodeId: params.nodeId
+      });
+
+      if (!assignment) {
+        throw new HostHttpError({
+          code: "conflict",
+          details: {
+            nodeId: params.nodeId
+          },
+          message:
+            `Wiki page mutation for runtime '${params.nodeId}' requires ` +
+            "an accepted federated runner assignment.",
+          statusCode: 409
+        });
+      }
+
+      const commandId = await publishRuntimeWikiUpsertPageCommandFromHost(options, {
+        assignment,
+        content: body.content,
+        mode: body.mode,
+        path: body.path,
+        ...(body.reason ? { reason: body.reason } : {}),
+        ...(body.requestedBy ? { requestedBy: body.requestedBy } : {})
+      });
+
+      if (!commandId) {
+        throw new HostHttpError({
+          code: "conflict",
+          details: {
+            nodeId: params.nodeId
+          },
+          message:
+            "Federated wiki page mutation requires an active Host control plane and relay configuration.",
+          statusCode: 409
+        });
+      }
+
+      return runtimeWikiUpsertPageResponseSchema.parse({
+        assignmentId: assignment.assignmentId,
+        commandId,
+        mode: body.mode,
+        nodeId: params.nodeId,
+        path: body.path,
+        requestedAt: new Date().toISOString(),
+        status: "requested"
+      });
+    }
+  );
 
   server.post(
     "/v1/runtimes/:nodeId/wiki-repository/publish",

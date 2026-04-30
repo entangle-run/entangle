@@ -743,6 +743,16 @@ describe("Host federated control plane", () => {
         repositoryName: "wiki-public"
       }
     });
+    await controlPlane.publishRuntimeWikiUpsertPage({
+      assignment,
+      commandId: "cmd-wiki-upsert-page-alpha",
+      content: "# Operator Note\n\nPersist this in the runner wiki.\n",
+      mode: "replace",
+      path: "operator/notes.md",
+      reason: "Update wiki page.",
+      relayUrls,
+      requestedBy: "operator-main"
+    });
 
     expect(transport.publishedControlEvents.map((event) => event.payload)).toEqual([
       expect.objectContaining({
@@ -867,6 +877,21 @@ describe("Host federated control plane", () => {
         target: {
           repositoryName: "wiki-public"
         }
+      }),
+      expect.objectContaining({
+        assignmentId: "assignment-alpha",
+        commandId: "cmd-wiki-upsert-page-alpha",
+        content: "# Operator Note\n\nPersist this in the runner wiki.\n",
+        eventType: "runtime.wiki.upsert_page",
+        graphId: "federated-smoke-graph",
+        hostAuthorityPubkey: authority.authority.publicKey,
+        issuedAt: "2026-04-26T12:00:11.000Z",
+        mode: "replace",
+        nodeId: "builder",
+        path: "operator/notes.md",
+        requestedBy: "operator-main",
+        runnerId: "runner-alpha",
+        runnerPubkey
       })
     ]);
     expect(transport.publishedControlEvents[3]?.payload).toMatchObject({
@@ -876,6 +901,7 @@ describe("Host federated control plane", () => {
       }
     });
     expect(transport.publishedControlEvents.map((event) => event.relayUrls)).toEqual([
+      relayUrls,
       relayUrls,
       relayUrls,
       relayUrls,

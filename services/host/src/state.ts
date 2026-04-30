@@ -2618,7 +2618,8 @@ export async function recordRuntimeCommandReceiptObservation(
       : {}),
     ...(receipt.targetPath ? { targetPath: receipt.targetPath } : {}),
     type: "runtime.command.receipt",
-    ...(receipt.wikiArtifactId ? { wikiArtifactId: receipt.wikiArtifactId } : {})
+    ...(receipt.wikiArtifactId ? { wikiArtifactId: receipt.wikiArtifactId } : {}),
+    ...(receipt.wikiPagePath ? { wikiPagePath: receipt.wikiPagePath } : {})
   } satisfies RuntimeCommandReceiptEventInput);
 }
 
@@ -3582,7 +3583,8 @@ async function listRuntimeCommandReceiptProjectionRecords() {
         ...(event.targetPath ? { targetPath: event.targetPath } : {}),
         ...(event.wikiArtifactId
           ? { wikiArtifactId: event.wikiArtifactId }
-          : {})
+          : {}),
+        ...(event.wikiPagePath ? { wikiPagePath: event.wikiPagePath } : {})
       })
     )
     .sort((left, right) => {

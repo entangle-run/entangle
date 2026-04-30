@@ -77,6 +77,8 @@ import {
   runtimeSourceHistoryReplayResponseSchema,
   runtimeWikiPublishRequestSchema,
   runtimeWikiPublishResponseSchema,
+  runtimeWikiUpsertPageRequestSchema,
+  runtimeWikiUpsertPageResponseSchema,
   runtimeTurnInspectionResponseSchema,
   runtimeTurnListResponseSchema,
   runnerRegistryInspectionResponseSchema,
@@ -177,6 +179,8 @@ import {
   type RuntimeSourceHistoryReplayResponse,
   type RuntimeWikiPublishRequest,
   type RuntimeWikiPublishResponse,
+  type RuntimeWikiUpsertPageRequest,
+  type RuntimeWikiUpsertPageResponse,
   type RuntimeTurnInspectionResponse,
   type RuntimeTurnListResponse,
   type RunnerRegistryInspectionResponse,
@@ -1338,6 +1342,25 @@ export function createHostClient(options: HostClientOptions) {
           }
         ),
         runtimeWikiPublishResponseSchema
+      );
+    },
+
+    async upsertRuntimeWikiPage(
+      nodeId: string,
+      request: RuntimeWikiUpsertPageRequest
+    ): Promise<RuntimeWikiUpsertPageResponse> {
+      return parseResponse(
+        await hostFetch(
+          `${baseUrl}/v1/runtimes/${nodeId}/wiki/pages`,
+          {
+            method: "POST",
+            headers: {
+              "content-type": "application/json"
+            },
+            body: JSON.stringify(runtimeWikiUpsertPageRequestSchema.parse(request))
+          }
+        ),
+        runtimeWikiUpsertPageResponseSchema
       );
     },
 

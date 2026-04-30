@@ -247,6 +247,7 @@ export function formatRuntimeCommandReceiptDetail(
     receipt.candidateId ? `candidate ${receipt.candidateId}` : undefined,
     receipt.sourceHistoryId ? `source ${receipt.sourceHistoryId}` : undefined,
     receipt.wikiArtifactId ? `wiki ${receipt.wikiArtifactId}` : undefined,
+    receipt.wikiPagePath ? `wiki page ${receipt.wikiPagePath}` : undefined,
     receipt.artifactId ? `artifact ${receipt.artifactId}` : undefined
   ].filter((part): part is string => Boolean(part)).join(" · ");
 }
