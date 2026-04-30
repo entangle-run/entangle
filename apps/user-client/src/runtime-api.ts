@@ -432,7 +432,7 @@ export function upsertWikiPage(input: {
   content: string;
   conversationId: string;
   expectedCurrentSha256?: string | undefined;
-  mode?: "append" | "replace" | undefined;
+  mode?: "append" | "patch" | "replace" | undefined;
   nodeId: string;
   path: string;
   reason?: string | undefined;

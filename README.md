@@ -518,7 +518,9 @@ This repository currently contains:
   same Host control path for operators. Wiki page upsert can now carry an
   optional `expectedCurrentSha256` digest; the runner compares it against
   current runner-owned page content before writing, and command receipts can
-  expose expected, previous, and next page hashes for stale-edit audit.
+  expose expected, previous, and next page hashes for stale-edit audit. The
+  same command now supports `mode: "patch"` for single-page unified diffs that
+  the runner applies only when context/removal lines match current content.
   Public deep runtime reads
   for accepted federated
   assignments now ignore Host-local runtime files and use projected
@@ -1273,9 +1275,9 @@ The highest-value remaining gaps are:
   target-specific source-history/wiki publication visibility checks and
   explicit runner-owned artifact/source/wiki command completion receipts,
   first operator and participant-scoped runner-owned wiki page upsert support
-  with runner-enforced stale-edit detection, richer collaborative wiki
-  patch/diff semantics and repository lifecycle behavior beyond explicit target
-  publication, and replicated fallback paths;
+  with runner-enforced stale-edit detection and single-page patch mode, richer
+  collaborative wiki merge UI and repository lifecycle behavior beyond
+  explicit target publication, and replicated fallback paths;
 - production identity and authorization beyond the bootstrap operator-token
   boundary, multi-token attribution, visible status summary, route-level
   bootstrap permissions, and coarse read-only `viewer` enforcement, including

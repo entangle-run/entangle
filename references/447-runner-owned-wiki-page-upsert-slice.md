@@ -46,6 +46,9 @@ Host never writes runner wiki files directly.
 - [453-wiki-page-optimistic-concurrency-slice.md](453-wiki-page-optimistic-concurrency-slice.md)
   later added optional `expectedCurrentSha256` and receipt hash fields so the
   runner can reject stale page edits before writing.
+- [454-wiki-page-patch-mode-slice.md](454-wiki-page-patch-mode-slice.md)
+  later added `mode: "patch"` for single-page unified diffs on the same
+  Host-signed control command.
 - Added Host API `POST /v1/runtimes/:nodeId/wiki/pages`.
 - Added host-client `upsertRuntimeWikiPage`.
 - Added CLI command `entangle host runtimes wiki-upsert-page`.
@@ -87,5 +90,5 @@ Non-federated/local adapter mutation is not reintroduced.
   peer-node `wiki_page` resources in the selected conversation and are
   forwarded with `requestedBy` set to the User Node id.
 - User-owned personal wiki mutation remains a separate future policy question.
-- Rich line-level collaborative patch/merge workflows remain outside this
-  slice, but stale base detection now exists.
+- Rich visual merge workflows remain outside this slice, but stale base
+  detection and single-page patch mode now exist.

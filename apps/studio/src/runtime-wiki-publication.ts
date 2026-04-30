@@ -17,7 +17,7 @@ export type RuntimeWikiPublicationDraft = {
 export type RuntimeWikiPageUpsertDraft = {
   content: string;
   expectedCurrentSha256: string;
-  mode: "append" | "replace";
+  mode: "append" | "patch" | "replace";
   path: string;
   reason: string;
   requestedBy: string;

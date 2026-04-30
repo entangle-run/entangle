@@ -7800,7 +7800,7 @@ describe("buildHostServer", () => {
     const wikiPageUpsertRequests: Array<{
       assignment: RuntimeAssignmentRecord;
       content: string;
-      mode?: "append" | "replace";
+      mode?: "append" | "patch" | "replace";
       path: string;
       reason?: string;
       relayUrls: string[];
@@ -7846,7 +7846,7 @@ describe("buildHostServer", () => {
       assignment: RuntimeAssignmentRecord;
       content: string;
       expectedCurrentSha256?: string;
-      mode?: "append" | "replace";
+      mode?: "append" | "patch" | "replace";
       path: string;
       reason?: string;
       relayUrls: string[];

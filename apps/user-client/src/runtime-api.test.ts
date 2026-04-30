@@ -172,7 +172,7 @@ describe("user client runtime API helpers", () => {
       conversationId: "conversation-alpha",
       expectedCurrentSha256:
         "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
-      mode: "replace",
+      mode: "patch",
       nodeId: "worker-it",
       path: "operator/notes.md",
       reason: "update reviewed page"
@@ -291,7 +291,7 @@ describe("user client runtime API helpers", () => {
       conversationId: "conversation-alpha",
       expectedCurrentSha256:
         "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
-      mode: "replace",
+      mode: "patch",
       nodeId: "worker-it",
       path: "operator/notes.md",
       reason: "update reviewed page"

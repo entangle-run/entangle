@@ -1906,6 +1906,120 @@ function hashWikiPageContent(content: string): string {
   return createHash("sha256").update(content, "utf8").digest("hex");
 }
 
+function splitWikiPageLines(content: string): string[] {
+  const normalized = content.replace(/\r\n/g, "\n");
+  const withoutFinalNewline = normalized.endsWith("\n")
+    ? normalized.slice(0, -1)
+    : normalized;
+
+  return withoutFinalNewline.length > 0
+    ? withoutFinalNewline.split("\n")
+    : [];
+}
+
+function describeWikiPageMutationMode(mode: "append" | "patch" | "replace"): string {
+  return mode === "append" ? "appended" : mode === "patch" ? "patched" : "replaced";
+}
+
+function applyWikiPageUnifiedPatch(input: {
+  currentContent: string;
+  patchContent: string;
+}): string {
+  const currentLines = splitWikiPageLines(input.currentContent);
+  const patchLines = input.patchContent.replace(/\r\n/g, "\n").split("\n");
+  const outputLines: string[] = [];
+  let currentIndex = 0;
+  let hunkSeen = false;
+
+  for (let patchIndex = 0; patchIndex < patchLines.length;) {
+    const line = patchLines[patchIndex] ?? "";
+
+    if (line.length === 0 && patchIndex === patchLines.length - 1) {
+      break;
+    }
+
+    if (line.startsWith("--- ") || line.startsWith("+++ ")) {
+      patchIndex += 1;
+      continue;
+    }
+
+    const header = /^@@ -(\d+)(?:,\d+)? \+(\d+)(?:,\d+)? @@/.exec(line);
+
+    if (!header) {
+      throw new Error("Wiki page patch must be a unified diff with hunks.");
+    }
+
+    hunkSeen = true;
+    const oldStart = Number(header[1]);
+    const hunkStartIndex = Math.max(oldStart - 1, 0);
+
+    if (hunkStartIndex < currentIndex) {
+      throw new Error("Wiki page patch hunks overlap or are out of order.");
+    }
+
+    outputLines.push(...currentLines.slice(currentIndex, hunkStartIndex));
+    currentIndex = hunkStartIndex;
+    patchIndex += 1;
+
+    while (patchIndex < patchLines.length) {
+      const hunkLine = patchLines[patchIndex] ?? "";
+
+      if (hunkLine.startsWith("@@ ")) {
+        break;
+      }
+
+      if (hunkLine.length === 0 && patchIndex === patchLines.length - 1) {
+        break;
+      }
+
+      if (hunkLine === "\\ No newline at end of file") {
+        patchIndex += 1;
+        continue;
+      }
+
+      const marker = hunkLine[0];
+      const text = hunkLine.slice(1);
+
+      if (marker === " ") {
+        if (currentLines[currentIndex] !== text) {
+          throw new Error("Wiki page patch context did not match current content.");
+        }
+
+        outputLines.push(text);
+        currentIndex += 1;
+        patchIndex += 1;
+        continue;
+      }
+
+      if (marker === "-") {
+        if (currentLines[currentIndex] !== text) {
+          throw new Error("Wiki page patch removal did not match current content.");
+        }
+
+        currentIndex += 1;
+        patchIndex += 1;
+        continue;
+      }
+
+      if (marker === "+") {
+        outputLines.push(text);
+        patchIndex += 1;
+        continue;
+      }
+
+      throw new Error("Wiki page patch contains an unsupported hunk line.");
+    }
+  }
+
+  if (!hunkSeen) {
+    throw new Error("Wiki page patch must include at least one hunk.");
+  }
+
+  outputLines.push(...currentLines.slice(currentIndex));
+
+  return `${outputLines.join("\n")}\n`;
+}
+
 async function readWikiPagePreview(input: {
   absolutePath: string;
 }): Promise<ArtifactContentPreview> {
@@ -2545,7 +2659,7 @@ export class RunnerService {
     commandId?: string;
     content: string;
     expectedCurrentSha256?: string;
-    mode?: "append" | "replace";
+    mode?: "append" | "patch" | "replace";
     path: string;
     reason?: string;
     requestedAt?: string;
@@ -2586,7 +2700,12 @@ export class RunnerService {
         ? [currentContent.trimEnd(), input.content.trimEnd()]
             .filter((part) => part.length > 0)
             .join("\n\n") + "\n"
-        : `${input.content.trimEnd()}\n`;
+        : mode === "patch"
+          ? applyWikiPageUnifiedPatch({
+              currentContent,
+              patchContent: input.content
+            })
+          : `${input.content.trimEnd()}\n`;
     const nextSha256 = hashWikiPageContent(nextContent);
     await writeTextFile(absolutePath, nextContent);
 
@@ -2614,7 +2733,7 @@ export class RunnerService {
         artifactKind: "knowledge_summary",
         backend: "wiki",
         contentSummary:
-          `Wiki page '${relativePath}' ${mode === "append" ? "appended" : "replaced"}.`,
+          `Wiki page '${relativePath}' ${describeWikiPageMutationMode(mode)}.`,
         createdByNodeId: this.context.binding.node.nodeId,
         locator: {
           nodeId: this.context.binding.node.nodeId,
@@ -2638,7 +2757,7 @@ export class RunnerService {
         ? { message: sync.reason }
         : {
             message:
-              `Wiki page '${relativePath}' ${mode === "append" ? "appended" : "replaced"} and repository sync ${sync.status}.`
+              `Wiki page '${relativePath}' ${describeWikiPageMutationMode(mode)} and repository sync ${sync.status}.`
           }),
       nextSha256,
       path: relativePath,

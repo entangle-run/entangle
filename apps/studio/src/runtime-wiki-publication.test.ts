@@ -69,7 +69,7 @@ describe("runtime wiki publication Studio helpers", () => {
         content: "Append this.\n",
         expectedCurrentSha256:
           "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
-        mode: "append",
+        mode: "patch",
         path: " operator/notes.md ",
         reason: " update durable note ",
         requestedBy: " operator-main "
@@ -78,7 +78,7 @@ describe("runtime wiki publication Studio helpers", () => {
       content: "Append this.\n",
       expectedCurrentSha256:
         "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
-      mode: "append",
+      mode: "patch",
       path: "operator/notes.md",
       reason: "update durable note",
       requestedBy: "operator-main"

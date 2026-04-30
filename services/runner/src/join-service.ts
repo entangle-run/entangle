@@ -155,7 +155,7 @@ export type RunnerAssignmentRuntimeHandle = {
     commandId?: string;
     content: string;
     expectedCurrentSha256?: string;
-    mode?: "append" | "replace";
+    mode?: "append" | "patch" | "replace";
     path: string;
     reason?: string;
     requestedAt?: string;
@@ -1659,7 +1659,13 @@ export class RunnerJoinService {
         assignmentId: assignment.assignmentId,
         message:
           result.message ??
-          `Wiki page '${result.path}' ${payload.mode === "append" ? "appended" : "replaced"}.`,
+          `Wiki page '${result.path}' ${
+            payload.mode === "append"
+              ? "appended"
+              : payload.mode === "patch"
+                ? "patched"
+                : "replaced"
+          }.`,
         payload,
         receipt: {
           ...(result.expectedCurrentSha256

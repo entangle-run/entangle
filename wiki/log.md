@@ -5436,3 +5436,14 @@ wiki state. Runtime command receipts and Host projection can now carry
 expected, previous, and next page hashes for audit, and the Human Interface
 Runtime derives the expected hash from a visible complete projected wiki
 preview when possible.
+
+## [2026-04-29] runtime | Added wiki page patch mode
+
+Added `references/454-wiki-page-patch-mode-slice.md`.
+`runtime.wiki.upsert_page` now supports `mode: "patch"` in addition to
+replace and append.
+
+Patch mode treats the content field as a single-page unified diff. The assigned
+runner applies it against current runner-owned wiki content, rejects mismatched
+context/removal lines before writing, and still reports completion or failure
+through the existing runtime command receipt projection.

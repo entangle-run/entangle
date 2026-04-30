@@ -52,6 +52,9 @@ User nodes are now partially runtime-capable:
   SHA-256 digest. The Human Interface Runtime derives it from a visible,
   complete projected wiki preview when available, and the assigned runner
   rejects stale edits before writing runner-owned wiki state.
+- Participant wiki page mutation can now request patch mode with a single-page
+  unified diff, still through the Human Interface Runtime and Host-signed
+  runner control path.
 - The federated dev runner image now builds and bundles that dedicated app at
   `/app/user-client`, sets `ENTANGLE_USER_CLIENT_STATIC_DIR` by default, and
   the Docker launcher adapter can publish a host port plus

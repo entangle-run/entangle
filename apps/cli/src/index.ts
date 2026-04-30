@@ -3848,13 +3848,17 @@ hostRuntimesCommand
   .command("wiki-upsert-page")
   .argument("<nodeId>", "Node identifier in the active graph.")
   .argument("<path>", "POSIX markdown page path inside the runtime wiki.")
-  .option("--content <markdown>", "Markdown content to write.")
-  .option("--content-file <path>", "Read markdown content from a local file.")
+  .option("--content <markdownOrPatch>", "Markdown content or unified diff patch.")
+  .option(
+    "--content-file <path>",
+    "Read markdown content or unified diff patch from a local file."
+  )
   .option(
     "--expected-current-sha256 <digest>",
     "Only apply when the current page content has this SHA-256 digest."
   )
   .option("--append", "Append content to the page instead of replacing it.")
+  .option("--patch", "Treat content as a unified diff patch for the page.")
   .option("--reason <reason>", "Operator-visible mutation reason.")
   .option("--requested-by <operatorId>", "Operator id requesting the mutation.")
   .description(
@@ -3869,6 +3873,7 @@ hostRuntimesCommand
         content?: string;
         contentFile?: string;
         expectedCurrentSha256?: string;
+        patch?: boolean;
         reason?: string;
         requestedBy?: string;
       },
@@ -3888,13 +3893,17 @@ hostRuntimesCommand
         throw new Error("Wiki page mutation requires --content or --content-file.");
       }
 
+      if (options.append && options.patch) {
+        throw new Error("Use only one of --append or --patch.");
+      }
+
       const client = createCliHostClient(command);
       const request = runtimeWikiUpsertPageRequestSchema.parse({
         content,
         ...(options.expectedCurrentSha256
           ? { expectedCurrentSha256: options.expectedCurrentSha256 }
           : {}),
-        mode: options.append ? "append" : "replace",
+        mode: options.patch ? "patch" : options.append ? "append" : "replace",
         path: pagePath,
         ...(options.reason ? { reason: options.reason } : {}),
         ...(options.requestedBy ? { requestedBy: options.requestedBy } : {})

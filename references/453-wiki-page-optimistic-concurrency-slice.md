@@ -102,8 +102,8 @@ shared-volume, `effective-runtime-context`, or Docker assumptions.
 
 ## Open questions
 
-- Rich collaborative wiki patch application and merge UI can now build on this
-  stale-edit guard, but this slice does not implement a line-level patch
-  protocol.
+- [454-wiki-page-patch-mode-slice.md](454-wiki-page-patch-mode-slice.md)
+  added the first single-page unified diff patch mode on top of this stale-edit
+  guard. Rich merge UI and multi-page patch sets remain open.
 - Repository lifecycle and replicated fallback behavior remain separate git
   backend hardening work.

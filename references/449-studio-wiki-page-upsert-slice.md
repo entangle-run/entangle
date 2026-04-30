@@ -36,6 +36,8 @@ runner filesystem access:
 - Added Studio helper draft/build/summary functions for wiki page upsert.
 - Added a Runtime Memory form in Studio with page path, mode, content,
   requestedBy, reason, and optional expected current SHA-256 fields.
+- [454-wiki-page-patch-mode-slice.md](454-wiki-page-patch-mode-slice.md)
+  later widened the mode selector to include `patch`.
 - Wired the form to `client.upsertRuntimeWikiPage` and reset/summary/error
   state consistently with existing wiki publication controls.
 

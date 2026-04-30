@@ -44,6 +44,9 @@ The User Client never writes runner memory directly.
   later made the Human Interface Runtime derive `expectedCurrentSha256` from a
   visible complete wiki preview and forward it through Host when the User
   Client does not provide one.
+- [454-wiki-page-patch-mode-slice.md](454-wiki-page-patch-mode-slice.md)
+  later widened the same User Client/Human Interface Runtime route to accept
+  `mode: "patch"` for unified diff page edits.
 - Extended the process-runner smoke to publish a synthetic `wiki_page`
   approval request, call the running User Client JSON route, and wait for the
   projected `runtime.wiki.upsert_page` receipt and `wiki.ref`.
@@ -75,7 +78,7 @@ wiki mutation.
 
 ## Open questions
 
-- Rich collaborative wiki editing still needs line-level patch/merge semantics;
-  stale page base detection is now in place for replacement or append commands.
+- Rich collaborative wiki editing still needs visual merge semantics; stale
+  page base detection and single-page patch execution are now in place.
 - User-owned personal memory/wiki mutation should be modeled separately from
   peer-node page mutation if Entangle needs private human notes.

@@ -108,6 +108,8 @@ Recently added:
 - CLI, Studio, and the User Client wiki page mutation path can now carry
   `expectedCurrentSha256`; command receipt summaries can expose wiki page hash
   transitions when the runner completes or rejects the mutation.
+- The same wiki page mutation surfaces can select patch mode, where the
+  content field carries a single-page unified diff for runner-side application.
 - Host status now includes bounded federated control/observe transport health,
   CLI host-status summaries include it, and Studio's Host Status panel renders
   the same Host-owned read model.

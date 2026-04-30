@@ -6913,6 +6913,8 @@ export function App() {
                                 mode:
                                   event.target.value === "append"
                                     ? "append"
+                                    : event.target.value === "patch"
+                                      ? "patch"
                                     : "replace"
                               }));
                             }}
@@ -6920,6 +6922,7 @@ export function App() {
                           >
                             <option value="replace">Replace</option>
                             <option value="append">Append</option>
+                            <option value="patch">Patch</option>
                           </select>
                         </label>
                         <label className="field">
@@ -6966,7 +6969,7 @@ export function App() {
                         </label>
                       </div>
                       <label className="field">
-                        <span>Markdown Content</span>
+                        <span>Markdown Or Patch Content</span>
                         <textarea
                           disabled={pendingWikiPageUpsert}
                           onChange={(event) => {

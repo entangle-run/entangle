@@ -808,7 +808,8 @@ function WikiResourceCards({
   const [publishReason, setPublishReason] = useState("");
   const [pageContent, setPageContent] = useState("");
   const [pageExpectedSha256, setPageExpectedSha256] = useState("");
-  const [pageMode, setPageMode] = useState<"append" | "replace">("replace");
+  const [pageMode, setPageMode] =
+    useState<"append" | "patch" | "replace">("replace");
   const [pagePath, setPagePath] = useState("");
   const [retryFailedPublication, setRetryFailedPublication] = useState(false);
   const [status, setStatus] = useState<string | undefined>();
@@ -949,9 +950,9 @@ function WikiResourceCards({
               value={effectivePagePath}
             />
             <textarea
-              aria-label="Wiki page content"
+              aria-label="Wiki page content or patch"
               onChange={(event) => setPageContent(event.target.value)}
-              placeholder="Markdown content"
+              placeholder="Markdown content or unified diff patch"
               value={pageContent}
             />
             <input
@@ -960,16 +961,23 @@ function WikiResourceCards({
               placeholder="Expected current SHA-256"
               value={pageExpectedSha256}
             />
-            <label className="inline-checkbox">
-              <input
-                checked={pageMode === "append"}
-                onChange={(event) =>
-                  setPageMode(event.target.checked ? "append" : "replace")
-                }
-                type="checkbox"
-              />
-              <span>Append</span>
-            </label>
+            <select
+              aria-label="Wiki page mode"
+              onChange={(event) => {
+                setPageMode(
+                  event.target.value === "append"
+                    ? "append"
+                    : event.target.value === "patch"
+                      ? "patch"
+                      : "replace"
+                );
+              }}
+              value={pageMode}
+            >
+              <option value="replace">Replace</option>
+              <option value="append">Append</option>
+              <option value="patch">Patch</option>
+            </select>
             <button onClick={() => void requestPageUpsert()} type="button">
               Update Page
             </button>

@@ -725,6 +725,7 @@ files are the active federated redesign pack.
 452. [451-user-client-source-history-reconcile-slice.md](451-user-client-source-history-reconcile-slice.md)
 453. [452-human-interface-runtime-basic-auth-slice.md](452-human-interface-runtime-basic-auth-slice.md)
 454. [453-wiki-page-optimistic-concurrency-slice.md](453-wiki-page-optimistic-concurrency-slice.md)
+455. [454-wiki-page-patch-mode-slice.md](454-wiki-page-patch-mode-slice.md)
 
 ## Role of this corpus
 

@@ -2028,7 +2028,7 @@ async function requestRuntimeWikiPageUpsert(input: {
   content: string;
   expectedCurrentSha256?: string | undefined;
   hostApi?: RunnerJoinHostApi | undefined;
-  mode: "append" | "replace";
+  mode: "append" | "patch" | "replace";
   nodeId: string;
   path: string;
   reason?: string | undefined;
@@ -4265,7 +4265,9 @@ export async function startHumanInterfaceRuntime(input: {
         const mode =
           upsertRequest.mode === undefined
             ? "replace"
-            : upsertRequest.mode === "append" || upsertRequest.mode === "replace"
+            : upsertRequest.mode === "append" ||
+                upsertRequest.mode === "patch" ||
+                upsertRequest.mode === "replace"
               ? upsertRequest.mode
               : undefined;
         const reason =

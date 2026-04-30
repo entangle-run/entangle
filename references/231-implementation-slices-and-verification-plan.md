@@ -555,6 +555,9 @@ Current status:
   expected/previous hashes, successful receipts can carry previous/next hashes,
   and the Human Interface Runtime derives an expected digest from visible
   complete projected wiki previews when available;
+- wiki page upsert also supports `mode: "patch"`; the same Host-signed control
+  command can carry a single-page unified diff, and the runner applies it only
+  when context/removal lines match current runner-owned content;
 - lifecycle start/stop/restart and session cancellation commands now also emit
   signed `runtime.command.receipt` observations, with session cancellation
   receipts carrying cancellation/session correlation ids;
@@ -562,9 +565,10 @@ Current status:
   assignment, node, runner, command type, status, and limit filters;
 - Studio can inspect per-assignment timeline entries through the Host
   assignment timeline endpoint, keeping operator drilldown aligned with CLI;
-- richer collaborative wiki patch application and merge UI still need
-  protocol-backed replacement on top of the first participant-scoped wiki page
-  upsert command and the new runner-enforced stale-edit guard.
+- richer collaborative wiki merge UI and multi-page patch-set behavior still
+  need protocol-backed replacement on top of the first participant-scoped wiki
+  page upsert command, runner-enforced stale-edit guard, and single-page patch
+  mode.
 
 ### Slice 9: User Node Runtime
 

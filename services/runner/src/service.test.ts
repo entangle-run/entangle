@@ -472,6 +472,34 @@ describe("RunnerService", () => {
       "# Operator Note\n\nPersist this in runner memory.\n\nSecond note.\n"
     );
 
+    const beforePatch =
+      "# Operator Note\n\nPersist this in runner memory.\n\nSecond note.\n";
+    const patch = await service.requestWikiPageUpsert({
+      content:
+        "--- a/operator/notes.md\n" +
+        "+++ b/operator/notes.md\n" +
+        "@@ -3,1 +3,1 @@\n" +
+        "-Persist this in runner memory.\n" +
+        "+Persist this in runner memory with a patch.\n",
+      expectedCurrentSha256: sha256Hex(beforePatch),
+      mode: "patch",
+      path: "operator/notes.md"
+    });
+    expect(patch).toMatchObject({
+      expectedCurrentSha256: sha256Hex(beforePatch),
+      path: "operator/notes.md",
+      previousSha256: sha256Hex(beforePatch),
+      syncStatus: "committed"
+    });
+    await expect(
+      readFile(
+        path.join(context.workspace.memoryRoot, "wiki", "operator", "notes.md"),
+        "utf8"
+      )
+    ).resolves.toBe(
+      "# Operator Note\n\nPersist this in runner memory with a patch.\n\nSecond note.\n"
+    );
+
     const conflict = await service.requestWikiPageUpsert({
       content: "Stale edit.\n",
       expectedCurrentSha256: sha256Hex("# Operator Note\n"),
@@ -482,7 +510,7 @@ describe("RunnerService", () => {
       expectedCurrentSha256: sha256Hex("# Operator Note\n"),
       path: "operator/notes.md",
       previousSha256: sha256Hex(
-        "# Operator Note\n\nPersist this in runner memory.\n\nSecond note.\n"
+        "# Operator Note\n\nPersist this in runner memory with a patch.\n\nSecond note.\n"
       ),
       syncStatus: "conflict"
     });
@@ -492,7 +520,7 @@ describe("RunnerService", () => {
         "utf8"
       )
     ).resolves.toBe(
-      "# Operator Note\n\nPersist this in runner memory.\n\nSecond note.\n"
+      "# Operator Note\n\nPersist this in runner memory with a patch.\n\nSecond note.\n"
     );
   });
 
@@ -519,6 +547,33 @@ describe("RunnerService", () => {
         })
       ).rejects.toThrow();
     }
+  });
+
+  it("rejects wiki page patches that do not match current content", async () => {
+    const fixture = await createRuntimeFixture();
+    const context = await loadRuntimeContext(fixture.contextPath);
+    const service = new RunnerService({
+      context,
+      transport: new InMemoryRunnerTransport()
+    });
+
+    await service.requestWikiPageUpsert({
+      content: "# Patch Target\n\nCurrent.\n",
+      path: "operator/patch-target.md"
+    });
+
+    await expect(
+      service.requestWikiPageUpsert({
+        content:
+          "--- a/operator/patch-target.md\n" +
+          "+++ b/operator/patch-target.md\n" +
+          "@@ -3,1 +3,1 @@\n" +
+          "-Stale.\n" +
+          "+Next.\n",
+        mode: "patch",
+        path: "operator/patch-target.md"
+      })
+    ).rejects.toThrow("patch removal did not match");
   });
 
   it("cancels an active engine turn when an external cancellation request is observed", async () => {

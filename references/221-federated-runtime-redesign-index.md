@@ -254,6 +254,7 @@ same-machine slice records.
 - [451-user-client-source-history-reconcile-slice.md](451-user-client-source-history-reconcile-slice.md)
 - [452-human-interface-runtime-basic-auth-slice.md](452-human-interface-runtime-basic-auth-slice.md)
 - [453-wiki-page-optimistic-concurrency-slice.md](453-wiki-page-optimistic-concurrency-slice.md)
+- [454-wiki-page-patch-mode-slice.md](454-wiki-page-patch-mode-slice.md)
 
 ## Audited Scope
 
@@ -891,7 +892,8 @@ published git artifact locators to prove the advertised branch contains the
 projected commit. The remaining blocking implementation
 areas are richer
 projection-backed source review and merge/reconcile services, collaborative
-wiki patch/diff semantics on top of the participant-scoped page upsert command
-and the new runner-enforced wiki page `expectedCurrentSha256` stale-edit guard,
+wiki merge UI and multi-page patch-set semantics on top of the
+participant-scoped page upsert command, runner-enforced wiki page
+`expectedCurrentSha256` stale-edit guard, and single-page `patch` mode,
 infrastructure-backed multi-machine proof execution, and deeper
 production identity/authorization beyond the scoped bootstrap-token boundary.

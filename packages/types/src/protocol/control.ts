@@ -271,7 +271,7 @@ export const runtimeWikiUpsertPagePayloadSchema = controlPayloadBaseSchema.exten
   eventType: z.literal("runtime.wiki.upsert_page"),
   expectedCurrentSha256: sha256DigestSchema.optional(),
   graphId: identifierSchema,
-  mode: z.enum(["append", "replace"]).default("replace"),
+  mode: z.enum(["append", "patch", "replace"]).default("replace"),
   nodeId: identifierSchema,
   path: nonEmptyStringSchema,
   reason: nonEmptyStringSchema.optional(),

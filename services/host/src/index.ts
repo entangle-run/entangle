@@ -392,7 +392,7 @@ type HostFederatedAssignmentPublisher = {
     content: string;
     correlationId?: string;
     expectedCurrentSha256?: string;
-    mode?: "append" | "replace";
+    mode?: "append" | "patch" | "replace";
     path: string;
     reason?: string;
     relayUrls: string[];
@@ -1049,7 +1049,7 @@ async function publishRuntimeWikiUpsertPageCommandFromHost(
     assignment: RuntimeAssignmentRecord;
     content: string;
     expectedCurrentSha256?: string;
-    mode?: "append" | "replace";
+    mode?: "append" | "patch" | "replace";
     path: string;
     reason?: string;
     requestedBy?: string;
