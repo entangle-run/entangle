@@ -144,6 +144,38 @@ describe("host event inspection helpers", () => {
     ).toEqual([createRuntimeRecoveryRecordedEvent()]);
   });
 
+  it("filters operator audit events by operator id and status code", () => {
+    const auditEvent: HostEventRecord = {
+      authMode: "bootstrap_operator_token",
+      category: "security",
+      eventId: "evt-operator-denied",
+      message: "Host operator request 'PUT /v1/catalog' completed with status 403.",
+      method: "PUT",
+      operatorId: "audit-viewer",
+      operatorRole: "viewer",
+      path: "/v1/catalog",
+      requestId: "req-1",
+      schemaVersion: "1",
+      statusCode: 403,
+      timestamp: "2026-04-29T00:00:00.000Z",
+      type: "host.operator_request.completed"
+    };
+
+    expect(
+      filterHostEvents([createSessionEvent(), auditEvent], {
+        operatorId: "audit-viewer",
+        statusCode: 403
+      })
+    ).toEqual([auditEvent]);
+
+    expect(
+      hostEventMatchesFilter(auditEvent, {
+        operatorId: "ops-admin",
+        statusCode: 403
+      })
+    ).toBe(false);
+  });
+
   it("exposes a runtime trace prefix set that matches session activity and excludes recovery-only events", () => {
     expect(
       hostEventMatchesFilter(createSessionEvent(), {

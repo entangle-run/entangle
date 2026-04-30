@@ -1614,7 +1614,7 @@ export async function buildHostServer(options: HostServerOptions = {}) {
       });
 
       return hostEventListResponseSchema.parse(
-        await listHostEvents(query.limit ?? 100)
+        await listHostEvents(query)
       );
     },
     wsHandler: (rawSocket, request) => {

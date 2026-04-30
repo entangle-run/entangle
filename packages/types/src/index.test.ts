@@ -32,6 +32,7 @@ import {
   hostAuthorityImportRequestSchema,
   hostAuthorityInspectionResponseSchema,
   hostErrorResponseSchema,
+  hostEventListQuerySchema,
   hostProjectionSnapshotSchema,
   hostEventRecordSchema,
   hostSessionConsistencyFindingSchema,
@@ -3046,6 +3047,34 @@ describe("external principal contracts", () => {
 });
 
 describe("host event contracts", () => {
+  it("normalizes host event list query filters", () => {
+    expect(
+      hostEventListQuerySchema.parse({
+        category: "security",
+        limit: "25",
+        nodeId: "worker-it",
+        operatorId: "ops-lead",
+        statusCode: "403",
+        typePrefix: ["host.operator_request.", "runtime."]
+      })
+    ).toEqual({
+      category: "security",
+      limit: 25,
+      nodeId: "worker-it",
+      operatorId: "ops-lead",
+      statusCode: 403,
+      typePrefix: ["host.operator_request.", "runtime."]
+    });
+
+    expect(
+      hostEventListQuerySchema.parse({
+        typePrefix: "session."
+      })
+    ).toEqual({
+      typePrefix: ["session."]
+    });
+  });
+
   it("accepts a typed bootstrap operator request audit event", () => {
     const result = hostEventRecordSchema.parse({
       authMode: "bootstrap_operator_token",

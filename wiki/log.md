@@ -5309,3 +5309,15 @@ Host resolves HTTP bearer and WebSocket access tokens to distinct bootstrap
 operator ids and roles, keeps viewer tokens read-only, exposes plural
 tokenless Host status, rejects duplicate token configuration, and records
 matched operator attribution in protected mutation audit events.
+
+## [2026-04-29] host | Added server-side Host event filters
+
+Added `references/443-host-event-server-filtering-slice.md`. `/v1/events` now
+accepts category, node id, operator id, HTTP status code, and repeated
+type-prefix filters, and Host applies those filters before slicing to the
+requested limit.
+
+host-client can call `listHostEvents` with either the old numeric limit or the
+new query object. CLI `entangle host events list` sends the same filters to
+Host, while watch mode gained matching operator/status filters for live local
+inspection.

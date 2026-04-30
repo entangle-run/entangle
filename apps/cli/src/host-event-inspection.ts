@@ -8,8 +8,10 @@ import type { HostEventRecord } from "@entangle/types";
 export interface HostEventInspectionOptions {
   category?: HostEventRecord["category"];
   nodeId?: string;
+  operatorId?: string;
   recoveryOnly?: boolean;
   runtimeTraceOnly?: boolean;
+  statusCode?: number;
   typePrefixes?: string[];
 }
 
@@ -29,6 +31,10 @@ export function buildHostEventFilter(
   return {
     ...(options.category ? { categories: [options.category] } : {}),
     ...(options.nodeId ? { nodeId: options.nodeId } : {}),
+    ...(options.operatorId ? { operatorId: options.operatorId } : {}),
+    ...(options.statusCode !== undefined
+      ? { statusCode: options.statusCode }
+      : {}),
     ...(typePrefixes.length > 0 ? { typePrefixes } : {})
   };
 }

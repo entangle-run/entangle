@@ -472,6 +472,10 @@ Current status:
 - shared host-client/CLI host event summaries now present
   `host.operator_request.completed` audit events with operator id, role,
   method, path, status, and auth mode instead of a generic event-type label;
+- Host event list APIs now apply category, node id, operator id, HTTP status
+  code, and repeated type-prefix filters before limit slicing, so audit and
+  runtime inspection surfaces can retrieve bounded matching traces without
+  relying only on client-side filtering of the newest event tail;
 - the User Client can request bounded artifact history/diff from its Human
   Interface Runtime through Host artifact read APIs;
 - explicit source-history publication can now target policy-gated non-primary
@@ -984,6 +988,9 @@ Current status:
   explicit remaining hardening track; host-client and CLI summary output now
   presents those audit events with operator id, role, method, path, status, and
   auth mode;
+- Host API, host-client, and CLI event-list surfaces now support server-side
+  filters for category, node id, operator id, status code, and repeated type
+  prefixes while preserving existing unfiltered limit behavior;
 - the running User Client can load artifact history/diff evidence through
   runtime-local JSON routes backed by Host artifact read APIs;
 - those User Client artifact routes require conversation context and verify the

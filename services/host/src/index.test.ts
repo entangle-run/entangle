@@ -1070,6 +1070,28 @@ describe("buildHostServer", () => {
           })
         ])
       );
+
+      const filteredEventsResponse = await server.inject({
+        headers: {
+          authorization: "Bearer host-secret"
+        },
+        method: "GET",
+        url:
+          "/v1/events?limit=5&category=security&operatorId=audit-viewer" +
+          "&statusCode=403&typePrefix=host.operator_request."
+      });
+      const filteredEvents = hostEventListResponseSchema.parse(
+        filteredEventsResponse.json()
+      ).events;
+
+      expect(filteredEvents).toEqual([
+        expect.objectContaining({
+          operatorId: "audit-viewer",
+          path: "/v1/catalog",
+          statusCode: 403,
+          type: "host.operator_request.completed"
+        })
+      ]);
     } finally {
       await server.close();
     }

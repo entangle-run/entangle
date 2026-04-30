@@ -126,6 +126,7 @@ import {
   type HostAuthorityInspectionResponse,
   type HostArtifactBackendCacheClearRequest,
   type HostArtifactBackendCacheClearResponse,
+  type HostEventListQuery,
   type HostEventListResponse,
   type HostEventRecord,
   type HostProjectionSnapshot,
@@ -663,9 +664,38 @@ export function createHostClient(options: HostClientOptions) {
       );
     },
 
-    async listHostEvents(limit = 100): Promise<HostEventListResponse> {
+    async listHostEvents(
+      queryOrLimit: HostEventListQuery | number = 100
+    ): Promise<HostEventListResponse> {
+      const query =
+        typeof queryOrLimit === "number"
+          ? { limit: queryOrLimit }
+          : queryOrLimit;
       const url = new URL(`${baseUrl}/v1/events`);
-      url.searchParams.set("limit", String(limit));
+
+      if (query.limit !== undefined) {
+        url.searchParams.set("limit", String(query.limit));
+      }
+
+      if (query.category) {
+        url.searchParams.set("category", query.category);
+      }
+
+      if (query.nodeId) {
+        url.searchParams.set("nodeId", query.nodeId);
+      }
+
+      if (query.operatorId) {
+        url.searchParams.set("operatorId", query.operatorId);
+      }
+
+      if (query.statusCode !== undefined) {
+        url.searchParams.set("statusCode", String(query.statusCode));
+      }
+
+      for (const typePrefix of query.typePrefix ?? []) {
+        url.searchParams.append("typePrefix", typePrefix);
+      }
 
       return parseResponse(
         await hostFetch(url.toString()),

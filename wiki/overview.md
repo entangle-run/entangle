@@ -400,7 +400,9 @@ The repository now also contains the first real implementation baseline:
   the bootstrap `viewer` role as read-only, include `operatorRole` in protected
   mutation audit events, can attribute requests to distinct bootstrap
   operators, and host-client/CLI event summaries now render those audit events
-  with operator id, role, method, path, status, and auth mode;
+  with operator id, role, method, path, status, and auth mode; Host event list
+  APIs now apply category, node, operator, status-code, and type-prefix filters
+  before limit slicing;
 - host-side runtime materialization for effective bindings, runtime intents,
   observed runtime records, workspace layout, immutable package-store-backed
   package surfaces, injected runtime context, and stable per-node runtime
@@ -1144,9 +1146,10 @@ The current implementation-truth audit now lives in
   reconciliation plus host-derived conversation lifecycle diagnostics and
   consistency findings are implemented;
 - deepen the bootstrap host operator-token boundary, multi-token request audit,
-  status reporting, and coarse read-only `viewer` enforcement into real
-  production identity and authorization only through explicit contracts, tests,
-  policy decisions, enforced roles, and operator-visible attribution;
+  status reporting, server-filterable event inspection, and coarse read-only
+  `viewer` enforcement into real production identity and authorization only
+  through explicit contracts, tests, policy decisions, enforced roles, and
+  operator-visible attribution;
 - continue broadening normalized provider metadata and bounded failure
   reporting only where later provider adapters justify new canonical fields,
   and otherwise deepen model-guided memory maintenance on top of the now

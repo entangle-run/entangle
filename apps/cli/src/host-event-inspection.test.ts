@@ -22,10 +22,14 @@ describe("buildHostEventFilter", () => {
   it("preserves explicit category-only filters", () => {
     expect(
       buildHostEventFilter({
-        category: "session"
+        category: "session",
+        operatorId: "ops-lead",
+        statusCode: 403
       })
     ).toEqual({
-      categories: ["session"]
+      categories: ["session"],
+      operatorId: "ops-lead",
+      statusCode: 403
     });
   });
 

@@ -323,7 +323,8 @@ This repository currently contains:
   bootstrap `viewer` role as read-only, include `operatorRole` in protected
   mutation audit events, and can attribute requests to distinct bootstrap
   operator tokens; host-client and CLI event summaries now render those audit
-  events with operator id, role, method, path, status, and auth mode;
+  events with operator id, role, method, path, status, and auth mode, and Host
+  event listing now applies audit filters server-side before limit slicing;
 - host-managed external principal records for backend-facing identities such as
   git principals, exposed through the same host boundary, safely removable
   when unused, and resolved into effective runtime context rather than
@@ -1247,8 +1248,8 @@ The highest-value remaining gaps are:
 - production identity and authorization beyond the bootstrap operator-token
   boundary, multi-token attribution, visible status summary, and coarse
   read-only `viewer` enforcement, including durable principals, finer-grained
-  policy-backed permissions, and stronger audit retention than the current
-  bootstrap request trace;
+  policy-backed permissions, and stronger retention/export/tamper-evidence
+  than the current server-filterable bootstrap request trace;
 - stronger end-to-end deployment and integration hardening beyond the current
   disposable same-machine profile, especially infrastructure-backed
   multi-machine proof execution and non-disposable upgrade/repair behavior.

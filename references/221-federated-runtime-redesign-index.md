@@ -243,6 +243,7 @@ same-machine slice records.
 - [440-distributed-proof-published-git-evidence-slice.md](440-distributed-proof-published-git-evidence-slice.md)
 - [441-distributed-proof-published-git-ref-check-slice.md](441-distributed-proof-published-git-ref-check-slice.md)
 - [442-bootstrap-multi-operator-auth-slice.md](442-bootstrap-multi-operator-auth-slice.md)
+- [443-host-event-server-filtering-slice.md](443-host-event-server-filtering-slice.md)
 
 ## Audited Scope
 
@@ -825,7 +826,10 @@ bootstrap operator bearer tokens through `ENTANGLE_HOST_OPERATOR_TOKENS_JSON`;
 each token resolves to a distinct operator id and role for authorization,
 status, and request-audit attribution while preserving the existing
 single-token environment contract. This remains bootstrap authorization, not
-final production RBAC.
+final production RBAC. Host event listing now also applies category, node,
+operator, status-code, and type-prefix filters before limit slicing, so CLI and
+host-client audit inspection do not lose older matching events behind unrelated
+recent trace records.
 `pnpm ops:smoke-distributed-proof-tools` now gives CI a
 deterministic no-infrastructure smoke for proof-kit dry-runs and verifier
 self-test JSON, including default rejection of non-running runtime

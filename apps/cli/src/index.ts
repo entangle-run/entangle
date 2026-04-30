@@ -214,15 +214,26 @@ function collectRepeatedOptionValue(value: string, previous: string[] = []): str
 function buildCliHostEventInspectionOptions(options: {
   category?: HostEventRecord["category"];
   nodeId?: string;
+  operatorId?: string;
   recoveryOnly?: boolean;
   runtimeTraceOnly?: boolean;
+  statusCode?: string;
   typePrefix: string[];
 }) {
   return {
     ...(options.category ? { category: options.category } : {}),
     ...(options.nodeId ? { nodeId: options.nodeId } : {}),
+    ...(options.operatorId ? { operatorId: options.operatorId } : {}),
     ...(options.recoveryOnly ? { recoveryOnly: true } : {}),
     ...(options.runtimeTraceOnly ? { runtimeTraceOnly: true } : {}),
+    ...(options.statusCode
+      ? {
+          statusCode: parsePositiveIntegerOption(
+            options.statusCode,
+            "--status-code"
+          )
+        }
+      : {}),
     ...(options.typePrefix.length > 0 ? { typePrefixes: options.typePrefix } : {})
   };
 }
@@ -2127,6 +2138,8 @@ hostEventsCommand
   .option("--limit <n>", "Maximum number of events to fetch.", "100")
   .option("--category <category>", "Filter by host event category.")
   .option("--node-id <nodeId>", "Filter to one runtime or session node id.")
+  .option("--operator-id <operatorId>", "Filter to one bootstrap operator id.")
+  .option("--status-code <statusCode>", "Filter to one HTTP status code.")
   .option(
     "--type-prefix <prefix>",
     "Filter to event types that start with the given prefix. Repeatable.",
@@ -2152,20 +2165,38 @@ hostEventsCommand
         category?: HostEventRecord["category"];
         limit: string;
         nodeId?: string;
+        operatorId?: string;
         recoveryOnly?: boolean;
         runtimeTraceOnly?: boolean;
         summary?: boolean;
+        statusCode?: string;
         typePrefix: string[];
       },
       command: Command
     ) => {
       const client = createCliHostClient(command);
-      const response = await client.listHostEvents(Number.parseInt(options.limit, 10));
+      const filter = buildHostEventFilter(
+        buildCliHostEventInspectionOptions(options)
+      );
+      const response = await client.listHostEvents({
+        ...(options.category ? { category: options.category } : {}),
+        limit: parsePositiveIntegerOption(options.limit, "--limit"),
+        ...(options.nodeId ? { nodeId: options.nodeId } : {}),
+        ...(options.operatorId ? { operatorId: options.operatorId } : {}),
+        ...(options.statusCode
+          ? {
+              statusCode: parsePositiveIntegerOption(
+                options.statusCode,
+                "--status-code"
+              )
+            }
+          : {}),
+        ...(filter.typePrefixes && filter.typePrefixes.length > 0
+          ? { typePrefix: filter.typePrefixes }
+          : {})
+      });
       renderCliHostEvents(
-        filterHostEvents(
-          response.events,
-          buildHostEventFilter(buildCliHostEventInspectionOptions(options))
-        ),
+        filterHostEvents(response.events, filter),
         options.summary === true
       );
     }
@@ -2176,6 +2207,8 @@ hostEventsCommand
   .option("--replay <n>", "Replay the last N persisted events before streaming.", "20")
   .option("--category <category>", "Filter by host event category.")
   .option("--node-id <nodeId>", "Filter to one runtime or session node id.")
+  .option("--operator-id <operatorId>", "Filter to one bootstrap operator id.")
+  .option("--status-code <statusCode>", "Filter to one HTTP status code.")
   .option(
     "--type-prefix <prefix>",
     "Filter to event types that start with the given prefix. Repeatable.",
@@ -2200,10 +2233,12 @@ hostEventsCommand
       options: {
         category?: HostEventRecord["category"];
         nodeId?: string;
+        operatorId?: string;
         recoveryOnly?: boolean;
         replay: string;
         runtimeTraceOnly?: boolean;
         summary?: boolean;
+        statusCode?: string;
         typePrefix: string[];
       },
       command: Command

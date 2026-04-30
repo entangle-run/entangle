@@ -54,6 +54,15 @@ const hostEventBaseSchema = z.object({
   timestamp: nonEmptyStringSchema
 });
 
+export const hostEventCategorySchema = z.enum([
+  "control_plane",
+  "reconciliation",
+  "runner",
+  "runtime",
+  "security",
+  "session"
+]);
+
 export const hostOperatorRequestMethodSchema = z.enum([
   "DELETE",
   "PATCH",
@@ -507,8 +516,27 @@ export const hostEventRecordSchema = z.discriminatedUnion("type", [
   hostReconciliationCompletedEventSchema
 ]);
 
+const repeatedQueryStringSchema = z.preprocess(
+  (value): unknown => {
+    if (value === undefined) {
+      return undefined;
+    }
+
+    const values: unknown[] = Array.isArray(value)
+      ? (value as unknown[])
+      : [value];
+    return values;
+  },
+  z.array(nonEmptyStringSchema).optional()
+);
+
 export const hostEventListQuerySchema = z.object({
-  limit: z.coerce.number().int().positive().max(500).optional()
+  category: hostEventCategorySchema.optional(),
+  limit: z.coerce.number().int().positive().max(500).optional(),
+  nodeId: identifierSchema.optional(),
+  operatorId: identifierSchema.optional(),
+  statusCode: z.coerce.number().int().positive().optional(),
+  typePrefix: repeatedQueryStringSchema
 });
 
 export const hostEventStreamQuerySchema = z.object({
@@ -604,6 +632,7 @@ export type HostOperatorRequestAuthMode = z.infer<
 export type HostOperatorRequestCompletedEvent = z.infer<
   typeof hostOperatorRequestCompletedEventSchema
 >;
+export type HostEventCategory = z.infer<typeof hostEventCategorySchema>;
 export type HostEventRecord = z.infer<typeof hostEventRecordSchema>;
 export type HostEventListQuery = z.infer<typeof hostEventListQuerySchema>;
 export type HostEventStreamQuery = z.infer<typeof hostEventStreamQuerySchema>;

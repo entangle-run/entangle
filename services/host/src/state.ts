@@ -60,6 +60,7 @@ import {
   nodeMutationResponseSchema,
   type ActiveGraphRevisionRecord,
   type EffectiveNodeBinding,
+  type HostEventListQuery,
   type HostEventListResponse,
   type HostEventRecord,
   hostAuthorityExportResponseSchema,
@@ -4954,8 +4955,71 @@ export function subscribeToHostEvents(
   };
 }
 
-export async function listHostEvents(limit = 100): Promise<HostEventListResponse> {
+function normalizeHostEventListQuery(
+  queryOrLimit: HostEventListQuery | number = 100
+): HostEventListQuery {
+  return typeof queryOrLimit === "number"
+    ? { limit: queryOrLimit }
+    : queryOrLimit;
+}
+
+function getHostEventStringField(
+  event: HostEventRecord,
+  fieldName: "nodeId" | "operatorId"
+): string | undefined {
+  if (!(fieldName in event)) {
+    return undefined;
+  }
+
+  const value = (event as Record<string, unknown>)[fieldName];
+  return typeof value === "string" ? value : undefined;
+}
+
+function hostEventMatchesListQuery(
+  event: HostEventRecord,
+  query: HostEventListQuery
+): boolean {
+  if (query.category && event.category !== query.category) {
+    return false;
+  }
+
+  if (
+    query.nodeId &&
+    getHostEventStringField(event, "nodeId") !== query.nodeId
+  ) {
+    return false;
+  }
+
+  if (
+    query.operatorId &&
+    getHostEventStringField(event, "operatorId") !== query.operatorId
+  ) {
+    return false;
+  }
+
+  if (
+    query.statusCode !== undefined &&
+    (!("statusCode" in event) || event.statusCode !== query.statusCode)
+  ) {
+    return false;
+  }
+
+  if (query.typePrefix && query.typePrefix.length > 0) {
+    return query.typePrefix.some(
+      (typePrefix) =>
+        event.type === typePrefix || event.type.startsWith(typePrefix)
+    );
+  }
+
+  return true;
+}
+
+export async function listHostEvents(
+  queryOrLimit: HostEventListQuery | number = 100
+): Promise<HostEventListResponse> {
   await initializeHostState();
+  const query = normalizeHostEventListQuery(queryOrLimit);
+  const limit = query.limit ?? 100;
 
   if (!(await pathExists(controlPlaneTraceRoot))) {
     return hostEventListResponseSchema.parse({
@@ -4983,7 +5047,9 @@ export async function listHostEvents(limit = 100): Promise<HostEventListResponse
   }
 
   return hostEventListResponseSchema.parse({
-    events: events.slice(-limit)
+    events: events
+      .filter((event) => hostEventMatchesListQuery(event, query))
+      .slice(-limit)
   });
 }
 

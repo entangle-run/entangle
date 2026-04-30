@@ -3,6 +3,8 @@ import type { HostEventRecord } from "@entangle/types";
 export interface HostEventFilter {
   categories?: HostEventRecord["category"][];
   nodeId?: string;
+  operatorId?: string;
+  statusCode?: number;
   typePrefixes?: string[];
 }
 
@@ -40,6 +42,26 @@ export function hostEventMatchesFilter(
 
   if (filter.nodeId) {
     if (!eventHasNodeId(event) || event.nodeId !== filter.nodeId) {
+      return false;
+    }
+  }
+
+  if (filter.operatorId) {
+    if (
+      !("operatorId" in event) ||
+      typeof event.operatorId !== "string" ||
+      event.operatorId !== filter.operatorId
+    ) {
+      return false;
+    }
+  }
+
+  if (filter.statusCode !== undefined) {
+    if (
+      !("statusCode" in event) ||
+      typeof event.statusCode !== "number" ||
+      event.statusCode !== filter.statusCode
+    ) {
       return false;
     }
   }

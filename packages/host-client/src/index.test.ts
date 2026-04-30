@@ -605,10 +605,12 @@ describe("createHostClient", () => {
   });
 
   it("parses host event list responses from the host surface", async () => {
+    const requests: string[] = [];
     const client = createHostClient({
       baseUrl: "http://entangle-host.test",
-      fetchImpl: () =>
-        Promise.resolve(
+      fetchImpl: (url) => {
+        requests.push(url);
+        return Promise.resolve(
           createMockResponse({
             body: JSON.stringify({
               events: [
@@ -627,10 +629,20 @@ describe("createHostClient", () => {
             ok: true,
             status: 200
           })
-        )
+        );
+      }
     });
 
-    await expect(client.listHostEvents(20)).resolves.toMatchObject({
+    await expect(
+      client.listHostEvents({
+        category: "security",
+        limit: 20,
+        nodeId: "worker-it",
+        operatorId: "ops-lead",
+        statusCode: 403,
+        typePrefix: ["host.operator_request.", "runtime."]
+      })
+    ).resolves.toMatchObject({
       events: [
         {
           type: "graph.revision.applied",
@@ -638,6 +650,9 @@ describe("createHostClient", () => {
         }
       ]
     });
+    expect(requests).toEqual([
+      "http://entangle-host.test/v1/events?limit=20&category=security&nodeId=worker-it&operatorId=ops-lead&statusCode=403&typePrefix=host.operator_request.&typePrefix=runtime."
+    ]);
   });
 
   it("calls Host Authority inspect, export, and import surfaces", async () => {
