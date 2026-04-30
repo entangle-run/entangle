@@ -105,3 +105,6 @@ script and verifier share the same generated profile file.
   reachability, and
   `430-distributed-proof-git-backend-health-verifier-slice.md` added optional
   Host catalog git backend health checks.
+  `440-distributed-proof-published-git-evidence-slice.md` now adds optional
+  projected published-git evidence from the agent node, but a direct
+  runner-credential push/pull canary remains a future hardening step.

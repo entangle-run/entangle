@@ -5271,3 +5271,16 @@ repeated or comma-separated `--relay-url <url>` values, falling back to
 Relay health opens each configured relay WebSocket from the verifier machine.
 The distributed proof tool smoke now proves configured relay health succeeds in
 self-test mode and that requiring relay health without relay URLs fails.
+
+## [2026-04-29] test | Added distributed proof published git evidence
+
+Added `references/440-distributed-proof-published-git-evidence-slice.md`.
+`pnpm ops:distributed-proof-verify` now accepts
+`--require-published-git-artifact`, checking projected published git artifact
+refs and source-history publication records from the expected agent node.
+
+Generated distributed proof kits now write
+`operator/proof-profile-post-work.json` and point `operator/verify-artifacts.sh`
+at that stricter profile, so post-work proof verifies both projected work
+evidence and git-backed publication evidence. The proof-tool smoke now covers
+passing and missing published-git-evidence self-tests.

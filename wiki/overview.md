@@ -269,7 +269,8 @@ fail before Host inspection.
 The proof kit can also generate relay-health verifier profile settings when
 explicit relay URLs are supplied.
 Generated kits now also include repeatable `operator/verify-topology.sh` and
-post-work `operator/verify-artifacts.sh` verifier scripts.
+post-work `operator/verify-artifacts.sh` verifier scripts, plus a stricter
+`operator/proof-profile-post-work.json` profile for work/publication evidence.
 `pnpm ops:distributed-proof-verify` now checks an already-running distributed
 proof through Host HTTP APIs and optional User Client health endpoints, covering
 Host Authority, runner trust/liveness/runtime-kind and agent-engine
@@ -284,6 +285,8 @@ User Client health requirements, so profile-only verification keeps the same
 topology strength as the generated operator scripts.
 The verifier can also require projected artifact/source/wiki evidence from the
 agent node after work is produced with `--require-artifact-evidence`.
+It can now also require published git artifact or source-history publication
+evidence from that agent node with `--require-published-git-artifact`.
 It can additionally check configured relay WebSocket reachability with
 `--check-relay-health`.
 It can also check Host catalog git backend suitability with
@@ -296,7 +299,8 @@ Client URL rejection plus wrong-runtime-kind and wrong-agent-engine rejection,
 plus proof-kit and verifier non-default expected-agent-engine/profile manifest
 paths, invalid proof-profile failure paths, proof-kit relay-health generation
 paths, generated post-work artifact-verifier paths, required-artifact-evidence
-success/failure paths, custom proof-profile assignment ids, and relay-health
+success/failure paths, published-git-artifact success/failure paths, custom
+proof-profile assignment ids, and relay-health
 success/failure paths plus git-backend-health success/failure paths before a
 real distributed proof is attempted.
 Host runtime synchronization now also preserves observed User Node

@@ -40,6 +40,9 @@ const requireConversation =
 const requireArtifactEvidence =
   hasFlag("--require-artifact-evidence") ||
   readProofProfileBoolean("requireArtifactEvidence");
+const requirePublishedGitArtifact =
+  hasFlag("--require-published-git-artifact") ||
+  readProofProfileBoolean("requirePublishedGitArtifact");
 const selfTestRuntimeState =
   (readFlagValue("--self-test-runtime-state") ?? "running").trim() || "running";
 const selfTestSharedUserClientUrl = hasFlag("--self-test-shared-user-client-url");
@@ -131,6 +134,8 @@ Options:
   --check-user-client-health      Fetch /health for projected User Client URLs. Defaults to profile checkUserClientHealth.
   --require-conversation          Require a projected conversation from the primary User Node to the agent node. Defaults to profile requireConversation.
   --require-artifact-evidence     Require projected artifact/source/wiki evidence from the agent node.
+  --require-published-git-artifact
+                                  Require a projected published git artifact or source-history publication from the agent node.
   --agent-runner <id>             Agent runner id. Default: distributed-agent-runner
   --user-runner <id>              Primary User Node runner id. Default: distributed-user-runner
   --reviewer-user-runner <id>     Reviewer User Node runner id. Default: distributed-reviewer-user-runner
@@ -354,6 +359,42 @@ function buildSelfTestSnapshot() {
         artifactRefs: [
           {
             artifactId: "artifact-self-test",
+            artifactRecord: {
+              createdAt: now,
+              publication: {
+                publishedAt: now,
+                remoteName: "origin",
+                remoteUrl: "ssh://git@gitea.example:22/team-alpha/builder-artifacts.git",
+                state: "published"
+              },
+              ref: {
+                artifactId: "artifact-self-test",
+                backend: "git",
+                locator: {
+                  branch: "main",
+                  commit: "abc123",
+                  gitServiceRef: "gitea",
+                  namespace: "team-alpha",
+                  path: "reports/self-test.md",
+                  repositoryName: "builder-artifacts"
+                },
+                status: "published"
+              },
+              updatedAt: now
+            },
+            artifactRef: {
+              artifactId: "artifact-self-test",
+              backend: "git",
+              locator: {
+                branch: "main",
+                commit: "abc123",
+                gitServiceRef: "gitea",
+                namespace: "team-alpha",
+                path: "reports/self-test.md",
+                repositoryName: "builder-artifacts"
+              },
+              status: "published"
+            },
             nodeId: agentNodeId,
             runnerId: agentRunnerId
           }
@@ -368,6 +409,20 @@ function buildSelfTestSnapshot() {
         ],
         sourceHistoryRefs: [
           {
+            history: {
+              publication: {
+                artifactId: "artifact-self-test",
+                branch: "main",
+                publication: {
+                  publishedAt: now,
+                  remoteName: "origin",
+                  remoteUrl:
+                    "ssh://git@gitea.example:22/team-alpha/builder-artifacts.git",
+                  state: "published"
+                },
+                requestedAt: now
+              }
+            },
             nodeId: agentNodeId,
             runnerId: agentRunnerId,
             sourceHistoryId: "source-history-self-test"
@@ -558,6 +613,41 @@ function findDuplicateValues(values) {
 function countNodeProjectionRecords(snapshot, key, nodeId) {
   return getArray(snapshot.projection, key).filter(
     (record) => record?.nodeId === nodeId
+  ).length;
+}
+
+function isPublishedGitArtifactRecord(record) {
+  const artifactRef = record?.artifactRef ?? record?.artifactRecord?.ref;
+  const publicationState = record?.artifactRecord?.publication?.state;
+  const artifactStatus = artifactRef?.status;
+
+  return (
+    artifactRef?.backend === "git" &&
+    (publicationState === "published" || artifactStatus === "published")
+  );
+}
+
+function countPublishedGitArtifactRefs(snapshot, nodeId) {
+  return getArray(snapshot.projection, "artifactRefs").filter(
+    (record) => record?.nodeId === nodeId && isPublishedGitArtifactRecord(record)
+  ).length;
+}
+
+function isPublishedSourceHistoryRecord(record) {
+  const history = record?.history;
+  const publicationRecords = [
+    ...(Array.isArray(history?.publications) ? history.publications : []),
+    ...(history?.publication ? [history.publication] : [])
+  ];
+
+  return publicationRecords.some(
+    (publication) => publication?.publication?.state === "published"
+  );
+}
+
+function countPublishedSourceHistoryRefs(snapshot, nodeId) {
+  return getArray(snapshot.projection, "sourceHistoryRefs").filter(
+    (record) => record?.nodeId === nodeId && isPublishedSourceHistoryRecord(record)
   ).length;
 }
 
@@ -963,6 +1053,27 @@ async function evaluateSnapshot(snapshot) {
       totalEvidenceCount > 0,
       `artifactRefs=${artifactRefCount}; sourceChangeRefs=${sourceChangeRefCount}; ` +
         `sourceHistoryRefs=${sourceHistoryRefCount}; wikiRefs=${wikiRefCount}`
+    );
+  }
+
+  if (requirePublishedGitArtifact) {
+    const publishedGitArtifactRefCount = countPublishedGitArtifactRefs(
+      snapshot,
+      agentNodeId
+    );
+    const publishedSourceHistoryRefCount = countPublishedSourceHistoryRefs(
+      snapshot,
+      agentNodeId
+    );
+    const totalPublishedGitEvidenceCount =
+      publishedGitArtifactRefCount + publishedSourceHistoryRefCount;
+
+    addCheck(
+      checks,
+      `published git artifact ${agentNodeId}`,
+      totalPublishedGitEvidenceCount > 0,
+      `publishedGitArtifactRefs=${publishedGitArtifactRefCount}; ` +
+        `publishedSourceHistoryRefs=${publishedSourceHistoryRefCount}`
     );
   }
 

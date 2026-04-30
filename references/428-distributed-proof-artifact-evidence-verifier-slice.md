@@ -73,6 +73,9 @@ after the agent has produced projected work evidence.
 Follow-up `435-distributed-proof-kit-post-work-verifier-slice.md` makes this
 post-work verifier path explicit in generated proof kits through
 `operator/verify-artifacts.sh`.
+Follow-up `440-distributed-proof-published-git-evidence-slice.md` adds a
+stricter post-work profile and verifier requirement for published git artifact
+or source-history publication evidence from the agent node.
 
 ## Risks And Mitigations
 
@@ -89,4 +92,6 @@ post-work verifier path explicit in generated proof kits through
 
 - Should later verifier modes require specific evidence classes, such as a
   source-history publication, a wiki publication, or a completed command
-  receipt tied to a particular artifact id?
+  receipt tied to a particular artifact id? Published git artifact/source-history
+  evidence is now covered; concrete command-receipt correlation and verifier-side
+  git locator fetches remain future hardening options.

@@ -682,6 +682,7 @@ files are the active federated redesign pack.
 438. [437-distributed-proof-verifier-assignment-profile-slice.md](437-distributed-proof-verifier-assignment-profile-slice.md)
 439. [438-studio-assignment-related-navigation-slice.md](438-studio-assignment-related-navigation-slice.md)
 440. [439-distributed-proof-profile-conversation-health-slice.md](439-distributed-proof-profile-conversation-health-slice.md)
+441. [440-distributed-proof-published-git-evidence-slice.md](440-distributed-proof-published-git-evidence-slice.md)
 
 ## Role of this corpus
 

@@ -242,11 +242,12 @@ ENTANGLE_HOST_TOKEN=dev-token pnpm ops:distributed-proof-verify \
 ```
 
 After the agent has produced projected work evidence, rerun the same verifier
-with `--require-artifact-evidence` to require at least one projected artifact,
-source-change, source-history, or wiki ref from the agent node.
-Generated proof kits also include `operator/verify-artifacts.sh` for that
-post-work check and `operator/verify-topology.sh` for repeatable topology
-verification.
+with `--require-artifact-evidence --require-published-git-artifact` to require
+at least one projected work ref plus published git artifact/source-history
+evidence from the agent node.
+Generated proof kits also include `operator/verify-topology.sh` for repeatable
+topology verification and `operator/verify-artifacts.sh` for that stricter
+post-work check through `operator/proof-profile-post-work.json`.
 For real multi-machine network checks, add `--check-relay-health`; relay URLs
 come from `--relay-url` or the generated proof profile.
 Add `--check-git-backend-health` to require the Host catalog's selected or

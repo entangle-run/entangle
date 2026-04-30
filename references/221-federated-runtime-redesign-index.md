@@ -240,6 +240,7 @@ same-machine slice records.
 - [437-distributed-proof-verifier-assignment-profile-slice.md](437-distributed-proof-verifier-assignment-profile-slice.md)
 - [438-studio-assignment-related-navigation-slice.md](438-studio-assignment-related-navigation-slice.md)
 - [439-distributed-proof-profile-conversation-health-slice.md](439-distributed-proof-profile-conversation-health-slice.md)
+- [440-distributed-proof-published-git-evidence-slice.md](440-distributed-proof-published-git-evidence-slice.md)
 
 ## Audited Scope
 
@@ -836,7 +837,10 @@ registry, source-history panel, and runtime command receipt list for the
 selected assignment. Generated distributed proof profiles now also carry the
 conversation and User Client health requirements that generated verifier
 scripts already enforced, so profile-only verification does not silently weaken
-the proof. The remaining blocking implementation
+the proof. Generated proof kits now also write a separate post-work profile
+that requires both projected work evidence and a published git artifact or
+source-history publication from the agent node, tightening the proof that
+runner-owned work handoff reached a git-backed substrate. The remaining blocking implementation
 areas are richer
 projection-backed source/wiki review services, infrastructure-backed
 multi-machine proof execution, and deeper production identity/authorization.

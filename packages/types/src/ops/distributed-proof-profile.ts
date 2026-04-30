@@ -25,6 +25,7 @@ export const distributedProofProfileSchema = z
     relayUrls: z.array(websocketUrlSchema).default([]),
     requireConversation: z.boolean().optional(),
     requireArtifactEvidence: z.boolean().optional(),
+    requirePublishedGitArtifact: z.boolean().optional(),
     reviewerUserNodeId: identifierSchema.default("reviewer"),
     reviewerUserRunnerId: identifierSchema.default(
       "distributed-reviewer-user-runner"

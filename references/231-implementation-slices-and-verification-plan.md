@@ -1093,7 +1093,11 @@ Current status:
   service refs fail when explicitly required; the verifier now honors explicit
   proof-profile assignment ids instead of always deriving them from runner ids,
   and the smoke covers custom assignment ids plus profile-driven conversation
-  and User Client health requirements;
+  and User Client health requirements. Generated proof kits now also write a
+  separate post-work proof profile requiring projected work evidence plus a
+  published git artifact or source-history publication from the agent node, and
+  the proof-tool smoke covers the passing and missing published-git-evidence
+  paths;
 - runtime-context runner startup and the Human Interface Runtime now support
   mounted-file identity secret delivery as well as env-var delivery, matching
   generic runner join behavior;

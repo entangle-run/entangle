@@ -250,7 +250,8 @@ try {
       '"checkGitBackendHealth":true',
       '"checkUserClientHealth":true',
       '"gitServiceRefs":["gitea"]',
-      '"requireConversation":true'
+      '"requireConversation":true',
+      '"requirePublishedGitArtifact":true'
     ]
   });
 
@@ -288,6 +289,7 @@ try {
         relayUrls: ["ws://relay.example:7777"],
         requireConversation: true,
         requireArtifactEvidence: true,
+        requirePublishedGitArtifact: true,
         reviewerUserNodeId: "bob",
         reviewerUserRunnerId: "proof-reviewer-runner",
         schemaVersion: 1,
@@ -424,6 +426,17 @@ try {
   ]);
   verifySelfTestJson(artifactEvidenceJson);
 
+  const publishedGitArtifactJson = runStep(
+    "proof verifier published-git-artifact self-test",
+    [
+      "scripts/federated-distributed-proof-verify.mjs",
+      "--self-test",
+      "--json",
+      "--require-published-git-artifact"
+    ]
+  );
+  verifySelfTestJson(publishedGitArtifactJson);
+
   const missingArtifactEvidenceJson = runFailureStep(
     "proof verifier missing-artifact-evidence self-test",
     [
@@ -438,6 +451,24 @@ try {
     }
   );
   verifySelfTestFailureJson(missingArtifactEvidenceJson, "artifact evidence");
+
+  const missingPublishedGitArtifactJson = runFailureStep(
+    "proof verifier missing-published-git-artifact self-test",
+    [
+      "scripts/federated-distributed-proof-verify.mjs",
+      "--self-test",
+      "--json",
+      "--require-published-git-artifact",
+      "--self-test-without-artifact-evidence"
+    ],
+    {
+      mustContain: '"ok": false'
+    }
+  );
+  verifySelfTestFailureJson(
+    missingPublishedGitArtifactJson,
+    "published git artifact"
+  );
 
   const relayHealthJson = runStep("proof verifier relay-health self-test", [
     "scripts/federated-distributed-proof-verify.mjs",

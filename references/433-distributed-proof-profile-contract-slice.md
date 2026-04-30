@@ -52,6 +52,10 @@ keep OpenCode as the default agent engine.
   [`439-distributed-proof-profile-conversation-health-slice.md`](439-distributed-proof-profile-conversation-health-slice.md)
   extends the same contract with profile-driven conversation and User Client
   health verification requirements.
+- Follow-up
+  [`440-distributed-proof-published-git-evidence-slice.md`](440-distributed-proof-published-git-evidence-slice.md)
+  extends the same contract with profile-driven published git artifact
+  verification for post-work proof profiles.
 
 ## Tests Required
 

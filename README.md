@@ -257,10 +257,15 @@ intentionally configured for another engine adapter.
 When a proof profile includes explicit `assignments`, the verifier uses those
 manifest assignment ids instead of deriving `assignment-${runnerId}`.
 After the agent has produced projected work evidence, rerun the verifier with
-`--require-artifact-evidence` to require at least one projected artifact,
-source-change, source-history, or wiki ref from the agent node.
-Generated kits also include `operator/verify-artifacts.sh` for that post-work
-check and `operator/verify-topology.sh` for repeatable topology verification.
+`--require-artifact-evidence --require-published-git-artifact` to require at
+least one projected work ref plus published git artifact/source-history
+evidence from the agent node.
+Generated kits also include `operator/verify-topology.sh` for repeatable
+topology verification and `operator/verify-artifacts.sh` for the stricter
+post-work check. The post-work script uses
+`operator/proof-profile-post-work.json` and requires both projected work
+evidence and a published git artifact or source-history publication from the
+agent node.
 For real multi-machine network checks, add `--check-relay-health`; the verifier
 uses relay URLs from `--relay-url` or the generated proof profile.
 Add `--check-git-backend-health` to require the Host catalog's selected or

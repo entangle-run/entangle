@@ -40,6 +40,9 @@ optional relay/git health settings as the main operator command path.
   topology/runtime/conversation verifier command.
 - Generated kits now write `operator/verify-artifacts.sh`, which runs the same
   verifier with `--require-artifact-evidence`.
+- Follow-up `440-distributed-proof-published-git-evidence-slice.md` now points
+  that script at a stricter `operator/proof-profile-post-work.json` manifest
+  and also requires published git artifact/source-history publication evidence.
 - `operator/commands.sh` now delegates its final verification step to
   `operator/verify-topology.sh`.
 - The generated README documents the post-work verifier step and the new files.
@@ -80,3 +83,5 @@ and can be rerun independently from the operator machine.
 
 - Should the kit eventually generate a polling post-work verifier that waits
   for artifact/source/wiki evidence instead of failing immediately?
+  The post-work profile is now explicit, but it still fails immediately when
+  the expected evidence has not arrived.

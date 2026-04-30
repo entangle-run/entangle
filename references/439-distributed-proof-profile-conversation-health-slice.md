@@ -87,3 +87,6 @@ silently weaken a generated profile.
 
 - Future profile versions should decide whether some verification requirements
   need tri-state semantics: unset, require, or explicitly disable.
+  Follow-up `440-distributed-proof-published-git-evidence-slice.md` adds
+  another optional positive requirement, `requirePublishedGitArtifact`, but does
+  not change the current "unset or require" model.

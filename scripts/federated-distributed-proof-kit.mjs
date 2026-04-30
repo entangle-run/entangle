@@ -360,8 +360,9 @@ function buildOperatorCommandsScript() {
 }
 
 function buildVerifierCommand(options = {}) {
+  const profileFile = options.profileFile ?? "proof-profile.json";
   const args = [
-    'pnpm ops:distributed-proof-verify --profile "$SCRIPT_DIR/proof-profile.json"',
+    `pnpm ops:distributed-proof-verify --profile "$SCRIPT_DIR/${profileFile}"`,
     '--host-url "$ENTANGLE_HOST_URL"',
     "--check-user-client-health",
     "--require-conversation"
@@ -377,6 +378,7 @@ function buildVerifierCommand(options = {}) {
 
   if (options.requireArtifactEvidence) {
     args.push("--require-artifact-evidence");
+    args.push("--require-published-git-artifact");
   }
 
   return args.join(" ");
@@ -413,7 +415,7 @@ function buildOperatorVerifierScript(options = {}) {
   return `${lines.join("\n")}\n`;
 }
 
-function buildProofProfile() {
+function buildProofProfile(options = {}) {
   return normalizeDistributedProofProfile({
     agentEngineKind: proofAgentEngineKinds[0],
     agentEngineKinds: proofAgentEngineKinds,
@@ -432,6 +434,10 @@ function buildProofProfile() {
     hostUrl,
     relayUrls,
     requireConversation: true,
+    ...(options.requireArtifactEvidence ? { requireArtifactEvidence: true } : {}),
+    ...(options.requirePublishedGitArtifact
+      ? { requirePublishedGitArtifact: true }
+      : {}),
     reviewerUserNodeId,
     reviewerUserRunnerId,
     schemaVersion: 1,
@@ -483,8 +489,9 @@ ${runnerRows}
    inspect Host projection and run the distributed proof verifier.
 5. After the agent has produced projected work evidence, run
    \`operator/verify-artifacts.sh\` from the Host/operator machine to require
-   projected artifact, source-change, source-history, or wiki evidence from
-   the agent node.
+   projected artifact, source-change, source-history, or wiki evidence plus
+   published git artifact/source-history publication evidence from the agent
+   node.
 
 ## Files
 
@@ -494,10 +501,11 @@ ${runnerRows}
 - \`*/runner.env\`: runner-local Nostr secret and Host token placeholder or value.
 - \`*/start.sh\`: runner-machine start command.
 - \`operator/operator.env\`: Host URL and Host token placeholder or value.
-- \`operator/proof-profile.json\`: machine-readable runner, node, engine, relay, optional git-service, conversation, User Client health, and post-work evidence profile for the verifier.
+- \`operator/proof-profile.json\`: machine-readable runner, node, engine, relay, optional git-service, conversation, and User Client health profile for topology verification.
+- \`operator/proof-profile-post-work.json\`: stricter profile that also requires projected work evidence and a published git artifact or source-history publication from the agent node.
 - \`operator/commands.sh\`: operator commands for trust, assignment, user message, projection, and verification.
 - \`operator/verify-topology.sh\`: repeatable topology, runtime, conversation, and optional relay/git verification.
-- \`operator/verify-artifacts.sh\`: post-work verifier requiring projected artifact/source/wiki evidence from the agent node.
+- \`operator/verify-artifacts.sh\`: post-work verifier requiring projected artifact/source/wiki evidence and published git artifact evidence from the agent node.
 
 The generated runner join configs use the same generic \`entangle-runner join\`
 path as local process and Docker proofs. If this kit only works when copied to
@@ -514,10 +522,19 @@ async function writeKit() {
     console.log(`[dry-run] operator verifier command: ${buildVerifierCommand()}`);
     console.log(
       `[dry-run] operator artifact verifier command: ${buildVerifierCommand({
+        profileFile: "proof-profile-post-work.json",
         requireArtifactEvidence: true
       })}`
     );
     console.log(`[dry-run] operator proof profile: ${JSON.stringify(buildProofProfile())}`);
+    console.log(
+      `[dry-run] operator post-work proof profile: ${JSON.stringify(
+        buildProofProfile({
+          requireArtifactEvidence: true,
+          requirePublishedGitArtifact: true
+        })
+      )}`
+    );
     console.log(
       "[dry-run] would write runner env/start scripts, operator commands, verifier scripts, and README."
     );
@@ -546,6 +563,18 @@ async function writeKit() {
     `${JSON.stringify(buildProofProfile(), null, 2)}\n`,
     "utf8"
   );
+  await writeFile(
+    path.join(operatorDir, "proof-profile-post-work.json"),
+    `${JSON.stringify(
+      buildProofProfile({
+        requireArtifactEvidence: true,
+        requirePublishedGitArtifact: true
+      }),
+      null,
+      2
+    )}\n`,
+    "utf8"
+  );
   await writeExecutable(path.join(operatorDir, "commands.sh"), buildOperatorCommandsScript());
   await writeExecutable(
     path.join(operatorDir, "verify-topology.sh"),
@@ -554,6 +583,7 @@ async function writeKit() {
   await writeExecutable(
     path.join(operatorDir, "verify-artifacts.sh"),
     buildOperatorVerifierScript({
+      profileFile: "proof-profile-post-work.json",
       requireArtifactEvidence: true
     })
   );

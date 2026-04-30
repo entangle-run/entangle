@@ -4695,6 +4695,8 @@ describe("distributed proof profile contracts", () => {
       hostUrl: "http://host.example:7071",
       relayUrls: ["ws://relay.example:7777"],
       requireConversation: true,
+      requireArtifactEvidence: true,
+      requirePublishedGitArtifact: true,
       schemaVersion: 1,
       userNodeId: "user",
       userRunnerId: "distributed-user-runner"
@@ -4704,6 +4706,8 @@ describe("distributed proof profile contracts", () => {
     expect(result.assignments).toHaveLength(3);
     expect(result.checkUserClientHealth).toBe(true);
     expect(result.requireConversation).toBe(true);
+    expect(result.requireArtifactEvidence).toBe(true);
+    expect(result.requirePublishedGitArtifact).toBe(true);
   });
 
   it("rejects profiles whose primary engine is not advertised", () => {
