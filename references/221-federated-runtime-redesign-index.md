@@ -282,7 +282,7 @@ Current audit read or searched:
   store, artifact, source, memory, wiki, and tests in `services/runner`;
 - shared Host client methods in `packages/host-client`;
 - CLI command surface and tests in `apps/cli`;
-- Studio app, session launch, approval, graph, event refresh, runtime
+- Studio app, approval, graph, event refresh, runtime
   inspection, and tests in `apps/studio`;
 - federated dev deployment material under `deploy/` and operational smokes under
   `scripts/`;

@@ -732,6 +732,7 @@ files are the active federated redesign pack.
 459. [458-host-cors-studio-dev-slice.md](458-host-cors-studio-dev-slice.md)
 460. [459-opencode-permission-mode-slice.md](459-opencode-permission-mode-slice.md)
 461. [460-agent-runtime-permission-mode-visibility-slice.md](460-agent-runtime-permission-mode-visibility-slice.md)
+462. [461-studio-user-launch-boundary-slice.md](461-studio-user-launch-boundary-slice.md)
 
 ## Role of this corpus
 

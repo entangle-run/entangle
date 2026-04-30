@@ -824,6 +824,9 @@ Implementation record:
 - [404-studio-runner-registry-detail-slice.md](404-studio-runner-registry-detail-slice.md)
 - [405-studio-assignment-operational-detail-slice.md](405-studio-assignment-operational-detail-slice.md)
 - [438-studio-assignment-related-navigation-slice.md](438-studio-assignment-related-navigation-slice.md)
+- [461-studio-user-launch-boundary-slice.md](461-studio-user-launch-boundary-slice.md)
+  removes Studio's selected-runtime session-launch card so participant task
+  launch stays in User Client/CLI signed User Node surfaces.
 
 Verification:
 
@@ -876,6 +879,10 @@ runtime, runner, source-history, and command receipt panels.
 Shared runtime inspection now also displays the selected agent engine
 permission mode in host-client detail lines, CLI runtime summaries, and
 Studio's selected-runtime inspector.
+
+Studio no longer exposes a selected-runtime session/task launch card. It keeps
+session trace, cancellation, and inspection surfaces, while participant task
+publication remains in User Client/CLI signed User Node paths.
 
 ### Slice 13: Product Naming Migration
 

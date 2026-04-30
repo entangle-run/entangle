@@ -705,14 +705,6 @@ code {
   resize: vertical;
 }
 
-.session-launch-card {
-  display: grid;
-  gap: 14px;
-  border-radius: 18px;
-  background: rgba(255, 255, 255, 0.03);
-  padding: 14px;
-}
-
 .toggle-field {
   display: flex;
   align-items: center;

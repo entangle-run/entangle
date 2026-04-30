@@ -62,7 +62,6 @@ import type {
   RunnerRegistryEntry,
   RunnerTurnRecord,
   SessionCancellationResponse,
-  SessionLaunchResponse,
   SourceChangeCandidateRecord,
   SourceHistoryRecord,
   UserNodeIdentityRecord
@@ -218,12 +217,6 @@ import {
   type RuntimeWikiPageUpsertDraft,
   type RuntimeWikiPublicationDraft
 } from "./runtime-wiki-publication.js";
-import {
-  buildSessionLaunchRequest,
-  createDefaultSessionLaunchDraft,
-  isSessionLaunchDraftReady,
-  type SessionLaunchDraft
-} from "./session-launch.js";
 import {
   buildUserNodeRuntimeSummaries,
   buildAssignmentOperationalDetailsForStudio,
@@ -721,12 +714,6 @@ export function App() {
   const [selectedSessionInspection, setSelectedSessionInspection] =
     useState<SessionInspectionResponse | null>(null);
   const [sessionDetailError, setSessionDetailError] = useState<string | null>(null);
-  const [sessionLaunchDraft, setSessionLaunchDraft] =
-    useState<SessionLaunchDraft>(() => createDefaultSessionLaunchDraft(null));
-  const [sessionLaunchError, setSessionLaunchError] = useState<string | null>(null);
-  const [lastSessionLaunch, setLastSessionLaunch] =
-    useState<SessionLaunchResponse | null>(null);
-  const [pendingSessionLaunch, setPendingSessionLaunch] = useState(false);
   const [sessionCancellationError, setSessionCancellationError] =
     useState<string | null>(null);
   const [lastSessionCancellation, setLastSessionCancellation] =
@@ -753,7 +740,6 @@ export function App() {
   const selectedSourceChangeCandidateFilePathRef = useRef<string | null>(null);
   const selectedSessionIdRef = useRef<string | null>(null);
   const recoveryPolicySeedRef = useRef<string | null>(null);
-  const sessionLaunchDraftSeedRef = useRef<string | null>(null);
 
   selectedGraphRevisionIdRef.current = selectedGraphRevisionId;
   selectedAssignmentTimelineIdRef.current = selectedAssignmentTimelineId;
@@ -3236,9 +3222,6 @@ export function App() {
       setSelectedSessionId(null);
       setSelectedSessionInspection(null);
       setSessionDetailError(null);
-      setSessionLaunchDraft(createDefaultSessionLaunchDraft(null));
-      setSessionLaunchError(null);
-      setLastSessionLaunch(null);
       setSessionCancellationError(null);
       setLastSessionCancellation(null);
       setPendingSessionCancellation(false);
@@ -3319,8 +3302,6 @@ export function App() {
     setSelectedSessionId(null);
     setSelectedSessionInspection(null);
     setSessionDetailError(null);
-    setSessionLaunchError(null);
-    setLastSessionLaunch(null);
     setSessionCancellationError(null);
     setLastSessionCancellation(null);
     setPendingSessionCancellation(false);
@@ -3453,51 +3434,6 @@ export function App() {
       selectedRecovery?.currentRuntime,
     [runtimes, selectedRecovery, selectedRuntimeId]
   );
-  const sessionLaunchDraftReady = useMemo(
-    () => isSessionLaunchDraftReady(selectedRuntime, sessionLaunchDraft),
-    [selectedRuntime, sessionLaunchDraft]
-  );
-  const launchSelectedRuntimeSession = useCallback(async () => {
-    if (!selectedRuntime) {
-      return;
-    }
-
-    try {
-      setPendingSessionLaunch(true);
-      setSessionLaunchError(null);
-
-      const launch = await client.launchSession(
-        buildSessionLaunchRequest(selectedRuntime, sessionLaunchDraft)
-      );
-
-      await refreshSelectedRuntimeDetails(selectedRuntime.nodeId);
-
-      startTransition(() => {
-        setLastSessionLaunch(launch);
-        setSelectedSessionId(launch.sessionId);
-        setSelectedSessionInspection(null);
-        setSessionDetailError(null);
-        setSessionCancellationError(null);
-        setLastSessionCancellation(null);
-      });
-    } catch (caught: unknown) {
-      startTransition(() => {
-        setSessionLaunchError(
-          normalizeError(
-            caught,
-            "Unknown error while launching the runtime session."
-          )
-        );
-      });
-    } finally {
-      setPendingSessionLaunch(false);
-    }
-  }, [
-    client,
-    refreshSelectedRuntimeDetails,
-    selectedRuntime,
-    sessionLaunchDraft
-  ]);
   const selectedSessionNodes = useMemo(
     () =>
       selectedRuntimeId && selectedSessionInspection
@@ -3747,19 +3683,6 @@ export function App() {
       ),
     [recoveryPolicyDraft, selectedRecovery]
   );
-
-  useEffect(() => {
-    const nextSeed = selectedRuntime?.nodeId ?? null;
-
-    if (sessionLaunchDraftSeedRef.current === nextSeed) {
-      return;
-    }
-
-    sessionLaunchDraftSeedRef.current = nextSeed;
-    setSessionLaunchDraft(createDefaultSessionLaunchDraft(selectedRuntime));
-    setSessionLaunchError(null);
-    setLastSessionLaunch(null);
-  }, [selectedRuntime]);
 
   useEffect(() => {
     setAssignmentDraft((current) =>
@@ -5787,89 +5710,6 @@ export function App() {
                       </span>
                     </div>
 
-                    <div className="session-launch-card">
-                      <div className="field-grid">
-                        <label className="field">
-                          <span>Summary</span>
-                          <textarea
-                            disabled={pendingSessionLaunch}
-                            onChange={(event) => {
-                              setSessionLaunchDraft((current) => ({
-                                ...current,
-                                summary: event.target.value
-                              }));
-                            }}
-                            rows={3}
-                            value={sessionLaunchDraft.summary}
-                          />
-                        </label>
-
-                        <label className="field">
-                          <span>Intent</span>
-                          <input
-                            disabled={pendingSessionLaunch}
-                            onChange={(event) => {
-                              setSessionLaunchDraft((current) => ({
-                                ...current,
-                                intent: event.target.value
-                              }));
-                            }}
-                            type="text"
-                            value={sessionLaunchDraft.intent}
-                          />
-                        </label>
-                      </div>
-
-                      {sessionLaunchError ? (
-                        <p className="error-box">{sessionLaunchError}</p>
-                      ) : null}
-
-                      {lastSessionLaunch ? (
-                        <dl className="status-list compact-list">
-                          <div>
-                            <dt>Launched session</dt>
-                            <dd>{lastSessionLaunch.sessionId}</dd>
-                          </div>
-                          <div>
-                            <dt>Relays</dt>
-                            <dd>
-                              {lastSessionLaunch.publishedRelays.length > 0
-                                ? lastSessionLaunch.publishedRelays.join(", ")
-                                : "none acknowledged"}
-                            </dd>
-                          </div>
-                        </dl>
-                      ) : null}
-
-                      <div className="action-row">
-                        <button
-                          className="action-button"
-                          disabled={pendingSessionLaunch}
-                          onClick={() => {
-                            setSessionLaunchDraft(
-                              createDefaultSessionLaunchDraft(selectedRuntime)
-                            );
-                            setSessionLaunchError(null);
-                          }}
-                          type="button"
-                        >
-                          Reset Launch
-                        </button>
-                        <button
-                          className="action-button"
-                          disabled={
-                            pendingSessionLaunch || !sessionLaunchDraftReady
-                          }
-                          onClick={() => {
-                            void launchSelectedRuntimeSession();
-                          }}
-                          type="button"
-                        >
-                          {pendingSessionLaunch ? "Launching..." : "Launch Session"}
-                        </button>
-                      </div>
-                    </div>
-
                     {selectedSessions.length > 0 ? (
                       <ul className="timeline-list">
                         {selectedSessions.slice(0, 8).map((session) => (
@@ -7603,7 +7443,7 @@ export function App() {
             <ul>
               <li>Studio consumes real host contracts instead of faking topology</li>
               <li>Runtime recovery policy, controller, history, and events all come from host-owned state</li>
-              <li>Studio can launch a runtime session through the host API using host-resolved runtime context</li>
+              <li>User task launch belongs to User Client or CLI signed User Node surfaces, not the operator console</li>
               <li>Selected-runtime trace comes from host-derived session, conversation, approval, artifact, and turn events</li>
               <li>Persisted runner turns can be listed and inspected through the same host-client boundary</li>
               <li>CLI and Studio share the same host-client and typed event contracts</li>

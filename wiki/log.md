@@ -5503,3 +5503,10 @@ Added `references/460-agent-runtime-permission-mode-visibility-slice.md`.
 Host runtime inspection now includes the resolved engine permission mode when
 available, shared host-client detail lines render it, CLI runtime summaries
 inherit that output, and Studio displays it in the selected-runtime inspector.
+
+## [2026-04-29] studio | Removed participant launch from Studio
+
+Added `references/461-studio-user-launch-boundary-slice.md`. Studio no longer
+shows the selected-runtime `Launch Session` card. Session traces and
+cancellation remain available to operators, while participant task launch stays
+in the User Client or CLI signed User Node surfaces.

@@ -28,7 +28,6 @@ Missing surfaces:
 - richer User Node runtime reassignment workflow controls in Studio;
 - rich Human Interface Runtime visibility beyond the projected runtime row;
 - durable user-node inbox/outbox projection;
-- Studio signed user-node task launch migration;
 
 Recently added:
 
@@ -119,6 +118,8 @@ Recently added:
 - Shared runtime inspection now includes the resolved agent engine permission
   mode; CLI runtime summaries inherit it from the shared host-client formatter,
   and Studio shows it in the selected-runtime inspector.
+- Studio no longer exposes a selected-runtime session/task launch card; signed
+  participant task launch belongs to User Client or CLI User Node surfaces.
 
 ## Target Model
 
@@ -227,8 +228,9 @@ Node.
   and richer participant-side source/wiki review flows beyond scoped
   source-diff and source-file preview remain open.
 - Replace user-facing approval/session launch behavior with signed user-node
-  messages in the User Client. Studio controls should remain operator
-  inspection, assignment, topology, policy, and observability controls, not
+  messages in the User Client. Done for Studio: the selected-runtime launch
+  card was removed, and Studio controls remain operator inspection,
+  assignment, topology, policy, and observability controls, not
   approval-decision controls for graph participants.
 - Keep local commands under `entangle deployment` for local adapter operations.
 

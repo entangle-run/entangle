@@ -849,7 +849,7 @@ This repository currently contains:
   `entangle host sessions launch` through the host API over host-resolved
   runtime context and the local NIP-59 relay, optional CLI launch wait
   polling through host session inspection, Studio selected-runtime session
-  launch through the same host API, shared graph diffing for CLI and Studio,
+  inspection through the same host API, shared graph diffing for CLI and Studio,
   Studio graph revision diff against active graph state, host-backed Studio
   active-graph validation, host graph import/export through the CLI, runtime
   artifact filtering by `--session-id`, bounded local report-artifact preview
@@ -1124,9 +1124,9 @@ This repository currently contains:
   surface now exposes host-backed session summaries relevant to that runtime,
   including per-node session status, trace ids, and host-derived conversation
   and approval lifecycle status counts plus session consistency findings;
-- a Studio session-launch slice where visual operators can initiate a local
-  task session for the selected runtime through the host API without deriving
-  relay or runtime-context truth inside the browser;
+- a Studio user-launch boundary slice where visual operators inspect runtime
+  sessions without initiating participant task sessions from Studio; signed
+  task launch belongs to User Client or CLI User Node surfaces;
 - a deeper Studio runtime-approval inspection slice where the selected-runtime
   surface now exposes persisted approval records, sorts them by recency, and
   expands one selected approval into host-backed detail without introducing

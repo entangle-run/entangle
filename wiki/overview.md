@@ -487,7 +487,7 @@ The repository now also contains the first real implementation baseline:
   for `pnpm --filter @entangle/cli dev`, headless session launch through the
   host API over host-resolved runtime context and the local relay, optional
   CLI launch wait polling through host session inspection, Studio
-  selected-runtime session launch through the same host API, shared graph
+  selected-runtime session inspection through the same host API, shared graph
   diffing for CLI and Studio, Studio graph revision diff against active graph
   state, host-backed Studio active-graph validation, host graph import/export
   through the CLI, CLI graph template list/export commands for the canonical
