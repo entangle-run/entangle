@@ -125,6 +125,7 @@ export const agentEngineProfileKindSchema = z.enum([
 ]);
 
 export const agentEnginePermissionModeSchema = z.enum([
+  "entangle_approval",
   "auto_approve",
   "auto_reject"
 ]);

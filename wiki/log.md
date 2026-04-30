@@ -5518,3 +5518,14 @@ Studio/CLI surface plan no longer lists durable User Node inbox/outbox
 projection as missing because Host already persists inbound/outbound User Node
 message records, projects `userConversations`, and exposes them through
 User Client and CLI surfaces.
+
+## [2026-04-29] runtime | Added attached OpenCode permission bridge
+
+Added `references/463-opencode-permission-bridge-slice.md`.
+`permissionMode: "entangle_approval"` now enables the first real attached
+OpenCode server permission bridge: the adapter consumes OpenCode SSE
+`permission.asked` events, the runner publishes signed Entangle
+`approval.request` messages to the requesting User Node, waits for the existing
+signed approval response path, and then replies to OpenCode's permission
+endpoint with a one-shot allow or reject decision. CLI-only OpenCode execution
+remains conservative unless explicitly configured for `auto_approve`.

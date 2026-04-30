@@ -4898,10 +4898,10 @@ describe("agent runtime contracts", () => {
       displayName: "OpenCode",
       kind: "opencode_server",
       executable: "opencode",
-      permissionMode: "auto_approve"
+      permissionMode: "entangle_approval"
     });
 
-    expect(result.permissionMode).toBe("auto_approve");
+    expect(result.permissionMode).toBe("entangle_approval");
   });
 
   it("rejects process-backed agent engine profiles without an endpoint", () => {

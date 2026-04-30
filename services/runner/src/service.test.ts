@@ -5,6 +5,7 @@ import { createHash } from "node:crypto";
 import { afterEach, describe, expect, it } from "vitest";
 import { AgentEngineExecutionError } from "@entangle/agent-engine";
 import {
+  entangleA2AApprovalRequestMetadataSchema,
   entangleA2AMessageSchema,
   sessionRecordSchema,
   sourceHistoryRecordSchema,
@@ -1342,6 +1343,154 @@ describe("RunnerService", () => {
             toolId: "bash"
           }
         ]
+      });
+    } finally {
+      await service.stop();
+    }
+  });
+
+  it("bridges live engine permission callbacks through signed approval requests", async () => {
+    const fixture = await createRuntimeFixture();
+    process.env.ENTANGLE_NOSTR_SECRET_KEY = runnerSecretHex;
+    const context = await loadRuntimeContext(fixture.contextPath);
+    const transport = new InMemoryRunnerTransport();
+    const observedApprovals: ApprovalRecord[] = [];
+    const service = new RunnerService({
+      context,
+      engine: {
+        async executeTurn(_request, options) {
+          const permission = await options?.requestPermission?.({
+            operation: "git_commit",
+            patterns: ["git commit -m test"],
+            permission: "bash",
+            reason: "OpenCode requested permission 'bash' (git commit -m test).",
+            toolCallId: "tool-call-alpha"
+          });
+
+          return {
+            assistantMessages: [
+              `Permission ${permission?.decision ?? "missing"}; continuing.`
+            ],
+            providerStopReason: "opencode_server_idle",
+            stopReason: "completed",
+            toolExecutions: [],
+            toolRequests: []
+          };
+        }
+      },
+      observationPublisher: {
+        publishApprovalUpdated: (record) => {
+          observedApprovals.push(record);
+          return Promise.resolve();
+        },
+        publishConversationUpdated: () => Promise.resolve(),
+        publishSessionUpdated: () => Promise.resolve(),
+        publishTurnUpdated: () => Promise.resolve()
+      },
+      transport
+    });
+
+    await service.start();
+
+    try {
+      const taskPromise = service.handleInboundEnvelope(
+        buildInboundTaskRequest({
+          conversationId: "engine-permission-conv",
+          intent: "commit_with_permission",
+          sessionId: "engine-permission-session",
+          summary: "Commit after an engine permission approval.",
+          turnId: "engine-permission-turn"
+        })
+      );
+
+      let approvalRequestEnvelope = transport
+        .listPublishedEnvelopes()
+        .find((envelope) => envelope.message.messageType === "approval.request");
+      for (let attempt = 0; !approvalRequestEnvelope && attempt < 20; attempt += 1) {
+        await new Promise((resolve) => {
+          setTimeout(resolve, 10);
+        });
+        approvalRequestEnvelope = transport
+          .listPublishedEnvelopes()
+          .find((envelope) => envelope.message.messageType === "approval.request");
+      }
+
+      expect(approvalRequestEnvelope).toBeDefined();
+      const approvalMetadata = entangleA2AApprovalRequestMetadataSchema.parse(
+        approvalRequestEnvelope!.message.work.metadata
+      ).approval;
+      expect(approvalMetadata).toMatchObject({
+        approverNodeIds: ["reviewer-it"],
+        operation: "git_commit"
+      });
+
+      const approvalResponseMessage = entangleA2AMessageSchema.parse({
+        constraints: {
+          approvalRequiredBeforeAction: false
+        },
+        conversationId: "engine-permission-conv",
+        fromNodeId: "reviewer-it",
+        fromPubkey: remotePublicKey,
+        graphId: "graph-alpha",
+        intent: "Approve engine permission.",
+        messageType: "approval.response",
+        parentMessageId: approvalRequestEnvelope!.eventId,
+        protocol: "entangle.a2a.v1",
+        responsePolicy: {
+          closeOnResult: false,
+          maxFollowups: 0,
+          responseRequired: false
+        },
+        sessionId: "engine-permission-session",
+        toNodeId: "worker-it",
+        toPubkey: context.identityContext.publicKey,
+        turnId: "engine-permission-approval-response",
+        work: {
+          artifactRefs: [],
+          metadata: {
+            approval: {
+              approvalId: approvalMetadata.approvalId,
+              decision: "approved",
+              operation: "git_commit"
+            }
+          },
+          summary: "Approved engine permission."
+        }
+      });
+      await service.handleInboundEnvelope({
+        eventId: "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+        message: approvalResponseMessage,
+        receivedAt: "2026-04-24T10:07:00.000Z",
+        signerPubkey: remotePublicKey
+      });
+
+      const result = await taskPromise;
+      const statePaths = buildRunnerStatePaths(context.workspace.runtimeRoot);
+      const approvalRecord = await readApprovalRecord(
+        statePaths,
+        approvalMetadata.approvalId
+      );
+      const [turnRecord] = await listRunnerTurnRecords(statePaths);
+
+      expect(result).toMatchObject({
+        handled: true
+      });
+      expect(approvalRecord).toMatchObject({
+        approverNodeIds: ["reviewer-it"],
+        requestedByNodeId: "worker-it",
+        responseEventId:
+          "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+        status: "approved"
+      });
+      expect(observedApprovals.some((record) => record.status === "pending")).toBe(
+        true
+      );
+      expect(observedApprovals.some((record) => record.status === "approved")).toBe(
+        true
+      );
+      expect(turnRecord?.engineOutcome).toMatchObject({
+        providerStopReason: "opencode_server_idle",
+        stopReason: "completed"
       });
     } finally {
       await service.stop();

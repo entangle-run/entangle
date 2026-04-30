@@ -3,7 +3,8 @@
 ## Current repo truth
 
 OpenCode engine profiles now carry an optional `permissionMode` with
-`auto_reject` as the default and opt-in `auto_approve` support. Before this
+`auto_reject` as the default, opt-in `auto_approve` support, and attached
+server `entangle_approval` support. Before this
 slice, Host runtime inspection exposed the selected engine kind and profile but
 not the resolved permission mode, so operators could not confirm from Studio or
 CLI whether a running coding node would keep OpenCode's conservative one-shot
@@ -55,7 +56,8 @@ policy ownership into OpenCode.
 
 - Runtime inspection host API contract test accepting `enginePermissionMode`.
 - Host runtime inspection route test proving the resolved default OpenCode mode
-  is projected.
+  is projected, including `entangle_approval` when an attached-server bridge is
+  configured.
 - Host-client runtime detail formatting test.
 - CLI runtime inspection projection test.
 - Studio typecheck.
@@ -79,6 +81,6 @@ Studio displays `not reported` instead of inferring a mode.
 
 ## Open questions
 
-- The later OpenCode attached-server permission bridge should replace this
-  coarse one-shot posture with Entangle approval requests that can be approved
-  or rejected by signed User Node/operator decisions.
+- The attached-server bridge is now implemented as the first `entangle_approval`
+  path, but still needs live OpenCode/provider manual validation outside the
+  deterministic test fixture.

@@ -421,26 +421,10 @@ describe("OpenCode runner engine adapter", () => {
         }
       }
     };
-    const mock = createMockOpenCodeSpawn({
-      processes: [
-        {
-          stdout: "0.10.0\n"
-        },
-        {
-          stdoutLines: [
-            JSON.stringify({
-              part: {
-                text: "Completed through attached server."
-              },
-              sessionID: "opencode-session",
-              type: "text"
-            })
-          ]
-        }
-      ]
-    });
-    const healthRequests: Array<{
+    const mock = createMockOpenCodeSpawn();
+    const requests: Array<{
       authorization?: string | undefined;
+      method?: string | undefined;
       url: string;
     }> = [];
     process.env.OPENCODE_SERVER_USERNAME = "entangle";
@@ -459,21 +443,87 @@ describe("OpenCode runner engine adapter", () => {
               : input.url;
         const headers = new Headers(init?.headers);
 
-        healthRequests.push({
+        requests.push({
           authorization: headers.get("authorization") ?? undefined,
+          method: init?.method,
           url
         });
 
+        if (url === "http://127.0.0.1:4567/global/health") {
+          return new Response(
+            JSON.stringify({
+              healthy: true,
+              version: "1.14.20"
+            }),
+            {
+              headers: {
+                "content-type": "application/json"
+              },
+              status: 200
+            }
+          );
+        }
+
+        if (url === "http://127.0.0.1:4567/session") {
+          return new Response(JSON.stringify({ id: "opencode-session" }), {
+            headers: {
+              "content-type": "application/json"
+            },
+            status: 200
+          });
+        }
+
+        if (url === "http://127.0.0.1:4567/event") {
+          const encoder = new TextEncoder();
+          return new Response(
+            new ReadableStream({
+              start(controller) {
+                controller.enqueue(
+                  encoder.encode(
+                    [
+                      "data: {\"type\":\"server.connected\",\"properties\":{}}",
+                      "",
+                      "data: {\"type\":\"message.part.updated\",\"properties\":{\"part\":{\"sessionID\":\"opencode-session\",\"type\":\"text\",\"text\":\"Completed through attached server.\"}}}",
+                      "",
+                      "data: {\"type\":\"session.status\",\"properties\":{\"sessionID\":\"opencode-session\",\"status\":{\"type\":\"idle\"}}}",
+                      "",
+                      ""
+                    ].join("\n")
+                  )
+                );
+                controller.close();
+              }
+            }),
+            {
+              headers: {
+                "content-type": "text/event-stream"
+              },
+              status: 200
+            }
+          );
+        }
+
+        if (
+          url ===
+          "http://127.0.0.1:4567/session/opencode-session/prompt_async"
+        ) {
+          return new Response("{}", {
+            headers: {
+              "content-type": "application/json"
+            },
+            status: 200
+          });
+        }
+
         return new Response(
           JSON.stringify({
-            healthy: true,
-            version: "1.14.20"
+            message: `Unexpected OpenCode test URL ${url}`
           }),
           {
             headers: {
               "content-type": "application/json"
             },
-            status: 200
+            status: 404
           }
         );
       }
@@ -487,20 +537,193 @@ describe("OpenCode runner engine adapter", () => {
 
     expect(result).toMatchObject({
       assistantMessages: ["Completed through attached server."],
-      engineVersion: "0.10.0; server 1.14.20"
+      engineVersion: "server 1.14.20",
+      providerStopReason: "opencode_server_idle"
     });
-    expect(healthRequests).toEqual([
+    expect(requests[0]).toEqual(
       {
         authorization: `Basic ${Buffer.from("entangle:server-secret").toString(
           "base64"
         )}`,
+        method: undefined,
         url: "http://127.0.0.1:4567/global/health"
       }
-    ]);
-    expect(mock.calls).toHaveLength(2);
-    expect(mock.calls[1]!.args).toEqual(
-      expect.arrayContaining(["--attach", baseUrl])
     );
+    expect(requests.map((request) => request.url)).toEqual([
+      "http://127.0.0.1:4567/global/health",
+      "http://127.0.0.1:4567/session",
+      "http://127.0.0.1:4567/event",
+      "http://127.0.0.1:4567/session/opencode-session/prompt_async"
+    ]);
+    expect(mock.calls).toHaveLength(0);
+  });
+
+  it("bridges attached OpenCode permission requests through Entangle approval callback", async () => {
+    const fixture = await createRuntimeFixture();
+    const baseUrl = "http://127.0.0.1:4567";
+    const context = {
+      ...fixture.context,
+      agentRuntimeContext: {
+        ...fixture.context.agentRuntimeContext,
+        engineProfile: {
+          ...fixture.context.agentRuntimeContext.engineProfile,
+          baseUrl,
+          permissionMode: "entangle_approval" as const
+        }
+      }
+    };
+    const permissionReplies: unknown[] = [];
+    const permissionRequests: unknown[] = [];
+    vi.stubGlobal(
+      "fetch",
+      (
+        input: Parameters<typeof fetch>[0],
+        init?: Parameters<typeof fetch>[1]
+      ) => {
+        const url =
+          input instanceof URL
+            ? input.toString()
+            : typeof input === "string"
+              ? input
+              : input.url;
+
+        if (url === "http://127.0.0.1:4567/global/health") {
+          return new Response(
+            JSON.stringify({
+              healthy: true,
+              version: "1.14.20"
+            }),
+            {
+              headers: {
+                "content-type": "application/json"
+              },
+              status: 200
+            }
+          );
+        }
+
+        if (url === "http://127.0.0.1:4567/session") {
+          return new Response(JSON.stringify({ id: "opencode-session" }), {
+            headers: {
+              "content-type": "application/json"
+            },
+            status: 200
+          });
+        }
+
+        if (url === "http://127.0.0.1:4567/event") {
+          const encoder = new TextEncoder();
+          return new Response(
+            new ReadableStream({
+              start(controller) {
+                controller.enqueue(
+                  encoder.encode(
+                    [
+                      "data: {\"type\":\"server.connected\",\"properties\":{}}",
+                      "",
+                      "data: {\"type\":\"permission.asked\",\"properties\":{\"id\":\"permission-alpha\",\"sessionID\":\"opencode-session\",\"permission\":\"bash\",\"patterns\":[\"git commit -m test\"],\"metadata\":{\"command\":\"git commit -m test\"},\"tool\":{\"callID\":\"tool-call-alpha\"}}}",
+                      "",
+                      "data: {\"type\":\"message.part.updated\",\"properties\":{\"part\":{\"sessionID\":\"opencode-session\",\"type\":\"text\",\"text\":\"Committed after approval.\"}}}",
+                      "",
+                      "data: {\"type\":\"session.status\",\"properties\":{\"sessionID\":\"opencode-session\",\"status\":{\"type\":\"idle\"}}}",
+                      "",
+                      ""
+                    ].join("\n")
+                  )
+                );
+                controller.close();
+              }
+            }),
+            {
+              headers: {
+                "content-type": "text/event-stream"
+              },
+              status: 200
+            }
+          );
+        }
+
+        if (
+          url ===
+          "http://127.0.0.1:4567/permission/permission-alpha/reply"
+        ) {
+          if (typeof init?.body !== "string") {
+            throw new Error("Expected JSON permission reply body.");
+          }
+          permissionReplies.push(JSON.parse(init.body));
+          return new Response("{}", {
+            headers: {
+              "content-type": "application/json"
+            },
+            status: 200
+          });
+        }
+
+        if (
+          url ===
+          "http://127.0.0.1:4567/session/opencode-session/prompt_async"
+        ) {
+          return new Response("{}", {
+            headers: {
+              "content-type": "application/json"
+            },
+            status: 200
+          });
+        }
+
+        return new Response("{}", {
+          status: 404
+        });
+      }
+    );
+    const engine = createOpenCodeAgentEngine({
+      runtimeContext: context,
+      spawn: createMockOpenCodeSpawn().spawn
+    });
+
+    const result = await engine.executeTurn(buildTurnRequest(), {
+      requestPermission: (request) => {
+        permissionRequests.push(request);
+        return Promise.resolve({
+          approvalId: "approval-engine-permission-alpha",
+          decision: "approved",
+          message: "Approved by Entangle policy."
+        });
+      }
+    });
+
+    expect(permissionRequests).toEqual([
+      expect.objectContaining({
+        operation: "git_commit",
+        patterns: ["git commit -m test"],
+        permission: "bash",
+        toolCallId: "tool-call-alpha"
+      })
+    ]);
+    expect(permissionReplies).toEqual([
+      {
+        message: "Approved by Entangle policy.",
+        reply: "once"
+      }
+    ]);
+    expect(result).toMatchObject({
+      assistantMessages: ["Committed after approval."],
+      permissionObservations: [
+        {
+          decision: "pending",
+          operation: "git_commit",
+          permission: "bash"
+        },
+        {
+          decision: "allowed",
+          operation: "git_commit",
+          permission: "bash",
+          reason: "Approved by Entangle policy."
+        }
+      ],
+      providerStopReason: "opencode_server_idle",
+      stopReason: "completed"
+    });
   });
 
   it("fails before launching OpenCode run when the attached server is unhealthy", async () => {
@@ -536,8 +759,7 @@ describe("OpenCode runner engine adapter", () => {
       classification: "provider_unavailable",
       name: AgentEngineExecutionError.name
     });
-    expect(mock.calls).toHaveLength(1);
-    expect(mock.calls[0]!.args).toEqual(["--version"]);
+    expect(mock.calls).toHaveLength(0);
   });
 
   it("kills the OpenCode run process when the turn abort signal is cancelled", async () => {
@@ -895,7 +1117,7 @@ describe("OpenCode runner engine adapter", () => {
       failure: {
         classification: "policy_denied",
         message:
-          "OpenCode requested permission and the one-shot CLI auto-rejected it: bash (git push origin main)."
+          "OpenCode requested permission and Entangle rejected it: bash (git push origin main)."
       },
       permissionObservations: [
         {
@@ -905,7 +1127,7 @@ describe("OpenCode runner engine adapter", () => {
           permission: "bash"
         }
       ],
-      providerStopReason: "opencode_permission_auto_rejected",
+      providerStopReason: "opencode_permission_rejected",
       stopReason: "error"
     });
   });

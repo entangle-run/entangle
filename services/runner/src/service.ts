@@ -51,7 +51,11 @@ import {
   sourceChangeCandidateRecordSchema
 } from "@entangle/types";
 import { validateA2AMessageDocument } from "@entangle/validator";
-import type { AgentEngine } from "@entangle/agent-engine";
+import type {
+  AgentEngine,
+  AgentEnginePermissionRequest,
+  AgentEnginePermissionResponse
+} from "@entangle/agent-engine";
 import {
   AgentEngineConfigurationError,
   AgentEngineExecutionError,
@@ -263,9 +267,17 @@ const handoffAllowedRelations = new Set([
 const artifactProjectionPreviewMaxBytes = 12 * 1024;
 const artifactSourceProposalMaxFiles = 200;
 const artifactSourceProposalMaxBytes = 20 * 1024 * 1024;
+const enginePermissionApprovalPollIntervalMs = 250;
+const maxEnginePermissionApprovalReasonCharacters = 800;
 
 function nowIsoString(): string {
   return new Date().toISOString();
+}
+
+function sleep(ms: number): Promise<void> {
+  return new Promise((resolve) => {
+    setTimeout(resolve, ms);
+  });
 }
 
 function sanitizeIdentifier(input: string): string {
@@ -2176,6 +2188,214 @@ export class RunnerService {
     }
   }
 
+  private buildEnginePermissionApprovalId(input: {
+    permission: AgentEnginePermissionRequest;
+    sequence: number;
+    turnId: string;
+  }): string {
+    return sanitizeIdentifier(
+      `approval-${input.turnId}-engine-permission-${input.sequence}-${input.permission.permission}`
+    ).slice(0, 120);
+  }
+
+  private buildEnginePermissionApprovalRequestMessage(input: {
+    approvalId: string;
+    envelope: RunnerInboundEnvelope;
+    permission: AgentEnginePermissionRequest;
+  }): EntangleA2AMessage {
+    const reason = truncateBoundedText(
+      input.permission.reason,
+      maxEnginePermissionApprovalReasonCharacters
+    );
+
+    return {
+      constraints: {
+        approvalRequiredBeforeAction: false
+      },
+      conversationId: input.envelope.message.conversationId,
+      fromNodeId: this.context.binding.node.nodeId,
+      fromPubkey: this.context.identityContext.publicKey,
+      graphId: input.envelope.message.graphId,
+      intent: `Approve ${input.permission.permission}`,
+      messageType: "approval.request",
+      parentMessageId: input.envelope.eventId,
+      protocol: "entangle.a2a.v1",
+      responsePolicy: {
+        closeOnResult: false,
+        maxFollowups: 1,
+        responseRequired: true
+      },
+      sessionId: input.envelope.message.sessionId,
+      toNodeId: input.envelope.message.fromNodeId,
+      toPubkey: input.envelope.message.fromPubkey,
+      turnId: buildSyntheticTurnId("approval"),
+      work: {
+        artifactRefs: [],
+        metadata: {
+          approval: {
+            approvalId: input.approvalId,
+            approverNodeIds: [input.envelope.message.fromNodeId],
+            operation: input.permission.operation,
+            reason,
+            ...(input.permission.resource
+              ? { resource: input.permission.resource }
+              : {})
+          },
+          enginePermission: {
+            patterns: input.permission.patterns,
+            permission: input.permission.permission,
+            ...(input.permission.toolCallId
+              ? { toolCallId: input.permission.toolCallId }
+              : {})
+          }
+        },
+        summary: reason
+      }
+    };
+  }
+
+  private async waitForEnginePermissionApproval(input: {
+    abortSignal: AbortSignal;
+    approvalId: string;
+    statePaths: RunnerStatePaths;
+  }): Promise<AgentEnginePermissionResponse> {
+    while (!input.abortSignal.aborted) {
+      const approvalRecord = await readApprovalRecord(
+        input.statePaths,
+        input.approvalId
+      );
+
+      if (approvalRecord?.status === "approved") {
+        return {
+          approvalId: approvalRecord.approvalId,
+          decision: "approved",
+          message: `Entangle approval '${approvalRecord.approvalId}' was approved.`
+        };
+      }
+
+      if (approvalRecord?.status === "rejected") {
+        return {
+          approvalId: approvalRecord.approvalId,
+          decision: "rejected",
+          message: `Entangle approval '${approvalRecord.approvalId}' was rejected.`
+        };
+      }
+
+      await sleep(enginePermissionApprovalPollIntervalMs);
+    }
+
+    return {
+      approvalId: input.approvalId,
+      decision: "rejected",
+      message: `Entangle approval '${input.approvalId}' was cancelled before a decision.`
+    };
+  }
+
+  private async requestEnginePermissionApproval(input: {
+    abortSignal: AbortSignal;
+    envelope: RunnerInboundEnvelope;
+    permission: AgentEnginePermissionRequest;
+    sequence: number;
+    statePaths: RunnerStatePaths;
+    turnId: string;
+  }): Promise<AgentEnginePermissionResponse> {
+    const approvalId = this.buildEnginePermissionApprovalId({
+      permission: input.permission,
+      sequence: input.sequence,
+      turnId: input.turnId
+    });
+    const requestedAt = nowIsoString();
+    const approvalRecord: ApprovalRecord = {
+      approvalId,
+      approverNodeIds: [input.envelope.message.fromNodeId],
+      conversationId: input.envelope.message.conversationId,
+      graphId: input.envelope.message.graphId,
+      operation: input.permission.operation,
+      reason: truncateBoundedText(
+        input.permission.reason,
+        maxEnginePermissionApprovalReasonCharacters
+      ),
+      requestedAt,
+      requestedByNodeId: this.context.binding.node.nodeId,
+      ...(input.permission.resource ? { resource: input.permission.resource } : {}),
+      sessionId: input.envelope.message.sessionId,
+      sourceMessageId: input.envelope.eventId,
+      status: "pending",
+      updatedAt: requestedAt
+    };
+    await writeApprovalRecord(input.statePaths, approvalRecord);
+    await this.publishApprovalObservation(approvalRecord);
+
+    const requestMessage = this.buildEnginePermissionApprovalRequestMessage({
+      approvalId,
+      envelope: input.envelope,
+      permission: input.permission
+    });
+    const published = await this.transport.publish(requestMessage);
+    const publishedApprovalRecord: ApprovalRecord = {
+      ...approvalRecord,
+      requestEventId: published.eventId,
+      ...(published.signerPubkey
+        ? { requestSignerPubkey: published.signerPubkey }
+        : {}),
+      updatedAt: published.receivedAt
+    };
+    await writeApprovalRecord(input.statePaths, publishedApprovalRecord);
+    await this.publishApprovalObservation(publishedApprovalRecord);
+
+    const currentSession = await readSessionRecord(
+      input.statePaths,
+      input.envelope.message.sessionId
+    );
+    if (currentSession) {
+      const waitingSession: SessionRecord = {
+        ...currentSession,
+        waitingApprovalIds: mergeIdentifierLists(
+          currentSession.waitingApprovalIds,
+          [approvalId]
+        )
+      };
+      await writeSessionRecord(input.statePaths, waitingSession);
+      await this.publishSessionObservation(
+        isAllowedSessionLifecycleTransition(
+          waitingSession.status,
+          "waiting_approval"
+        )
+          ? await transitionSessionStatus(
+              input.statePaths,
+              waitingSession,
+              "waiting_approval",
+              {
+                lastMessageId: published.eventId,
+                lastMessageType: "approval.request"
+              }
+            )
+          : waitingSession
+      );
+    }
+
+    const currentConversation = await readConversationRecord(
+      input.statePaths,
+      input.envelope.message.conversationId
+    );
+    if (currentConversation) {
+      await this.publishConversationObservation(
+        await this.transitionConversationToAwaitingApproval({
+          conversation: currentConversation,
+          lastInboundMessageId: published.eventId,
+          lastMessageType: "approval.request",
+          statePaths: input.statePaths
+        })
+      );
+    }
+
+    return this.waitForEnginePermissionApproval({
+      abortSignal: input.abortSignal,
+      approvalId,
+      statePaths: input.statePaths
+    });
+  }
+
   private async publishSourceChangeRefObservation(
     candidate: SourceChangeCandidateRecord,
     artifactRefs: ArtifactRef[] = []
@@ -4029,11 +4249,23 @@ export class RunnerService {
       const sourceChangeBaseline = await prepareSourceChangeHarvest(this.context);
       let result: AgentEngineTurnResult | undefined;
       let handoffPlans: ResolvedHandoffPlan[] = [];
+      let enginePermissionApprovalSequence = 0;
 
       try {
         result = parseEngineTurnResult(
           await this.engine.executeTurn(turnRequest, {
-            abortSignal: cancellationController.signal
+            abortSignal: cancellationController.signal,
+            requestPermission: (permission) => {
+              enginePermissionApprovalSequence += 1;
+              return this.requestEnginePermissionApproval({
+                abortSignal: cancellationController.signal,
+                envelope,
+                permission,
+                sequence: enginePermissionApprovalSequence,
+                statePaths,
+                turnId: turnRecord.turnId
+              });
+            }
           })
         );
         handoffPlans = resolveHandoffPlans(this.context, result.handoffDirectives);

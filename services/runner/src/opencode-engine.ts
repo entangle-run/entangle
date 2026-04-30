@@ -11,6 +11,7 @@ import {
   AgentEngineConfigurationError,
   AgentEngineExecutionError,
   type AgentEngine,
+  type AgentEnginePermissionResponse,
   type AgentEngineTurnOptions
 } from "@entangle/agent-engine";
 import {
@@ -45,6 +46,26 @@ type OpenCodeRunEvent = {
   type?: unknown;
 };
 
+type OpenCodeServerEvent = {
+  properties?: unknown;
+  type?: unknown;
+};
+
+type OpenCodePermissionRequest = {
+  always?: unknown;
+  id: string;
+  metadata?: unknown;
+  patterns: string[];
+  permission: string;
+  sessionID: string;
+  tool?: {
+    callID?: unknown;
+    messageID?: unknown;
+  };
+};
+
+type OpenCodeHttpJson = Record<string, unknown> | Record<string, unknown>[];
+
 type OpenCodeRuntimePaths = {
   configDir: string;
   databasePath: string;
@@ -69,6 +90,11 @@ const maxToolSummaryDepth = 4;
 const maxToolTitleCharacters = 240;
 const defaultOpenCodeProcessTimeoutMs = 120_000;
 const opencodeSessionMapFileName = "entangle-opencode-session-map.json";
+const opencodeDefaultDeniedPermissions = [
+  "question",
+  "plan_enter",
+  "plan_exit"
+] as const;
 const opencodeAutoRejectedPermissionPattern =
   /permission requested:\s*([^(;]+?)\s*\((.*?)\);\s*auto-rejecting/i;
 const sensitiveSummaryKeyPattern =
@@ -688,6 +714,115 @@ function processOpenCodeStdoutLine(
   collectError(event, output.errors);
 }
 
+function normalizeOpenCodePermissionRequest(
+  event: OpenCodeServerEvent
+): OpenCodePermissionRequest | undefined {
+  if (event.type !== "permission.asked" || !isRecord(event.properties)) {
+    return undefined;
+  }
+
+  const properties = event.properties;
+
+  if (
+    typeof properties.id !== "string" ||
+    typeof properties.sessionID !== "string" ||
+    typeof properties.permission !== "string" ||
+    !Array.isArray(properties.patterns)
+  ) {
+    return undefined;
+  }
+
+  return {
+    always: properties.always,
+    id: properties.id,
+    metadata: properties.metadata,
+    patterns: properties.patterns.filter(
+      (pattern): pattern is string => typeof pattern === "string"
+    ),
+    permission: properties.permission,
+    sessionID: properties.sessionID,
+    ...(isRecord(properties.tool) ? { tool: properties.tool } : {})
+  };
+}
+
+function processOpenCodeServerEvent(input: {
+  event: OpenCodeServerEvent;
+  output: {
+    assistantMessages: string[];
+    engineSessionId: string | undefined;
+    errors: string[];
+    permissionObservations: EnginePermissionObservation[];
+    toolExecutions: EngineToolExecutionObservation[];
+  };
+  sessionId: string;
+}): "idle" | "continue" {
+  const { event, output, sessionId } = input;
+
+  if (!isRecord(event.properties)) {
+    return "continue";
+  }
+
+  if (
+    event.type === "session.status" &&
+    event.properties.sessionID === sessionId &&
+    isRecord(event.properties.status) &&
+    event.properties.status.type === "idle"
+  ) {
+    return "idle";
+  }
+
+  if (
+    event.type === "session.error" &&
+    event.properties.sessionID === sessionId
+  ) {
+    collectError(
+      {
+        error: event.properties.error,
+        type: "error"
+      },
+      output.errors
+    );
+    return "continue";
+  }
+
+  if (event.type !== "message.part.updated" || !isRecord(event.properties.part)) {
+    return "continue";
+  }
+
+  const part = event.properties.part;
+
+  if (part.sessionID !== sessionId) {
+    return "continue";
+  }
+
+  output.engineSessionId = sessionId;
+
+  if (part.type === "text") {
+    collectTextMessage(
+      {
+        part,
+        sessionID: sessionId,
+        type: "text"
+      },
+      output.assistantMessages
+    );
+    return "continue";
+  }
+
+  if (part.type === "tool") {
+    collectToolExecution(
+      {
+        part,
+        sessionID: sessionId,
+        type: "tool_use"
+      },
+      output.toolExecutions
+    );
+  }
+
+  return "continue";
+}
+
 function attachLineReader(
   stream: Readable,
   onLine: (line: string) => void
@@ -746,6 +881,30 @@ function buildOpenCodeServerHeaders(
   return {
     authorization: `Basic ${token}`
   };
+}
+
+function buildOpenCodeHttpHeaders(input: {
+  contentType?: string;
+  env: NodeJS.ProcessEnv;
+  workspace: string;
+}): Record<string, string> {
+  return {
+    ...buildOpenCodeServerHeaders(input.env),
+    ...(input.contentType ? { "content-type": input.contentType } : {}),
+    "x-opencode-directory": encodeURIComponent(input.workspace)
+  };
+}
+
+function buildOpenCodeSessionPermissionRules(): Array<{
+  action: "deny";
+  pattern: string;
+  permission: string;
+}> {
+  return opencodeDefaultDeniedPermissions.map((permission) => ({
+    action: "deny",
+    pattern: "*",
+    permission
+  }));
 }
 
 function formatOpenCodeEngineVersion(input: {
@@ -976,6 +1135,267 @@ async function probeOpenCodeServerHealth(input: {
   }
 }
 
+function buildOpenCodeUrl(input: {
+  baseUrl: string;
+  pathname: string;
+}): URL {
+  return new URL(input.pathname, input.baseUrl);
+}
+
+async function fetchOpenCodeJson(input: {
+  abortSignal?: AbortSignal;
+  baseUrl: string;
+  body?: unknown;
+  env: NodeJS.ProcessEnv;
+  method: "GET" | "POST";
+  nodeId: string;
+  pathname: string;
+  timeoutMs: number;
+  workspace: string;
+}): Promise<OpenCodeHttpJson> {
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), input.timeoutMs);
+  const abortHandler = (): void => controller.abort();
+
+  input.abortSignal?.addEventListener("abort", abortHandler, { once: true });
+
+  try {
+    const response = await fetch(
+      buildOpenCodeUrl({
+        baseUrl: input.baseUrl,
+        pathname: input.pathname
+      }),
+      {
+        ...(input.body === undefined
+          ? {}
+          : { body: JSON.stringify(input.body) }),
+        headers: buildOpenCodeHttpHeaders({
+          env: input.env,
+          ...(input.body === undefined
+            ? {}
+            : { contentType: "application/json" }),
+          workspace: input.workspace
+        }),
+        method: input.method,
+        signal: controller.signal
+      }
+    );
+    const text = await response.text();
+
+    if (!response.ok) {
+      throw new Error(`HTTP ${response.status}: ${text}`);
+    }
+
+    if (!text.trim()) {
+      return {};
+    }
+
+    const parsed = JSON.parse(text) as unknown;
+
+    if (!isRecord(parsed) && !Array.isArray(parsed)) {
+      throw new Error("OpenCode response was not a JSON object or array.");
+    }
+
+    return parsed as OpenCodeHttpJson;
+  } catch (error) {
+    if (input.abortSignal?.aborted) {
+      throw new AgentEngineExecutionError(
+        `OpenCode HTTP request '${input.pathname}' was cancelled for node '${input.nodeId}'.`,
+        {
+          classification: "cancelled"
+        }
+      );
+    }
+
+    throw new AgentEngineExecutionError(
+      `OpenCode HTTP request '${input.pathname}' failed for node '${input.nodeId}'.`,
+      {
+        cause: error,
+        classification: "provider_unavailable"
+      }
+    );
+  } finally {
+    clearTimeout(timeout);
+    input.abortSignal?.removeEventListener("abort", abortHandler);
+  }
+}
+
+async function createOpenCodeServerSession(input: {
+  abortSignal?: AbortSignal;
+  baseUrl: string;
+  env: NodeJS.ProcessEnv;
+  nodeId: string;
+  request: AgentEngineTurnRequest;
+  timeoutMs: number;
+  workspace: string;
+}): Promise<string> {
+  const response = await fetchOpenCodeJson({
+    ...(input.abortSignal ? { abortSignal: input.abortSignal } : {}),
+    baseUrl: input.baseUrl,
+    body: {
+      permission: buildOpenCodeSessionPermissionRules(),
+      title: `${input.request.nodeId}:${input.request.sessionId}`
+    },
+    env: input.env,
+    method: "POST",
+    nodeId: input.nodeId,
+    pathname: "/session",
+    timeoutMs: input.timeoutMs,
+    workspace: input.workspace
+  });
+
+  if (isRecord(response) && typeof response.id === "string") {
+    return response.id;
+  }
+
+  throw new AgentEngineExecutionError(
+    `OpenCode server did not return a session id for node '${input.nodeId}'.`,
+    {
+      classification: "provider_unavailable"
+    }
+  );
+}
+
+function parseOpenCodeServerEventPayload(payload: string): OpenCodeServerEvent | undefined {
+  if (!payload.trim()) {
+    return undefined;
+  }
+
+  try {
+    const parsed = JSON.parse(payload) as unknown;
+    if (!isRecord(parsed)) {
+      return undefined;
+    }
+
+    const candidate = isRecord(parsed.payload) ? parsed.payload : parsed;
+    return isRecord(candidate) ? candidate : undefined;
+  } catch {
+    return undefined;
+  }
+}
+
+function extractSseDataFrames(buffer: string): {
+  frames: string[];
+  remainder: string;
+} {
+  const frames: string[] = [];
+  const chunks = buffer.split(/\r?\n\r?\n/);
+  const remainder = chunks.pop() ?? "";
+
+  for (const chunk of chunks) {
+    const data = chunk
+      .split(/\r?\n/)
+      .filter((line) => line.startsWith("data:"))
+      .map((line) => line.slice("data:".length).trimStart())
+      .join("\n");
+
+    if (data.trim()) {
+      frames.push(data);
+    }
+  }
+
+  return {
+    frames,
+    remainder
+  };
+}
+
+async function consumeOpenCodeEventStream(input: {
+  abortSignal?: AbortSignal;
+  baseUrl: string;
+  env: NodeJS.ProcessEnv;
+  nodeId: string;
+  onEvent: (event: OpenCodeServerEvent) => Promise<boolean> | boolean;
+  timeoutMs: number;
+  workspace: string;
+}): Promise<void> {
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), input.timeoutMs);
+  const abortHandler = (): void => controller.abort();
+
+  input.abortSignal?.addEventListener("abort", abortHandler, { once: true });
+
+  try {
+    const response = await fetch(
+      buildOpenCodeUrl({
+        baseUrl: input.baseUrl,
+        pathname: "/event"
+      }),
+      {
+        headers: buildOpenCodeHttpHeaders({
+          env: input.env,
+          workspace: input.workspace
+        }),
+        signal: controller.signal
+      }
+    );
+
+    if (!response.ok || !response.body) {
+      throw new Error(
+        `HTTP ${response.status}: ${await response.text().catch(() => "")}`
+      );
+    }
+
+    const reader = response.body.getReader();
+    const decoder = new TextDecoder();
+    let buffer = "";
+
+    while (true) {
+      const readResult = (await reader.read()) as unknown;
+
+      if (!isRecord(readResult)) {
+        throw new Error("OpenCode event stream returned an invalid chunk.");
+      }
+
+      if (readResult.done === true) {
+        break;
+      }
+
+      if (!(readResult.value instanceof Uint8Array)) {
+        throw new Error("OpenCode event stream returned a non-binary chunk.");
+      }
+
+      buffer += decoder.decode(readResult.value, { stream: true });
+      const extracted = extractSseDataFrames(buffer);
+      buffer = extracted.remainder;
+
+      for (const frame of extracted.frames) {
+        const event = parseOpenCodeServerEventPayload(frame);
+
+        if (!event) {
+          continue;
+        }
+
+        const shouldContinue = await input.onEvent(event);
+        if (!shouldContinue) {
+          await reader.cancel().catch(() => undefined);
+          return;
+        }
+      }
+    }
+  } catch (error) {
+    if (input.abortSignal?.aborted) {
+      throw new AgentEngineExecutionError(
+        `OpenCode event stream was cancelled for node '${input.nodeId}'.`,
+        {
+          classification: "cancelled"
+        }
+      );
+    }
+
+    throw new AgentEngineExecutionError(
+      `OpenCode event stream failed for node '${input.nodeId}'.`,
+      {
+        cause: error,
+        classification: "provider_unavailable"
+      }
+    );
+  } finally {
+    clearTimeout(timeout);
+    input.abortSignal?.removeEventListener("abort", abortHandler);
+  }
+}
+
 function buildOpenCodeArgs(input: {
   context: EffectiveRuntimeContext;
   mappedSessionId?: string | undefined;
@@ -1038,6 +1458,377 @@ function buildOpenCodeEnv(input: {
   };
 }
 
+function buildOpenCodePermissionReason(
+  request: OpenCodePermissionRequest
+): string {
+  const patterns =
+    request.patterns.length > 0
+      ? ` (${request.patterns.join(", ")})`
+      : "";
+
+  return `OpenCode requested permission '${request.permission}'${patterns}.`;
+}
+
+function mapEnginePermissionResponseToOpenCodeReply(
+  response: AgentEnginePermissionResponse
+): "once" | "reject" {
+  return response.decision === "approved" ? "once" : "reject";
+}
+
+async function answerOpenCodePermission(input: {
+  baseUrl: string;
+  env: NodeJS.ProcessEnv;
+  nodeId: string;
+  permissionRequest: OpenCodePermissionRequest;
+  response: AgentEnginePermissionResponse;
+  timeoutMs: number;
+  workspace: string;
+  abortSignal?: AbortSignal;
+}): Promise<void> {
+  await fetchOpenCodeJson({
+    ...(input.abortSignal ? { abortSignal: input.abortSignal } : {}),
+    baseUrl: input.baseUrl,
+    body: {
+      ...(input.response.message ? { message: input.response.message } : {}),
+      reply: mapEnginePermissionResponseToOpenCodeReply(input.response)
+    },
+    env: input.env,
+    method: "POST",
+    nodeId: input.nodeId,
+    pathname: `/permission/${encodeURIComponent(
+      input.permissionRequest.id
+    )}/reply`,
+    timeoutMs: input.timeoutMs,
+    workspace: input.workspace
+  });
+}
+
+async function resolveOpenCodePermission(input: {
+  context: EffectiveRuntimeContext;
+  output: {
+    permissionObservations: EnginePermissionObservation[];
+  };
+  permissionRequest: OpenCodePermissionRequest;
+  turnOptions?: AgentEngineTurnOptions | undefined;
+}): Promise<AgentEnginePermissionResponse> {
+  const operation = mapOpenCodePermissionToEngineOperation(
+    input.permissionRequest.permission,
+    input.permissionRequest.patterns
+  );
+  const reason = buildOpenCodePermissionReason(input.permissionRequest);
+
+  if (
+    input.context.agentRuntimeContext.engineProfile.permissionMode ===
+    "auto_approve"
+  ) {
+    const response: AgentEnginePermissionResponse = {
+      decision: "approved",
+      message: "OpenCode permission was automatically approved by engine profile."
+    };
+    input.output.permissionObservations.push({
+      decision: "allowed",
+      operation,
+      patterns: input.permissionRequest.patterns,
+      permission: input.permissionRequest.permission,
+      reason: response.message
+    });
+    return response;
+  }
+
+  if (
+    input.context.agentRuntimeContext.engineProfile.permissionMode !==
+    "entangle_approval" ||
+    !input.turnOptions?.requestPermission
+  ) {
+    const response: AgentEnginePermissionResponse = {
+      decision: "rejected",
+      message:
+        "OpenCode permission was rejected because the engine profile is not configured for Entangle approval bridging."
+    };
+    input.output.permissionObservations.push({
+      decision: "rejected",
+      operation,
+      patterns: input.permissionRequest.patterns,
+      permission: input.permissionRequest.permission,
+      reason: response.message
+    });
+    return response;
+  }
+
+  input.output.permissionObservations.push({
+    decision: "pending",
+    operation,
+    patterns: input.permissionRequest.patterns,
+    permission: input.permissionRequest.permission,
+    reason
+  });
+
+  const response = await input.turnOptions.requestPermission({
+    ...(isRecord(input.permissionRequest.metadata)
+      ? { metadata: input.permissionRequest.metadata }
+      : {}),
+    operation,
+    patterns: input.permissionRequest.patterns,
+    permission: input.permissionRequest.permission,
+    reason,
+    ...(typeof input.permissionRequest.tool?.callID === "string"
+      ? { toolCallId: input.permissionRequest.tool.callID }
+      : {})
+  });
+  input.output.permissionObservations.push({
+    decision: response.decision === "approved" ? "allowed" : "rejected",
+    operation,
+    patterns: input.permissionRequest.patterns,
+    permission: input.permissionRequest.permission,
+    reason: response.message ?? reason
+  });
+
+  return response;
+}
+
+function buildOpenCodeTurnResult(input: {
+  engineSessionId?: string | undefined;
+  engineVersion?: string | undefined;
+  output: {
+    assistantMessages: string[];
+    errors: string[];
+    permissionObservations: EnginePermissionObservation[];
+    toolExecutions: EngineToolExecutionObservation[];
+  };
+  providerStopReason: string;
+}): AgentEngineTurnResult {
+  const rejectedPermissions = input.output.permissionObservations.filter(
+    (permissionObservation) =>
+      permissionObservation.decision === "denied" ||
+      permissionObservation.decision === "rejected"
+  );
+  const actionDirectives = extractEntangleActionDirectives(
+    input.output.assistantMessages
+  );
+
+  if (actionDirectives.errors.length > 0) {
+    return agentEngineTurnResultSchema.parse({
+      assistantMessages:
+        actionDirectives.assistantMessages.length > 0
+          ? actionDirectives.assistantMessages
+          : input.output.assistantMessages,
+      ...(input.engineVersion ? { engineVersion: input.engineVersion } : {}),
+      ...(input.engineSessionId
+        ? { engineSessionId: input.engineSessionId }
+        : {}),
+      failure: {
+        classification: "bad_request",
+        message: truncate(
+          actionDirectives.errors.join("\n"),
+          maxFailureMessageCharacters
+        )
+      },
+      permissionObservations: input.output.permissionObservations,
+      providerStopReason: "entangle_action_directive_parse_error",
+      stopReason: "error",
+      toolExecutions: input.output.toolExecutions,
+      toolRequests: []
+    });
+  }
+
+  if (rejectedPermissions.length > 0) {
+    const permissionSummary = rejectedPermissions
+      .map((permissionObservation) => {
+        const patterns =
+          permissionObservation.patterns.length > 0
+            ? ` (${permissionObservation.patterns.join(", ")})`
+            : "";
+
+        return `${permissionObservation.permission}${patterns}`;
+      })
+      .join("; ");
+
+    return agentEngineTurnResultSchema.parse({
+      assistantMessages: actionDirectives.assistantMessages,
+      ...(input.engineVersion ? { engineVersion: input.engineVersion } : {}),
+      ...(input.engineSessionId
+        ? { engineSessionId: input.engineSessionId }
+        : {}),
+      failure: {
+        classification: "policy_denied",
+        message: truncate(
+          `OpenCode requested permission and Entangle rejected it: ${permissionSummary}.`,
+          maxFailureMessageCharacters
+        )
+      },
+      permissionObservations: input.output.permissionObservations,
+      providerStopReason: "opencode_permission_rejected",
+      stopReason: "error",
+      toolExecutions: input.output.toolExecutions,
+      toolRequests: []
+    });
+  }
+
+  if (input.output.errors.length > 0) {
+    return agentEngineTurnResultSchema.parse({
+      assistantMessages: actionDirectives.assistantMessages,
+      ...(input.engineVersion ? { engineVersion: input.engineVersion } : {}),
+      ...(input.engineSessionId
+        ? { engineSessionId: input.engineSessionId }
+        : {}),
+      failure: {
+        classification: "unknown_provider_error",
+        message: truncate(
+          input.output.errors.join("\n"),
+          maxFailureMessageCharacters
+        )
+      },
+      permissionObservations: input.output.permissionObservations,
+      providerStopReason: "opencode_error_event",
+      stopReason: "error",
+      toolExecutions: input.output.toolExecutions,
+      toolRequests: []
+    });
+  }
+
+  return agentEngineTurnResultSchema.parse({
+    assistantMessages: actionDirectives.assistantMessages,
+    approvalRequestDirectives: actionDirectives.approvalRequestDirectives,
+    ...(input.engineVersion ? { engineVersion: input.engineVersion } : {}),
+    ...(input.engineSessionId ? { engineSessionId: input.engineSessionId } : {}),
+    handoffDirectives: actionDirectives.handoffDirectives,
+    permissionObservations: input.output.permissionObservations,
+    providerStopReason: input.providerStopReason,
+    stopReason: "completed",
+    toolExecutions: input.output.toolExecutions,
+    toolRequests: []
+  });
+}
+
+async function executeOpenCodeServerTurn(input: {
+  abortSignal?: AbortSignal;
+  baseUrl: string;
+  context: EffectiveRuntimeContext;
+  env: NodeJS.ProcessEnv;
+  mappedSessionId?: string | undefined;
+  nodeId: string;
+  request: AgentEngineTurnRequest;
+  runtimePaths: OpenCodeRuntimePaths;
+  serverVersion?: string | undefined;
+  timeoutMs: number;
+  turnOptions?: AgentEngineTurnOptions | undefined;
+  workspace: string;
+}): Promise<AgentEngineTurnResult> {
+  const sessionId =
+    input.mappedSessionId ??
+    (await createOpenCodeServerSession({
+      ...(input.abortSignal ? { abortSignal: input.abortSignal } : {}),
+      baseUrl: input.baseUrl,
+      env: input.env,
+      nodeId: input.nodeId,
+      request: input.request,
+      timeoutMs: input.timeoutMs,
+      workspace: input.workspace
+    }));
+  const output = {
+    assistantMessages: [] as string[],
+    engineSessionId: sessionId,
+    errors: [] as string[],
+    permissionObservations: [] as EnginePermissionObservation[],
+    toolExecutions: [] as EngineToolExecutionObservation[]
+  };
+  const eventAbortController = new AbortController();
+  const upstreamAbortHandler = (): void => eventAbortController.abort();
+  input.abortSignal?.addEventListener("abort", upstreamAbortHandler, {
+    once: true
+  });
+  const eventStream = consumeOpenCodeEventStream({
+    abortSignal: eventAbortController.signal,
+    baseUrl: input.baseUrl,
+    env: input.env,
+    nodeId: input.nodeId,
+    onEvent: async (event) => {
+      const permissionRequest = normalizeOpenCodePermissionRequest(event);
+
+      if (permissionRequest && permissionRequest.sessionID === sessionId) {
+        const response = await resolveOpenCodePermission({
+          context: input.context,
+          output,
+          permissionRequest,
+          turnOptions: input.turnOptions
+        });
+        await answerOpenCodePermission({
+          ...(input.abortSignal ? { abortSignal: input.abortSignal } : {}),
+          baseUrl: input.baseUrl,
+          env: input.env,
+          nodeId: input.nodeId,
+          permissionRequest,
+          response,
+          timeoutMs: input.timeoutMs,
+          workspace: input.workspace
+        });
+      }
+
+      return (
+        processOpenCodeServerEvent({
+          event,
+          output,
+          sessionId
+        }) !== "idle"
+      );
+    },
+    timeoutMs: input.timeoutMs,
+    workspace: input.workspace
+  });
+
+  try {
+    await fetchOpenCodeJson({
+      ...(input.abortSignal ? { abortSignal: input.abortSignal } : {}),
+      baseUrl: input.baseUrl,
+      body: {
+        ...(input.context.agentRuntimeContext.defaultAgent ??
+        input.context.agentRuntimeContext.engineProfile.defaultAgent
+          ? {
+              agent:
+                input.context.agentRuntimeContext.defaultAgent ??
+                input.context.agentRuntimeContext.engineProfile.defaultAgent
+            }
+          : {}),
+        parts: [
+          {
+            text: buildOpenCodePrompt(input.request),
+            type: "text"
+          }
+        ]
+      },
+      env: input.env,
+      method: "POST",
+      nodeId: input.nodeId,
+      pathname: `/session/${encodeURIComponent(sessionId)}/prompt_async`,
+      timeoutMs: input.timeoutMs,
+      workspace: input.workspace
+    });
+
+    await eventStream;
+  } catch (error) {
+    eventAbortController.abort();
+    await eventStream.catch(() => undefined);
+    throw error;
+  } finally {
+    input.abortSignal?.removeEventListener("abort", upstreamAbortHandler);
+  }
+
+  await writeMappedOpenCodeSessionId({
+    entangleSessionId: input.request.sessionId,
+    openCodeSessionId: sessionId,
+    runtimePaths: input.runtimePaths
+  });
+
+  return buildOpenCodeTurnResult({
+    engineSessionId: sessionId,
+    engineVersion: formatOpenCodeEngineVersion({
+      serverVersion: input.serverVersion
+    }),
+    output,
+    providerStopReason: "opencode_server_idle"
+  });
+}
+
 export function createOpenCodeAgentEngine(input: {
   processTimeoutMs?: number;
   runtimeContext: EffectiveRuntimeContext;
@@ -1080,24 +1871,9 @@ export function createOpenCodeAgentEngine(input: {
         entangleSessionId: normalizedRequest.sessionId,
         runtimePaths
       });
-      const args = buildOpenCodeArgs({
-        context: input.runtimeContext,
-        ...(mappedSessionId ? { mappedSessionId } : {}),
-        request: normalizedRequest,
-        workspace
-      });
       const env = buildOpenCodeEnv({
         context: input.runtimeContext,
         runtimePaths
-      });
-      const cliVersion = await probeOpenCodeVersion({
-        env,
-        executable,
-        nodeId: normalizedRequest.nodeId,
-        spawn,
-        timeoutMs: processTimeoutMs,
-        ...(options?.abortSignal ? { abortSignal: options.abortSignal } : {}),
-        workspace
       });
       const serverVersion = profile.baseUrl
         ? await probeOpenCodeServerHealth({
@@ -1110,9 +1886,41 @@ export function createOpenCodeAgentEngine(input: {
               : {})
           })
         : undefined;
+
+      if (profile.baseUrl) {
+        return executeOpenCodeServerTurn({
+          ...(options?.abortSignal ? { abortSignal: options.abortSignal } : {}),
+          baseUrl: profile.baseUrl,
+          context: input.runtimeContext,
+          env,
+          ...(mappedSessionId ? { mappedSessionId } : {}),
+          nodeId: normalizedRequest.nodeId,
+          request: normalizedRequest,
+          runtimePaths,
+          ...(serverVersion ? { serverVersion } : {}),
+          timeoutMs: processTimeoutMs,
+          ...(options ? { turnOptions: options } : {}),
+          workspace
+        });
+      }
+
+      const args = buildOpenCodeArgs({
+        context: input.runtimeContext,
+        ...(mappedSessionId ? { mappedSessionId } : {}),
+        request: normalizedRequest,
+        workspace
+      });
+      const cliVersion = await probeOpenCodeVersion({
+        env,
+        executable,
+        nodeId: normalizedRequest.nodeId,
+        spawn,
+        timeoutMs: processTimeoutMs,
+        ...(options?.abortSignal ? { abortSignal: options.abortSignal } : {}),
+        workspace
+      });
       const engineVersion = formatOpenCodeEngineVersion({
-        cliVersion,
-        serverVersion
+        cliVersion
       });
       const child = spawn(executable, args, {
         cwd: workspace,
@@ -1153,109 +1961,11 @@ export function createOpenCodeAgentEngine(input: {
         });
       }
 
-      const rejectedPermissions = output.permissionObservations.filter(
-        (permissionObservation) =>
-          permissionObservation.decision === "denied" ||
-          permissionObservation.decision === "rejected"
-      );
-      const actionDirectives = extractEntangleActionDirectives(
-        output.assistantMessages
-      );
-
-      if (actionDirectives.errors.length > 0) {
-        return agentEngineTurnResultSchema.parse({
-          assistantMessages:
-            actionDirectives.assistantMessages.length > 0
-              ? actionDirectives.assistantMessages
-              : output.assistantMessages,
-          ...(engineVersion ? { engineVersion } : {}),
-          ...(output.engineSessionId
-            ? { engineSessionId: output.engineSessionId }
-            : {}),
-          failure: {
-            classification: "bad_request",
-            message: truncate(
-              actionDirectives.errors.join("\n"),
-              maxFailureMessageCharacters
-            )
-          },
-          permissionObservations: output.permissionObservations,
-          providerStopReason: "entangle_action_directive_parse_error",
-          stopReason: "error",
-          toolExecutions: output.toolExecutions,
-          toolRequests: []
-        });
-      }
-
-      if (rejectedPermissions.length > 0) {
-        const permissionSummary = rejectedPermissions
-          .map((permissionObservation) => {
-            const patterns =
-              permissionObservation.patterns.length > 0
-                ? ` (${permissionObservation.patterns.join(", ")})`
-                : "";
-
-            return `${permissionObservation.permission}${patterns}`;
-          })
-          .join("; ");
-
-        return agentEngineTurnResultSchema.parse({
-          assistantMessages: actionDirectives.assistantMessages,
-          ...(engineVersion ? { engineVersion } : {}),
-          ...(output.engineSessionId
-            ? { engineSessionId: output.engineSessionId }
-            : {}),
-          failure: {
-            classification: "policy_denied",
-            message: truncate(
-              `OpenCode requested permission and the one-shot CLI auto-rejected it: ${permissionSummary}.`,
-              maxFailureMessageCharacters
-            )
-          },
-          permissionObservations: output.permissionObservations,
-          providerStopReason: "opencode_permission_auto_rejected",
-          stopReason: "error",
-          toolExecutions: output.toolExecutions,
-          toolRequests: []
-        });
-      }
-
-      if (output.errors.length > 0) {
-        return agentEngineTurnResultSchema.parse({
-          assistantMessages: actionDirectives.assistantMessages,
-          ...(engineVersion ? { engineVersion } : {}),
-          ...(output.engineSessionId
-            ? { engineSessionId: output.engineSessionId }
-            : {}),
-          failure: {
-            classification: "unknown_provider_error",
-            message: truncate(
-              output.errors.join("\n"),
-              maxFailureMessageCharacters
-            )
-          },
-          permissionObservations: output.permissionObservations,
-          providerStopReason: "opencode_error_event",
-          stopReason: "error",
-          toolExecutions: output.toolExecutions,
-          toolRequests: []
-        });
-      }
-
-      return agentEngineTurnResultSchema.parse({
-        assistantMessages: actionDirectives.assistantMessages,
-        approvalRequestDirectives:
-          actionDirectives.approvalRequestDirectives,
+      return buildOpenCodeTurnResult({
+        ...(output.engineSessionId ? { engineSessionId: output.engineSessionId } : {}),
         ...(engineVersion ? { engineVersion } : {}),
-        ...(output.engineSessionId
-          ? { engineSessionId: output.engineSessionId }
-          : {}),
-        handoffDirectives: actionDirectives.handoffDirectives,
-        permissionObservations: output.permissionObservations,
-        providerStopReason: "opencode_process_exit_0",
-        stopReason: "completed",
-        toolExecutions: output.toolExecutions,
-        toolRequests: []
+        output,
+        providerStopReason: "opencode_process_exit_0"
       });
     }
   };

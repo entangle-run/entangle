@@ -1095,7 +1095,10 @@ function buildDefaultCatalog(): DeploymentResourceCatalog {
         ? "agent-engine"
         : undefined);
   const agentEnginePermissionMode =
-    process.env.ENTANGLE_DEFAULT_AGENT_ENGINE_PERMISSION_MODE === "auto_approve"
+    process.env.ENTANGLE_DEFAULT_AGENT_ENGINE_PERMISSION_MODE ===
+    "entangle_approval"
+      ? "entangle_approval"
+      : process.env.ENTANGLE_DEFAULT_AGENT_ENGINE_PERMISSION_MODE === "auto_approve"
       ? "auto_approve"
       : process.env.ENTANGLE_DEFAULT_AGENT_ENGINE_PERMISSION_MODE ===
           "auto_reject"

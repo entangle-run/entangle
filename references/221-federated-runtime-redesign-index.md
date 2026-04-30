@@ -362,6 +362,10 @@ The repository is not fully federated:
 - OpenCode engine profiles now support an explicit `permissionMode`; the
   adapter keeps conservative `auto_reject` behavior by default and passes
   `--dangerously-skip-permissions` only for opt-in `auto_approve` profiles;
+- attached OpenCode server profiles can now use `entangle_approval` mode, where
+  Entangle consumes OpenCode permission SSE events, sends signed
+  `approval.request` messages to the requesting User Node, waits for signed
+  approval responses, and replies to OpenCode's permission endpoint;
 - Host runtime inspection now projects the resolved engine permission mode, and
   shared host-client, CLI, and Studio runtime views display it with the
   selected engine profile;

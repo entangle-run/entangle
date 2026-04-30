@@ -22,6 +22,7 @@ import {
   agentEngineTurnRequestSchema,
   agentEngineTurnResultSchema,
   type AgentEngineFailureClassification,
+  type EnginePermissionObservation,
   type AgentEngineTurnRequest,
   type AgentEngineTurnResult,
   type EngineProviderMetadata,
@@ -33,6 +34,7 @@ import {
   type EngineToolRequest,
   type EngineToolExecutionResult,
   type ModelRuntimeContext,
+  type PolicyResourceScope,
   type ResolvedSecretBinding
 } from "@entangle/types";
 import type { AgentEngineToolExecutor } from "./tool-executor.js";
@@ -135,7 +137,28 @@ export interface AgentEngine {
 
 export interface AgentEngineTurnOptions {
   abortSignal?: AbortSignal;
+  requestPermission?: AgentEnginePermissionRequester;
 }
+
+export type AgentEnginePermissionRequest = {
+  metadata?: Record<string, unknown>;
+  operation: EnginePermissionObservation["operation"];
+  patterns: string[];
+  permission: string;
+  reason: string;
+  resource?: PolicyResourceScope;
+  toolCallId?: string;
+};
+
+export type AgentEnginePermissionResponse = {
+  approvalId?: string;
+  decision: "approved" | "rejected";
+  message?: string;
+};
+
+export type AgentEnginePermissionRequester = (
+  request: AgentEnginePermissionRequest
+) => Promise<AgentEnginePermissionResponse>;
 
 type AnthropicClientLike = {
   messages: {

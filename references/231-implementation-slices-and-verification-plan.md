@@ -764,9 +764,11 @@ Verification:
 
 ### Future Slice: Engine Adapter Upgrade
 
-Keep OpenCode default. Move beyond only one-shot `opencode run` where needed
-by attaching to OpenCode server APIs for sessions, permissions, events, abort,
-and long-running state. Preserve Entangle policy and projection ownership.
+Keep OpenCode default. The first attached-server path now moves permissioned
+turns beyond one-shot `opencode run` by using OpenCode server APIs for
+sessions, permission events, and permission replies. Remaining hardening is
+focused on live OpenCode/provider validation, abort coverage, and richer
+long-running state. Preserve Entangle policy and projection ownership.
 
 Implementation record:
 
@@ -791,6 +793,12 @@ Implementation record:
 - [460-agent-runtime-permission-mode-visibility-slice.md](460-agent-runtime-permission-mode-visibility-slice.md)
   exposes the resolved engine permission mode through Host runtime inspection,
   shared host-client formatting, CLI summaries, and Studio's runtime inspector.
+- [463-opencode-permission-bridge-slice.md](463-opencode-permission-bridge-slice.md)
+  adds the first real attached-server OpenCode permission bridge: Entangle can
+  consume OpenCode `permission.asked` SSE events, route them through the
+  runner's approval callback, publish signed `approval.request` messages to the
+  requesting User Node, wait for the signed approval response, and then reply to
+  OpenCode's `/permission/:requestID/reply` endpoint.
 
 Verification:
 
@@ -801,6 +809,7 @@ Verification:
 - OpenCode permission-mode schema and adapter tests;
 - runtime inspection permission-mode contract and presentation tests;
 - permission bridge tests;
+- attached OpenCode SSE/permission-reply bridge tests;
 - cancellation tests;
 - source/artifact/wiki observation tests;
 - bounded tool evidence contract and presentation tests.

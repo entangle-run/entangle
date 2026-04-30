@@ -18,16 +18,19 @@ confirms that `packages/opencode/src/cli/cmd/run.ts` exposes
 ## Target model
 
 Every coding node should have an explicit engine permission stance. In this
-intermediate CLI-adapter phase:
+mode-aware adapter phase:
 
 - `auto_reject` keeps current conservative OpenCode CLI behavior;
 - `auto_approve` passes `--dangerously-skip-permissions` to OpenCode so the
   engine can perform tool calls in the runner sandbox;
+- `entangle_approval` is the attached-server posture where Entangle handles
+  OpenCode permission events through signed approval requests before replying
+  to OpenCode;
 - Entangle still owns graph policy, runner isolation, source-change review,
   artifact handoff, wiki state, and User Node approvals.
 
-This does not replace the later attached-server permission bridge. It gives
-operators a clear, typed control while the deeper bridge is still open.
+The initial slice introduced the typed control; the attached-server bridge is
+now covered by `463-opencode-permission-bridge-slice.md`.
 
 ## Impacted modules and files
 
@@ -46,8 +49,8 @@ operators a clear, typed control while the deeper bridge is still open.
 
 ## Concrete changes required
 
-- Add `permissionMode` to `AgentEngineProfile` with `auto_reject` and
-  `auto_approve` values.
+- Add `permissionMode` to `AgentEngineProfile` with `auto_reject`,
+  `auto_approve`, and `entangle_approval` values.
 - Keep the default OpenCode profile conservative with `auto_reject`.
 - Allow `ENTANGLE_DEFAULT_AGENT_ENGINE_PERMISSION_MODE` to set the default
   catalog profile permission mode.
@@ -67,8 +70,8 @@ operators a clear, typed control while the deeper bridge is still open.
 
 Existing catalog profiles remain valid because `permissionMode` is optional.
 Default generated OpenCode profiles include `auto_reject`, preserving current
-behavior unless an operator opts into `auto_approve` through catalog config or
-`ENTANGLE_DEFAULT_AGENT_ENGINE_PERMISSION_MODE=auto_approve`.
+behavior unless an operator opts into `auto_approve` or `entangle_approval`
+through catalog config or `ENTANGLE_DEFAULT_AGENT_ENGINE_PERMISSION_MODE`.
 
 ## Risks and mitigations
 
@@ -76,15 +79,16 @@ behavior unless an operator opts into `auto_approve` through catalog config or
   Mitigation: the mode is explicit and opt-in; Entangle still runs the engine
   inside the assigned runner workspace and keeps source publication/review
   policy outside OpenCode.
-- Risk: users mistake this for the final policy bridge.
-  Mitigation: docs state that the attached-server permission bridge remains a
-  later slice.
+- Risk: users configure `entangle_approval` without an attached OpenCode
+  server profile.
+  Mitigation: the current bridge is intentionally scoped to profiles with
+  `baseUrl`; CLI-only fallback remains conservative.
 - Risk: custom non-OpenCode adapters interpret `permissionMode` differently.
   Mitigation: current runtime behavior only maps the field inside the OpenCode
   adapter.
 
 ## Open questions
 
-- The target permission bridge should subscribe to OpenCode permission events,
-  publish Entangle approval requests, and reply through OpenCode server routes
-  after signed User Node or operator decisions.
+- Future work should broaden bridge smoke coverage with a real OpenCode server
+  and live provider credentials; current automated coverage uses deterministic
+  HTTP/SSE fixtures.

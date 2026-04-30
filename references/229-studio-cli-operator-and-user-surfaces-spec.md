@@ -245,7 +245,8 @@ Node.
 - Studio tests for User Node runtime projection and User Client endpoint
   display.
 - User Client tests for state loading and selected-conversation message
-  publishing. Approval request construction remains open.
+  publishing, plus runner tests for engine-originated approval request
+  construction and signed approval-response resumption.
 - Regression tests for existing local runtime surfaces.
 
 ## Migration/Compatibility Notes
