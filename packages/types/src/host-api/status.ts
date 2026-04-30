@@ -144,6 +144,18 @@ export const hostOperatorSecurityStatusSchema = z.discriminatedUnion(
       operatorAuthMode: z.literal("bootstrap_operator_token"),
       operatorId: identifierSchema,
       operatorRole: operatorRoleSchema
+    }),
+    z.object({
+      operatorAuthMode: z.literal("bootstrap_operator_tokens"),
+      operatorCount: z.number().int().positive(),
+      operators: z
+        .array(
+          z.object({
+            operatorId: identifierSchema,
+            operatorRole: operatorRoleSchema
+          })
+        )
+        .min(2)
     })
   ]
 );

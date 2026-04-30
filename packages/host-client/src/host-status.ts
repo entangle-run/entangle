@@ -119,6 +119,10 @@ export function formatHostSecuritySummary(status: HostStatusResponse): string {
     return "none";
   }
 
+  if (security.operatorAuthMode === "bootstrap_operator_tokens") {
+    return `bootstrap operator tokens · ${security.operatorCount} operators`;
+  }
+
   return `bootstrap operator token · ${security.operatorId} · ${security.operatorRole}`;
 }
 

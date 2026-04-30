@@ -72,7 +72,10 @@ the active bootstrap operator security posture without exposing bearer-token
 material, and token-protected Hosts now enforce the bootstrap `viewer` role as
 read-only while recording `operatorRole` in protected mutation audit events.
 Shared host-client and CLI event summaries now render those audit events with
-operator id, role, method, path, status, and auth mode.
+operator id, role, method, path, status, and auth mode. Protected Hosts can now
+also distinguish multiple configured bootstrap operator bearer tokens through
+`ENTANGLE_HOST_OPERATOR_TOKENS_JSON`, exposing only tokenless operator ids and
+roles in Host status.
 Generated distributed proof profiles are now covered by a package-level
 contract and script-side validation, so malformed schema versions or
 assignment/runtime-kind mismatches fail before Host inspection.
@@ -684,6 +687,7 @@ files are the active federated redesign pack.
 440. [439-distributed-proof-profile-conversation-health-slice.md](439-distributed-proof-profile-conversation-health-slice.md)
 441. [440-distributed-proof-published-git-evidence-slice.md](440-distributed-proof-published-git-evidence-slice.md)
 442. [441-distributed-proof-published-git-ref-check-slice.md](441-distributed-proof-published-git-ref-check-slice.md)
+443. [442-bootstrap-multi-operator-auth-slice.md](442-bootstrap-multi-operator-auth-slice.md)
 
 ## Role of this corpus
 

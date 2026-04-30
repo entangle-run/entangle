@@ -5297,3 +5297,15 @@ machine has git reachability and credentials.
 requirement into the generated post-work profile and verifier script. The
 proof-tool smoke covers passing and wrong-commit self-test paths, while URL
 credentials are redacted from verifier details.
+
+## [2026-04-29] security | Added bootstrap multi-operator auth
+
+Added `references/442-bootstrap-multi-operator-auth-slice.md`. Protected Host
+deployments can now opt into `ENTANGLE_HOST_OPERATOR_TOKENS_JSON`, a JSON array
+of bootstrap operator token records, while keeping the existing
+`ENTANGLE_HOST_OPERATOR_TOKEN` path compatible.
+
+Host resolves HTTP bearer and WebSocket access tokens to distinct bootstrap
+operator ids and roles, keeps viewer tokens read-only, exposes plural
+tokenless Host status, rejects duplicate token configuration, and records
+matched operator attribution in protected mutation audit events.

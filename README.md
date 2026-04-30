@@ -313,15 +313,17 @@ This repository currently contains:
 - a host control-plane surface with persistent catalog, package-source, and
   graph state under `.entangle/host`;
 - an optional bootstrap host operator-token boundary through
-  `ENTANGLE_HOST_OPERATOR_TOKEN`, with bearer-token propagation through the
-  shared host client, CLI, and Studio for same-machine profiles that should not expose
-  an open mutation surface, plus typed `security` audit events for protected
-  mutation requests through `host.operator_request.completed`, and Host status
-  reporting of the active bootstrap operator security posture without exposing
-  token material; token-protected Hosts now enforce the bootstrap `viewer` role
-  as read-only and include `operatorRole` in protected mutation audit events;
-  host-client and CLI event summaries now render those audit events with
-  operator id, role, method, path, status, and auth mode;
+  `ENTANGLE_HOST_OPERATOR_TOKEN` or multiple records in
+  `ENTANGLE_HOST_OPERATOR_TOKENS_JSON`, with bearer-token propagation through
+  the shared host client, CLI, and Studio for same-machine profiles that should
+  not expose an open mutation surface, plus typed `security` audit events for
+  protected mutation requests through `host.operator_request.completed`, and
+  Host status reporting of the active bootstrap operator security posture
+  without exposing token material; token-protected Hosts now enforce the
+  bootstrap `viewer` role as read-only, include `operatorRole` in protected
+  mutation audit events, and can attribute requests to distinct bootstrap
+  operator tokens; host-client and CLI event summaries now render those audit
+  events with operator id, role, method, path, status, and auth mode;
 - host-managed external principal records for backend-facing identities such as
   git principals, exposed through the same host boundary, safely removable
   when unused, and resolved into effective runtime context rather than
@@ -583,9 +585,10 @@ This repository currently contains:
   service/namespace/repository when operators need to reclaim space or refresh
   stale backend clones;
 - Host status also surfaces bootstrap operator security mode, normalized
-  operator id, and bootstrap role when `ENTANGLE_HOST_OPERATOR_TOKEN` is
-  configured, while tokenless development reports that no operator auth mode is
-  active;
+  operator id and role for a single `ENTANGLE_HOST_OPERATOR_TOKEN`, or a
+  tokenless list of operator ids and roles for
+  `ENTANGLE_HOST_OPERATOR_TOKENS_JSON`, while tokenless development reports
+  that no operator auth mode is active;
 - the process-runner smoke now exercises the OpenCode adapter path with a
   temporary deterministic `opencode` executable inside the spawned agent
   runner process, mutates the source workspace, then verifies projected turn,
@@ -1242,9 +1245,10 @@ The highest-value remaining gaps are:
   behavior beyond explicit target publication, source-history merge/reconcile
   workflows, and replicated fallback paths;
 - production identity and authorization beyond the bootstrap operator-token
-  boundary, visible status summary, and coarse read-only `viewer` enforcement,
-  including durable principals, finer-grained policy-backed permissions, and
-  stronger audit retention than the current bootstrap request trace;
+  boundary, multi-token attribution, visible status summary, and coarse
+  read-only `viewer` enforcement, including durable principals, finer-grained
+  policy-backed permissions, and stronger audit retention than the current
+  bootstrap request trace;
 - stronger end-to-end deployment and integration hardening beyond the current
   disposable same-machine profile, especially infrastructure-backed
   multi-machine proof execution and non-disposable upgrade/repair behavior.

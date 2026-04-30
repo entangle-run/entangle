@@ -52,6 +52,9 @@ implemented.
 - Follow-up `432-operator-audit-event-presentation-slice.md` renders those
   audit events in host-client and CLI summary output with operator id, role,
   method, path, status, and auth mode.
+- Follow-up `442-bootstrap-multi-operator-auth-slice.md` preserves viewer
+  enforcement while resolving each configured bootstrap bearer token to its own
+  operator id and role.
 
 ## Tests Required
 
@@ -75,8 +78,10 @@ default normalized role remains `operator`, so existing token-protected
 development and proof flows keep their current mutation behavior.
 
 `host.operator_request.completed` now requires `operatorRole`; in-repo
-producers and fixtures have been updated. Entangle has not shipped a stable
-external Host event API, so this contract tightening is acceptable.
+producers and fixtures have been updated. Multi-token bootstrap deployments
+reuse the same event shape and fill it with the matched bootstrap operator
+principal. Entangle has not shipped a stable external Host event API, so this
+contract tightening is acceptable.
 
 ## Risks And Mitigations
 

@@ -47,7 +47,6 @@ import {
   hostProjectionSnapshotSchema,
   hostArtifactBackendCacheClearRequestSchema,
   hostArtifactBackendCacheClearResponseSchema,
-  operatorRoleSchema,
   nodeCreateRequestSchema,
   nodeDeletionResponseSchema,
   nodeInspectionResponseSchema,
@@ -220,6 +219,11 @@ import {
 } from "./host-federated-runtime.js";
 import { publishHostSessionLaunch } from "./session-launch.js";
 import { publishUserNodeA2AMessage } from "./user-node-messaging.js";
+import {
+  resolveHostOperatorPrincipalForRequest,
+  resolveHostOperatorPrincipalsFromEnv,
+  resolveUnauthorizedOperatorAuditPrincipal
+} from "./operator-auth.js";
 
 class HostHttpError extends Error {
   readonly code:
@@ -371,75 +375,6 @@ export type HostServerOptions = {
   federatedControlRelayUrls?: string[];
 };
 
-function normalizeOperatorToken(token: string | undefined): string | undefined {
-  const normalizedToken = token?.trim();
-  return normalizedToken && normalizedToken.length > 0
-    ? normalizedToken
-    : undefined;
-}
-
-function extractBearerToken(authorization: string | undefined): string | undefined {
-  const prefix = "Bearer ";
-
-  if (!authorization?.startsWith(prefix)) {
-    return undefined;
-  }
-
-  return normalizeOperatorToken(authorization.slice(prefix.length));
-}
-
-function extractWebSocketAccessToken(query: unknown): string | undefined {
-  if (typeof query !== "object" || query === null || !("access_token" in query)) {
-    return undefined;
-  }
-
-  const rawAccessToken = (query as { access_token?: unknown }).access_token;
-  return typeof rawAccessToken === "string"
-    ? normalizeOperatorToken(rawAccessToken)
-    : undefined;
-}
-
-function isWebSocketUpgrade(upgrade: string | undefined): boolean {
-  return upgrade?.toLowerCase() === "websocket";
-}
-
-function requestHasValidOperatorToken(input: {
-  authorization: string | undefined;
-  operatorToken: string;
-  query: unknown;
-  upgrade: string | undefined;
-}): boolean {
-  const bearerToken = extractBearerToken(input.authorization);
-
-  if (bearerToken === input.operatorToken) {
-    return true;
-  }
-
-  return (
-    isWebSocketUpgrade(input.upgrade) &&
-    extractWebSocketAccessToken(input.query) === input.operatorToken
-  );
-}
-
-function normalizeOperatorId(operatorId: string | undefined): string {
-  const normalizedOperatorId = operatorId?.trim();
-  const parsedOperatorId = identifierSchema.safeParse(normalizedOperatorId);
-
-  if (parsedOperatorId.success) {
-    return parsedOperatorId.data;
-  }
-
-  return "bootstrap-operator";
-}
-
-function normalizeOperatorRole(operatorRole: string | undefined): OperatorRole {
-  const parsedOperatorRole = operatorRoleSchema.safeParse(
-    operatorRole?.trim() || "operator"
-  );
-
-  return parsedOperatorRole.success ? parsedOperatorRole.data : "operator";
-}
-
 function isReadOnlyRequestMethod(method: string): boolean {
   return ["GET", "HEAD", "OPTIONS"].includes(method.toUpperCase());
 }
@@ -475,6 +410,26 @@ function stripRequestQuery(rawUrl: string): string {
   const path = queryIndex === -1 ? rawUrl : rawUrl.slice(0, queryIndex);
 
   return path.length > 0 ? path : "/";
+}
+
+type HostOperatorRequestContext = {
+  operatorId: string;
+  operatorRole: OperatorRole;
+};
+
+function setHostOperatorRequestContext(
+  request: unknown,
+  context: HostOperatorRequestContext
+) {
+  (request as { hostOperatorRequestContext?: HostOperatorRequestContext })
+    .hostOperatorRequestContext = context;
+}
+
+function getHostOperatorRequestContext(
+  request: unknown
+): HostOperatorRequestContext | undefined {
+  return (request as { hostOperatorRequestContext?: HostOperatorRequestContext })
+    .hostOperatorRequestContext;
 }
 
 function parseRequestInput<T>(
@@ -1045,26 +1000,26 @@ export async function buildHostServer(options: HostServerOptions = {}) {
   const server = Fastify({
     logger: process.env.ENTANGLE_HOST_LOGGER === "false" ? false : true
   });
-  const operatorToken = normalizeOperatorToken(
-    process.env.ENTANGLE_HOST_OPERATOR_TOKEN
-  );
+  const operatorPrincipals = resolveHostOperatorPrincipalsFromEnv();
+  const operatorAuthRequired = operatorPrincipals.length > 0;
+  const unauthorizedOperatorAuditPrincipal =
+    resolveUnauthorizedOperatorAuditPrincipal(operatorPrincipals);
   await server.register(websocket);
 
-  if (operatorToken) {
-    const operatorId = normalizeOperatorId(process.env.ENTANGLE_HOST_OPERATOR_ID);
-    const operatorRole = normalizeOperatorRole(
-      process.env.ENTANGLE_HOST_OPERATOR_ROLE
-    );
-
+  if (operatorAuthRequired) {
     server.addHook("preHandler", (request, reply, done) => {
-      if (
-        !requestHasValidOperatorToken({
-          authorization: request.headers.authorization,
-          operatorToken,
-          query: request.query,
-          upgrade: request.headers.upgrade
-        })
-      ) {
+      setHostOperatorRequestContext(
+        request,
+        unauthorizedOperatorAuditPrincipal
+      );
+      const operatorPrincipal = resolveHostOperatorPrincipalForRequest({
+        authorization: request.headers.authorization,
+        principals: operatorPrincipals,
+        query: request.query,
+        upgrade: request.headers.upgrade
+      });
+
+      if (!operatorPrincipal) {
         reply.header("www-authenticate", "Bearer realm=\"entangle-host\"");
         reply.status(401).send(
           hostErrorResponseSchema.parse({
@@ -1075,18 +1030,20 @@ export async function buildHostServer(options: HostServerOptions = {}) {
         return;
       }
 
+      setHostOperatorRequestContext(request, operatorPrincipal);
+
       if (
         !operatorRoleAllowsRequest({
           method: request.method,
-          role: operatorRole
+          role: operatorPrincipal.operatorRole
         })
       ) {
         reply.status(403).send(
           hostErrorResponseSchema.parse({
             code: "forbidden",
             message:
-              `Entangle host operator role '${operatorRole}' is not allowed ` +
-              `to perform ${request.method.toUpperCase()} requests.`
+              `Entangle host operator role '${operatorPrincipal.operatorRole}' ` +
+              `is not allowed to perform ${request.method.toUpperCase()} requests.`
           })
         );
         return;
@@ -1103,6 +1060,9 @@ export async function buildHostServer(options: HostServerOptions = {}) {
       }
 
       const path = stripRequestQuery(request.url);
+      const operatorContext =
+        getHostOperatorRequestContext(request) ??
+        unauthorizedOperatorAuditPrincipal;
 
       try {
         await recordHostOperatorRequestCompleted({
@@ -1110,8 +1070,8 @@ export async function buildHostServer(options: HostServerOptions = {}) {
           category: "security",
           message: `Host operator request '${method} ${path}' completed with status ${reply.statusCode}.`,
           method,
-          operatorId,
-          operatorRole,
+          operatorId: operatorContext.operatorId,
+          operatorRole: operatorContext.operatorRole,
           path,
           requestId: String(request.id),
           statusCode: reply.statusCode,
@@ -1661,10 +1621,10 @@ export async function buildHostServer(options: HostServerOptions = {}) {
       const socket = rawSocket as HostEventStreamSocket;
 
       if (
-        operatorToken &&
-        !requestHasValidOperatorToken({
+        operatorAuthRequired &&
+        !resolveHostOperatorPrincipalForRequest({
           authorization: request.headers.authorization,
-          operatorToken,
+          principals: operatorPrincipals,
           query: request.query,
           upgrade: request.headers.upgrade
         })
@@ -2077,11 +2037,11 @@ export async function buildHostServer(options: HostServerOptions = {}) {
   });
 
   server.get("/v1/runtimes/:nodeId/bootstrap-bundle", async (request, reply) => {
-    if (!operatorToken) {
+    if (!operatorAuthRequired) {
       throw new HostHttpError({
         code: "conflict",
         message:
-          "Runtime bootstrap bundle export requires ENTANGLE_HOST_OPERATOR_TOKEN so the Host API request is authenticated.",
+          "Runtime bootstrap bundle export requires a configured Host operator token so the Host API request is authenticated.",
         statusCode: 409
       });
     }
@@ -2116,11 +2076,11 @@ export async function buildHostServer(options: HostServerOptions = {}) {
   });
 
   server.get("/v1/runtimes/:nodeId/identity-secret", async (request, reply) => {
-    if (!operatorToken) {
+    if (!operatorAuthRequired) {
       throw new HostHttpError({
         code: "conflict",
         message:
-          "Runtime identity secret export requires ENTANGLE_HOST_OPERATOR_TOKEN so the Host API request is authenticated.",
+          "Runtime identity secret export requires a configured Host operator token so the Host API request is authenticated.",
         statusCode: 409
       });
     }

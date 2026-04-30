@@ -270,8 +270,9 @@ pnpm --filter @entangle/cli dev runners join-config \
 pnpm --filter @entangle/runner start join --config runner-join.json
 ```
 
-If the Host is protected by `ENTANGLE_HOST_OPERATOR_TOKEN`, also make a Host
-token available to the runner and pass `--host-token-env-var ENTANGLE_HOST_TOKEN`
+If the Host is protected by `ENTANGLE_HOST_OPERATOR_TOKEN` or a record from
+`ENTANGLE_HOST_OPERATOR_TOKENS_JSON`, also make the selected Host token
+available to the runner and pass `--host-token-env-var ENTANGLE_HOST_TOKEN`
 when generating the join config.
 
 To verify the support-bundle path against an already-running federated dev
@@ -304,7 +305,8 @@ Environment overrides:
 - `ENTANGLE_STUDIO_URL`
 - `ENTANGLE_GITEA_URL`
 - `ENTANGLE_RELAY_URL` or `ENTANGLE_STRFRY_URL`
-- `ENTANGLE_HOST_TOKEN` or `ENTANGLE_HOST_OPERATOR_TOKEN`
+- `ENTANGLE_HOST_TOKEN`, `ENTANGLE_HOST_OPERATOR_TOKEN`, or a token from
+  `ENTANGLE_HOST_OPERATOR_TOKENS_JSON`
 - `ENTANGLE_SMOKE_TIMEOUT_MS`
 
 Use `--skip-compose` only when validating endpoint reachability outside the
@@ -385,11 +387,15 @@ Override these with `ENTANGLE_DOCKER_HUMAN_INTERFACE_PORT_BASE`,
 
 The federated dev profile defaults to a tokenless host for development
 ergonomics. Set `ENTANGLE_HOST_OPERATOR_TOKEN` on the `host` service when a
-federated dev profile must reject unauthenticated host access.
+federated dev profile must reject unauthenticated host access, or set
+`ENTANGLE_HOST_OPERATOR_TOKENS_JSON` when the profile should distinguish
+multiple bootstrap operators.
 
 Studio can propagate the token through `VITE_ENTANGLE_HOST_TOKEN`. The CLI can
 use `--host-token`, `ENTANGLE_HOST_TOKEN`, or
-`ENTANGLE_HOST_OPERATOR_TOKEN` fallback.
+`ENTANGLE_HOST_OPERATOR_TOKEN` fallback. For multi-token deployments, set
+`ENTANGLE_HOST_TOKEN` or pass `--host-token` with the specific operator token
+you want that client to use.
 
 ## Runtime State
 

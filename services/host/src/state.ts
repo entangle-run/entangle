@@ -71,8 +71,6 @@ import {
   hostAuthorityInspectionResponseSchema,
   type HostAuthorityRecord,
   hostAuthorityRecordSchema,
-  identifierSchema,
-  operatorRoleSchema,
   type HostTransportPlaneHealth,
   type HostTransportPlaneStatus,
   type HostTransportRelayHealth,
@@ -344,6 +342,7 @@ import {
   type ReconciliationSnapshot,
   type ValidationReport,
 } from "@entangle/types";
+import { buildHostOperatorSecurityStatusFromEnv } from "./operator-auth.js";
 import {
   validateDeploymentResourceCatalogDocument,
   validateGraphDocument,
@@ -13492,32 +13491,8 @@ async function buildArtifactBackendCacheStatus(timestamp: string) {
   }
 }
 
-function normalizeBootstrapOperatorId(value: string | undefined): string {
-  const parsed = identifierSchema.safeParse(value?.trim() ?? "");
-  return parsed.success ? parsed.data : "bootstrap-operator";
-}
-
-function normalizeBootstrapOperatorRole(value: string | undefined) {
-  const parsed = operatorRoleSchema.safeParse(value?.trim() || "operator");
-  return parsed.success ? parsed.data : "operator";
-}
-
 function buildHostOperatorSecurityStatus() {
-  if (!process.env.ENTANGLE_HOST_OPERATOR_TOKEN?.trim()) {
-    return {
-      operatorAuthMode: "none" as const
-    };
-  }
-
-  return {
-    operatorAuthMode: "bootstrap_operator_token" as const,
-    operatorId: normalizeBootstrapOperatorId(
-      process.env.ENTANGLE_HOST_OPERATOR_ID
-    ),
-    operatorRole: normalizeBootstrapOperatorRole(
-      process.env.ENTANGLE_HOST_OPERATOR_ROLE
-    )
-  };
+  return buildHostOperatorSecurityStatusFromEnv();
 }
 
 function buildArtifactBackendCacheTargetPrefix(input: {

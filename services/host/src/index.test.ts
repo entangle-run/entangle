@@ -918,6 +918,7 @@ afterEach(async () => {
   delete process.env.ENTANGLE_DEFAULT_GIT_REMOTE_BASE;
   delete process.env.ENTANGLE_DEFAULT_GIT_TRANSPORT;
   delete process.env.ENTANGLE_HOST_OPERATOR_TOKEN;
+  delete process.env.ENTANGLE_HOST_OPERATOR_TOKENS_JSON;
   delete process.env.ENTANGLE_HOST_OPERATOR_ID;
   delete process.env.ENTANGLE_HOST_OPERATOR_ROLE;
   delete process.env.ENTANGLE_HOST_LOGGER;
@@ -1072,6 +1073,146 @@ describe("buildHostServer", () => {
     } finally {
       await server.close();
     }
+  });
+
+  it("authorizes multiple bootstrap operator tokens with distinct audit identities", async () => {
+    process.env.ENTANGLE_HOST_OPERATOR_TOKENS_JSON = JSON.stringify([
+      {
+        operatorId: "ops-admin",
+        operatorRole: "admin",
+        token: "admin-secret"
+      },
+      {
+        operatorId: "audit-viewer",
+        role: "viewer",
+        token: "viewer-secret"
+      }
+    ]);
+    const server = await createTestServer();
+
+    try {
+      const statusResponse = await server.inject({
+        headers: {
+          authorization: "Bearer viewer-secret"
+        },
+        method: "GET",
+        url: "/v1/host/status"
+      });
+
+      expect(statusResponse.statusCode).toBe(200);
+      expect(hostStatusResponseSchema.parse(statusResponse.json()).security).toEqual({
+        operatorAuthMode: "bootstrap_operator_tokens",
+        operatorCount: 2,
+        operators: [
+          {
+            operatorId: "ops-admin",
+            operatorRole: "admin"
+          },
+          {
+            operatorId: "audit-viewer",
+            operatorRole: "viewer"
+          }
+        ]
+      });
+
+      const viewerMutationResponse = await server.inject({
+        headers: {
+          authorization: "Bearer viewer-secret"
+        },
+        method: "PUT",
+        payload: {},
+        url: "/v1/catalog"
+      });
+
+      expect(viewerMutationResponse.statusCode).toBe(403);
+
+      const principal = buildGitPrincipalRecord({
+        principalId: "worker-it-git-multi-token"
+      });
+      const adminMutationResponse = await server.inject({
+        headers: {
+          authorization: "Bearer admin-secret"
+        },
+        method: "PUT",
+        payload: principal,
+        url: "/v1/external-principals/worker-it-git-multi-token"
+      });
+
+      expect(adminMutationResponse.statusCode).toBe(200);
+
+      const unauthenticatedMutationResponse = await server.inject({
+        method: "PUT",
+        payload: principal,
+        url: "/v1/external-principals/worker-it-git-multi-token"
+      });
+
+      expect(unauthenticatedMutationResponse.statusCode).toBe(401);
+
+      const eventsResponse = await server.inject({
+        headers: {
+          authorization: "Bearer admin-secret"
+        },
+        method: "GET",
+        url: "/v1/events?limit=20"
+      });
+      const events = hostEventListResponseSchema.parse(eventsResponse.json()).events;
+
+      expect(events).toEqual(
+        expect.arrayContaining([
+          expect.objectContaining({
+            authMode: "bootstrap_operator_token",
+            category: "security",
+            method: "PUT",
+            operatorId: "audit-viewer",
+            operatorRole: "viewer",
+            path: "/v1/catalog",
+            statusCode: 403,
+            type: "host.operator_request.completed"
+          }),
+          expect.objectContaining({
+            authMode: "bootstrap_operator_token",
+            category: "security",
+            method: "PUT",
+            operatorId: "ops-admin",
+            operatorRole: "admin",
+            path: "/v1/external-principals/worker-it-git-multi-token",
+            statusCode: 200,
+            type: "host.operator_request.completed"
+          }),
+          expect.objectContaining({
+            authMode: "bootstrap_operator_token",
+            category: "security",
+            method: "PUT",
+            operatorId: "unauthorized-operator",
+            operatorRole: "viewer",
+            path: "/v1/external-principals/worker-it-git-multi-token",
+            statusCode: 401,
+            type: "host.operator_request.completed"
+          })
+        ])
+      );
+    } finally {
+      await server.close();
+    }
+  });
+
+  it("rejects ambiguous duplicate bootstrap operator token values", async () => {
+    process.env.ENTANGLE_HOST_OPERATOR_TOKENS_JSON = JSON.stringify([
+      {
+        operatorId: "ops-admin",
+        operatorRole: "admin",
+        token: "shared-secret"
+      },
+      {
+        operatorId: "audit-viewer",
+        operatorRole: "viewer",
+        token: "shared-secret"
+      }
+    ]);
+
+    await expect(createTestServer()).rejects.toThrow(
+      "Host operator token configuration contains duplicate token values."
+    );
   });
 
   it("dry-runs and clears the derived artifact backend cache", async () => {

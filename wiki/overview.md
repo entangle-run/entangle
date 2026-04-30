@@ -328,9 +328,10 @@ operators can dry-run, clear, age-prune, max-size-prune, or target-prune by
 git service/namespace/repository without mutating authoritative artifact or
 projection state. Studio renders the same summary in the Host Status panel.
 Host status now also reports the active bootstrap operator security posture:
-tokenless deployments report `none`, while `ENTANGLE_HOST_OPERATOR_TOKEN`
-deployments report normalized operator id and bootstrap role without exposing
-the token.
+tokenless deployments report `none`, single-token
+`ENTANGLE_HOST_OPERATOR_TOKEN` deployments report normalized operator id and
+bootstrap role, and `ENTANGLE_HOST_OPERATOR_TOKENS_JSON` deployments report a
+tokenless list of bootstrap operator ids and roles.
 CLI can now generate a Host-derived `runner-join.json` with
 `entangle runners join-config`, and the runner package advertises
 `entangle-runner join --config` for generic runner startup outside smoke
@@ -389,15 +390,17 @@ The repository now also contains the first real implementation baseline:
   inspection/apply, runtime inspection, runtime context access, and runtime
   desired-state mutation;
 - an optional bootstrap host operator-token boundary through
-  `ENTANGLE_HOST_OPERATOR_TOKEN`, with bearer-token propagation through the
-  shared host client, CLI, and Studio while the default same-machine profile remains
-  tokenless for low-friction development, plus typed `security` audit events
-  for protected mutation requests through `host.operator_request.completed`
-  and operator-visible Host status reporting of the active bootstrap security
-  posture; token-protected Hosts now enforce the bootstrap `viewer` role as
-  read-only and include `operatorRole` in protected mutation audit events, and
-  host-client/CLI event summaries now render those audit events with operator
-  id, role, method, path, status, and auth mode;
+  `ENTANGLE_HOST_OPERATOR_TOKEN` or multiple
+  `ENTANGLE_HOST_OPERATOR_TOKENS_JSON` records, with bearer-token propagation
+  through the shared host client, CLI, and Studio while the default same-machine
+  profile remains tokenless for low-friction development, plus typed
+  `security` audit events for protected mutation requests through
+  `host.operator_request.completed` and operator-visible Host status reporting
+  of the active bootstrap security posture; token-protected Hosts now enforce
+  the bootstrap `viewer` role as read-only, include `operatorRole` in protected
+  mutation audit events, can attribute requests to distinct bootstrap
+  operators, and host-client/CLI event summaries now render those audit events
+  with operator id, role, method, path, status, and auth mode;
 - host-side runtime materialization for effective bindings, runtime intents,
   observed runtime records, workspace layout, immutable package-store-backed
   package surfaces, injected runtime context, and stable per-node runtime
@@ -1140,10 +1143,10 @@ The current implementation-truth audit now lives in
   autonomous `task.handoff` emission and runner-local active-conversation
   reconciliation plus host-derived conversation lifecycle diagnostics and
   consistency findings are implemented;
-- deepen the bootstrap host operator-token boundary, request audit, status
-  reporting, and coarse read-only `viewer` enforcement into real production
-  identity and authorization only through explicit contracts, tests, policy
-  decisions, enforced roles, and operator-visible attribution;
+- deepen the bootstrap host operator-token boundary, multi-token request audit,
+  status reporting, and coarse read-only `viewer` enforcement into real
+  production identity and authorization only through explicit contracts, tests,
+  policy decisions, enforced roles, and operator-visible attribution;
 - continue broadening normalized provider metadata and bounded failure
   reporting only where later provider adapters justify new canonical fields,
   and otherwise deepen model-guided memory maintenance on top of the now

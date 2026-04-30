@@ -242,6 +242,7 @@ same-machine slice records.
 - [439-distributed-proof-profile-conversation-health-slice.md](439-distributed-proof-profile-conversation-health-slice.md)
 - [440-distributed-proof-published-git-evidence-slice.md](440-distributed-proof-published-git-evidence-slice.md)
 - [441-distributed-proof-published-git-ref-check-slice.md](441-distributed-proof-published-git-ref-check-slice.md)
+- [442-bootstrap-multi-operator-auth-slice.md](442-bootstrap-multi-operator-auth-slice.md)
 
 ## Audited Scope
 
@@ -819,7 +820,12 @@ and role. Token-protected deployments now also enforce the bootstrap `viewer`
 role as read-only and include `operatorRole` in protected mutation audit
 events. Shared host-client/CLI event summaries now render those audit events
 with operator id, role, method, path, status, and auth mode instead of a
-generic event-type label. This remains bootstrap authorization, not final production RBAC.
+generic event-type label. Protected Hosts can now also opt into multiple
+bootstrap operator bearer tokens through `ENTANGLE_HOST_OPERATOR_TOKENS_JSON`;
+each token resolves to a distinct operator id and role for authorization,
+status, and request-audit attribution while preserving the existing
+single-token environment contract. This remains bootstrap authorization, not
+final production RBAC.
 `pnpm ops:smoke-distributed-proof-tools` now gives CI a
 deterministic no-infrastructure smoke for proof-kit dry-runs and verifier
 self-test JSON, including default rejection of non-running runtime
@@ -847,4 +853,5 @@ published git artifact locators to prove the advertised branch contains the
 projected commit. The remaining blocking implementation
 areas are richer
 projection-backed source/wiki review services, infrastructure-backed
-multi-machine proof execution, and deeper production identity/authorization.
+multi-machine proof execution, and deeper production identity/authorization
+beyond the bootstrap multi-token boundary.

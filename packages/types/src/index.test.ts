@@ -3969,6 +3969,76 @@ describe("reconciliation contracts", () => {
     expect(result.transport.controlObserve.status).toBe("degraded");
   });
 
+  it("accepts multi-operator bootstrap host auth status", () => {
+    const result = hostStatusResponseSchema.parse({
+      reconciliation: {
+        backendKind: "memory",
+        blockedRuntimeCount: 0,
+        degradedRuntimeCount: 0,
+        failedRuntimeCount: 0,
+        findingCodes: [],
+        issueCount: 0,
+        managedRuntimeCount: 0,
+        runningRuntimeCount: 0,
+        stoppedRuntimeCount: 0,
+        transitioningRuntimeCount: 0
+      },
+      runtimeCounts: {
+        desired: 0,
+        observed: 0,
+        running: 0
+      },
+      security: {
+        operatorAuthMode: "bootstrap_operator_tokens",
+        operatorCount: 2,
+        operators: [
+          {
+            operatorId: "ops-admin",
+            operatorRole: "admin"
+          },
+          {
+            operatorId: "audit-viewer",
+            operatorRole: "viewer"
+          }
+        ]
+      },
+      service: "entangle-host",
+      stateLayout: {
+        checkedAt: "2026-04-29T00:00:00.000Z",
+        currentLayoutVersion: 1,
+        minimumSupportedLayoutVersion: 1,
+        recordedAt: "2026-04-29T00:00:00.000Z",
+        recordedLayoutVersion: 1,
+        status: "current"
+      },
+      status: "healthy",
+      timestamp: "2026-04-29T00:00:00.000Z",
+      transport: {
+        controlObserve: {
+          configuredRelayCount: 0,
+          relayUrls: [],
+          status: "disabled",
+          updatedAt: "2026-04-29T00:00:00.000Z"
+        }
+      }
+    });
+
+    expect(result.security).toEqual({
+      operatorAuthMode: "bootstrap_operator_tokens",
+      operatorCount: 2,
+      operators: [
+        {
+          operatorId: "ops-admin",
+          operatorRole: "admin"
+        },
+        {
+          operatorId: "audit-viewer",
+          operatorRole: "viewer"
+        }
+      ]
+    });
+  });
+
   it("accepts artifact backend cache clear responses", () => {
     const result = hostArtifactBackendCacheClearResponseSchema.parse({
       completedAt: "2026-04-24T00:00:01.000Z",

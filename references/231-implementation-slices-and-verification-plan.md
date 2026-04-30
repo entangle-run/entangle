@@ -460,7 +460,11 @@ Current status:
   summary for admin visibility;
 - Host status now reports the active bootstrap operator security posture,
   including tokenless mode or normalized bootstrap operator id and role for
-  token-protected deployments, without exposing bearer-token material;
+  token-protected deployments, without exposing bearer-token material; protected
+  Hosts can now also opt into multiple bootstrap operator tokens through
+  `ENTANGLE_HOST_OPERATOR_TOKENS_JSON`, with each token resolving to a distinct
+  operator id and role for status, authorization, and request-audit
+  attribution;
 - token-protected Hosts now enforce the bootstrap `viewer` role as read-only
   while keeping `operator`, `admin`, and `owner` compatible with existing Host
   mutation behavior, and protected mutation audit events now include
@@ -974,11 +978,12 @@ Current status:
 - Studio displays the artifact backend cache summary in the Host Status panel;
 - Host status exposes bootstrap operator security mode and normalized
   bootstrap attribution; token-protected Hosts now enforce `viewer` as a
-  read-only bootstrap role and record `operatorRole` on protected mutation
-  audit events while keeping production identity/authorization as an explicit
-  remaining hardening track; host-client and CLI summary output now presents
-  those audit events with operator id, role, method, path, status, and auth
-  mode;
+  read-only bootstrap role, can distinguish multiple configured bootstrap
+  operator tokens, and record matched operator identity/role on protected
+  mutation audit events while keeping production identity/authorization as an
+  explicit remaining hardening track; host-client and CLI summary output now
+  presents those audit events with operator id, role, method, path, status, and
+  auth mode;
 - the running User Client can load artifact history/diff evidence through
   runtime-local JSON routes backed by Host artifact read APIs;
 - those User Client artifact routes require conversation context and verify the

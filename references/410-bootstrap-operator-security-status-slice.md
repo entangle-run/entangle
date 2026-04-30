@@ -20,7 +20,10 @@ Host status now includes a required `security` object:
 
 Follow-up `431-bootstrap-viewer-operator-authorization-slice.md` now enforces
 the bootstrap `viewer` role as read-only and records `operatorRole` on
-protected mutation audit events. This is still bootstrap security, not
+protected mutation audit events. Follow-up
+`442-bootstrap-multi-operator-auth-slice.md` now lets protected Hosts expose a
+plural, tokenless bootstrap operator status shape for
+`ENTANGLE_HOST_OPERATOR_TOKENS_JSON`. This is still bootstrap security, not
 production RBAC.
 
 ## Current Repo Truth
@@ -45,7 +48,9 @@ The field is intentionally small:
 - it says whether Host is token-protected;
 - it exposes normalized bootstrap operator attribution;
 - it exposes the configured bootstrap role for operator visibility;
-- it leaves final multi-principal authorization to later explicit contracts.
+- it supports opt-in bootstrap multi-principal attribution through
+  `ENTANGLE_HOST_OPERATOR_TOKENS_JSON`;
+- it leaves final production authorization to later explicit contracts.
 
 ## Impacted Modules And Files
 
@@ -122,6 +127,25 @@ Invalid or absent `ENTANGLE_HOST_OPERATOR_ID` continues to normalize to
 `bootstrap-operator`. Invalid or absent `ENTANGLE_HOST_OPERATOR_ROLE` normalizes
 to `operator`.
 
+Opt-in multi-token deployments report tokenless principal metadata:
+
+```json
+{
+  "operatorAuthMode": "bootstrap_operator_tokens",
+  "operatorCount": 2,
+  "operators": [
+    {
+      "operatorId": "ops-admin",
+      "operatorRole": "admin"
+    },
+    {
+      "operatorId": "audit-viewer",
+      "operatorRole": "viewer"
+    }
+  ]
+}
+```
+
 ## Risks And Mitigations
 
 - Risk: operators mistake the role field for enforced RBAC.
@@ -137,8 +161,10 @@ to `operator`.
 ## Open Questions
 
 - Partially addressed by
-  `431-bootstrap-viewer-operator-authorization-slice.md`: `viewer` is now a
-  real read-only bootstrap role, but the durable principal model is still open.
+  `431-bootstrap-viewer-operator-authorization-slice.md` and
+  `442-bootstrap-multi-operator-auth-slice.md`: `viewer` is now a real
+  read-only bootstrap role and bootstrap deployments can distinguish multiple
+  token principals, but the durable principal model is still open.
 - What durable principal model replaces the bootstrap token?
 - Should future operator identities be signed Nostr principals, web session
   principals, service tokens, or a combination?
