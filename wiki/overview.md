@@ -332,7 +332,8 @@ tokenless deployments report `none`, single-token
 `ENTANGLE_HOST_OPERATOR_TOKEN` deployments report normalized operator id and
 bootstrap role, and `ENTANGLE_HOST_OPERATOR_TOKENS_JSON` deployments report a
 tokenless list of bootstrap operator ids and roles. Multi-token records can
-use `tokenSha256` instead of raw token values.
+use `tokenSha256` instead of raw token values and can opt into explicit Host
+permissions for scoped bootstrap access.
 CLI can now generate a Host-derived `runner-join.json` with
 `entangle runners join-config`, and the runner package advertises
 `entangle-runner join --config` for generic runner startup outside smoke
@@ -1147,10 +1148,10 @@ The current implementation-truth audit now lives in
   reconciliation plus host-derived conversation lifecycle diagnostics and
   consistency findings are implemented;
 - deepen the bootstrap host operator-token boundary, multi-token request audit,
-  status reporting, server-filterable event inspection, and coarse read-only
-  `viewer` enforcement into real production identity and authorization only
-  through explicit contracts, tests, policy decisions, enforced roles, and
-  operator-visible attribution;
+  status reporting, server-filterable event inspection, route-level bootstrap
+  permissions, and coarse read-only `viewer` enforcement into real production
+  identity and authorization only through explicit contracts, tests, policy
+  decisions, enforced roles, and operator-visible attribution;
 - continue broadening normalized provider metadata and bounded failure
   reporting only where later provider adapters justify new canonical fields,
   and otherwise deepen model-guided memory maintenance on top of the now

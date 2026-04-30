@@ -1,6 +1,9 @@
 import { z } from "zod";
 import { identifierSchema, nonEmptyStringSchema } from "../common/primitives.js";
-import { operatorRoleSchema } from "../federation/authority.js";
+import {
+  operatorPermissionSchema,
+  operatorRoleSchema
+} from "../federation/authority.js";
 import { hostAuthoritySummarySchema } from "./authority.js";
 import { runtimeReconciliationFindingCodeSchema } from "../runtime/reconciliation.js";
 import { runtimeBackendKindSchema } from "../runtime/runtime-state.js";
@@ -143,6 +146,7 @@ export const hostOperatorSecurityStatusSchema = z.discriminatedUnion(
     z.object({
       operatorAuthMode: z.literal("bootstrap_operator_token"),
       operatorId: identifierSchema,
+      operatorPermissions: z.array(operatorPermissionSchema).optional(),
       operatorRole: operatorRoleSchema
     }),
     z.object({
@@ -152,6 +156,7 @@ export const hostOperatorSecurityStatusSchema = z.discriminatedUnion(
         .array(
           z.object({
             operatorId: identifierSchema,
+            operatorPermissions: z.array(operatorPermissionSchema).optional(),
             operatorRole: operatorRoleSchema
           })
         )

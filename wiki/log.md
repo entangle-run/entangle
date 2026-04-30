@@ -5329,3 +5329,14 @@ Added `references/444-hashed-bootstrap-operator-token-slice.md`.
 of raw `token` material. Host normalizes bootstrap operator principals to
 SHA-256 token hashes internally and still preserves existing single-token and
 raw multi-token compatibility.
+
+## [2026-04-29] security | Added scoped bootstrap operator permissions
+
+Added `references/445-bootstrap-operator-permissions-slice.md`. Bootstrap
+operator token records can now declare explicit Host permissions, and
+single-token deployments can use `ENTANGLE_HOST_OPERATOR_PERMISSIONS`.
+
+Host enforces scoped permissions before route handlers while keeping unscoped
+role-compatible behavior for existing deployments. Host status and
+`host.operator_request.completed` audit events expose configured permission
+names without exposing bearer-token material.

@@ -19,6 +19,7 @@ import {
   graphRevisionListResponseSchema,
   type HostEventRecord,
   type HostOperatorRequestMethod,
+  type OperatorPermission,
   type OperatorRole,
   type ArtifactRef,
   type GitRepositoryTargetSelector,
@@ -222,7 +223,8 @@ import { publishUserNodeA2AMessage } from "./user-node-messaging.js";
 import {
   resolveHostOperatorPrincipalForRequest,
   resolveHostOperatorPrincipalsFromEnv,
-  resolveUnauthorizedOperatorAuditPrincipal
+  resolveUnauthorizedOperatorAuditPrincipal,
+  type HostOperatorPrincipal
 } from "./operator-auth.js";
 
 class HostHttpError extends Error {
@@ -388,6 +390,76 @@ function operatorRoleAllowsRequest(input: {
     : true;
 }
 
+function resolveRequiredOperatorPermission(input: {
+  method: string;
+  path: string;
+}): OperatorPermission {
+  if (isReadOnlyRequestMethod(input.method)) {
+    return "host.read";
+  }
+
+  if (input.path === "/v1/authority/import") {
+    return "host.authority.write";
+  }
+
+  if (input.path.startsWith("/v1/host/artifact-backend-cache/")) {
+    return "host.maintenance.write";
+  }
+
+  if (
+    input.path === "/v1/catalog" ||
+    input.path.startsWith("/v1/catalog/") ||
+    input.path.startsWith("/v1/package-sources") ||
+    input.path.startsWith("/v1/external-principals")
+  ) {
+    return "host.catalog.write";
+  }
+
+  if (
+    input.path === "/v1/graph" ||
+    input.path.startsWith("/v1/graph/") ||
+    input.path.startsWith("/v1/nodes") ||
+    input.path.startsWith("/v1/edges")
+  ) {
+    return "host.graph.write";
+  }
+
+  if (input.path.startsWith("/v1/runners")) {
+    return "host.runners.write";
+  }
+
+  if (input.path.startsWith("/v1/assignments")) {
+    return "host.assignments.write";
+  }
+
+  if (input.path.startsWith("/v1/user-nodes")) {
+    return "host.user_nodes.write";
+  }
+
+  if (
+    input.path.startsWith("/v1/runtimes") ||
+    input.path.startsWith("/v1/sessions")
+  ) {
+    return "host.runtimes.write";
+  }
+
+  return "host.admin";
+}
+
+function operatorPermissionsAllowRequest(input: {
+  permission: OperatorPermission;
+  principal: HostOperatorPrincipal;
+}): boolean {
+  if (!input.principal.operatorPermissions) {
+    return true;
+  }
+
+  return (
+    input.principal.operatorPermissions.includes("host.admin") ||
+    input.principal.operatorPermissions.includes(input.permission)
+  );
+}
+
 function asHostOperatorRequestMethod(
   method: string
 ): HostOperatorRequestMethod | undefined {
@@ -414,6 +486,7 @@ function stripRequestQuery(rawUrl: string): string {
 
 type HostOperatorRequestContext = {
   operatorId: string;
+  operatorPermissions?: OperatorPermission[];
   operatorRole: OperatorRole;
 };
 
@@ -1032,6 +1105,12 @@ export async function buildHostServer(options: HostServerOptions = {}) {
 
       setHostOperatorRequestContext(request, operatorPrincipal);
 
+      const path = stripRequestQuery(request.url);
+      const requiredPermission = resolveRequiredOperatorPermission({
+        method: request.method,
+        path
+      });
+
       if (
         !operatorRoleAllowsRequest({
           method: request.method,
@@ -1044,6 +1123,23 @@ export async function buildHostServer(options: HostServerOptions = {}) {
             message:
               `Entangle host operator role '${operatorPrincipal.operatorRole}' ` +
               `is not allowed to perform ${request.method.toUpperCase()} requests.`
+          })
+        );
+        return;
+      }
+
+      if (
+        !operatorPermissionsAllowRequest({
+          permission: requiredPermission,
+          principal: operatorPrincipal
+        })
+      ) {
+        reply.status(403).send(
+          hostErrorResponseSchema.parse({
+            code: "forbidden",
+            message:
+              `Entangle host operator '${operatorPrincipal.operatorId}' is missing ` +
+              `permission '${requiredPermission}' for ${request.method.toUpperCase()} ${path}.`
           })
         );
         return;
@@ -1071,6 +1167,9 @@ export async function buildHostServer(options: HostServerOptions = {}) {
           message: `Host operator request '${method} ${path}' completed with status ${reply.statusCode}.`,
           method,
           operatorId: operatorContext.operatorId,
+          ...(operatorContext.operatorPermissions
+            ? { operatorPermissions: operatorContext.operatorPermissions }
+            : {}),
           operatorRole: operatorContext.operatorRole,
           path,
           requestId: String(request.id),

@@ -1,13 +1,16 @@
 import { createHash } from "node:crypto";
 import {
   identifierSchema,
+  operatorPermissionSchema,
   operatorRoleSchema,
   type HostOperatorSecurityStatus,
+  type OperatorPermission,
   type OperatorRole
 } from "@entangle/types";
 
 export type HostOperatorPrincipal = {
   operatorId: string;
+  operatorPermissions?: OperatorPermission[];
   operatorRole: OperatorRole;
   tokenHash: string;
 };
@@ -15,7 +18,9 @@ export type HostOperatorPrincipal = {
 type HostOperatorTokenRecord = {
   operatorId?: unknown;
   operatorRole?: unknown;
+  permissions?: unknown;
   role?: unknown;
+  scopes?: unknown;
   token?: unknown;
   tokenSha256?: unknown;
 };
@@ -101,6 +106,61 @@ function normalizeOperatorRole(operatorRole: unknown): OperatorRole {
   return parsedOperatorRole.success ? parsedOperatorRole.data : "operator";
 }
 
+function normalizeOperatorPermissions(input: {
+  permissions: unknown;
+  source: string;
+}): OperatorPermission[] | undefined {
+  if (input.permissions === undefined || input.permissions === null) {
+    return undefined;
+  }
+
+  const candidates =
+    typeof input.permissions === "string"
+      ? input.permissions
+          .split(/[,\s]+/u)
+          .map((permission) => permission.trim())
+          .filter((permission) => permission.length > 0)
+      : Array.isArray(input.permissions)
+        ? input.permissions
+        : undefined;
+
+  if (!candidates || candidates.length === 0) {
+    throw new Error(`${input.source} must include at least one permission.`);
+  }
+
+  const permissions = new Set<OperatorPermission>();
+
+  for (const [index, candidate] of candidates.entries()) {
+    const parsedPermission = operatorPermissionSchema.safeParse(candidate);
+
+    if (!parsedPermission.success) {
+      throw new Error(
+        `${input.source} permission ${index} must be a supported operator permission.`
+      );
+    }
+
+    permissions.add(parsedPermission.data);
+  }
+
+  return Array.from(permissions).sort();
+}
+
+function buildHostOperatorPrincipal(input: {
+  operatorId: string;
+  operatorPermissions?: OperatorPermission[];
+  operatorRole: OperatorRole;
+  tokenHash: string;
+}): HostOperatorPrincipal {
+  return {
+    operatorId: input.operatorId,
+    ...(input.operatorPermissions
+      ? { operatorPermissions: input.operatorPermissions }
+      : {}),
+    operatorRole: input.operatorRole,
+    tokenHash: input.tokenHash
+  };
+}
+
 function parseOperatorTokenRecords(
   rawRecords: string | undefined
 ): HostOperatorPrincipal[] {
@@ -135,9 +195,14 @@ function parseOperatorTokenRecords(
     }
 
     const tokenRecord = record as HostOperatorTokenRecord;
+    const operatorPermissions = normalizeOperatorPermissions({
+      permissions: tokenRecord.permissions ?? tokenRecord.scopes,
+      source: `ENTANGLE_HOST_OPERATOR_TOKENS_JSON record ${index}`
+    });
 
-    return {
+    return buildHostOperatorPrincipal({
       operatorId: normalizeOperatorId(tokenRecord.operatorId),
+      ...(operatorPermissions ? { operatorPermissions } : {}),
       operatorRole: normalizeOperatorRole(
         tokenRecord.operatorRole ?? tokenRecord.role
       ),
@@ -145,7 +210,7 @@ function parseOperatorTokenRecords(
         index,
         record: tokenRecord
       })
-    };
+    });
   });
 }
 
@@ -170,11 +235,19 @@ export function resolveHostOperatorPrincipalsFromEnv(
   const singleToken = normalizeOperatorToken(env.ENTANGLE_HOST_OPERATOR_TOKEN);
 
   if (singleToken) {
-    principals.push({
-      operatorId: normalizeOperatorId(env.ENTANGLE_HOST_OPERATOR_ID),
-      operatorRole: normalizeOperatorRole(env.ENTANGLE_HOST_OPERATOR_ROLE),
-      tokenHash: hashOperatorToken(singleToken)
+    const operatorPermissions = normalizeOperatorPermissions({
+      permissions: env.ENTANGLE_HOST_OPERATOR_PERMISSIONS,
+      source: "ENTANGLE_HOST_OPERATOR_PERMISSIONS"
     });
+
+    principals.push(
+      buildHostOperatorPrincipal({
+        operatorId: normalizeOperatorId(env.ENTANGLE_HOST_OPERATOR_ID),
+        ...(operatorPermissions ? { operatorPermissions } : {}),
+        operatorRole: normalizeOperatorRole(env.ENTANGLE_HOST_OPERATOR_ROLE),
+        tokenHash: hashOperatorToken(singleToken)
+      })
+    );
   }
 
   principals.push(
@@ -184,6 +257,16 @@ export function resolveHostOperatorPrincipalsFromEnv(
   assertUniqueOperatorTokens(principals);
 
   return principals;
+}
+
+function buildHostOperatorStatusPrincipal(principal: HostOperatorPrincipal) {
+  return {
+    operatorId: principal.operatorId,
+    ...(principal.operatorPermissions
+      ? { operatorPermissions: principal.operatorPermissions }
+      : {}),
+    operatorRole: principal.operatorRole
+  };
 }
 
 export function buildHostOperatorSecurityStatusFromEnv(
@@ -202,18 +285,14 @@ export function buildHostOperatorSecurityStatusFromEnv(
 
     return {
       operatorAuthMode: "bootstrap_operator_token",
-      operatorId: principal.operatorId,
-      operatorRole: principal.operatorRole
+      ...buildHostOperatorStatusPrincipal(principal)
     };
   }
 
   return {
     operatorAuthMode: "bootstrap_operator_tokens",
     operatorCount: principals.length,
-    operators: principals.map((principal) => ({
-      operatorId: principal.operatorId,
-      operatorRole: principal.operatorRole
-    }))
+    operators: principals.map(buildHostOperatorStatusPrincipal)
   };
 }
 

@@ -925,6 +925,7 @@ afterEach(async () => {
   delete process.env.ENTANGLE_HOST_OPERATOR_TOKEN;
   delete process.env.ENTANGLE_HOST_OPERATOR_TOKENS_JSON;
   delete process.env.ENTANGLE_HOST_OPERATOR_ID;
+  delete process.env.ENTANGLE_HOST_OPERATOR_PERMISSIONS;
   delete process.env.ENTANGLE_HOST_OPERATOR_ROLE;
   delete process.env.ENTANGLE_HOST_LOGGER;
   vi.unstubAllGlobals();
@@ -1309,6 +1310,89 @@ describe("buildHostServer", () => {
     await expect(createTestServer()).rejects.toThrow(
       "ENTANGLE_HOST_OPERATOR_TOKENS_JSON record 0 token does not match tokenSha256."
     );
+  });
+
+  it("enforces explicit bootstrap operator permissions before mutations", async () => {
+    process.env.ENTANGLE_HOST_OPERATOR_TOKENS_JSON = JSON.stringify([
+      {
+        operatorId: "assignment-ops",
+        operatorRole: "operator",
+        permissions: ["host.read", "host.assignments.write"],
+        token: "assignment-secret"
+      }
+    ]);
+    const server = await createTestServer();
+
+    try {
+      const statusResponse = await server.inject({
+        headers: {
+          authorization: "Bearer assignment-secret"
+        },
+        method: "GET",
+        url: "/v1/host/status"
+      });
+
+      expect(statusResponse.statusCode).toBe(200);
+      expect(hostStatusResponseSchema.parse(statusResponse.json()).security).toEqual({
+        operatorAuthMode: "bootstrap_operator_token",
+        operatorId: "assignment-ops",
+        operatorPermissions: ["host.assignments.write", "host.read"],
+        operatorRole: "operator"
+      });
+
+      const assignmentResponse = await server.inject({
+        headers: {
+          authorization: "Bearer assignment-secret"
+        },
+        method: "POST",
+        payload: {},
+        url: "/v1/assignments"
+      });
+
+      expect(assignmentResponse.statusCode).toBe(400);
+
+      const catalogResponse = await server.inject({
+        headers: {
+          authorization: "Bearer assignment-secret"
+        },
+        method: "PUT",
+        payload: buildGitPrincipalRecord({
+          principalId: "worker-it-git-scoped"
+        }),
+        url: "/v1/external-principals/worker-it-git-scoped"
+      });
+
+      expect(catalogResponse.statusCode).toBe(403);
+      expect(hostErrorResponseSchema.parse(catalogResponse.json())).toEqual({
+        code: "forbidden",
+        message:
+          "Entangle host operator 'assignment-ops' is missing permission " +
+          "'host.catalog.write' for PUT /v1/external-principals/worker-it-git-scoped."
+      });
+
+      const eventsResponse = await server.inject({
+        headers: {
+          authorization: "Bearer assignment-secret"
+        },
+        method: "GET",
+        url: "/v1/events?category=security&operatorId=assignment-ops"
+      });
+      const events = hostEventListResponseSchema.parse(eventsResponse.json()).events;
+
+      expect(events).toEqual(
+        expect.arrayContaining([
+          expect.objectContaining({
+            operatorId: "assignment-ops",
+            operatorPermissions: ["host.assignments.write", "host.read"],
+            path: "/v1/external-principals/worker-it-git-scoped",
+            statusCode: 403,
+            type: "host.operator_request.completed"
+          })
+        ])
+      );
+    } finally {
+      await server.close();
+    }
   });
 
   it("dry-runs and clears the derived artifact backend cache", async () => {

@@ -117,6 +117,39 @@ describe("host status presentation helpers", () => {
       })
     ).toBe("bootstrap operator tokens · 2 operators");
     expect(
+      formatHostSecuritySummary({
+        ...status,
+        security: {
+          operatorAuthMode: "bootstrap_operator_token",
+          operatorId: "assignment-ops",
+          operatorPermissions: ["host.assignments.write", "host.read"],
+          operatorRole: "operator"
+        }
+      })
+    ).toBe(
+      "bootstrap operator token · assignment-ops · operator · permissions host.assignments.write, host.read"
+    );
+    expect(
+      formatHostSecuritySummary({
+        ...status,
+        security: {
+          operatorAuthMode: "bootstrap_operator_tokens",
+          operatorCount: 2,
+          operators: [
+            {
+              operatorId: "ops-admin",
+              operatorPermissions: ["host.admin"],
+              operatorRole: "admin"
+            },
+            {
+              operatorId: "audit-viewer",
+              operatorRole: "viewer"
+            }
+          ]
+        }
+      })
+    ).toBe("bootstrap operator tokens · 2 operators · 1 scoped");
+    expect(
       formatHostArtifactBackendCacheClearSummary({
         completedAt: "2026-04-25T08:00:03.000Z",
         dryRun: false,

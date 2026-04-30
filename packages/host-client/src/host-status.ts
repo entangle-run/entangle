@@ -120,10 +120,25 @@ export function formatHostSecuritySummary(status: HostStatusResponse): string {
   }
 
   if (security.operatorAuthMode === "bootstrap_operator_tokens") {
-    return `bootstrap operator tokens · ${security.operatorCount} operators`;
+    const scopedOperatorCount = security.operators.filter(
+      (operator) => operator.operatorPermissions !== undefined
+    ).length;
+
+    return [
+      "bootstrap operator tokens",
+      `${security.operatorCount} operators`,
+      scopedOperatorCount > 0 ? `${scopedOperatorCount} scoped` : undefined
+    ].filter((part): part is string => Boolean(part)).join(" · ");
   }
 
-  return `bootstrap operator token · ${security.operatorId} · ${security.operatorRole}`;
+  return [
+    "bootstrap operator token",
+    security.operatorId,
+    security.operatorRole,
+    security.operatorPermissions
+      ? `permissions ${security.operatorPermissions.join(", ")}`
+      : undefined
+  ].filter((part): part is string => Boolean(part)).join(" · ");
 }
 
 export function formatHostTransportControlObserveSummary(

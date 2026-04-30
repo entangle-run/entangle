@@ -390,8 +390,10 @@ ergonomics. Set `ENTANGLE_HOST_OPERATOR_TOKEN` on the `host` service when a
 federated dev profile must reject unauthenticated host access, or set
 `ENTANGLE_HOST_OPERATOR_TOKENS_JSON` when the profile should distinguish
 multiple bootstrap operators. Multi-token records may use raw `token` values
-or `tokenSha256` hashes; clients still need the corresponding raw bearer token
-through `VITE_ENTANGLE_HOST_TOKEN`, `ENTANGLE_HOST_TOKEN`, or `--host-token`.
+or `tokenSha256` hashes, and may include explicit `permissions`/`scopes` when
+the operator token should be narrowed by Host route category. Clients still
+need the corresponding raw bearer token through `VITE_ENTANGLE_HOST_TOKEN`,
+`ENTANGLE_HOST_TOKEN`, or `--host-token`.
 
 Studio can propagate the token through `VITE_ENTANGLE_HOST_TOKEN`. The CLI can
 use `--host-token`, `ENTANGLE_HOST_TOKEN`, or

@@ -244,6 +244,8 @@ same-machine slice records.
 - [441-distributed-proof-published-git-ref-check-slice.md](441-distributed-proof-published-git-ref-check-slice.md)
 - [442-bootstrap-multi-operator-auth-slice.md](442-bootstrap-multi-operator-auth-slice.md)
 - [443-host-event-server-filtering-slice.md](443-host-event-server-filtering-slice.md)
+- [444-hashed-bootstrap-operator-token-slice.md](444-hashed-bootstrap-operator-token-slice.md)
+- [445-bootstrap-operator-permissions-slice.md](445-bootstrap-operator-permissions-slice.md)
 
 ## Audited Scope
 
@@ -826,7 +828,10 @@ bootstrap operator bearer tokens through `ENTANGLE_HOST_OPERATOR_TOKENS_JSON`;
 each token resolves to a distinct operator id and role for authorization,
 status, and request-audit attribution while preserving the existing
 single-token environment contract. Those records can use `tokenSha256` hashes
-instead of raw token values for process-configuration hardening. This remains
+instead of raw token values for process-configuration hardening. Bootstrap
+tokens can now also opt into explicit route-level Host permissions; scoped
+tokens must carry `host.admin` or the route-specific permission after role
+checks, while unscoped tokens keep compatibility behavior. This remains
 bootstrap authorization, not final production RBAC. Host event listing now also
 applies category, node,
 operator, status-code, and type-prefix filters before limit slicing, so CLI and
@@ -860,4 +865,4 @@ projected commit. The remaining blocking implementation
 areas are richer
 projection-backed source/wiki review services, infrastructure-backed
 multi-machine proof execution, and deeper production identity/authorization
-beyond the bootstrap multi-token boundary.
+beyond the scoped bootstrap-token boundary.

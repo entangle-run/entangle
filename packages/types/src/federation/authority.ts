@@ -64,12 +64,26 @@ export const operatorRoleSchema = z.enum([
   "viewer"
 ]);
 
+export const operatorPermissionSchema = z.enum([
+  "host.admin",
+  "host.assignments.write",
+  "host.authority.write",
+  "host.catalog.write",
+  "host.graph.write",
+  "host.maintenance.write",
+  "host.read",
+  "host.runners.write",
+  "host.runtimes.write",
+  "host.user_nodes.write"
+]);
+
 export const operatorIdentityRecordSchema = z.object({
   createdAt: nonEmptyStringSchema,
   displayName: nonEmptyStringSchema,
   hostAuthorityPubkey: nostrPublicKeySchema,
   operatorId: identifierSchema,
   publicKey: nostrPublicKeySchema.optional(),
+  permissions: z.array(operatorPermissionSchema).optional(),
   role: operatorRoleSchema.default("operator"),
   schemaVersion: z.literal("1"),
   updatedAt: nonEmptyStringSchema
@@ -78,6 +92,7 @@ export const operatorIdentityRecordSchema = z.object({
 export type AuthorityKeyAlgorithm = z.infer<typeof authorityKeyAlgorithmSchema>;
 export type HostAuthorityStatus = z.infer<typeof hostAuthorityStatusSchema>;
 export type HostAuthorityRecord = z.infer<typeof hostAuthorityRecordSchema>;
+export type OperatorPermission = z.infer<typeof operatorPermissionSchema>;
 export type OperatorRole = z.infer<typeof operatorRoleSchema>;
 export type OperatorIdentityRecord = z.infer<
   typeof operatorIdentityRecordSchema

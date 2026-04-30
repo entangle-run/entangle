@@ -315,16 +315,18 @@ This repository currently contains:
 - an optional bootstrap host operator-token boundary through
   `ENTANGLE_HOST_OPERATOR_TOKEN` or multiple records in
   `ENTANGLE_HOST_OPERATOR_TOKENS_JSON`; multi-operator records may carry raw
-  `token` values or `tokenSha256` hashes, with bearer-token propagation through
-  the shared host client, CLI, and Studio for same-machine profiles that should
-  not expose an open mutation surface, plus typed `security` audit events for
+  `token` values or `tokenSha256` hashes and may opt into explicit
+  route-level Host permissions, with bearer-token propagation through the
+  shared host client, CLI, and Studio for same-machine profiles that should not
+  expose an open mutation surface, plus typed `security` audit events for
   protected mutation requests through `host.operator_request.completed`, and
   Host status reporting of the active bootstrap operator security posture
   without exposing token material; token-protected Hosts now enforce the
   bootstrap `viewer` role as read-only, include `operatorRole` in protected
   mutation audit events, and can attribute requests to distinct bootstrap
-  operator tokens; host-client and CLI event summaries now render those audit
-  events with operator id, role, method, path, status, and auth mode, and Host
+  operator tokens and scoped permissions; host-client and CLI event summaries
+  now render those audit events with operator id, role, method, path, status,
+  and auth mode, and Host
   event listing now applies audit filters server-side before limit slicing;
 - host-managed external principal records for backend-facing identities such as
   git principals, exposed through the same host boundary, safely removable
@@ -589,8 +591,9 @@ This repository currently contains:
 - Host status also surfaces bootstrap operator security mode, normalized
   operator id and role for a single `ENTANGLE_HOST_OPERATOR_TOKEN`, or a
   tokenless list of operator ids and roles for
-  `ENTANGLE_HOST_OPERATOR_TOKENS_JSON`, while tokenless development reports
-  that no operator auth mode is active;
+  `ENTANGLE_HOST_OPERATOR_TOKENS_JSON`; scoped tokens additionally report
+  their explicit Host permissions, while tokenless development reports that no
+  operator auth mode is active;
 - the process-runner smoke now exercises the OpenCode adapter path with a
   temporary deterministic `opencode` executable inside the spawned agent
   runner process, mutates the source workspace, then verifies projected turn,
@@ -1247,10 +1250,11 @@ The highest-value remaining gaps are:
   behavior beyond explicit target publication, source-history merge/reconcile
   workflows, and replicated fallback paths;
 - production identity and authorization beyond the bootstrap operator-token
-  boundary, multi-token attribution, visible status summary, and coarse
-  read-only `viewer` enforcement, including durable principals, finer-grained
-  policy-backed permissions, and stronger retention/export/tamper-evidence
-  than the current server-filterable bootstrap request trace;
+  boundary, multi-token attribution, visible status summary, route-level
+  bootstrap permissions, and coarse read-only `viewer` enforcement, including
+  durable principals, policy-backed permission sources, and stronger
+  retention/export/tamper-evidence than the current server-filterable bootstrap
+  request trace;
 - stronger end-to-end deployment and integration hardening beyond the current
   disposable same-machine profile, especially infrastructure-backed
   multi-machine proof execution and non-disposable upgrade/repair behavior.

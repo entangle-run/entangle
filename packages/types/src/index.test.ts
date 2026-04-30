@@ -48,6 +48,8 @@ import {
   nodeCreateRequestSchema,
   nodeInspectionResponseSchema,
   observedRuntimeRecordSchema,
+  operatorIdentityRecordSchema,
+  operatorPermissionSchema,
   packageToolCatalogSchema,
   reconciliationSnapshotSchema,
   runtimeAssignmentListResponseSchema,
@@ -177,6 +179,32 @@ describe("host API error contracts", () => {
     ).toEqual({
       code: "forbidden",
       message: "Entangle host operator role 'viewer' cannot mutate Host state."
+    });
+  });
+});
+
+describe("operator identity contracts", () => {
+  it("accepts scoped operator identity records", () => {
+    expect(operatorPermissionSchema.parse("host.assignments.write")).toBe(
+      "host.assignments.write"
+    );
+
+    expect(
+      operatorIdentityRecordSchema.parse({
+        createdAt: observedAt,
+        displayName: "Assignment operator",
+        hostAuthorityPubkey: authorityPubkey,
+        operatorId: "assignment-ops",
+        permissions: ["host.read", "host.assignments.write"],
+        publicKey: userNodePubkey,
+        role: "operator",
+        schemaVersion: "1",
+        updatedAt: observedAt
+      })
+    ).toMatchObject({
+      operatorId: "assignment-ops",
+      permissions: ["host.read", "host.assignments.write"],
+      role: "operator"
     });
   });
 });
@@ -3084,6 +3112,7 @@ describe("host event contracts", () => {
         "Host operator request 'PUT /v1/external-principals/worker-it-git' completed with status 200.",
       method: "PUT",
       operatorId: "ops-lead",
+      operatorPermissions: ["host.admin"],
       operatorRole: "admin",
       path: "/v1/external-principals/worker-it-git",
       requestId: "req-1",
@@ -3096,6 +3125,7 @@ describe("host event contracts", () => {
     expect(result.type).toBe("host.operator_request.completed");
     expect(result.category).toBe("security");
     expect(result.operatorId).toBe("ops-lead");
+    expect(result.operatorPermissions).toEqual(["host.admin"]);
     expect(result.operatorRole).toBe("admin");
   });
 
@@ -4065,6 +4095,60 @@ describe("reconciliation contracts", () => {
           operatorRole: "viewer"
         }
       ]
+    });
+  });
+
+  it("accepts scoped bootstrap host auth status", () => {
+    const result = hostStatusResponseSchema.parse({
+      reconciliation: {
+        backendKind: "memory",
+        blockedRuntimeCount: 0,
+        degradedRuntimeCount: 0,
+        failedRuntimeCount: 0,
+        findingCodes: [],
+        issueCount: 0,
+        managedRuntimeCount: 0,
+        runningRuntimeCount: 0,
+        stoppedRuntimeCount: 0,
+        transitioningRuntimeCount: 0
+      },
+      runtimeCounts: {
+        desired: 0,
+        observed: 0,
+        running: 0
+      },
+      security: {
+        operatorAuthMode: "bootstrap_operator_token",
+        operatorId: "assignment-ops",
+        operatorPermissions: ["host.assignments.write", "host.read"],
+        operatorRole: "operator"
+      },
+      service: "entangle-host",
+      stateLayout: {
+        checkedAt: "2026-04-29T00:00:00.000Z",
+        currentLayoutVersion: 1,
+        minimumSupportedLayoutVersion: 1,
+        recordedAt: "2026-04-29T00:00:00.000Z",
+        recordedLayoutVersion: 1,
+        status: "current"
+      },
+      status: "healthy",
+      timestamp: "2026-04-29T00:00:00.000Z",
+      transport: {
+        controlObserve: {
+          configuredRelayCount: 0,
+          relayUrls: [],
+          status: "disabled",
+          updatedAt: "2026-04-29T00:00:00.000Z"
+        }
+      }
+    });
+
+    expect(result.security).toEqual({
+      operatorAuthMode: "bootstrap_operator_token",
+      operatorId: "assignment-ops",
+      operatorPermissions: ["host.assignments.write", "host.read"],
+      operatorRole: "operator"
     });
   });
 
