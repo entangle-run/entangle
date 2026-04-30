@@ -43,6 +43,9 @@ Host never writes runner wiki files directly.
 
 - Added the `runtime.wiki.upsert_page` control command and runtime command
   receipt correlation field `wikiPagePath`.
+- [453-wiki-page-optimistic-concurrency-slice.md](453-wiki-page-optimistic-concurrency-slice.md)
+  later added optional `expectedCurrentSha256` and receipt hash fields so the
+  runner can reject stale page edits before writing.
 - Added Host API `POST /v1/runtimes/:nodeId/wiki/pages`.
 - Added host-client `upsertRuntimeWikiPage`.
 - Added CLI command `entangle host runtimes wiki-upsert-page`.
@@ -84,4 +87,5 @@ Non-federated/local adapter mutation is not reintroduced.
   peer-node `wiki_page` resources in the selected conversation and are
   forwarded with `requestedBy` set to the User Node id.
 - User-owned personal wiki mutation remains a separate future policy question.
-- Source merge/reconcile workflows remain outside this slice.
+- Rich line-level collaborative patch/merge workflows remain outside this
+  slice, but stale base detection now exists.

@@ -579,6 +579,8 @@ function buildRuntimeWikiUpsertPageEvent(
       commandId: "cmd-wiki-upsert-page-alpha",
       content: "# Operator Note\n\nPersist this in runner memory.\n",
       eventType: "runtime.wiki.upsert_page",
+      expectedCurrentSha256:
+        "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
       graphId: assignment.graphId,
       hostAuthorityPubkey: hostPublicKey,
       issuedAt: "2026-04-26T12:00:08.000Z",
@@ -1788,6 +1790,15 @@ describe("runner runtime context", () => {
             JSON.stringify({
               assignmentId: "assignment-alpha",
               commandId: "cmd-wiki-upsert-page-alpha",
+              ...(typeof requestRecord.body === "object" &&
+              requestRecord.body !== null &&
+              "expectedCurrentSha256" in requestRecord.body &&
+              typeof requestRecord.body.expectedCurrentSha256 === "string"
+                ? {
+                    expectedCurrentSha256:
+                      requestRecord.body.expectedCurrentSha256
+                  }
+                : {}),
               mode:
                 typeof requestRecord.body === "object" &&
                 requestRecord.body !== null &&
@@ -2284,6 +2295,8 @@ describe("runner runtime context", () => {
       expect(jsonWikiPageUpsertResponse.status).toBe(200);
       await expect(jsonWikiPageUpsertResponse.json()).resolves.toMatchObject({
         commandId: "cmd-wiki-upsert-page-alpha",
+        expectedCurrentSha256:
+          "1d51c694fc9955cd6da1da6756dc1a57794f4e15c1194c904db4c5f370982f90",
         mode: "replace",
         nodeId: "worker-it",
         path: "operator/notes.md",
@@ -3062,6 +3075,8 @@ describe("runner runtime context", () => {
     });
     expect(wikiPageUpsertRequest?.body).toMatchObject({
       content: "# Operator Notes\n\nNew durable note.",
+      expectedCurrentSha256:
+        "1d51c694fc9955cd6da1da6756dc1a57794f4e15c1194c904db4c5f370982f90",
       mode: "replace",
       path: "operator/notes.md",
       reason: "Update reviewed wiki page.",
@@ -3569,10 +3584,15 @@ describe("runner runtime context", () => {
             },
             upsertWikiPage: (request) => {
               runtimeWikiPageUpserts.push(
-                `${request.path}:${request.mode ?? "replace"}:${request.requestedBy ?? "unknown"}:${request.commandId ?? "generated"}:${request.content.length}`
+                `${request.path}:${request.mode ?? "replace"}:${request.requestedBy ?? "unknown"}:${request.commandId ?? "generated"}:${request.expectedCurrentSha256 ?? "none"}:${request.content.length}`
               );
               return Promise.resolve({
+                expectedCurrentSha256: request.expectedCurrentSha256,
+                nextSha256:
+                  "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
                 path: request.path,
+                previousSha256:
+                  "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
                 syncStatus: "committed"
               });
             },
@@ -3672,7 +3692,7 @@ describe("runner runtime context", () => {
       "retry:operator-main:wiki-public"
     ]);
     expect(runtimeWikiPageUpserts).toEqual([
-      "operator/notes.md:replace:operator-main:cmd-wiki-upsert-page-alpha:48"
+      "operator/notes.md:replace:operator-main:cmd-wiki-upsert-page-alpha:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa:48"
     ]);
     expect(
       transport.observations.filter(
@@ -3788,6 +3808,12 @@ describe("runner runtime context", () => {
           commandEventType: "runtime.wiki.upsert_page",
           commandId: "cmd-wiki-upsert-page-alpha",
           status: "completed",
+          wikiPageExpectedSha256:
+            "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+          wikiPageNextSha256:
+            "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+          wikiPagePreviousSha256:
+            "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
           wikiPagePath: "operator/notes.md"
         })
       ])

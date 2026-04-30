@@ -247,6 +247,13 @@ same-machine slice records.
 - [444-hashed-bootstrap-operator-token-slice.md](444-hashed-bootstrap-operator-token-slice.md)
 - [445-bootstrap-operator-permissions-slice.md](445-bootstrap-operator-permissions-slice.md)
 - [446-runner-test-gate-fork-stability-slice.md](446-runner-test-gate-fork-stability-slice.md)
+- [447-runner-owned-wiki-page-upsert-slice.md](447-runner-owned-wiki-page-upsert-slice.md)
+- [448-user-client-wiki-page-upsert-slice.md](448-user-client-wiki-page-upsert-slice.md)
+- [449-studio-wiki-page-upsert-slice.md](449-studio-wiki-page-upsert-slice.md)
+- [450-source-history-reconcile-control-slice.md](450-source-history-reconcile-control-slice.md)
+- [451-user-client-source-history-reconcile-slice.md](451-user-client-source-history-reconcile-slice.md)
+- [452-human-interface-runtime-basic-auth-slice.md](452-human-interface-runtime-basic-auth-slice.md)
+- [453-wiki-page-optimistic-concurrency-slice.md](453-wiki-page-optimistic-concurrency-slice.md)
 
 ## Audited Scope
 
@@ -884,6 +891,7 @@ published git artifact locators to prove the advertised branch contains the
 projected commit. The remaining blocking implementation
 areas are richer
 projection-backed source review and merge/reconcile services, collaborative
-wiki patch/diff semantics on top of the participant-scoped page upsert command,
+wiki patch/diff semantics on top of the participant-scoped page upsert command
+and the new runner-enforced wiki page `expectedCurrentSha256` stale-edit guard,
 infrastructure-backed multi-machine proof execution, and deeper
 production identity/authorization beyond the scoped bootstrap-token boundary.

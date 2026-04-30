@@ -105,6 +105,9 @@ Recently added:
   source-history count, replay count, and command receipt count, with related
   navigation to the existing runtime, runner, source-history, and command
   receipt panels.
+- CLI, Studio, and the User Client wiki page mutation path can now carry
+  `expectedCurrentSha256`; command receipt summaries can expose wiki page hash
+  transitions when the runner completes or rejects the mutation.
 - Host status now includes bounded federated control/observe transport health,
   CLI host-status summaries include it, and Studio's Host Status panel renders
   the same Host-owned read model.

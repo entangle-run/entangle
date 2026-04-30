@@ -515,7 +515,11 @@ This repository currently contains:
   now request the same mutation path for visible `wiki_page` resources in the
   selected User Node conversation, with the Human Interface Runtime forwarding
   through Host as the User Node. Studio's Runtime Memory panel now exposes the
-  same Host control path for operators. Public deep runtime reads
+  same Host control path for operators. Wiki page upsert can now carry an
+  optional `expectedCurrentSha256` digest; the runner compares it against
+  current runner-owned page content before writing, and command receipts can
+  expose expected, previous, and next page hashes for stale-edit audit.
+  Public deep runtime reads
   for accepted federated
   assignments now ignore Host-local runtime files and use projected
   runner evidence instead, while non-federated adapter reads remain available.
@@ -1268,10 +1272,10 @@ The highest-value remaining gaps are:
   requests plus User Client visible source-history publication requests and
   target-specific source-history/wiki publication visibility checks and
   explicit runner-owned artifact/source/wiki command completion receipts,
-  first operator and participant-scoped runner-owned wiki page upsert support,
-  richer collaborative wiki patch/diff semantics and repository lifecycle
-  behavior beyond explicit target publication, source-history merge/reconcile
-  workflows, and replicated fallback paths;
+  first operator and participant-scoped runner-owned wiki page upsert support
+  with runner-enforced stale-edit detection, richer collaborative wiki
+  patch/diff semantics and repository lifecycle behavior beyond explicit target
+  publication, and replicated fallback paths;
 - production identity and authorization beyond the bootstrap operator-token
   boundary, multi-token attribution, visible status summary, route-level
   bootstrap permissions, and coarse read-only `viewer` enforcement, including

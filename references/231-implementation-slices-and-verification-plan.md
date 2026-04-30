@@ -549,6 +549,12 @@ Current status:
 - Studio now exposes the same runner-owned wiki page upsert path from the
   Runtime Memory panel through `host-client.upsertRuntimeWikiPage`, keeping
   operator page mutation aligned with CLI and User Client control boundaries;
+- wiki page upsert requests now support optional `expectedCurrentSha256`;
+  Host validates and signs the digest, the assigned runner compares it against
+  current runner-owned page content before writing, conflict receipts carry
+  expected/previous hashes, successful receipts can carry previous/next hashes,
+  and the Human Interface Runtime derives an expected digest from visible
+  complete projected wiki previews when available;
 - lifecycle start/stop/restart and session cancellation commands now also emit
   signed `runtime.command.receipt` observations, with session cancellation
   receipts carrying cancellation/session correlation ids;
@@ -556,9 +562,9 @@ Current status:
   assignment, node, runner, command type, status, and limit filters;
 - Studio can inspect per-assignment timeline entries through the Host
   assignment timeline endpoint, keeping operator drilldown aligned with CLI;
-- richer source merge/reconcile endpoints and collaborative wiki patch/diff
-  semantics still need protocol-backed replacement on top of the first
-  participant-scoped wiki page upsert command.
+- richer collaborative wiki patch application and merge UI still need
+  protocol-backed replacement on top of the first participant-scoped wiki page
+  upsert command and the new runner-enforced stale-edit guard.
 
 ### Slice 9: User Node Runtime
 

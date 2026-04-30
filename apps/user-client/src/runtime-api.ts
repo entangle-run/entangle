@@ -431,6 +431,7 @@ export function upsertWikiPage(input: {
   baseUrl: string;
   content: string;
   conversationId: string;
+  expectedCurrentSha256?: string | undefined;
   mode?: "append" | "replace" | undefined;
   nodeId: string;
   path: string;
@@ -442,6 +443,9 @@ export function upsertWikiPage(input: {
       body: JSON.stringify({
         content: input.content,
         conversationId: input.conversationId,
+        ...(input.expectedCurrentSha256
+          ? { expectedCurrentSha256: input.expectedCurrentSha256 }
+          : {}),
         mode: input.mode ?? "replace",
         nodeId: input.nodeId,
         path: input.path,

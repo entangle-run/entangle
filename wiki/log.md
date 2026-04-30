@@ -5422,3 +5422,17 @@ Interface Runtime HTTP surfaces can now require runtime-local Basic Auth via
 HTML, static User Client assets, and `/api/*` routes require credentials when
 the option is configured. The Host API bearer token remains server-side inside
 the runtime process.
+
+## [2026-04-29] runtime | Added wiki page optimistic concurrency
+
+Added `references/453-wiki-page-optimistic-concurrency-slice.md`.
+Runner-owned wiki page upsert now accepts optional `expectedCurrentSha256`
+through Host API, signed control events, CLI, Studio, and User Client/Human
+Interface Runtime paths.
+
+The assigned runner hashes the current page before writing and emits a failed
+command receipt on stale-base conflicts instead of overwriting runner-owned
+wiki state. Runtime command receipts and Host projection can now carry
+expected, previous, and next page hashes for audit, and the Human Interface
+Runtime derives the expected hash from a visible complete projected wiki
+preview when possible.

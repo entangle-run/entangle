@@ -42,7 +42,10 @@ export type RuntimeCommandReceiptCliSummary = {
   observedAt: string;
   receiptStatus: string;
   runnerId: string;
+  wikiPageExpectedSha256?: string;
+  wikiPageNextSha256?: string;
   wikiPagePath?: string;
+  wikiPagePreviousSha256?: string;
 };
 
 export type RuntimeCommandReceiptCliFilters = {
@@ -160,7 +163,16 @@ export function projectRuntimeCommandReceiptSummary(
     commandId: receipt.commandId,
     nodeId: receipt.nodeId,
     observedAt: receipt.observedAt,
+    ...(receipt.wikiPageExpectedSha256
+      ? { wikiPageExpectedSha256: receipt.wikiPageExpectedSha256 }
+      : {}),
+    ...(receipt.wikiPageNextSha256
+      ? { wikiPageNextSha256: receipt.wikiPageNextSha256 }
+      : {}),
     ...(receipt.wikiPagePath ? { wikiPagePath: receipt.wikiPagePath } : {}),
+    ...(receipt.wikiPagePreviousSha256
+      ? { wikiPagePreviousSha256: receipt.wikiPagePreviousSha256 }
+      : {}),
     receiptStatus: receipt.receiptStatus,
     runnerId: receipt.runnerId
   };

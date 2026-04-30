@@ -436,6 +436,7 @@ export const runtimeWikiPublishResponseSchema = z.object({
 
 export const runtimeWikiUpsertPageRequestSchema = z.object({
   content: z.string().max(128 * 1024),
+  expectedCurrentSha256: sha256DigestSchema.optional(),
   mode: z.enum(["append", "replace"]).default("replace"),
   path: nonEmptyStringSchema,
   reason: nonEmptyStringSchema.optional(),
@@ -445,6 +446,7 @@ export const runtimeWikiUpsertPageRequestSchema = z.object({
 export const runtimeWikiUpsertPageResponseSchema = z.object({
   assignmentId: identifierSchema,
   commandId: identifierSchema,
+  expectedCurrentSha256: sha256DigestSchema.optional(),
   mode: z.enum(["append", "replace"]),
   nodeId: identifierSchema,
   path: nonEmptyStringSchema,

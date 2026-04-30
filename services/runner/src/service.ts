@@ -146,9 +146,17 @@ export type RunnerWikiPublicationCommandResult = {
 };
 
 export type RunnerWikiPageUpsertCommandResult = {
+  expectedCurrentSha256?: string;
   message?: string;
+  nextSha256?: string;
   path: string;
-  syncStatus?: "committed" | "failed" | "not_configured" | "unchanged";
+  previousSha256?: string;
+  syncStatus?:
+    | "committed"
+    | "conflict"
+    | "failed"
+    | "not_configured"
+    | "unchanged";
 };
 
 export type RunnerArtifactRestoreCommandResult = {
@@ -1894,6 +1902,10 @@ function buildWikiPageArtifactId(input: {
   return `wiki-page-${input.nodeId}-${digest}`;
 }
 
+function hashWikiPageContent(content: string): string {
+  return createHash("sha256").update(content, "utf8").digest("hex");
+}
+
 async function readWikiPagePreview(input: {
   absolutePath: string;
 }): Promise<ArtifactContentPreview> {
@@ -2532,6 +2544,7 @@ export class RunnerService {
   async requestWikiPageUpsert(input: {
     commandId?: string;
     content: string;
+    expectedCurrentSha256?: string;
     mode?: "append" | "replace";
     path: string;
     reason?: string;
@@ -2550,17 +2563,31 @@ export class RunnerService {
     const wikiRoot = path.join(this.context.workspace.memoryRoot, "wiki");
     const indexPath = path.join(wikiRoot, "index.md");
     const mode = input.mode ?? "replace";
+    const currentContent = await readTextFileOrDefault(absolutePath, "");
+    const previousSha256 = hashWikiPageContent(currentContent);
+
+    if (
+      input.expectedCurrentSha256 &&
+      input.expectedCurrentSha256 !== previousSha256
+    ) {
+      return {
+        expectedCurrentSha256: input.expectedCurrentSha256,
+        message:
+          `Wiki page '${relativePath}' was not updated because its current ` +
+          "SHA-256 does not match the requested base.",
+        path: relativePath,
+        previousSha256,
+        syncStatus: "conflict"
+      };
+    }
+
     const nextContent =
       mode === "append"
-        ? [
-            (
-              await readTextFileOrDefault(absolutePath, "")
-            ).trimEnd(),
-            input.content.trimEnd()
-          ]
+        ? [currentContent.trimEnd(), input.content.trimEnd()]
             .filter((part) => part.length > 0)
             .join("\n\n") + "\n"
         : `${input.content.trimEnd()}\n`;
+    const nextSha256 = hashWikiPageContent(nextContent);
     await writeTextFile(absolutePath, nextContent);
 
     const currentIndex = await readTextFileOrDefault(indexPath, "# Wiki Index\n");
@@ -2604,13 +2631,18 @@ export class RunnerService {
     }
 
     return {
+      ...(input.expectedCurrentSha256
+        ? { expectedCurrentSha256: input.expectedCurrentSha256 }
+        : {}),
       ...(sync.status === "failed" || sync.status === "not_configured"
         ? { message: sync.reason }
         : {
             message:
               `Wiki page '${relativePath}' ${mode === "append" ? "appended" : "replaced"} and repository sync ${sync.status}.`
           }),
+      nextSha256,
       path: relativePath,
+      previousSha256,
       syncStatus: sync.status
     };
   }

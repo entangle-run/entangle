@@ -391,6 +391,7 @@ type HostFederatedAssignmentPublisher = {
     commandId: string;
     content: string;
     correlationId?: string;
+    expectedCurrentSha256?: string;
     mode?: "append" | "replace";
     path: string;
     reason?: string;
@@ -1047,6 +1048,7 @@ async function publishRuntimeWikiUpsertPageCommandFromHost(
   input: {
     assignment: RuntimeAssignmentRecord;
     content: string;
+    expectedCurrentSha256?: string;
     mode?: "append" | "replace";
     path: string;
     reason?: string;
@@ -1069,6 +1071,9 @@ async function publishRuntimeWikiUpsertPageCommandFromHost(
       : {}),
     commandId,
     content: input.content,
+    ...(input.expectedCurrentSha256
+      ? { expectedCurrentSha256: input.expectedCurrentSha256 }
+      : {}),
     mode: input.mode ?? "replace",
     path: input.path,
     ...(input.reason ? { reason: input.reason } : {}),
@@ -2818,6 +2823,9 @@ export async function buildHostServer(options: HostServerOptions = {}) {
       const commandId = await publishRuntimeWikiUpsertPageCommandFromHost(options, {
         assignment,
         content: body.content,
+        ...(body.expectedCurrentSha256
+          ? { expectedCurrentSha256: body.expectedCurrentSha256 }
+          : {}),
         mode: body.mode,
         path: body.path,
         ...(body.reason ? { reason: body.reason } : {}),
@@ -2839,6 +2847,9 @@ export async function buildHostServer(options: HostServerOptions = {}) {
       return runtimeWikiUpsertPageResponseSchema.parse({
         assignmentId: assignment.assignmentId,
         commandId,
+        ...(body.expectedCurrentSha256
+          ? { expectedCurrentSha256: body.expectedCurrentSha256 }
+          : {}),
         mode: body.mode,
         nodeId: params.nodeId,
         path: body.path,

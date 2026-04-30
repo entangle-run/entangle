@@ -177,6 +177,10 @@ The most accurate current description is:
   `wiki.ref` evidence;
 - Studio's Runtime Memory panel now exposes the same runner-owned wiki page
   upsert command for operators through Host and host-client;
+- wiki page upsert now accepts optional `expectedCurrentSha256`; Host carries
+  it in the signed control payload, the runner rejects stale base hashes before
+  writing, and command receipts can project expected, previous, and next page
+  hashes for operator/User Client audit;
 - joined runners now publish session/conversation observations for later
   lifecycle transitions after handoffs, coordination result/close, approval
   request/response, completion, cancellation, and failure paths;
@@ -1165,9 +1169,10 @@ The current implementation-truth audit now lives in
   Client visible source-history publication requests plus target-specific
   source-history/wiki publication visibility checks plus explicit
   runner-owned artifact/source/wiki command completion receipts plus User
-  Client and Studio wiki page upsert plus User Client source-history reconcile;
-  the next git gaps are richer collaborative wiki patch/diff semantics,
-  repository lifecycle behavior, and explicit fallback or
+  Client and Studio wiki page upsert plus runner-enforced stale-edit detection
+  plus User Client source-history reconcile; the next git gaps are richer
+  collaborative wiki patch/diff semantics, repository lifecycle behavior, and
+  explicit fallback or
   replication behavior,
   while the next deployment-grade gap is
   non-disposable local-profile upgrade and repair behavior for older Gitea

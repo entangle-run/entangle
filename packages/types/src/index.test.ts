@@ -662,6 +662,12 @@ describe("federated runtime contracts", () => {
       sessionId: "session-alpha",
       status: "completed",
       targetPath: "proposals/report.md",
+      wikiPageExpectedSha256:
+        "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+      wikiPageNextSha256:
+        "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+      wikiPagePreviousSha256:
+        "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
       wikiPagePath: "operator/notes.md"
     });
 
@@ -690,7 +696,10 @@ describe("federated runtime contracts", () => {
         runnerPubkey: receipt.runnerPubkey,
         sessionId: receipt.sessionId,
         targetPath: receipt.targetPath,
-        wikiPagePath: receipt.wikiPagePath
+        wikiPageExpectedSha256: receipt.wikiPageExpectedSha256,
+        wikiPageNextSha256: receipt.wikiPageNextSha256,
+        wikiPagePath: receipt.wikiPagePath,
+        wikiPagePreviousSha256: receipt.wikiPagePreviousSha256
       }).candidateId
     ).toBe("artifact-proposal-alpha");
   });
@@ -984,6 +993,8 @@ describe("federated runtime contracts", () => {
         commandId: "cmd-wiki-upsert-page-alpha",
         content: "# Operator Note\n\nPersist this in runner memory.\n",
         eventType: "runtime.wiki.upsert_page",
+        expectedCurrentSha256:
+          "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
         graphId: "team-alpha",
         hostAuthorityPubkey: authorityPubkey,
         issuedAt: observedAt,
@@ -1038,6 +1049,8 @@ describe("federated runtime contracts", () => {
     });
     expect(wikiUpsertPage.payload.eventType).toBe("runtime.wiki.upsert_page");
     expect(wikiUpsertPage.payload).toMatchObject({
+      expectedCurrentSha256:
+        "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
       mode: "replace",
       path: "operator/notes.md"
     });
@@ -3298,6 +3311,12 @@ describe("host event contracts", () => {
       targetPath: "proposals/report.md",
       timestamp: observedAt,
       type: "runtime.command.receipt",
+      wikiPageExpectedSha256:
+        "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+      wikiPageNextSha256:
+        "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+      wikiPagePreviousSha256:
+        "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
       wikiPagePath: "operator/notes.md"
     });
 
@@ -3305,6 +3324,9 @@ describe("host event contracts", () => {
     expect(result.receiptStatus).toBe("completed");
     expect(result.sessionId).toBe("session-alpha");
     expect(result.candidateId).toBe("artifact-proposal-alpha");
+    expect(result.wikiPagePreviousSha256).toBe(
+      "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc"
+    );
     expect(result.wikiPagePath).toBe("operator/notes.md");
   });
 

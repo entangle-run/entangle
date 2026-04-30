@@ -1,7 +1,7 @@
 import { z } from "zod";
 import { artifactRefSchema } from "../artifacts/artifact-ref.js";
 import { gitRepositoryTargetSelectorSchema } from "../artifacts/git-repository-target.js";
-import { nostrPublicKeySchema } from "../common/crypto.js";
+import { nostrPublicKeySchema, sha256DigestSchema } from "../common/crypto.js";
 import { identifierSchema, nonEmptyStringSchema } from "../common/primitives.js";
 import {
   assignmentLeaseSchema,
@@ -269,6 +269,7 @@ export const runtimeWikiUpsertPagePayloadSchema = controlPayloadBaseSchema.exten
   commandId: identifierSchema,
   content: z.string().max(128 * 1024),
   eventType: z.literal("runtime.wiki.upsert_page"),
+  expectedCurrentSha256: sha256DigestSchema.optional(),
   graphId: identifierSchema,
   mode: z.enum(["append", "replace"]).default("replace"),
   nodeId: identifierSchema,

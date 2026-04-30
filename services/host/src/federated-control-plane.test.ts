@@ -757,6 +757,8 @@ describe("Host federated control plane", () => {
       assignment,
       commandId: "cmd-wiki-upsert-page-alpha",
       content: "# Operator Note\n\nPersist this in the runner wiki.\n",
+      expectedCurrentSha256:
+        "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
       mode: "replace",
       path: "operator/notes.md",
       reason: "Update wiki page.",
@@ -908,6 +910,8 @@ describe("Host federated control plane", () => {
         commandId: "cmd-wiki-upsert-page-alpha",
         content: "# Operator Note\n\nPersist this in the runner wiki.\n",
         eventType: "runtime.wiki.upsert_page",
+        expectedCurrentSha256:
+          "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
         graphId: "federated-smoke-graph",
         hostAuthorityPubkey: authority.authority.publicKey,
         issuedAt: "2026-04-26T12:00:11.000Z",

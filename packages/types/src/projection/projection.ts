@@ -4,7 +4,11 @@ import {
   artifactRecordSchema,
   artifactRefSchema
 } from "../artifacts/artifact-ref.js";
-import { nostrEventIdSchema, nostrPublicKeySchema } from "../common/crypto.js";
+import {
+  nostrEventIdSchema,
+  nostrPublicKeySchema,
+  sha256DigestSchema
+} from "../common/crypto.js";
 import { identifierSchema, nonEmptyStringSchema } from "../common/primitives.js";
 import { entangleRuntimeCommandEventTypeSchema } from "../protocol/control.js";
 import { runtimeAssignmentStatusSchema } from "../federation/assignment.js";
@@ -184,7 +188,10 @@ export const runtimeCommandReceiptProjectionRecordSchema =
     sourceHistoryId: identifierSchema.optional(),
     targetPath: nonEmptyStringSchema.optional(),
     wikiArtifactId: identifierSchema.optional(),
-    wikiPagePath: nonEmptyStringSchema.optional()
+    wikiPageExpectedSha256: sha256DigestSchema.optional(),
+    wikiPageNextSha256: sha256DigestSchema.optional(),
+    wikiPagePath: nonEmptyStringSchema.optional(),
+    wikiPagePreviousSha256: sha256DigestSchema.optional()
   });
 
 export const hostProjectionSnapshotSchema = z.object({

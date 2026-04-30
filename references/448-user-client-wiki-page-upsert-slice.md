@@ -40,6 +40,10 @@ The User Client never writes runner memory directly.
 - Added User Client API helper `upsertWikiPage`.
 - Added User Client controls for `wiki_page` approval resources.
 - Added conversation-scoped visibility checks for page path mutation.
+- [453-wiki-page-optimistic-concurrency-slice.md](453-wiki-page-optimistic-concurrency-slice.md)
+  later made the Human Interface Runtime derive `expectedCurrentSha256` from a
+  visible complete wiki preview and forward it through Host when the User
+  Client does not provide one.
 - Extended the process-runner smoke to publish a synthetic `wiki_page`
   approval request, call the running User Client JSON route, and wait for the
   projected `runtime.wiki.upsert_page` receipt and `wiki.ref`.
@@ -71,7 +75,7 @@ wiki mutation.
 
 ## Open questions
 
-- Rich collaborative wiki editing still needs patch/diff semantics instead of
-  full page replacement or append.
+- Rich collaborative wiki editing still needs line-level patch/merge semantics;
+  stale page base detection is now in place for replacement or append commands.
 - User-owned personal memory/wiki mutation should be modeled separately from
   peer-node page mutation if Entangle needs private human notes.

@@ -67,6 +67,8 @@ describe("runtime wiki publication Studio helpers", () => {
     expect(
       buildRuntimeWikiPageUpsertRequest({
         content: "Append this.\n",
+        expectedCurrentSha256:
+          "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
         mode: "append",
         path: " operator/notes.md ",
         reason: " update durable note ",
@@ -74,6 +76,8 @@ describe("runtime wiki publication Studio helpers", () => {
       })
     ).toEqual({
       content: "Append this.\n",
+      expectedCurrentSha256:
+        "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
       mode: "append",
       path: "operator/notes.md",
       reason: "update durable note",

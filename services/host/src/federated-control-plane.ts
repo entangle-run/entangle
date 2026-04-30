@@ -702,6 +702,7 @@ export class HostFederatedControlPlane {
     commandId: string;
     content: string;
     correlationId?: string;
+    expectedCurrentSha256?: string;
     mode?: "append" | "replace";
     path: string;
     reason?: string;
@@ -720,6 +721,9 @@ export class HostFederatedControlPlane {
         commandId: input.commandId,
         content: input.content,
         eventType: "runtime.wiki.upsert_page",
+        ...(input.expectedCurrentSha256
+          ? { expectedCurrentSha256: input.expectedCurrentSha256 }
+          : {}),
         graphId: input.assignment.graphId,
         hostAuthorityPubkey: input.assignment.hostAuthorityPubkey,
         issuedAt: this.now(),

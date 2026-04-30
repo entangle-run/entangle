@@ -1,5 +1,5 @@
 import { createServer, type IncomingMessage, type ServerResponse } from "node:http";
-import { timingSafeEqual } from "node:crypto";
+import { createHash, timingSafeEqual } from "node:crypto";
 import { readFile, stat } from "node:fs/promises";
 import type { AddressInfo } from "node:net";
 import path from "node:path";
@@ -175,6 +175,7 @@ type UserClientWikiPublishResponse = RuntimeWikiPublishResponse & {
 type UserClientWikiPageUpsertRequest = {
   content?: unknown;
   conversationId?: unknown;
+  expectedCurrentSha256?: unknown;
   mode?: unknown;
   nodeId?: unknown;
   path?: unknown;
@@ -248,6 +249,7 @@ type UserClientVisibleWikiRefs =
 
 type UserClientVisibleWikiPage =
   | {
+      expectedCurrentSha256?: string;
       path: string;
       wikiRefs: WikiRefProjectionRecord[];
     }
@@ -1104,6 +1106,30 @@ function wikiRefMatchesPagePath(input: {
   );
 }
 
+function computeVisibleWikiPageSha256(input: {
+  path: string;
+  refs: WikiRefProjectionRecord[];
+}): string | undefined {
+  const matchingPreview = input.refs.find(
+    (ref) =>
+      wikiRefMatchesPagePath({
+        path: input.path,
+        ref
+      }) &&
+      ref.artifactPreview?.available &&
+      ref.artifactPreview.contentEncoding === "utf8" &&
+      !ref.artifactPreview.truncated
+  )?.artifactPreview;
+
+  if (!matchingPreview?.available) {
+    return undefined;
+  }
+
+  return createHash("sha256")
+    .update(matchingPreview.content, "utf8")
+    .digest("hex");
+}
+
 async function resolveUserClientVisibleWikiPage(input: {
   conversationId?: string | undefined;
   hostApi?: RunnerJoinHostApi | undefined;
@@ -1202,7 +1228,13 @@ async function resolveUserClientVisibleWikiPage(input: {
     };
   }
 
+  const expectedCurrentSha256 = computeVisibleWikiPageSha256({
+    path: normalizedPath,
+    refs: matchingWikiRefs
+  });
+
   return {
+    ...(expectedCurrentSha256 ? { expectedCurrentSha256 } : {}),
     path: normalizedPath,
     wikiRefs: matchingWikiRefs
   };
@@ -1994,6 +2026,7 @@ async function requestRuntimeWikiPublication(input: {
 
 async function requestRuntimeWikiPageUpsert(input: {
   content: string;
+  expectedCurrentSha256?: string | undefined;
   hostApi?: RunnerJoinHostApi | undefined;
   mode: "append" | "replace";
   nodeId: string;
@@ -2022,6 +2055,9 @@ async function requestRuntimeWikiPageUpsert(input: {
       {
         body: JSON.stringify({
           content: input.content,
+          ...(input.expectedCurrentSha256
+            ? { expectedCurrentSha256: input.expectedCurrentSha256 }
+            : {}),
           mode: input.mode,
           path: input.path,
           ...(input.reason ? { reason: input.reason } : {}),
@@ -4221,6 +4257,11 @@ export async function startHumanInterfaceRuntime(input: {
           typeof upsertRequest.content === "string"
             ? upsertRequest.content
             : undefined;
+        const expectedCurrentSha256 =
+          typeof upsertRequest.expectedCurrentSha256 === "string" &&
+          upsertRequest.expectedCurrentSha256.trim().length > 0
+            ? upsertRequest.expectedCurrentSha256.trim().toLowerCase()
+            : undefined;
         const mode =
           upsertRequest.mode === undefined
             ? "replace"
@@ -4254,6 +4295,16 @@ export async function startHumanInterfaceRuntime(input: {
           return;
         }
 
+        if (
+          expectedCurrentSha256 &&
+          !/^[0-9a-f]{64}$/.test(expectedCurrentSha256)
+        ) {
+          writeJson(response, 400, {
+            error: "Expected current wiki page SHA-256 is invalid."
+          });
+          return;
+        }
+
         const visibleWikiPage = await resolveUserClientVisibleWikiPage({
           conversationId,
           hostApi: input.hostApi,
@@ -4271,6 +4322,13 @@ export async function startHumanInterfaceRuntime(input: {
 
         const mutation = await requestRuntimeWikiPageUpsert({
           content,
+          ...(expectedCurrentSha256 ?? visibleWikiPage.expectedCurrentSha256
+            ? {
+                expectedCurrentSha256:
+                  expectedCurrentSha256 ??
+                  visibleWikiPage.expectedCurrentSha256
+              }
+            : {}),
           hostApi: input.hostApi,
           mode,
           nodeId,

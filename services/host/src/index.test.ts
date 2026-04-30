@@ -7845,6 +7845,7 @@ describe("buildHostServer", () => {
     type WikiPageUpsertPublishInput = {
       assignment: RuntimeAssignmentRecord;
       content: string;
+      expectedCurrentSha256?: string;
       mode?: "append" | "replace";
       path: string;
       reason?: string;
@@ -7944,6 +7945,9 @@ describe("buildHostServer", () => {
           wikiPageUpsertRequests.push({
             assignment: input.assignment,
             content: input.content,
+            ...(input.expectedCurrentSha256
+              ? { expectedCurrentSha256: input.expectedCurrentSha256 }
+              : {}),
             mode: input.mode,
             path: input.path,
             ...(input.reason ? { reason: input.reason } : {}),
@@ -8345,6 +8349,8 @@ describe("buildHostServer", () => {
         method: "POST",
         payload: {
           content: "# Operator Note\n\nPersist this in runner memory.\n",
+          expectedCurrentSha256:
+            "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
           mode: "replace",
           path: "operator/notes.md",
           reason: "Operator requested wiki page update.",
@@ -8360,6 +8366,8 @@ describe("buildHostServer", () => {
         )
       ).toMatchObject({
         assignmentId: "assignment-alpha",
+        expectedCurrentSha256:
+          "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
         mode: "replace",
         nodeId: "worker-it",
         path: "operator/notes.md",
@@ -8373,6 +8381,8 @@ describe("buildHostServer", () => {
       });
       expect(wikiPageUpsertRequests[0]).toMatchObject({
         content: "# Operator Note\n\nPersist this in runner memory.\n",
+        expectedCurrentSha256:
+          "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
         mode: "replace",
         path: "operator/notes.md",
         reason: "Operator requested wiki page update.",

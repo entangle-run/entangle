@@ -154,15 +154,24 @@ export type RunnerAssignmentRuntimeHandle = {
   upsertWikiPage?(request: {
     commandId?: string;
     content: string;
+    expectedCurrentSha256?: string;
     mode?: "append" | "replace";
     path: string;
     reason?: string;
     requestedAt?: string;
     requestedBy?: string;
   }): Promise<{
+    expectedCurrentSha256?: string;
     message?: string;
+    nextSha256?: string;
     path: string;
-    syncStatus?: "committed" | "failed" | "not_configured" | "unchanged";
+    previousSha256?: string;
+    syncStatus?:
+      | "committed"
+      | "conflict"
+      | "failed"
+      | "not_configured"
+      | "unchanged";
   }>;
   runtimeContextPath: string;
   runtimeRoot?: string;
@@ -554,7 +563,10 @@ export class RunnerJoinService {
       sourceHistoryId: string;
       targetPath: string;
       wikiArtifactId: string;
+      wikiPageExpectedSha256: string;
+      wikiPageNextSha256: string;
       wikiPagePath: string;
+      wikiPagePreviousSha256: string;
     }>;
   }): Promise<void> {
     if (input.payload) {
@@ -595,7 +607,10 @@ export class RunnerJoinService {
       sourceHistoryId: string;
       targetPath: string;
       wikiArtifactId: string;
+      wikiPageExpectedSha256: string;
+      wikiPageNextSha256: string;
       wikiPagePath: string;
+      wikiPagePreviousSha256: string;
     }>;
     status: "completed" | "failed" | "received";
   }): Promise<{
@@ -643,8 +658,17 @@ export class RunnerJoinService {
       ...(input.receipt?.wikiArtifactId
         ? { wikiArtifactId: input.receipt.wikiArtifactId }
         : {}),
+      ...(input.receipt?.wikiPageExpectedSha256
+        ? { wikiPageExpectedSha256: input.receipt.wikiPageExpectedSha256 }
+        : {}),
+      ...(input.receipt?.wikiPageNextSha256
+        ? { wikiPageNextSha256: input.receipt.wikiPageNextSha256 }
+        : {}),
       ...(input.receipt?.wikiPagePath
         ? { wikiPagePath: input.receipt.wikiPagePath }
+        : {}),
+      ...(input.receipt?.wikiPagePreviousSha256
+        ? { wikiPagePreviousSha256: input.receipt.wikiPagePreviousSha256 }
         : {})
     });
   }
@@ -1594,6 +1618,9 @@ export class RunnerJoinService {
       const result = await handle.upsertWikiPage({
         commandId: payload.commandId,
         content: payload.content,
+        ...(payload.expectedCurrentSha256
+          ? { expectedCurrentSha256: payload.expectedCurrentSha256 }
+          : {}),
         mode: payload.mode,
         path: payload.path,
         ...(payload.reason ? { reason: payload.reason } : {}),
@@ -1601,7 +1628,11 @@ export class RunnerJoinService {
         ...(payload.requestedBy ? { requestedBy: payload.requestedBy } : {})
       });
 
-      if (result.syncStatus === "failed" || result.syncStatus === "not_configured") {
+      if (
+        result.syncStatus === "failed" ||
+        result.syncStatus === "not_configured" ||
+        result.syncStatus === "conflict"
+      ) {
         await this.publishRuntimeCommandFailure({
           assignmentId: assignment.assignmentId,
           message:
@@ -1609,6 +1640,15 @@ export class RunnerJoinService {
             `Wiki page '${result.path}' was updated but repository sync failed.`,
           payload,
           receipt: {
+            ...(result.expectedCurrentSha256
+              ? { wikiPageExpectedSha256: result.expectedCurrentSha256 }
+              : {}),
+            ...(result.nextSha256
+              ? { wikiPageNextSha256: result.nextSha256 }
+              : {}),
+            ...(result.previousSha256
+              ? { wikiPagePreviousSha256: result.previousSha256 }
+              : {}),
             wikiPagePath: result.path
           }
         });
@@ -1622,6 +1662,13 @@ export class RunnerJoinService {
           `Wiki page '${result.path}' ${payload.mode === "append" ? "appended" : "replaced"}.`,
         payload,
         receipt: {
+          ...(result.expectedCurrentSha256
+            ? { wikiPageExpectedSha256: result.expectedCurrentSha256 }
+            : {}),
+          ...(result.nextSha256 ? { wikiPageNextSha256: result.nextSha256 } : {}),
+          ...(result.previousSha256
+            ? { wikiPagePreviousSha256: result.previousSha256 }
+            : {}),
           wikiPagePath: result.path
         },
         status: "completed"

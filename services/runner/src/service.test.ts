@@ -1,6 +1,7 @@
 import { mkdir, readFile, readdir, rm, stat, writeFile } from "node:fs/promises";
 import path from "node:path";
 import { spawnSync } from "node:child_process";
+import { createHash } from "node:crypto";
 import { afterEach, describe, expect, it } from "vitest";
 import { AgentEngineExecutionError } from "@entangle/agent-engine";
 import {
@@ -63,6 +64,10 @@ type ObservedArtifactRecord = Parameters<
 
 const docsPublicKey =
   "3333333333333333333333333333333333333333333333333333333333333333";
+
+function sha256Hex(content: string): string {
+  return createHash("sha256").update(content, "utf8").digest("hex");
+}
 
 function createDeferred<T>(): {
   promise: Promise<T>;
@@ -412,6 +417,7 @@ describe("RunnerService", () => {
     const result = await service.requestWikiPageUpsert({
       commandId: "cmd-wiki-upsert-page-alpha",
       content: "# Operator Note\n\nPersist this in runner memory.\n",
+      expectedCurrentSha256: sha256Hex(""),
       mode: "replace",
       path: "operator/notes.md",
       reason: "Record durable operator context.",
@@ -419,7 +425,10 @@ describe("RunnerService", () => {
     });
 
     expect(result).toMatchObject({
+      expectedCurrentSha256: sha256Hex(""),
+      nextSha256: sha256Hex("# Operator Note\n\nPersist this in runner memory.\n"),
       path: "operator/notes.md",
+      previousSha256: sha256Hex(""),
       syncStatus: "committed"
     });
     await expect(
@@ -448,8 +457,34 @@ describe("RunnerService", () => {
     await service.requestWikiPageUpsert({
       commandId: "cmd-wiki-upsert-page-beta",
       content: "Second note.\n",
+      expectedCurrentSha256: sha256Hex(
+        "# Operator Note\n\nPersist this in runner memory.\n"
+      ),
       mode: "append",
       path: "operator/notes.md"
+    });
+    await expect(
+      readFile(
+        path.join(context.workspace.memoryRoot, "wiki", "operator", "notes.md"),
+        "utf8"
+      )
+    ).resolves.toBe(
+      "# Operator Note\n\nPersist this in runner memory.\n\nSecond note.\n"
+    );
+
+    const conflict = await service.requestWikiPageUpsert({
+      content: "Stale edit.\n",
+      expectedCurrentSha256: sha256Hex("# Operator Note\n"),
+      mode: "replace",
+      path: "operator/notes.md"
+    });
+    expect(conflict).toMatchObject({
+      expectedCurrentSha256: sha256Hex("# Operator Note\n"),
+      path: "operator/notes.md",
+      previousSha256: sha256Hex(
+        "# Operator Note\n\nPersist this in runner memory.\n\nSecond note.\n"
+      ),
+      syncStatus: "conflict"
     });
     await expect(
       readFile(

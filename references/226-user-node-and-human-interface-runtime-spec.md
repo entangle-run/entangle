@@ -48,6 +48,10 @@ User nodes are now partially runtime-capable:
   `ENTANGLE_HUMAN_INTERFACE_BASIC_AUTH=username:password` is set. `/health`
   remains public for liveness probes, and the Host API bearer token remains
   server-side inside the runtime.
+- Participant wiki page mutation can now include an expected current page
+  SHA-256 digest. The Human Interface Runtime derives it from a visible,
+  complete projected wiki preview when available, and the assigned runner
+  rejects stale edits before writing runner-owned wiki state.
 - The federated dev runner image now builds and bundles that dedicated app at
   `/app/user-client`, sets `ENTANGLE_USER_CLIENT_STATIC_DIR` by default, and
   the Docker launcher adapter can publish a host port plus

@@ -1,5 +1,9 @@
 import { z } from "zod";
-import { nostrEventIdSchema, nostrPublicKeySchema } from "../common/crypto.js";
+import {
+  nostrEventIdSchema,
+  nostrPublicKeySchema,
+  sha256DigestSchema
+} from "../common/crypto.js";
 import {
   policyOperationSchema,
   policyResourceScopeSchema
@@ -293,7 +297,10 @@ export const runtimeCommandReceiptEventSchema = hostEventBaseSchema.extend({
   targetPath: nonEmptyStringSchema.optional(),
   type: z.literal("runtime.command.receipt"),
   wikiArtifactId: identifierSchema.optional(),
-  wikiPagePath: nonEmptyStringSchema.optional()
+  wikiPageExpectedSha256: sha256DigestSchema.optional(),
+  wikiPageNextSha256: sha256DigestSchema.optional(),
+  wikiPagePath: nonEmptyStringSchema.optional(),
+  wikiPagePreviousSha256: sha256DigestSchema.optional()
 });
 
 export const sessionUpdatedEventSchema = hostEventBaseSchema.extend({

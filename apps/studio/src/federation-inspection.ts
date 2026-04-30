@@ -248,6 +248,12 @@ export function formatRuntimeCommandReceiptDetail(
     receipt.sourceHistoryId ? `source ${receipt.sourceHistoryId}` : undefined,
     receipt.wikiArtifactId ? `wiki ${receipt.wikiArtifactId}` : undefined,
     receipt.wikiPagePath ? `wiki page ${receipt.wikiPagePath}` : undefined,
+    receipt.wikiPagePreviousSha256
+      ? `wiki previous ${receipt.wikiPagePreviousSha256.slice(0, 12)}`
+      : undefined,
+    receipt.wikiPageNextSha256
+      ? `wiki next ${receipt.wikiPageNextSha256.slice(0, 12)}`
+      : undefined,
     receipt.artifactId ? `artifact ${receipt.artifactId}` : undefined
   ].filter((part): part is string => Boolean(part)).join(" · ");
 }

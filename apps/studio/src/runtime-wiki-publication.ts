@@ -16,6 +16,7 @@ export type RuntimeWikiPublicationDraft = {
 
 export type RuntimeWikiPageUpsertDraft = {
   content: string;
+  expectedCurrentSha256: string;
   mode: "append" | "replace";
   path: string;
   reason: string;
@@ -36,6 +37,7 @@ export function createEmptyRuntimeWikiPublicationDraft(): RuntimeWikiPublication
 export function createEmptyRuntimeWikiPageUpsertDraft(): RuntimeWikiPageUpsertDraft {
   return {
     content: "",
+    expectedCurrentSha256: "",
     mode: "replace",
     path: "",
     reason: "",
@@ -91,6 +93,9 @@ export function buildRuntimeWikiPageUpsertRequest(
 ): RuntimeWikiUpsertPageRequest {
   return {
     content: draft.content,
+    ...(optionalTrimmed(draft.expectedCurrentSha256)
+      ? { expectedCurrentSha256: optionalTrimmed(draft.expectedCurrentSha256) }
+      : {}),
     mode: draft.mode,
     path: draft.path.trim(),
     ...(optionalTrimmed(draft.reason)

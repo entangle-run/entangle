@@ -4,7 +4,7 @@ import {
   artifactRecordSchema,
   artifactRefSchema
 } from "../artifacts/artifact-ref.js";
-import { nostrPublicKeySchema } from "../common/crypto.js";
+import { nostrPublicKeySchema, sha256DigestSchema } from "../common/crypto.js";
 import { identifierSchema, nonEmptyStringSchema } from "../common/primitives.js";
 import { assignmentLeaseSchema } from "../federation/assignment.js";
 import {
@@ -126,7 +126,10 @@ export const runtimeCommandReceiptPayloadSchema =
     status: runtimeCommandReceiptStatusSchema,
     targetPath: nonEmptyStringSchema.optional(),
     wikiArtifactId: identifierSchema.optional(),
-    wikiPagePath: nonEmptyStringSchema.optional()
+    wikiPageExpectedSha256: sha256DigestSchema.optional(),
+    wikiPageNextSha256: sha256DigestSchema.optional(),
+    wikiPagePath: nonEmptyStringSchema.optional(),
+    wikiPagePreviousSha256: sha256DigestSchema.optional()
   });
 
 export const runtimeStatusObservationPayloadSchema =

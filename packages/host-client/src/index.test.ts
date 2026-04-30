@@ -3420,6 +3420,8 @@ describe("createHostClient", () => {
     await expect(
       client.upsertRuntimeWikiPage("worker-it", {
         content: "Follow up from the operator.\n",
+        expectedCurrentSha256:
+          "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
         mode: "append",
         path: "operator/notes.md",
         reason: "Append an operator note.",
@@ -3437,6 +3439,8 @@ describe("createHostClient", () => {
       {
         body: JSON.stringify({
           content: "Follow up from the operator.\n",
+          expectedCurrentSha256:
+            "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
           mode: "append",
           path: "operator/notes.md",
           reason: "Append an operator note.",

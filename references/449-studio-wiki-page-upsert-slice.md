@@ -35,7 +35,7 @@ runner filesystem access:
 
 - Added Studio helper draft/build/summary functions for wiki page upsert.
 - Added a Runtime Memory form in Studio with page path, mode, content,
-  requestedBy, and reason fields.
+  requestedBy, reason, and optional expected current SHA-256 fields.
 - Wired the form to `client.upsertRuntimeWikiPage` and reset/summary/error
   state consistently with existing wiki publication controls.
 

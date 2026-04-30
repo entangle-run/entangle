@@ -807,6 +807,7 @@ function WikiResourceCards({
 }) {
   const [publishReason, setPublishReason] = useState("");
   const [pageContent, setPageContent] = useState("");
+  const [pageExpectedSha256, setPageExpectedSha256] = useState("");
   const [pageMode, setPageMode] = useState<"append" | "replace">("replace");
   const [pagePath, setPagePath] = useState("");
   const [retryFailedPublication, setRetryFailedPublication] = useState(false);
@@ -869,6 +870,9 @@ function WikiResourceCards({
         baseUrl,
         content: pageContent,
         conversationId: message.conversationId,
+        ...(pageExpectedSha256.trim()
+          ? { expectedCurrentSha256: pageExpectedSha256.trim() }
+          : {}),
         mode: pageMode,
         nodeId: message.fromNodeId,
         path: effectivePagePath,
@@ -949,6 +953,12 @@ function WikiResourceCards({
               onChange={(event) => setPageContent(event.target.value)}
               placeholder="Markdown content"
               value={pageContent}
+            />
+            <input
+              aria-label="Expected wiki page SHA-256"
+              onChange={(event) => setPageExpectedSha256(event.target.value)}
+              placeholder="Expected current SHA-256"
+              value={pageExpectedSha256}
             />
             <label className="inline-checkbox">
               <input

@@ -170,6 +170,8 @@ describe("user client runtime API helpers", () => {
       baseUrl: "http://127.0.0.1:4300",
       content: "# Working Context\n\nUpdated.",
       conversationId: "conversation-alpha",
+      expectedCurrentSha256:
+        "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
       mode: "replace",
       nodeId: "worker-it",
       path: "operator/notes.md",
@@ -287,6 +289,8 @@ describe("user client runtime API helpers", () => {
     expect(JSON.parse(fetchMock.mock.calls[6]?.[1]?.body as string)).toEqual({
       content: "# Working Context\n\nUpdated.",
       conversationId: "conversation-alpha",
+      expectedCurrentSha256:
+        "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
       mode: "replace",
       nodeId: "worker-it",
       path: "operator/notes.md",

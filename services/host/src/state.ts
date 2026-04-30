@@ -2619,7 +2619,16 @@ export async function recordRuntimeCommandReceiptObservation(
     ...(receipt.targetPath ? { targetPath: receipt.targetPath } : {}),
     type: "runtime.command.receipt",
     ...(receipt.wikiArtifactId ? { wikiArtifactId: receipt.wikiArtifactId } : {}),
-    ...(receipt.wikiPagePath ? { wikiPagePath: receipt.wikiPagePath } : {})
+    ...(receipt.wikiPageExpectedSha256
+      ? { wikiPageExpectedSha256: receipt.wikiPageExpectedSha256 }
+      : {}),
+    ...(receipt.wikiPageNextSha256
+      ? { wikiPageNextSha256: receipt.wikiPageNextSha256 }
+      : {}),
+    ...(receipt.wikiPagePath ? { wikiPagePath: receipt.wikiPagePath } : {}),
+    ...(receipt.wikiPagePreviousSha256
+      ? { wikiPagePreviousSha256: receipt.wikiPagePreviousSha256 }
+      : {})
   } satisfies RuntimeCommandReceiptEventInput);
 }
 
@@ -3584,7 +3593,16 @@ async function listRuntimeCommandReceiptProjectionRecords() {
         ...(event.wikiArtifactId
           ? { wikiArtifactId: event.wikiArtifactId }
           : {}),
-        ...(event.wikiPagePath ? { wikiPagePath: event.wikiPagePath } : {})
+        ...(event.wikiPageExpectedSha256
+          ? { wikiPageExpectedSha256: event.wikiPageExpectedSha256 }
+          : {}),
+        ...(event.wikiPageNextSha256
+          ? { wikiPageNextSha256: event.wikiPageNextSha256 }
+          : {}),
+        ...(event.wikiPagePath ? { wikiPagePath: event.wikiPagePath } : {}),
+        ...(event.wikiPagePreviousSha256
+          ? { wikiPagePreviousSha256: event.wikiPagePreviousSha256 }
+          : {})
       })
     )
     .sort((left, right) => {

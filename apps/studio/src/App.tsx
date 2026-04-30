@@ -6950,6 +6950,20 @@ export function App() {
                             value={wikiPageUpsertDraft.reason}
                           />
                         </label>
+                        <label className="field">
+                          <span>Expected SHA-256</span>
+                          <input
+                            disabled={pendingWikiPageUpsert}
+                            onChange={(event) => {
+                              setWikiPageUpsertDraft((current) => ({
+                                ...current,
+                                expectedCurrentSha256: event.target.value
+                              }));
+                            }}
+                            placeholder="optional current page digest"
+                            value={wikiPageUpsertDraft.expectedCurrentSha256}
+                          />
+                        </label>
                       </div>
                       <label className="field">
                         <span>Markdown Content</span>
