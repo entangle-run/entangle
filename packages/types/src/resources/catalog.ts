@@ -124,6 +124,11 @@ export const agentEngineProfileKindSchema = z.enum([
   "external_http"
 ]);
 
+export const agentEnginePermissionModeSchema = z.enum([
+  "auto_approve",
+  "auto_reject"
+]);
+
 export const agentEngineProfileSchema = z
   .object({
     id: identifierSchema,
@@ -133,6 +138,7 @@ export const agentEngineProfileSchema = z
     executable: nonEmptyStringSchema.optional(),
     baseUrl: httpUrlSchema.optional(),
     defaultAgent: identifierSchema.optional(),
+    permissionMode: agentEnginePermissionModeSchema.optional(),
     stateScope: z.enum(["node", "shared"]).default("node")
   })
   .superRefine((value, context) => {
@@ -165,6 +171,7 @@ export const defaultOpenCodeAgentEngineProfile = {
   displayName: "OpenCode",
   kind: "opencode_server" as const,
   executable: "opencode",
+  permissionMode: "auto_reject" as const,
   stateScope: "node" as const
 };
 

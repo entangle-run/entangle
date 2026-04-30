@@ -368,6 +368,46 @@ describe("OpenCode runner engine adapter", () => {
     );
   });
 
+  it("passes the OpenCode auto-approve permission flag when configured", async () => {
+    const fixture = await createRuntimeFixture();
+    const context = {
+      ...fixture.context,
+      agentRuntimeContext: {
+        ...fixture.context.agentRuntimeContext,
+        engineProfile: {
+          ...fixture.context.agentRuntimeContext.engineProfile,
+          permissionMode: "auto_approve" as const
+        }
+      }
+    };
+    const mock = createMockOpenCodeSpawn({
+      processes: [
+        {
+          stdout: "0.10.0\n"
+        },
+        {
+          stdoutLines: [
+            JSON.stringify({
+              part: {
+                text: "Completed with engine-managed tool permissions."
+              },
+              sessionID: "opencode-session",
+              type: "text"
+            })
+          ]
+        }
+      ]
+    });
+    const engine = createOpenCodeAgentEngine({
+      runtimeContext: context,
+      spawn: mock.spawn
+    });
+
+    await engine.executeTurn(buildTurnRequest());
+
+    expect(mock.calls[1]!.args).toContain("--dangerously-skip-permissions");
+  });
+
   it("probes attached OpenCode server health before running a turn", async () => {
     const fixture = await createRuntimeFixture();
     const baseUrl = "http://127.0.0.1:4567";

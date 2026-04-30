@@ -1003,6 +1003,13 @@ function buildOpenCodeArgs(input: {
     args.push("--session", input.mappedSessionId);
   }
 
+  if (
+    input.context.agentRuntimeContext.engineProfile.permissionMode ===
+    "auto_approve"
+  ) {
+    args.push("--dangerously-skip-permissions");
+  }
+
   if (agent) {
     args.push("--agent", agent);
   }

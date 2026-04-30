@@ -439,8 +439,11 @@ This repository currently contains:
   timeouts, and carrying generic
   engine-session ids, engine versions, and permission-block observations on
   persisted turn outcomes, including `policy_denied` results when OpenCode
-  one-shot CLI auto-rejects a permission request, plus bounded generic tool
-  evidence from OpenCode JSON events, including tool titles, redacted input
+  one-shot CLI auto-rejects a permission request, with engine profiles now
+  carrying explicit `permissionMode` configuration so operators can opt an
+  OpenCode node into `auto_approve` when runner sandboxing and Entangle review
+  policy make that acceptable, plus bounded generic tool evidence from
+  OpenCode JSON events, including tool titles, redacted input
   summaries, output summaries, durations, and call ids, plus adapter-local
   OpenCode session continuity for later turns in the same Entangle session,
   with the federated dev

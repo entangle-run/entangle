@@ -508,8 +508,10 @@ The repository now also contains the first real implementation baseline:
   engine-session ids
   plus engine versions and permission-block observations on turn outcomes,
   including `policy_denied` results when OpenCode one-shot CLI auto-rejects a
-  permission request, plus bounded generic tool evidence from OpenCode JSON
-  events, including tool titles, redacted input summaries, output summaries,
+  permission request, with explicit engine-profile `permissionMode`
+  configuration for OpenCode auto-reject versus opt-in auto-approve behavior,
+  plus bounded generic tool evidence from OpenCode JSON events, including tool
+  titles, redacted input summaries, output summaries,
   durations, and call ids, plus adapter-local mapping from Entangle session ids
   to OpenCode session ids so later turns pass `--session` and keep node-local
   coding context, with the process-runner smoke now proving that continuation

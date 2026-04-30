@@ -920,6 +920,7 @@ afterEach(async () => {
   delete process.env.ENTANGLE_DEFAULT_MODEL_BASE_URL;
   delete process.env.ENTANGLE_DEFAULT_MODEL_SECRET_REF;
   delete process.env.ENTANGLE_DEFAULT_MODEL_DEFAULT_MODEL;
+  delete process.env.ENTANGLE_DEFAULT_AGENT_ENGINE_PERMISSION_MODE;
   delete process.env.ENTANGLE_DEFAULT_GIT_NAMESPACE;
   delete process.env.ENTANGLE_DEFAULT_GIT_REMOTE_BASE;
   delete process.env.ENTANGLE_DEFAULT_GIT_TRANSPORT;

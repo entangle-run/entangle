@@ -1094,6 +1094,13 @@ function buildDefaultCatalog(): DeploymentResourceCatalog {
       : agentEngineKind === "external_process"
         ? "agent-engine"
         : undefined);
+  const agentEnginePermissionMode =
+    process.env.ENTANGLE_DEFAULT_AGENT_ENGINE_PERMISSION_MODE === "auto_approve"
+      ? "auto_approve"
+      : process.env.ENTANGLE_DEFAULT_AGENT_ENGINE_PERMISSION_MODE ===
+          "auto_reject"
+        ? "auto_reject"
+        : undefined;
 
   const modelEndpointId = process.env.ENTANGLE_DEFAULT_MODEL_ENDPOINT_ID?.trim();
   const modelBaseUrl = process.env.ENTANGLE_DEFAULT_MODEL_BASE_URL?.trim();
@@ -1174,6 +1181,9 @@ function buildDefaultCatalog(): DeploymentResourceCatalog {
         baseUrl: agentEngineBaseUrl || undefined,
         defaultAgent:
           process.env.ENTANGLE_DEFAULT_AGENT_ENGINE_AGENT?.trim() || undefined,
+        ...(agentEnginePermissionMode
+          ? { permissionMode: agentEnginePermissionMode }
+          : {}),
         version:
           process.env.ENTANGLE_DEFAULT_AGENT_ENGINE_VERSION?.trim() || undefined
       }

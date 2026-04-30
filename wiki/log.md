@@ -5486,3 +5486,13 @@ answers matching `OPTIONS` preflight requests before operator auth.
 The federated dev profile allows the default Studio development origins, and
 the process-runner demo now prints a ready Studio command with the live Host
 URL and operator token in `--keep-running` mode.
+
+## [2026-04-29] runtime | Added OpenCode permission mode configuration
+
+Added `references/459-opencode-permission-mode-slice.md`. Agent engine
+profiles can now declare `permissionMode: "auto_reject" | "auto_approve"`.
+
+The OpenCode adapter preserves conservative auto-reject behavior by default and
+adds `--dangerously-skip-permissions` only for explicit `auto_approve`
+profiles. The default catalog can set this through
+`ENTANGLE_DEFAULT_AGENT_ENGINE_PERMISSION_MODE`.

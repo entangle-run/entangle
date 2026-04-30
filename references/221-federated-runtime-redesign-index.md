@@ -359,6 +359,9 @@ The repository is not fully federated:
   engine-state workspace and passing `--session` on later turns; the
   process-runner smoke now proves this through a second same-session User Node
   task and Host-projected engine outcome;
+- OpenCode engine profiles now support an explicit `permissionMode`; the
+  adapter keeps conservative `auto_reject` behavior by default and passes
+  `--dangerously-skip-permissions` only for opt-in `auto_approve` profiles;
 - the OpenAI-compatible internal `agent-engine` adapter now has deterministic
   local HTTP fixture coverage for the real `fetch` provider path, including
   bearer-token auth, plain chat completion, tool-loop continuation, and 429

@@ -730,6 +730,7 @@ files are the active federated redesign pack.
 457. [456-opencode-session-continuity-slice.md](456-opencode-session-continuity-slice.md)
 458. [457-opencode-session-continuity-process-smoke-slice.md](457-opencode-session-continuity-process-smoke-slice.md)
 459. [458-host-cors-studio-dev-slice.md](458-host-cors-studio-dev-slice.md)
+460. [459-opencode-permission-mode-slice.md](459-opencode-permission-mode-slice.md)
 
 ## Role of this corpus
 

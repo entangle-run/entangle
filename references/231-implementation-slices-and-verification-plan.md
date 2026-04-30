@@ -785,6 +785,9 @@ Implementation record:
 - [458-host-cors-studio-dev-slice.md](458-host-cors-studio-dev-slice.md)
   makes browser-based Studio development viable across ports through explicit
   Host CORS allow-list support and keep-running demo instructions.
+- [459-opencode-permission-mode-slice.md](459-opencode-permission-mode-slice.md)
+  adds typed OpenCode permission-mode configuration and maps opt-in
+  `auto_approve` profiles to `--dangerously-skip-permissions`.
 
 Verification:
 
@@ -792,6 +795,7 @@ Verification:
 - session continuity mapping tests;
 - federated process smoke for same-session OpenCode continuation;
 - Host CORS/preflight tests for Studio development origins;
+- OpenCode permission-mode schema and adapter tests;
 - permission bridge tests;
 - cancellation tests;
 - source/artifact/wiki observation tests;

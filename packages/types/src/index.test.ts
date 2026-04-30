@@ -4887,6 +4887,19 @@ describe("agent runtime contracts", () => {
       kind: "opencode_server",
       stateScope: "node"
     });
+    expect(result.permissionMode).toBeUndefined();
+  });
+
+  it("accepts explicit OpenCode permission mode on agent engine profiles", () => {
+    const result = agentEngineProfileSchema.parse({
+      id: "opencode-default",
+      displayName: "OpenCode",
+      kind: "opencode_server",
+      executable: "opencode",
+      permissionMode: "auto_approve"
+    });
+
+    expect(result.permissionMode).toBe("auto_approve");
   });
 
   it("rejects process-backed agent engine profiles without an endpoint", () => {
