@@ -258,6 +258,7 @@ same-machine slice records.
 - [455-user-client-wiki-page-patch-process-smoke-slice.md](455-user-client-wiki-page-patch-process-smoke-slice.md)
 - [456-opencode-session-continuity-slice.md](456-opencode-session-continuity-slice.md)
 - [457-opencode-session-continuity-process-smoke-slice.md](457-opencode-session-continuity-process-smoke-slice.md)
+- [458-host-cors-studio-dev-slice.md](458-host-cors-studio-dev-slice.md)
 
 ## Audited Scope
 
@@ -341,6 +342,10 @@ The repository is not fully federated:
   dedicated app now exposes JSON-backed artifact preview, source diff,
   source-candidate review, wiki preview cards, and automatic thread read-state
   convergence, but richer object-backend review remains incomplete;
+- Host now supports an explicit `ENTANGLE_HOST_CORS_ORIGINS` allow-list so
+  browser-based Studio development can call Host across ports while actual Host
+  API requests still use operator bearer auth; the process-runner demo prints
+  a ready Studio command in keep-running mode;
 - joined agent runners now emit `artifact.ref`, `source_change.ref`, and
   `wiki.ref` observations during normal turn execution, so Host's observed
   artifact/source/wiki projection reducers are fed by real runner behavior

@@ -925,6 +925,7 @@ afterEach(async () => {
   delete process.env.ENTANGLE_DEFAULT_GIT_TRANSPORT;
   delete process.env.ENTANGLE_HOST_OPERATOR_TOKEN;
   delete process.env.ENTANGLE_HOST_OPERATOR_TOKENS_JSON;
+  delete process.env.ENTANGLE_HOST_CORS_ORIGINS;
   delete process.env.ENTANGLE_HOST_OPERATOR_ID;
   delete process.env.ENTANGLE_HOST_OPERATOR_PERMISSIONS;
   delete process.env.ENTANGLE_HOST_OPERATOR_ROLE;
@@ -1011,6 +1012,63 @@ describe("buildHostServer", () => {
         layoutVersion: 1,
         product: "entangle"
       });
+    } finally {
+      await server.close();
+    }
+  });
+
+  it("allows configured CORS preflight before operator auth", async () => {
+    process.env.ENTANGLE_HOST_OPERATOR_TOKEN = "host-secret";
+    process.env.ENTANGLE_HOST_CORS_ORIGINS =
+      "http://localhost:3000,http://127.0.0.1:3000";
+    const server = await createTestServer();
+
+    try {
+      const preflightResponse = await server.inject({
+        headers: {
+          "access-control-request-headers": "authorization, content-type",
+          "access-control-request-method": "GET",
+          origin: "http://localhost:3000"
+        },
+        method: "OPTIONS",
+        url: "/v1/host/status"
+      });
+
+      expect(preflightResponse.statusCode).toBe(204);
+      expect(preflightResponse.headers["access-control-allow-origin"]).toBe(
+        "http://localhost:3000"
+      );
+      expect(preflightResponse.headers["access-control-allow-headers"]).toBe(
+        "authorization, content-type"
+      );
+
+      const authorizedResponse = await server.inject({
+        headers: {
+          authorization: "Bearer host-secret",
+          origin: "http://127.0.0.1:3000"
+        },
+        method: "GET",
+        url: "/v1/host/status"
+      });
+
+      expect(authorizedResponse.statusCode).toBe(200);
+      expect(authorizedResponse.headers["access-control-allow-origin"]).toBe(
+        "http://127.0.0.1:3000"
+      );
+
+      const disallowedPreflightResponse = await server.inject({
+        headers: {
+          "access-control-request-method": "GET",
+          origin: "http://example.test"
+        },
+        method: "OPTIONS",
+        url: "/v1/host/status"
+      });
+
+      expect(disallowedPreflightResponse.statusCode).toBe(401);
+      expect(
+        disallowedPreflightResponse.headers["access-control-allow-origin"]
+      ).toBeUndefined();
     } finally {
       await server.close();
     }

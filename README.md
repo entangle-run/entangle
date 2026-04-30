@@ -78,6 +78,17 @@ docker compose -f deploy/federated-dev/compose/docker-compose.federated-dev.yml 
 pnpm ops:smoke-federated-process-runner -- --relay-url ws://localhost:7777
 ```
 
+For an interactive operator/User Node demo, run:
+
+```bash
+pnpm ops:demo-user-node-runtime
+```
+
+The demo keeps Host and all joined runners alive, prints the running User
+Client URLs, and prints a ready Studio command with the ephemeral Host URL and
+operator token. Host CORS is explicitly allow-listed for Studio development
+origins through `ENTANGLE_HOST_CORS_ORIGINS`.
+
 That smoke starts Host, one real joined agent runner process, and two real
 joined User Node runner processes with separate state roots. It assigns the
 agent node and both User Nodes through signed control events, verifies that

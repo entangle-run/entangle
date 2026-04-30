@@ -59,6 +59,10 @@ The most accurate current description is:
 - the architecture and contract layers are strong and largely stable;
 - the host, runner, generic join path, assignment path, Human Interface
   Runtime, and User Client are already real runtime components;
+- browser-based Studio development can now call Host across the default
+  development ports through an explicit Host CORS allow-list, and the
+  keep-running User Node runtime demo prints a Studio startup command with the
+  live Host URL and operator token;
 - the process-runner smoke now proves joined agent and User Node runners over a
   live relay with signed messages, signed approvals, projected heartbeats, and
   separate Host/runner state roots, and it now validates the per-assignment

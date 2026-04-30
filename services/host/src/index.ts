@@ -410,6 +410,31 @@ function isReadOnlyRequestMethod(method: string): boolean {
   return ["GET", "HEAD", "OPTIONS"].includes(method.toUpperCase());
 }
 
+function parseCommaSeparatedValues(value: string | undefined): string[] {
+  return (value ?? "")
+    .split(",")
+    .map((entry) => entry.trim())
+    .filter((entry) => entry.length > 0);
+}
+
+function resolveHostCorsAllowedOrigins(): string[] {
+  return parseCommaSeparatedValues(process.env.ENTANGLE_HOST_CORS_ORIGINS);
+}
+
+function resolveAllowedCorsOrigin(input: {
+  allowedOrigins: string[];
+  origin: string | undefined;
+}): string | undefined {
+  if (!input.origin || input.allowedOrigins.length === 0) {
+    return undefined;
+  }
+
+  return input.allowedOrigins.includes("*") ||
+    input.allowedOrigins.includes(input.origin)
+    ? input.origin
+    : undefined;
+}
+
 function operatorRoleAllowsRequest(input: {
   method: string;
   role: OperatorRole;
@@ -1184,7 +1209,44 @@ export async function buildHostServer(options: HostServerOptions = {}) {
   const operatorAuthRequired = operatorPrincipals.length > 0;
   const unauthorizedOperatorAuditPrincipal =
     resolveUnauthorizedOperatorAuditPrincipal(operatorPrincipals);
+  const corsAllowedOrigins = resolveHostCorsAllowedOrigins();
   await server.register(websocket);
+
+  server.addHook("onRequest", (request, reply, done) => {
+    const origin =
+      typeof request.headers.origin === "string"
+        ? request.headers.origin
+        : undefined;
+    const allowedOrigin = resolveAllowedCorsOrigin({
+      allowedOrigins: corsAllowedOrigins,
+      origin
+    });
+
+    if (!allowedOrigin) {
+      done();
+      return;
+    }
+
+    reply.header("access-control-allow-origin", allowedOrigin);
+    reply.header("access-control-allow-credentials", "true");
+    reply.header(
+      "access-control-allow-headers",
+      "authorization, content-type"
+    );
+    reply.header(
+      "access-control-allow-methods",
+      "GET,HEAD,POST,PUT,PATCH,DELETE,OPTIONS"
+    );
+    reply.header("access-control-max-age", "600");
+    reply.header("vary", "Origin");
+
+    if (request.method.toUpperCase() === "OPTIONS") {
+      reply.status(204).send();
+      return;
+    }
+
+    done();
+  });
 
   if (operatorAuthRequired) {
     server.addHook("preHandler", (request, reply, done) => {

@@ -782,12 +782,16 @@ Implementation record:
 - [457-opencode-session-continuity-process-smoke-slice.md](457-opencode-session-continuity-process-smoke-slice.md)
   proves the same behavior through the federated process-runner smoke using a
   second User Node task and Host-projected engine outcome.
+- [458-host-cors-studio-dev-slice.md](458-host-cors-studio-dev-slice.md)
+  makes browser-based Studio development viable across ports through explicit
+  Host CORS allow-list support and keep-running demo instructions.
 
 Verification:
 
 - OpenCode adapter tests using mocked server/SDK;
 - session continuity mapping tests;
 - federated process smoke for same-session OpenCode continuation;
+- Host CORS/preflight tests for Studio development origins;
 - permission bridge tests;
 - cancellation tests;
 - source/artifact/wiki observation tests;

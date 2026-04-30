@@ -113,6 +113,9 @@ Recently added:
 - Host status now includes bounded federated control/observe transport health,
   CLI host-status summaries include it, and Studio's Host Status panel renders
   the same Host-owned read model.
+- Host now supports configured CORS for browser-based Studio development via
+  `ENTANGLE_HOST_CORS_ORIGINS`, and the process-runner demo prints a Studio
+  startup command with the live Host URL and operator token.
 
 ## Target Model
 
@@ -201,6 +204,10 @@ Node.
   mutation, and the federation summary includes projected replay outcome
   counts. Studio assignment rows now include grouped runner receipt summaries
   for the same assignment timeline model.
+- Keep Studio browser access on Host API boundaries. Done for development:
+  Host has configured CORS allow-list support, preflight requests are answered
+  before operator auth, and the federated dev profile allows the default Studio
+  development origins.
 - Add Studio User Node runtime visibility and User Client open action. The
   first projection-derived User Node runtime summaries and `clientUrl` open
   actions are implemented; richer reassignment and health panels remain open.

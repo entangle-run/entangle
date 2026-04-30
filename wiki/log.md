@@ -5476,3 +5476,13 @@ The federated process-runner smoke now approves the engine gate as the assigned
 User Node, sends a second `task.request` in the same Entangle session, and
 verifies through Host runtime-turn projection that the fake OpenCode engine saw
 `--session` and emitted `opencode-smoke-session-continued`.
+
+## [2026-04-29] studio | Added Host CORS support for Studio development
+
+Added `references/458-host-cors-studio-dev-slice.md`. Host now honors
+`ENTANGLE_HOST_CORS_ORIGINS` as an explicit browser-origin allow-list and
+answers matching `OPTIONS` preflight requests before operator auth.
+
+The federated dev profile allows the default Studio development origins, and
+the process-runner demo now prints a ready Studio command with the live Host
+URL and operator token in `--keep-running` mode.

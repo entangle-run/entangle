@@ -742,6 +742,8 @@ async function main(): Promise<void> {
   process.env.ENTANGLE_RUNTIME_BACKEND = "memory";
   process.env.ENTANGLE_HOST_LOGGER = "false";
   process.env.ENTANGLE_HOST_OPERATOR_TOKEN = operatorToken;
+  process.env.ENTANGLE_HOST_CORS_ORIGINS =
+    "http://localhost:3000,http://127.0.0.1:3000";
   process.env.ENTANGLE_DEFAULT_RELAY_READ_URL = relayUrl;
   process.env.ENTANGLE_DEFAULT_RELAY_WRITE_URL = relayUrl;
   process.env.ENTANGLE_DEFAULT_GIT_TRANSPORT = "file";
@@ -4422,6 +4424,12 @@ async function main(): Promise<void> {
       console.log(
         `${cliEnvironment} pnpm --filter @entangle/cli dev host projection --summary`
       );
+      console.log("Manual Studio command:");
+      console.log(
+        `VITE_ENTANGLE_HOST_URL=${hostBaseUrl} ` +
+          `VITE_ENTANGLE_HOST_TOKEN=${operatorToken} ` +
+          `pnpm --filter @entangle/studio dev`
+      );
       console.log("Manual User Node inbox command:");
       console.log(
         `${cliEnvironment} pnpm --filter @entangle/cli dev ` +
@@ -4456,6 +4464,7 @@ async function main(): Promise<void> {
     delete process.env.ENTANGLE_RUNTIME_BACKEND;
     delete process.env.ENTANGLE_HOST_LOGGER;
     delete process.env.ENTANGLE_HOST_OPERATOR_TOKEN;
+    delete process.env.ENTANGLE_HOST_CORS_ORIGINS;
     delete process.env.ENTANGLE_DEFAULT_RELAY_READ_URL;
     delete process.env.ENTANGLE_DEFAULT_RELAY_WRITE_URL;
     delete process.env.ENTANGLE_DEFAULT_GIT_TRANSPORT;
