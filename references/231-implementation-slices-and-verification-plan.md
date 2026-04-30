@@ -330,6 +330,7 @@ Implementation record:
 - [447-runner-owned-wiki-page-upsert-slice.md](447-runner-owned-wiki-page-upsert-slice.md)
 - [448-user-client-wiki-page-upsert-slice.md](448-user-client-wiki-page-upsert-slice.md)
 - [449-studio-wiki-page-upsert-slice.md](449-studio-wiki-page-upsert-slice.md)
+- [455-user-client-wiki-page-patch-process-smoke-slice.md](455-user-client-wiki-page-patch-process-smoke-slice.md)
 
 Verification:
 
@@ -558,6 +559,9 @@ Current status:
 - wiki page upsert also supports `mode: "patch"`; the same Host-signed control
   command can carry a single-page unified diff, and the runner applies it only
   when context/removal lines match current runner-owned content;
+- the process-runner smoke now proves the participant path for wiki page patch
+  mode through the running User Client JSON API, runner-signed command receipt
+  hashes, and projected patched `wiki.ref` preview content;
 - lifecycle start/stop/restart and session cancellation commands now also emit
   signed `runtime.command.receipt` observations, with session cancellation
   receipts carrying cancellation/session correlation ids;
@@ -918,6 +922,7 @@ Implementation records:
 - [427-distributed-proof-profile-manifest-slice.md](427-distributed-proof-profile-manifest-slice.md)
 - [428-distributed-proof-artifact-evidence-verifier-slice.md](428-distributed-proof-artifact-evidence-verifier-slice.md)
 - [429-distributed-proof-relay-health-verifier-slice.md](429-distributed-proof-relay-health-verifier-slice.md)
+- [455-user-client-wiki-page-patch-process-smoke-slice.md](455-user-client-wiki-page-patch-process-smoke-slice.md)
 
 Current status:
 

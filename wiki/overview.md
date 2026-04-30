@@ -184,6 +184,9 @@ The most accurate current description is:
 - wiki page upsert now also accepts `mode: "patch"` for single-page unified
   diffs; the runner applies the patch only when context and removal lines match
   current runner-owned page content;
+- the process-runner smoke now proves that patch mode through the running
+  User Client JSON API, including expected-base hash forwarding, completed
+  command receipt projection, and projected patched wiki preview content;
 - joined runners now publish session/conversation observations for later
   lifecycle transitions after handoffs, coordination result/close, approval
   request/response, completion, cancellation, and failure paths;

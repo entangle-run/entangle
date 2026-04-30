@@ -53,6 +53,9 @@ read runner files:
   rejection.
 - Existing Host, Human Interface Runtime, User Client, CLI, and Studio tests
   proving the widened enum does not regress replace/append paths.
+- Follow-up process proof in
+  [455-user-client-wiki-page-patch-process-smoke-slice.md](455-user-client-wiki-page-patch-process-smoke-slice.md)
+  covering the running User Client path.
 
 ## Migration and compatibility
 

@@ -255,6 +255,7 @@ same-machine slice records.
 - [452-human-interface-runtime-basic-auth-slice.md](452-human-interface-runtime-basic-auth-slice.md)
 - [453-wiki-page-optimistic-concurrency-slice.md](453-wiki-page-optimistic-concurrency-slice.md)
 - [454-wiki-page-patch-mode-slice.md](454-wiki-page-patch-mode-slice.md)
+- [455-user-client-wiki-page-patch-process-smoke-slice.md](455-user-client-wiki-page-patch-process-smoke-slice.md)
 
 ## Audited Scope
 

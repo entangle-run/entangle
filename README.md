@@ -112,7 +112,10 @@ branch head plus command receipt. The running User Client can also request
 runner-owned wiki publication for wiki resources visible in the selected User
 Node conversation; that participant path is routed through the Human Interface
 Runtime and Host control boundary with `requestedBy` set to the User Node id,
-and the smoke verifies the resulting projected command receipt. Target-specific
+and the smoke verifies the resulting projected command receipt. The same
+participant path now also verifies User Client wiki page replacement and
+single-page patch requests through runner-signed command receipt hashes and
+projected patched wiki preview content. Target-specific
 wiki publication requests from the User Client must match the
 `wiki_repository_publication` resource visible in the selected User Node
 conversation; the smoke also verifies the projected target-specific wiki

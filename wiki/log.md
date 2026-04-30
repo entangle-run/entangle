@@ -5447,3 +5447,13 @@ Patch mode treats the content field as a single-page unified diff. The assigned
 runner applies it against current runner-owned wiki content, rejects mismatched
 context/removal lines before writing, and still reports completion or failure
 through the existing runtime command receipt projection.
+
+## [2026-04-29] verification | Added User Client wiki patch process proof
+
+Added `references/455-user-client-wiki-page-patch-process-smoke-slice.md`.
+The process-runner smoke now exercises `mode: "patch"` through the running
+User Client JSON API after an initial participant-scoped wiki page replacement.
+
+The proof forwards `expectedCurrentSha256`, waits for runner-signed
+`runtime.wiki.upsert_page` receipt hashes, and verifies projected patched
+`wiki.ref` preview content without Host filesystem access.

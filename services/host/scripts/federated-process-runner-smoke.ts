@@ -5,6 +5,7 @@ import {
   spawnSync,
   type ChildProcessByStdio
 } from "node:child_process";
+import { createHash } from "node:crypto";
 import { existsSync } from "node:fs";
 import {
   chmod,
@@ -90,6 +91,10 @@ function readFlagValue(name: string): string | undefined {
 
   const index = process.argv.indexOf(name);
   return index >= 0 ? process.argv[index + 1] : undefined;
+}
+
+function sha256Hex(value: string): string {
+  return createHash("sha256").update(value, "utf8").digest("hex");
 }
 
 function resolveUserClientStaticDir(): string | undefined {
@@ -3281,12 +3286,14 @@ async function main(): Promise<void> {
     );
     printPass("user-node-wiki-page-approval-request", wikiPageApprovalId);
 
+    const userClientWikiPageContent =
+      "# User Client Note\n\n" +
+      "Process runner smoke wrote this through the User Client.\n";
     const userClientWikiPageUpsertResponse = await fetch(
       new URL("/api/wiki/pages", userClientUrl),
       {
         body: JSON.stringify({
-          content:
-            "# User Client Note\n\nProcess runner smoke wrote this through the User Client.",
+          content: userClientWikiPageContent,
           conversationId: userMessage.conversationId,
           mode: "replace",
           nodeId: "builder",
@@ -3345,7 +3352,9 @@ async function main(): Promise<void> {
     );
     assertCondition(
       projectedUserClientWikiPageReceipt.receiptStatus === "completed" &&
-        projectedUserClientWikiPageReceipt.wikiPagePath === userClientWikiPagePath,
+        projectedUserClientWikiPageReceipt.wikiPagePath === userClientWikiPagePath &&
+        projectedUserClientWikiPageReceipt.wikiPageNextSha256 ===
+          sha256Hex(userClientWikiPageContent),
       `User Client wiki page mutation command must complete for ${userClientWikiPagePath}; got ` +
         `${projectedUserClientWikiPageReceipt.receiptStatus}: ` +
         `${projectedUserClientWikiPageReceipt.receiptMessage ?? "no receipt message"}`
@@ -3375,6 +3384,123 @@ async function main(): Promise<void> {
       () => `\nstdout:\n${runnerStdout}\nstderr:\n${runnerStderr}`
     );
     printPass("projected-user-client-wiki-page-ref", userClientWikiPagePath);
+
+    const userClientWikiPagePatchedContent =
+      "# User Client Note\n\n" +
+      "Process runner smoke patched this through the User Client.\n";
+    const userClientWikiPagePatch =
+      `--- a/${userClientWikiPagePath}\n` +
+      `+++ b/${userClientWikiPagePath}\n` +
+      "@@ -3,1 +3,1 @@\n" +
+      "-Process runner smoke wrote this through the User Client.\n" +
+      "+Process runner smoke patched this through the User Client.\n";
+    const userClientWikiPagePatchResponse = await fetch(
+      new URL("/api/wiki/pages", userClientUrl),
+      {
+        body: JSON.stringify({
+          content: userClientWikiPagePatch,
+          conversationId: userMessage.conversationId,
+          expectedCurrentSha256: sha256Hex(userClientWikiPageContent),
+          mode: "patch",
+          nodeId: "builder",
+          path: userClientWikiPagePath,
+          reason:
+            "Process runner smoke patched the wiki page from the User Client."
+        }),
+        headers: {
+          "content-type": "application/json"
+        },
+        method: "POST"
+      }
+    );
+    await assertResponseOk(
+      userClientWikiPagePatchResponse,
+      "User Client JSON wiki page patch"
+    );
+    const userClientWikiPagePatchRaw =
+      (await userClientWikiPagePatchResponse.json()) as {
+        mode?: string;
+        path?: string;
+        source?: string;
+        userNodeId?: string;
+      };
+    const userClientWikiPagePatchRequest =
+      runtimeWikiUpsertPageResponseSchema.parse(userClientWikiPagePatchRaw);
+    assertCondition(
+      userClientWikiPagePatchRaw.source === "runtime" &&
+        userClientWikiPagePatchRaw.userNodeId === "user" &&
+        userClientWikiPagePatchRequest.mode === "patch" &&
+        userClientWikiPagePatchRequest.expectedCurrentSha256 ===
+          sha256Hex(userClientWikiPageContent) &&
+        userClientWikiPagePatchRequest.path === userClientWikiPagePath,
+      "User Client wiki page patch response must identify runtime source, User Node, patch mode, expected hash, and normalized page path."
+    );
+    printPass(
+      "user-client-wiki-page-patch-request",
+      `command=${userClientWikiPagePatchRequest.commandId}; ` +
+        `page=${userClientWikiPagePatchRequest.path}`
+    );
+
+    const projectedUserClientWikiPagePatchReceipt = await waitFor(
+      "Host projected User Client wiki page patch command receipt",
+      async () => {
+        const projection = hostProjectionSnapshotSchema.parse(
+          await hostRequest({
+            baseUrl: hostBaseUrl,
+            path: "/v1/projection"
+          })
+        );
+
+        return projection.runtimeCommandReceipts.find(
+          (receipt) =>
+            receipt.commandId === userClientWikiPagePatchRequest.commandId &&
+            receipt.commandEventType === "runtime.wiki.upsert_page" &&
+            receipt.receiptStatus !== "received"
+        );
+      },
+      () => `\nstdout:\n${runnerStdout}\nstderr:\n${runnerStderr}`
+    );
+    assertCondition(
+      projectedUserClientWikiPagePatchReceipt.receiptStatus === "completed" &&
+        projectedUserClientWikiPagePatchReceipt.wikiPagePath ===
+          userClientWikiPagePath &&
+        projectedUserClientWikiPagePatchReceipt.wikiPageExpectedSha256 ===
+          sha256Hex(userClientWikiPageContent) &&
+        projectedUserClientWikiPagePatchReceipt.wikiPagePreviousSha256 ===
+          sha256Hex(userClientWikiPageContent) &&
+        projectedUserClientWikiPagePatchReceipt.wikiPageNextSha256 ===
+          sha256Hex(userClientWikiPagePatchedContent),
+      `User Client wiki page patch command must complete for ${userClientWikiPagePath}; got ` +
+        `${projectedUserClientWikiPagePatchReceipt.receiptStatus}: ` +
+        `${projectedUserClientWikiPagePatchReceipt.receiptMessage ?? "no receipt message"}`
+    );
+    printPass(
+      "projected-user-client-wiki-page-patch-command-receipt",
+      `command=${projectedUserClientWikiPagePatchReceipt.commandId}; ` +
+        `page=${projectedUserClientWikiPagePatchReceipt.wikiPagePath ?? "missing"}`
+    );
+
+    await waitFor(
+      "Host projected User Client patched wiki page ref",
+      async () => {
+        const projection = hostProjectionSnapshotSchema.parse(
+          await hostRequest({
+            baseUrl: hostBaseUrl,
+            path: "/v1/projection"
+          })
+        );
+
+        return projection.wikiRefs.find(
+          (ref) =>
+            ref.nodeId === "builder" &&
+            ref.artifactRef.locator.path === `/${userClientWikiPagePath}` &&
+            ref.artifactPreview?.available === true &&
+            ref.artifactPreview.content === userClientWikiPagePatchedContent
+        );
+      },
+      () => `\nstdout:\n${runnerStdout}\nstderr:\n${runnerStderr}`
+    );
+    printPass("projected-user-client-wiki-page-patch-ref", userClientWikiPagePath);
 
     const syntheticAgentMessageId = await publishSyntheticA2AMessage({
       message: {
