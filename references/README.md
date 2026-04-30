@@ -728,6 +728,7 @@ files are the active federated redesign pack.
 455. [454-wiki-page-patch-mode-slice.md](454-wiki-page-patch-mode-slice.md)
 456. [455-user-client-wiki-page-patch-process-smoke-slice.md](455-user-client-wiki-page-patch-process-smoke-slice.md)
 457. [456-opencode-session-continuity-slice.md](456-opencode-session-continuity-slice.md)
+458. [457-opencode-session-continuity-process-smoke-slice.md](457-opencode-session-continuity-process-smoke-slice.md)
 
 ## Role of this corpus
 

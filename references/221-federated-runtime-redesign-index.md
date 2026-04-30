@@ -257,6 +257,7 @@ same-machine slice records.
 - [454-wiki-page-patch-mode-slice.md](454-wiki-page-patch-mode-slice.md)
 - [455-user-client-wiki-page-patch-process-smoke-slice.md](455-user-client-wiki-page-patch-process-smoke-slice.md)
 - [456-opencode-session-continuity-slice.md](456-opencode-session-continuity-slice.md)
+- [457-opencode-session-continuity-process-smoke-slice.md](457-opencode-session-continuity-process-smoke-slice.md)
 
 ## Audited Scope
 
@@ -350,7 +351,9 @@ The repository is not fully federated:
   adapter boundary;
 - OpenCode-backed runner turns now keep adapter-local session continuity by
   mapping Entangle session ids to observed OpenCode session ids under the node
-  engine-state workspace and passing `--session` on later turns;
+  engine-state workspace and passing `--session` on later turns; the
+  process-runner smoke now proves this through a second same-session User Node
+  task and Host-projected engine outcome;
 - the OpenAI-compatible internal `agent-engine` adapter now has deterministic
   local HTTP fixture coverage for the real `fetch` provider path, including
   bearer-token auth, plain chat completion, tool-loop continuation, and 429

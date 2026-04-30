@@ -779,11 +779,15 @@ Implementation record:
 - [456-opencode-session-continuity-slice.md](456-opencode-session-continuity-slice.md)
   maps Entangle session ids to adapter-local OpenCode session ids and passes
   `--session` on later turns so node-local coding context carries forward.
+- [457-opencode-session-continuity-process-smoke-slice.md](457-opencode-session-continuity-process-smoke-slice.md)
+  proves the same behavior through the federated process-runner smoke using a
+  second User Node task and Host-projected engine outcome.
 
 Verification:
 
 - OpenCode adapter tests using mocked server/SDK;
 - session continuity mapping tests;
+- federated process smoke for same-session OpenCode continuation;
 - permission bridge tests;
 - cancellation tests;
 - source/artifact/wiki observation tests;

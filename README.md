@@ -131,9 +131,11 @@ Client can also request source-history reconcile for visible plain
 `source_history` resources; publication-target resources are not accepted for
 reconcile because reconcile can mutate the runner-owned source workspace.
 The smoke still runs without live model credentials. Live OpenCode
-behavior and real-provider credentials remain manual/operator validation; the
-OpenAI-compatible agent-engine HTTP boundary is now covered by a deterministic
-local provider fixture.
+behavior and real-provider credentials remain manual/operator validation, but
+the fake OpenCode path now proves same-session `--session` continuity through a
+second User Node task and Host-projected engine outcome; the OpenAI-compatible
+agent-engine HTTP boundary is now covered by a deterministic local provider
+fixture.
 
 For manual no-credential provider plumbing tests, start the deterministic
 OpenAI-compatible development server:

@@ -5468,3 +5468,11 @@ Later turns for the same Entangle session pass `--session` to `opencode run`,
 so the coding engine keeps its own session context while Entangle continues to
 own graph coordination, messages, artifacts, wiki state, and User Node
 communication.
+
+## [2026-04-29] verification | Added OpenCode session continuity smoke proof
+
+Added `references/457-opencode-session-continuity-process-smoke-slice.md`.
+The federated process-runner smoke now approves the engine gate as the assigned
+User Node, sends a second `task.request` in the same Entangle session, and
+verifies through Host runtime-turn projection that the fake OpenCode engine saw
+`--session` and emitted `opencode-smoke-session-continued`.

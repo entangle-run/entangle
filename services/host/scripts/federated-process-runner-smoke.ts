@@ -410,6 +410,9 @@ async function createSmokeOpenCodeExecutable(binRoot: string): Promise<string> {
       "process.stdin.on('end', () => {",
       "  const approvalId = process.env.ENTANGLE_SMOKE_ENGINE_APPROVAL_ID || 'approval-engine-smoke';",
       "  const sourceChangeId = process.env.ENTANGLE_SMOKE_ENGINE_SOURCE_CHANGE_ID || 'source-change-engine-smoke';",
+      "  const sessionArgIndex = args.indexOf('--session');",
+      "  const continuedSessionId = sessionArgIndex >= 0 ? args[sessionArgIndex + 1] : '';",
+      "  const engineSessionId = continuedSessionId ? `${continuedSessionId}-continued` : 'opencode-smoke-session';",
       "  const sourceRoot = process.cwd();",
       "  fs.mkdirSync(path.join(sourceRoot, 'src'), { recursive: true });",
       "  fs.writeFileSync(",
@@ -444,19 +447,19 @@ async function createSmokeOpenCodeExecutable(binRoot: string): Promise<string> {
       "      },",
       "      tool: 'bash'",
       "    },",
-      "    sessionID: 'opencode-smoke-session',",
+      "    sessionID: engineSessionId,",
       "    type: 'tool_use'",
       "  }));",
       "  console.log(JSON.stringify({",
       "    part: {",
       "      text: [",
-      "        'Smoke OpenCode adapter completed a deterministic turn.',",
+      "        continuedSessionId ? `Smoke OpenCode adapter continued ${continuedSessionId}.` : 'Smoke OpenCode adapter completed a deterministic turn.',",
       "        '```entangle-actions',",
       "        actionBlock,",
       "        '```'",
       "      ].join('\\n')",
       "    },",
-      "    sessionID: 'opencode-smoke-session',",
+      "    sessionID: engineSessionId,",
       "    type: 'text'",
       "  }));",
       "});",
@@ -2886,6 +2889,151 @@ async function main(): Promise<void> {
     printPass(
       "projected-session-read-api",
       `session=${projectedBuilderSession.inspection.sessionId}; node=${projectedBuilderSession.node.nodeId}; status=${projectedBuilderSession.node.session.status}`
+    );
+
+    const engineApprovalResponse = await fetch(
+      new URL("/api/messages", userClientUrl),
+      {
+        body: JSON.stringify({
+          approval: {
+            approvalId: engineApprovalId,
+            decision: "approved"
+          },
+          conversationId: userMessage.conversationId,
+          messageType: "approval.response",
+          parentMessageId: userMessage.eventId,
+          responsePolicy: {
+            closeOnResult: false,
+            maxFollowups: 0,
+            responseRequired: false
+          },
+          sessionId: userMessage.sessionId,
+          summary: `Approved ${engineApprovalId} before a continuation turn.`,
+          targetNodeId: "builder"
+        }),
+        headers: {
+          "content-type": "application/json"
+        },
+        method: "POST"
+      }
+    );
+    await assertResponseOk(
+      engineApprovalResponse,
+      "User Client JSON engine approval response"
+    );
+    const engineApprovalResponseMessage =
+      userNodeMessagePublishResponseSchema.parse(
+        await engineApprovalResponse.json()
+      );
+    assertSignerMatchesFromPubkey(
+      engineApprovalResponseMessage,
+      "User Client JSON engine approval response"
+    );
+    assertCondition(
+      engineApprovalResponseMessage.signerPubkey ===
+        materializedUserContext.identityContext.publicKey,
+      "User Client JSON engine approval response must be signed by the assigned User Node identity."
+    );
+    const projectedApprovedEngineApproval = await waitFor(
+      "Host projected approved engine approval",
+      async () => {
+        const inspection = runtimeApprovalInspectionResponseSchema.parse(
+          await hostRequest({
+            baseUrl: hostBaseUrl,
+            path: `/v1/runtimes/builder/approvals/${engineApprovalId}`
+          })
+        );
+
+        return inspection.approval.status === "approved"
+          ? inspection.approval
+          : undefined;
+      },
+      () => `\nstdout:\n${runnerStdout}\nstderr:\n${runnerStderr}`
+    );
+    printPass(
+      "user-node-engine-approval-response",
+      `approval=${projectedApprovedEngineApproval.approvalId}; status=${projectedApprovedEngineApproval.status}`
+    );
+
+    const continuationTurnId = `${turnId}-continuation`;
+    const continuationMessageResponse = await fetch(
+      new URL("/api/messages", userClientUrl),
+      {
+        body: JSON.stringify({
+          conversationId: userMessage.conversationId,
+          messageType: "task.request",
+          parentMessageId: engineApprovalResponseMessage.eventId,
+          responsePolicy: {
+            closeOnResult: false,
+            maxFollowups: 0,
+            responseRequired: false
+          },
+          sessionId: userMessage.sessionId,
+          summary:
+            "Process runner smoke: verify OpenCode same-session continuation.",
+          targetNodeId: "builder",
+          turnId: continuationTurnId
+        }),
+        headers: {
+          "content-type": "application/json"
+        },
+        method: "POST"
+      }
+    );
+    await assertResponseOk(
+      continuationMessageResponse,
+      "User Client JSON continuation publish"
+    );
+    const continuationMessage = userNodeMessagePublishResponseSchema.parse(
+      await continuationMessageResponse.json()
+    );
+    assertSignerMatchesFromPubkey(
+      continuationMessage,
+      "User Client JSON continuation publish"
+    );
+    assertCondition(
+      continuationMessage.signerPubkey ===
+        materializedUserContext.identityContext.publicKey,
+      "User Client JSON continuation publish must be signed by the assigned User Node identity."
+    );
+    const projectedContinuedEngineTurn = await waitFor(
+      "Host projected OpenCode continued engine turn",
+      async () => {
+        const turnList = runtimeTurnListResponseSchema.parse(
+          await hostRequest({
+            baseUrl: hostBaseUrl,
+            path: "/v1/runtimes/builder/turns"
+          })
+        );
+        const turn = turnList.turns.find(
+          (candidate) =>
+            candidate.messageId === continuationMessage.eventId &&
+            candidate.sessionId === userMessage.sessionId &&
+            candidate.engineOutcome?.engineSessionId ===
+              "opencode-smoke-session-continued"
+        );
+
+        if (!turn) {
+          return undefined;
+        }
+
+        const inspection = runtimeTurnInspectionResponseSchema.parse(
+          await hostRequest({
+            baseUrl: hostBaseUrl,
+            path: `/v1/runtimes/builder/turns/${turn.turnId}`
+          })
+        );
+
+        return inspection.turn.engineOutcome?.engineSessionId ===
+          "opencode-smoke-session-continued"
+          ? inspection.turn
+          : undefined;
+      },
+      () => `\nstdout:\n${runnerStdout}\nstderr:\n${runnerStderr}`
+    );
+    printPass(
+      "opencode-session-continuity",
+      `turn=${projectedContinuedEngineTurn.turnId}; engineSession=${projectedContinuedEngineTurn.engineOutcome?.engineSessionId}`
     );
 
     const projectedUserConversation = await waitFor(

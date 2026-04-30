@@ -508,7 +508,9 @@ The repository now also contains the first real implementation baseline:
   events, including tool titles, redacted input summaries, output summaries,
   durations, and call ids, plus adapter-local mapping from Entangle session ids
   to OpenCode session ids so later turns pass `--session` and keep node-local
-  coding context, while the federated dev runner image now installs
+  coding context, with the process-runner smoke now proving that continuation
+  path through a second User Node task and Host-projected engine outcome, while
+  the federated dev runner image now installs
   pinned `opencode-ai@1.14.20` and verifies `opencode --version` during image
   build, and host runtime inspection now carries a generic agent-runtime
   summary plus workspace-health status consumed by the shared host-client, CLI,
