@@ -4690,9 +4690,11 @@ describe("distributed proof profile contracts", () => {
         }
       ],
       checkGitBackendHealth: true,
+      checkUserClientHealth: true,
       gitServiceRefs: ["gitea"],
       hostUrl: "http://host.example:7071",
       relayUrls: ["ws://relay.example:7777"],
+      requireConversation: true,
       schemaVersion: 1,
       userNodeId: "user",
       userRunnerId: "distributed-user-runner"
@@ -4700,6 +4702,8 @@ describe("distributed proof profile contracts", () => {
 
     expect(result.agentEngineKind).toBe("opencode_server");
     expect(result.assignments).toHaveLength(3);
+    expect(result.checkUserClientHealth).toBe(true);
+    expect(result.requireConversation).toBe(true);
   });
 
   it("rejects profiles whose primary engine is not advertised", () => {

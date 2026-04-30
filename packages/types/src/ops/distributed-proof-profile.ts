@@ -19,9 +19,11 @@ export const distributedProofProfileSchema = z
     assignments: z.array(distributedProofAssignmentProfileSchema).default([]),
     checkGitBackendHealth: z.boolean().optional(),
     checkRelayHealth: z.boolean().optional(),
+    checkUserClientHealth: z.boolean().optional(),
     gitServiceRefs: z.array(identifierSchema).default([]),
     hostUrl: httpUrlSchema.optional(),
     relayUrls: z.array(websocketUrlSchema).default([]),
+    requireConversation: z.boolean().optional(),
     requireArtifactEvidence: z.boolean().optional(),
     reviewerUserNodeId: identifierSchema.default("reviewer"),
     reviewerUserRunnerId: identifierSchema.default(

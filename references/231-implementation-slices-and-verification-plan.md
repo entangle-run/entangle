@@ -1070,7 +1070,9 @@ Current status:
   optionally require projected artifact/source/wiki evidence from the agent
   node after work is produced plus relay WebSocket health for configured proof
   relays and Host catalog git backend health for selected or default git
-  services;
+  services; generated proof profiles now also carry the primary User Node
+  conversation and projected User Client health requirements so invoking the
+  verifier with only `--profile` keeps the generated proof strength;
 - `pnpm ops:smoke-distributed-proof-tools` now runs a deterministic
   no-infrastructure smoke for proof-kit syntax/help/dry-run paths and verifier
   self-test JSON, including stopped-runtime rejection and the explicit
@@ -1090,7 +1092,8 @@ Current status:
   evidence, missing relay URLs, file-backed git services, and missing git
   service refs fail when explicitly required; the verifier now honors explicit
   proof-profile assignment ids instead of always deriving them from runner ids,
-  and the smoke covers custom assignment ids;
+  and the smoke covers custom assignment ids plus profile-driven conversation
+  and User Client health requirements;
 - runtime-context runner startup and the Human Interface Runtime now support
   mounted-file identity secret delivery as well as env-var delivery, matching
   generic runner join behavior;

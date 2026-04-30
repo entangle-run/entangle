@@ -48,6 +48,10 @@ keep OpenCode as the default agent engine.
 - The smoke now checks the profile contract helper syntax and proves invalid
   schema versions plus inconsistent assignment runtime kinds fail before Host
   inspection.
+- Follow-up
+  [`439-distributed-proof-profile-conversation-health-slice.md`](439-distributed-proof-profile-conversation-health-slice.md)
+  extends the same contract with profile-driven conversation and User Client
+  health verification requirements.
 
 ## Tests Required
 

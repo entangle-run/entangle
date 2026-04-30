@@ -1,5 +1,14 @@
 # Entangle Wiki Log
 
+## [2026-04-29] verification | Added proof-profile conversation health checks
+
+Added `references/439-distributed-proof-profile-conversation-health-slice.md`.
+Generated distributed proof profiles now include `checkUserClientHealth` and
+`requireConversation`, and the verifier honors both from `--profile`.
+
+The generated scripts still pass explicit flags, but profile-only verification
+now preserves the same User Client and conversation requirements.
+
 ## [2026-04-29] studio | Added assignment-related navigation
 
 Added `references/438-studio-assignment-related-navigation-slice.md`.

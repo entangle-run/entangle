@@ -229,7 +229,9 @@ matching verifier command. Custom runner and graph node ids are also carried
 into `operator/proof-profile.json`, which the generated verifier command reads.
 The kit validates that profile as a distributed-proof contract before writing
 it, and the verifier rejects malformed or internally inconsistent profiles
-before inspecting Host state.
+before inspecting Host state. Generated profiles also carry the primary User
+Node conversation and User Client health requirements, so direct `--profile`
+verification stays aligned with the generated operator scripts.
 Pass `--check-relay-health` with at least one `--relay-url` when the generated
 operator command should also probe relay WebSocket reachability from the
 operator machine.
@@ -246,9 +248,7 @@ surfaces only:
 ```bash
 ENTANGLE_HOST_TOKEN=dev-token pnpm ops:distributed-proof-verify \
   --host-url http://host.example:7071 \
-  --profile .entangle/distributed-proof-kit/operator/proof-profile.json \
-  --check-user-client-health \
-  --require-conversation
+  --profile .entangle/distributed-proof-kit/operator/proof-profile.json
 ```
 
 The verifier defaults the expected agent engine to `opencode_server`; custom

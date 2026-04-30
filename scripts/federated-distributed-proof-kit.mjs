@@ -427,9 +427,11 @@ function buildProofProfile() {
     })),
     ...(checkRelayHealth ? { checkRelayHealth: true } : {}),
     ...(checkGitBackendHealth ? { checkGitBackendHealth: true } : {}),
+    checkUserClientHealth: true,
     ...(gitServiceRefs.length > 0 ? { gitServiceRefs } : {}),
     hostUrl,
     relayUrls,
+    requireConversation: true,
     reviewerUserNodeId,
     reviewerUserRunnerId,
     schemaVersion: 1,
@@ -492,7 +494,7 @@ ${runnerRows}
 - \`*/runner.env\`: runner-local Nostr secret and Host token placeholder or value.
 - \`*/start.sh\`: runner-machine start command.
 - \`operator/operator.env\`: Host URL and Host token placeholder or value.
-- \`operator/proof-profile.json\`: machine-readable runner, node, engine, relay, and optional git-service profile for the verifier.
+- \`operator/proof-profile.json\`: machine-readable runner, node, engine, relay, optional git-service, conversation, User Client health, and post-work evidence profile for the verifier.
 - \`operator/commands.sh\`: operator commands for trust, assignment, user message, projection, and verification.
 - \`operator/verify-topology.sh\`: repeatable topology, runtime, conversation, and optional relay/git verification.
 - \`operator/verify-artifacts.sh\`: post-work verifier requiring projected artifact/source/wiki evidence from the agent node.

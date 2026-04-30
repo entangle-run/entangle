@@ -31,8 +31,12 @@ const checkRelayHealth =
 const checkGitBackendHealth =
   hasFlag("--check-git-backend-health") ||
   readProofProfileBoolean("checkGitBackendHealth");
-const checkUserClientHealth = hasFlag("--check-user-client-health");
-const requireConversation = hasFlag("--require-conversation");
+const checkUserClientHealth =
+  hasFlag("--check-user-client-health") ||
+  readProofProfileBoolean("checkUserClientHealth");
+const requireConversation =
+  hasFlag("--require-conversation") ||
+  readProofProfileBoolean("requireConversation");
 const requireArtifactEvidence =
   hasFlag("--require-artifact-evidence") ||
   readProofProfileBoolean("requireArtifactEvidence");
@@ -124,8 +128,8 @@ Options:
   --check-relay-health            Open each configured relay WebSocket.
   --git-service-ref <id>          Git service ref for optional health checks. May be repeated or comma-separated. Defaults to profile gitServiceRefs or Host catalog default.
   --check-git-backend-health      Check expected Host catalog git services and their public base URLs, and reject file-backed git remotes for distributed proof.
-  --check-user-client-health      Fetch /health for projected User Client URLs.
-  --require-conversation          Require a projected conversation from the primary User Node to the agent node.
+  --check-user-client-health      Fetch /health for projected User Client URLs. Defaults to profile checkUserClientHealth.
+  --require-conversation          Require a projected conversation from the primary User Node to the agent node. Defaults to profile requireConversation.
   --require-artifact-evidence     Require projected artifact/source/wiki evidence from the agent node.
   --agent-runner <id>             Agent runner id. Default: distributed-agent-runner
   --user-runner <id>              Primary User Node runner id. Default: distributed-user-runner

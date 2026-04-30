@@ -248,7 +248,9 @@ try {
       '"agentEngineKind":"external_process"',
       '"checkRelayHealth":true',
       '"checkGitBackendHealth":true',
-      '"gitServiceRefs":["gitea"]'
+      '"checkUserClientHealth":true',
+      '"gitServiceRefs":["gitea"]',
+      '"requireConversation":true'
     ]
   });
 
@@ -280,9 +282,11 @@ try {
         agentRunnerId: "proof-agent-runner",
         checkGitBackendHealth: true,
         checkRelayHealth: true,
+        checkUserClientHealth: true,
         gitServiceRefs: ["gitea"],
         hostUrl: "http://host.example:7071",
         relayUrls: ["ws://relay.example:7777"],
+        requireConversation: true,
         requireArtifactEvidence: true,
         reviewerUserNodeId: "bob",
         reviewerUserRunnerId: "proof-reviewer-runner",

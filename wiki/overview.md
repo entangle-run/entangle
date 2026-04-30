@@ -279,6 +279,9 @@ without reading Host or runner files; custom proof profiles can override the
 expected agent engine kind while OpenCode remains the default.
 When a proof profile carries explicit assignments, the verifier now uses those
 manifest assignment ids rather than deriving ids from runner ids.
+Generated proof profiles now also carry primary User Node conversation and
+User Client health requirements, so profile-only verification keeps the same
+topology strength as the generated operator scripts.
 The verifier can also require projected artifact/source/wiki evidence from the
 agent node after work is produced with `--require-artifact-evidence`.
 It can additionally check configured relay WebSocket reachability with
