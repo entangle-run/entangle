@@ -1,4 +1,5 @@
 import { createServer, type IncomingMessage, type ServerResponse } from "node:http";
+import { timingSafeEqual } from "node:crypto";
 import { readFile, stat } from "node:fs/promises";
 import type { AddressInfo } from "node:net";
 import path from "node:path";
@@ -73,6 +74,11 @@ type UserClientTarget = {
   channel: string;
   nodeId: string;
   relation: string;
+};
+
+type HumanInterfaceBasicAuth = {
+  password: string;
+  username: string;
 };
 
 type UserClientState = {
@@ -339,6 +345,79 @@ function normalizeUserClientStaticDir(): string | undefined {
   const configuredStaticDir = process.env.ENTANGLE_USER_CLIENT_STATIC_DIR?.trim();
 
   return configuredStaticDir ? path.resolve(configuredStaticDir) : undefined;
+}
+
+function normalizeHumanInterfaceBasicAuth():
+  | HumanInterfaceBasicAuth
+  | undefined {
+  const configured = process.env.ENTANGLE_HUMAN_INTERFACE_BASIC_AUTH?.trim();
+
+  if (!configured) {
+    return undefined;
+  }
+
+  const separatorIndex = configured.indexOf(":");
+
+  if (separatorIndex <= 0 || separatorIndex === configured.length - 1) {
+    throw new Error(
+      "ENTANGLE_HUMAN_INTERFACE_BASIC_AUTH must use username:password with non-empty values."
+    );
+  }
+
+  const username = configured.slice(0, separatorIndex);
+  const password = configured.slice(separatorIndex + 1);
+
+  return { password, username };
+}
+
+function constantTimeStringEquals(left: string, right: string): boolean {
+  const leftBuffer = Buffer.from(left, "utf8");
+  const rightBuffer = Buffer.from(right, "utf8");
+
+  return (
+    leftBuffer.length === rightBuffer.length &&
+    timingSafeEqual(leftBuffer, rightBuffer)
+  );
+}
+
+function isHumanInterfaceBasicAuthAuthorized(input: {
+  authorization: string | undefined;
+  basicAuth: HumanInterfaceBasicAuth;
+}): boolean {
+  const prefix = "Basic ";
+
+  if (!input.authorization?.startsWith(prefix)) {
+    return false;
+  }
+
+  const decoded = Buffer.from(
+    input.authorization.slice(prefix.length),
+    "base64"
+  ).toString("utf8");
+  const separatorIndex = decoded.indexOf(":");
+
+  if (separatorIndex < 0) {
+    return false;
+  }
+
+  const username = decoded.slice(0, separatorIndex);
+  const password = decoded.slice(separatorIndex + 1);
+
+  return (
+    constantTimeStringEquals(username, input.basicAuth.username) &&
+    constantTimeStringEquals(password, input.basicAuth.password)
+  );
+}
+
+function writeHumanInterfaceUnauthorized(response: ServerResponse): void {
+  response.statusCode = 401;
+  response.setHeader("www-authenticate", 'Basic realm="entangle-user-client"');
+  response.setHeader("content-type", "application/json; charset=utf-8");
+  response.end(
+    JSON.stringify({
+      error: "unauthorized"
+    })
+  );
 }
 
 function isUserClientStaticRequest(pathname: string): boolean {
@@ -3632,6 +3711,7 @@ export async function startHumanInterfaceRuntime(input: {
   const listenHost =
     process.env.ENTANGLE_HUMAN_INTERFACE_HOST?.trim() || "127.0.0.1";
   const listenPort = normalizeListenPort();
+  const basicAuth = normalizeHumanInterfaceBasicAuth();
   const userClientStaticRoot = normalizeUserClientStaticDir();
   const inboundTransport =
     input.transport ?? (await createHumanInterfaceTransport(input.context));
@@ -3650,6 +3730,20 @@ export async function startHumanInterfaceRuntime(input: {
           ok: true,
           runtimeKind: "human_interface"
         });
+        return;
+      }
+
+      if (
+        basicAuth &&
+        !isHumanInterfaceBasicAuthAuthorized({
+          authorization:
+            typeof request.headers.authorization === "string"
+              ? request.headers.authorization
+              : undefined,
+          basicAuth
+        })
+      ) {
+        writeHumanInterfaceUnauthorized(response);
         return;
       }
 

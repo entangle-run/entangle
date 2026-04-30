@@ -383,6 +383,11 @@ Override these with `ENTANGLE_DOCKER_HUMAN_INTERFACE_PORT_BASE`,
 `ENTANGLE_DOCKER_HUMAN_INTERFACE_PUBLIC_HOST`, and
 `ENTANGLE_DOCKER_HUMAN_INTERFACE_BIND_HOST`.
 
+If a User Client port is exposed beyond a trusted loopback or private network,
+set `ENTANGLE_HUMAN_INTERFACE_BASIC_AUTH=username:password` in the runner
+environment. The Human Interface Runtime will keep `/health` unauthenticated
+for liveness checks and require Basic Auth for all other User Client routes.
+
 ## Operator Token
 
 The federated dev profile defaults to a tokenless host for development

@@ -373,7 +373,9 @@ This repository currently contains:
   JSON APIs and can be served by the Human Interface Runtime from
   `ENTANGLE_USER_CLIENT_STATIC_DIR`, with the federated dev runner image now
   bundling that built app by default and the Docker launcher now able to publish
-  a browser-openable User Client port for User Node runtime contexts, and with
+  a browser-openable User Client port for User Node runtime contexts, with
+  optional runtime-local Basic Auth available through
+  `ENTANGLE_HUMAN_INTERFACE_BASIC_AUTH=username:password`, and with
   the dedicated app now using runtime-local JSON routes for artifact preview,
   source diff, source file preview, source-candidate review, wiki preview
   cards, and automatic thread read-state convergence, with source and artifact

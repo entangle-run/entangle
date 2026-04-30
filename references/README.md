@@ -213,6 +213,9 @@ Target-specific participant wiki publication requests now require the selected
 conversation to contain a matching `wiki_repository_publication` resource, and
 the process-runner smoke now verifies the target-specific projected artifact
 and git branch head for that participant path.
+Human Interface Runtime HTTP surfaces can now require optional runtime-local
+Basic Auth through `ENTANGLE_HUMAN_INTERFACE_BASIC_AUTH`, while keeping
+`/health` public for liveness checks and the Host bearer token server-side.
 CLI can also inspect runtime command receipts directly from Host projection
 with assignment, node, runner, command type, status, and limit filters. Studio
 can now open assignment-scoped
@@ -720,6 +723,7 @@ files are the active federated redesign pack.
 450. [449-studio-wiki-page-upsert-slice.md](449-studio-wiki-page-upsert-slice.md)
 451. [450-source-history-reconcile-control-slice.md](450-source-history-reconcile-control-slice.md)
 452. [451-user-client-source-history-reconcile-slice.md](451-user-client-source-history-reconcile-slice.md)
+453. [452-human-interface-runtime-basic-auth-slice.md](452-human-interface-runtime-basic-auth-slice.md)
 
 ## Role of this corpus
 

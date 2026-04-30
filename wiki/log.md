@@ -5411,3 +5411,14 @@ The Human Interface Runtime forwards the request through Host with the User
 Node as requester and preserves `approvalId` when present. Target-specific
 `source_history_publication` resources remain limited to publication so a
 publication approval cannot authorize source workspace mutation.
+
+## [2026-04-29] security | Added optional Human Interface Runtime Basic Auth
+
+Added `references/452-human-interface-runtime-basic-auth-slice.md`. Human
+Interface Runtime HTTP surfaces can now require runtime-local Basic Auth via
+`ENTANGLE_HUMAN_INTERFACE_BASIC_AUTH=username:password`.
+
+`/health` remains public for Host/operator liveness checks, while fallback
+HTML, static User Client assets, and `/api/*` routes require credentials when
+the option is configured. The Host API bearer token remains server-side inside
+the runtime process.

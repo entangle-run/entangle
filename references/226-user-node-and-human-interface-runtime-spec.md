@@ -43,6 +43,11 @@ User nodes are now partially runtime-capable:
   source-candidate accept/reject review, and wiki preview cards.
 - The Human Interface Runtime can serve dedicated User Client static assets
   from `ENTANGLE_USER_CLIENT_STATIC_DIR` while keeping `/api/*` routes dynamic.
+- The Human Interface Runtime can require browser-native Basic Auth for all
+  non-health routes when
+  `ENTANGLE_HUMAN_INTERFACE_BASIC_AUTH=username:password` is set. `/health`
+  remains public for liveness probes, and the Host API bearer token remains
+  server-side inside the runtime.
 - The federated dev runner image now builds and bundles that dedicated app at
   `/app/user-client`, sets `ENTANGLE_USER_CLIENT_STATIC_DIR` by default, and
   the Docker launcher adapter can publish a host port plus

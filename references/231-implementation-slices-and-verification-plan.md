@@ -653,6 +653,10 @@ Current status:
   and approval response;
 - the Human Interface Runtime can serve configured static User Client assets
   from `ENTANGLE_USER_CLIENT_STATIC_DIR`;
+- the Human Interface Runtime can require optional Basic Auth for all
+  non-health User Client routes through
+  `ENTANGLE_HUMAN_INTERFACE_BASIC_AUTH=username:password`, keeping `/health`
+  public and keeping Host API bearer tokens inside the runtime process;
 - the federated dev runner image now bundles the built User Client app and sets
   `ENTANGLE_USER_CLIENT_STATIC_DIR` by default;
 - the Docker launcher adapter can publish a configurable, deterministic host

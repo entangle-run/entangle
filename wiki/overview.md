@@ -250,8 +250,11 @@ the runtime can serve static User Client assets from
 `ENTANGLE_USER_CLIENT_STATIC_DIR`. The
 federated dev runner image now bundles that built app, and the Docker launcher
 adapter can publish a browser-openable User Client port for User Node runtime
-contexts. The dedicated app now reaches runtime-local JSON routes for artifact
-preview, source diff, source file preview, source-candidate review, wiki
+contexts. Human Interface Runtime routes can require optional runtime-local
+Basic Auth through `ENTANGLE_HUMAN_INTERFACE_BASIC_AUTH=username:password`,
+with `/health` left public for liveness checks. The dedicated app now reaches
+runtime-local JSON routes for artifact preview, source diff, source file
+preview, source-candidate review, wiki
 preview cards, and automatic thread read-state convergence, with source and
 artifact evidence scoped to selected User Node conversations. Studio
 remains the operator surface, not the primary human-node client. Approval

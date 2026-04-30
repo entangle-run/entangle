@@ -50,6 +50,7 @@ afterEach(async () => {
   delete process.env.ENTANGLE_RUNNER_NOSTR_SECRET_KEY;
   delete process.env.ENTANGLE_RUNNER_STATE_ROOT;
   delete process.env.ENTANGLE_HOST_TOKEN;
+  delete process.env.ENTANGLE_HUMAN_INTERFACE_BASIC_AUTH;
   delete process.env.ENTANGLE_HUMAN_INTERFACE_PUBLIC_URL;
   delete process.env.ENTANGLE_USER_CLIENT_STATIC_DIR;
   vi.unstubAllGlobals();
@@ -913,6 +914,90 @@ describe("runner runtime context", () => {
     } finally {
       await handle.stop();
     }
+  });
+
+  it("can require Basic auth for the Human Interface Runtime", async () => {
+    const fixture = await createRuntimeFixture();
+    process.env.ENTANGLE_HUMAN_INTERFACE_BASIC_AUTH = "human:secret";
+    const context: EffectiveRuntimeContext = {
+      ...fixture.context,
+      agentRuntimeContext: {
+        ...fixture.context.agentRuntimeContext,
+        mode: "disabled"
+      },
+      binding: {
+        ...fixture.context.binding,
+        node: {
+          ...fixture.context.binding.node,
+          displayName: "User",
+          nodeId: "user-main",
+          nodeKind: "user"
+        }
+      }
+    };
+    const handle = await startHumanInterfaceRuntime({
+      context
+    });
+
+    try {
+      const healthResponse = await fetch(new URL("/health", handle.clientUrl));
+      expect(healthResponse.status).toBe(200);
+
+      const unauthenticatedResponse = await fetch(
+        new URL("/api/state", handle.clientUrl)
+      );
+      expect(unauthenticatedResponse.status).toBe(401);
+      expect(unauthenticatedResponse.headers.get("www-authenticate")).toBe(
+        'Basic realm="entangle-user-client"'
+      );
+
+      const invalidResponse = await fetch(new URL("/api/state", handle.clientUrl), {
+        headers: {
+          authorization: `Basic ${Buffer.from("human:wrong").toString("base64")}`
+        }
+      });
+      expect(invalidResponse.status).toBe(401);
+
+      const authorizedResponse = await fetch(
+        new URL("/api/state", handle.clientUrl),
+        {
+          headers: {
+            authorization: `Basic ${Buffer.from("human:secret").toString("base64")}`
+          }
+        }
+      );
+      expect(authorizedResponse.status).toBe(200);
+      await expect(authorizedResponse.json()).resolves.toMatchObject({
+        userNodeId: "user-main"
+      });
+    } finally {
+      await handle.stop();
+    }
+  });
+
+  it("rejects malformed Human Interface Runtime Basic auth configuration", async () => {
+    const fixture = await createRuntimeFixture();
+    process.env.ENTANGLE_HUMAN_INTERFACE_BASIC_AUTH = "missing-password";
+    const context: EffectiveRuntimeContext = {
+      ...fixture.context,
+      agentRuntimeContext: {
+        ...fixture.context.agentRuntimeContext,
+        mode: "disabled"
+      },
+      binding: {
+        ...fixture.context.binding,
+        node: {
+          ...fixture.context.binding.node,
+          displayName: "User",
+          nodeId: "user-main",
+          nodeKind: "user"
+        }
+      }
+    };
+
+    await expect(startHumanInterfaceRuntime({ context })).rejects.toThrow(
+      "ENTANGLE_HUMAN_INTERFACE_BASIC_AUTH must use username:password"
+    );
   });
 
   it("serves User Node inbox state and publishes selected conversation messages", async () => {
