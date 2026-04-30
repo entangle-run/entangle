@@ -2,17 +2,20 @@
 
 ## Current Repo Truth
 
-Follow-up note: `436-root-test-gate-single-fork-worker-slice.md` supersedes
-the root-wrapper pool alignment decision. Runner's package-level test script
-still uses `--pool=threads`, but the root aggregate test command now uses
-`--pool=forks --maxWorkers=1` after mixed pool settings
-continued to reproduce intermittent no-output stalls.
-The same follow-up ultimately removed the root wrapper entirely and replaced
-root `pnpm test` with one direct aggregate Vitest command.
+Follow-up note: `436-root-test-gate-single-fork-worker-slice.md` superseded the
+root-wrapper pool alignment decision, and
+`446-runner-test-gate-fork-stability-slice.md` later superseded the runner
+package's threads setting. Runner's package-level test script now uses
+`--pool=forks --maxWorkers=1 --testTimeout=30000`, matching the single-fork
+stability profile after `--pool=threads` reproduced a no-output hang.
+The root wrapper was removed earlier and replaced with one direct aggregate
+Vitest command plus package-level service suites.
 
-The runner package test script already uses Vitest `--pool=threads`, and the
-root test reliability record states that runner tests should use the threads
-pool after the default pool reproduced no-output hangs in this environment.
+At the time of this historical slice, the runner package test script used
+Vitest `--pool=threads`, and the root test reliability record stated that
+runner tests should use the threads pool after the default pool reproduced
+no-output hangs in this environment. That is no longer the current stable
+truth.
 
 Before this slice, `scripts/run-workspace-tests.mjs` had drifted from that
 truth: the root wrapper still launched `@entangle/runner` with the default
@@ -26,8 +29,8 @@ At the time of this slice, root `pnpm test` should execute the runner suite
 with the same stable pool used by the runner package script and documented by
 the root test reliability slice. After the follow-up in
 `436-root-test-gate-single-fork-worker-slice.md`, the durable target changed:
-package-level runner tests still use `--pool=threads`, while the root
-aggregate gate uses a single fork worker for every suite.
+package-level runner tests now use `--pool=forks --maxWorkers=1`, while the
+root aggregate gate uses a single fork worker for the aggregate suite.
 
 ## Impacted Modules And Files
 

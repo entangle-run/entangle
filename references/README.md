@@ -229,9 +229,9 @@ required-artifact-evidence success/failure paths, before an operator attempts
 the real distributed proof. It also proves relay-health success and missing
 relay failure paths plus git-backend-health success, file-backed-git rejection,
 and missing-git-service rejection.
-The root sequential `pnpm test` wrapper now also launches the runner suite with
-the same `--pool=threads` setting used by the runner package script, removing a
-documented root-gate drift that reproduced a runner no-output hang.
+The root `pnpm test` gate and the runner package script now run the runner
+suite with `--pool=forks --maxWorkers=1`, after the previous threads setting
+reproduced a no-output hang while the single-fork command passed directly.
 Studio can now also trust or revoke projected runners from the Federation panel
 through the same Host runner registry boundary used by the CLI, and enriches
 those rows with full Host runner registry liveness, heartbeat, runtime-kind,
@@ -695,6 +695,7 @@ files are the active federated redesign pack.
 444. [443-host-event-server-filtering-slice.md](443-host-event-server-filtering-slice.md)
 445. [444-hashed-bootstrap-operator-token-slice.md](444-hashed-bootstrap-operator-token-slice.md)
 446. [445-bootstrap-operator-permissions-slice.md](445-bootstrap-operator-permissions-slice.md)
+447. [446-runner-test-gate-fork-stability-slice.md](446-runner-test-gate-fork-stability-slice.md)
 
 ## Role of this corpus
 

@@ -129,9 +129,14 @@ Later follow-up verification also covered:
 - `pnpm --dir services/host exec vitest run --config ../../vitest.config.ts --environment node src/*.test.ts --pool=threads`
 - `pnpm --dir services/runner exec vitest run --config ../../vitest.config.ts --environment node src/*.test.ts --pool=threads`
 - `pnpm --dir services/runner exec vitest run --config ../../vitest.config.ts --environment node src/*.test.ts --pool=forks`
+- follow-up superseding check:
+  `pnpm --dir services/runner exec vitest run --config ../../vitest.config.ts --environment node src/*.test.ts --pool=forks --maxWorkers=1 --testTimeout=30000`
 - direct local Vitest execution through `scripts/run-workspace-tests.mjs`,
   including filesystem-expanded test file lists for every workspace suite;
 - `pnpm test` after aligning the root runner suite to `--pool=threads`;
+- follow-up note: `446-runner-test-gate-fork-stability-slice.md` supersedes
+  the runner threads setting because the runner package later reproduced a
+  no-output hang under threads while passing under single-fork execution;
 - direct full-wrapper experiment with `--pool=forks --maxWorkers=1` for every
   workspace suite before adopting that root-gate setting;
 

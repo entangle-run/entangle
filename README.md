@@ -176,7 +176,9 @@ environment. The aggregate config covers workspace `src/**/*.test.ts` files
 under `apps` and `packages`; Host and Runner service tests then run through
 their package-level scripts so their service-local fixtures keep their
 existing isolated process boundaries. The aggregate segment uses a single fork
-worker (`--pool=forks --maxWorkers=1`) for predictable local completion.
+worker (`--pool=forks --maxWorkers=1`) for predictable local completion, and
+the Runner service script now uses the same single-fork stability profile after
+the previous threads setting reproduced a no-output hang.
 
 For manual API-backed testing, add `--keep-running`. The smoke keeps Host and
 all joined runner processes alive, keeps their temporary state roots, prints

@@ -5340,3 +5340,14 @@ Host enforces scoped permissions before route handlers while keeping unscoped
 role-compatible behavior for existing deployments. Host status and
 `host.operator_request.completed` audit events expose configured permission
 names without exposing bearer-token material.
+
+## [2026-04-29] tooling | Stabilized runner test gate on single-fork execution
+
+Added `references/446-runner-test-gate-fork-stability-slice.md`. Root
+`pnpm test` passed the aggregate app/package suite, then the runner package
+test command stalled without output under `--pool=threads`.
+
+The same runner suite passed directly with
+`--pool=forks --maxWorkers=1 --testTimeout=30000`, so the runner package test
+script now uses that single-fork profile. This is a verification tooling
+change only; runtime behavior and protocol contracts are unchanged.
