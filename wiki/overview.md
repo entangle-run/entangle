@@ -276,6 +276,8 @@ capabilities, assignments, projection, default `running` runtime observations,
 distinct multi-user User Client URLs, and optional conversation evidence
 without reading Host or runner files; custom proof profiles can override the
 expected agent engine kind while OpenCode remains the default.
+When a proof profile carries explicit assignments, the verifier now uses those
+manifest assignment ids rather than deriving ids from runner ids.
 The verifier can also require projected artifact/source/wiki evidence from the
 agent node after work is produced with `--require-artifact-evidence`.
 It can additionally check configured relay WebSocket reachability with
@@ -290,9 +292,9 @@ Client URL rejection plus wrong-runtime-kind and wrong-agent-engine rejection,
 plus proof-kit and verifier non-default expected-agent-engine/profile manifest
 paths, invalid proof-profile failure paths, proof-kit relay-health generation
 paths, generated post-work artifact-verifier paths, required-artifact-evidence
-success/failure paths, and relay-health success/failure paths plus
-git-backend-health success/failure paths before a real distributed proof is
-attempted.
+success/failure paths, custom proof-profile assignment ids, and relay-health
+success/failure paths plus git-backend-health success/failure paths before a
+real distributed proof is attempted.
 Host runtime synchronization now also preserves observed User Node
 `human_interface` runtime projection records, so a runtime inspection refresh
 does not hide live User Client endpoints for active User Nodes.
@@ -1020,12 +1022,13 @@ The repository now also contains the first real implementation baseline:
 - a verified `pnpm verify` path for the current workspace, with root
   `pnpm test` running one direct aggregate Vitest command from the repo root
   with `vitest.aggregate.config.ts`, covering workspace `src/**/*.test.ts`
-  files under `apps`, `packages`, and `services`, and avoiding Turbo, long
-  shell chains, nested `pnpm`, repeated Vitest child processes, a Node wrapper
-  around Vitest, shell globbing, and package-local implicit discovery after
-  those paths reproduced no-output hangs in this environment; the root
-  aggregate uses Vitest's fork pool with one worker, while package-level test
-  scripts keep their focused per-package settings;
+  files under `apps` and `packages`, then running Host and Runner through
+  their package-level service test scripts, and avoiding Turbo, long shell
+  chains, nested broad `pnpm` loops, repeated per-workspace Vitest child
+  processes, a Node wrapper around Vitest, shell globbing, and package-local
+  implicit discovery after those paths reproduced no-output hangs in this
+  environment; the root aggregate segment uses Vitest's fork pool with one
+  worker while service tests keep isolated package-level process boundaries;
 - a successful live local relay smoke where a wrapped Entangle message produced
   persisted session, conversation, and turn records under the runner runtime
   root;

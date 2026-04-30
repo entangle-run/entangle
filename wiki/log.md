@@ -1,5 +1,15 @@
 # Entangle Wiki Log
 
+## [2026-04-29] verification | Honored proof-profile assignment ids
+
+Added `references/437-distributed-proof-verifier-assignment-profile-slice.md`.
+`pnpm ops:distributed-proof-verify` now derives expected assignment ids from
+the proof profile's explicit `assignments` manifest when present, instead of
+always deriving them from runner ids.
+
+`pnpm ops:smoke-distributed-proof-tools` now covers a custom-assignment proof
+profile whose assignment ids do not follow the default convention.
+
 ## [2026-04-29] tooling | Stabilized root test gate with aggregate Vitest
 
 Added `references/436-root-test-gate-single-fork-worker-slice.md`. After
@@ -10,9 +20,10 @@ Vitest process from the repo root with `vitest.aggregate.config.ts` and
 `scripts/run-workspace-tests.mjs` wrapper was removed because repeated Vitest
 child processes remained nondeterministic.
 
-Package-level test scripts keep their focused per-package pool settings; the
-root gate now prioritizes aggregate completion over per-package process
-parity.
+Follow-up verification showed Host service fixtures should not share the full
+aggregate profile. Root `pnpm test` now runs the aggregate segment for apps and
+packages, then runs Runner and Host through their package-level service test
+scripts.
 
 ## [2026-04-29] tooling | Added generated post-work proof verifier
 

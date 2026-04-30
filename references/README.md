@@ -41,15 +41,16 @@ then
 and
 [253-live-relay-federated-smoke-slice.md](253-live-relay-federated-smoke-slice.md),
 with later implementation records through
-[436-root-test-gate-single-fork-worker-slice.md](436-root-test-gate-single-fork-worker-slice.md)
+[437-distributed-proof-verifier-assignment-profile-slice.md](437-distributed-proof-verifier-assignment-profile-slice.md)
 covering process-runner smoke, portable runtime bootstrap, User Node Human
 Interface Runtime/User Client work, runner-emitted artifact/source/wiki
 observed refs, projection-backed read surfaces, federated runtime lifecycle,
 operator receipt/transport visibility, runner-owned source history, and removal
 of direct Host source/wiki/artifact filesystem mutation paths plus federated
 session-cancellation, source-history-publication, source-history-replay control
-delivery, distributed proof tooling, root verification gate hardening, matching
-Studio replay request controls, projected source-history
+delivery, distributed proof tooling, root verification gate hardening,
+proof-profile assignment verification, matching Studio replay request
+controls, projected source-history
 replay outcome read models, per-assignment timeline read models, process smoke
 coverage for assignment timelines, User Client JSON read-state convergence,
 runner-owned wiki publication control, and Studio wiki publication request
@@ -678,6 +679,7 @@ files are the active federated redesign pack.
 435. [434-distributed-proof-kit-relay-health-profile-slice.md](434-distributed-proof-kit-relay-health-profile-slice.md)
 436. [435-distributed-proof-kit-post-work-verifier-slice.md](435-distributed-proof-kit-post-work-verifier-slice.md)
 437. [436-root-test-gate-single-fork-worker-slice.md](436-root-test-gate-single-fork-worker-slice.md)
+438. [437-distributed-proof-verifier-assignment-profile-slice.md](437-distributed-proof-verifier-assignment-profile-slice.md)
 
 ## Role of this corpus
 

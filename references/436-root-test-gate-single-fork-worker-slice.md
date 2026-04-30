@@ -19,14 +19,17 @@ that under a `pnpm` parent, inheriting child stdio could still hang before
 stdin completed the same package sequence. Repeated per-workspace Vitest
 launches nevertheless remained nondeterministic, with the stalled suite
 changing between attempts. A direct single Vitest invocation with a root
-aggregate config completed cleanly.
+aggregate config completed cleanly. Follow-up `pnpm verify` then showed the
+full aggregate profile could make a Host service fixture unstable, so the
+durable root gate now keeps Host and Runner on their package-level service
+test scripts after the aggregate app/package segment.
 
 ## Target Model
 
-The root test gate should use one direct Vitest process for the full workspace
-test set. Package-level test scripts can keep their faster or package-specific
-commands, while the root aggregate gate uses a root config and one fork worker
-to avoid cross-process lifecycle interaction hangs.
+The root test gate should use one direct Vitest process for the app/package
+test set and run service-heavy Host and Runner tests through their
+package-level scripts. That preserves the stable root aggregate behavior
+without forcing service fixtures into a shared monorepo-wide test profile.
 
 ## Impacted Modules And Files
 
@@ -45,13 +48,14 @@ to avoid cross-process lifecycle interaction hangs.
 ## Concrete Changes
 
 - Added `vitest.aggregate.config.ts`, a root-scoped Vitest config whose include
-  pattern covers `apps`, `packages`, and `services` test files.
-- Replaced the root `test` script with one direct Vitest aggregate command:
-  `vitest run --config vitest.aggregate.config.ts --environment node --pool=forks --maxWorkers=1`.
+  pattern covers workspace test files.
+- Replaced the root `test` script with a split gate: one direct Vitest
+  aggregate command excluding Host and Runner service tests, followed by
+  package-level Runner and Host test scripts.
 - Removed `scripts/run-workspace-tests.mjs` because the Node wrapper itself was
   part of the unstable execution path.
-- Kept package-level test scripts unchanged so targeted package tests continue
-  using their established local commands.
+- Kept package-level service test scripts unchanged so Host and Runner keep
+  their established isolated commands.
 - Updated root test gate documentation to describe the aggregate root
   execution model rather than per-package wrapper execution.
 
@@ -75,10 +79,11 @@ aggregate gate is more valuable when it exits predictably.
 
 ## Risks And Mitigations
 
-- Risk: single-worker forks hide package-specific concurrency issues.
+- Risk: single-worker aggregate tests hide package-specific concurrency issues
+  for app/package suites.
   Mitigation: package-level test commands remain available and keep their
-  package-specific settings; the root gate is an aggregate correctness and
-  completion gate.
+  package-specific settings; Host and Runner service tests already run through
+  their package-level scripts in the root gate.
 - Risk: future Vitest versions make another pool strategy better.
   Mitigation: this slice records the observed failure mode and acceptance
   checks so the root gate can be revisited deliberately.

@@ -237,6 +237,7 @@ same-machine slice records.
 - [434-distributed-proof-kit-relay-health-profile-slice.md](434-distributed-proof-kit-relay-health-profile-slice.md)
 - [435-distributed-proof-kit-post-work-verifier-slice.md](435-distributed-proof-kit-post-work-verifier-slice.md)
 - [436-root-test-gate-single-fork-worker-slice.md](436-root-test-gate-single-fork-worker-slice.md)
+- [437-distributed-proof-verifier-assignment-profile-slice.md](437-distributed-proof-verifier-assignment-profile-slice.md)
 
 ## Audited Scope
 

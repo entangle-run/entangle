@@ -305,6 +305,57 @@ try {
     writeFileSync(
       proofProfilePath,
       `${JSON.stringify({
+        agentEngineKind: "external_process",
+        agentNodeId: "architect",
+        agentRunnerId: "proof-agent-runner",
+        assignments: [
+          {
+            assignmentId: "proof-agent-runtime-assignment",
+            nodeId: "architect",
+            runnerId: "proof-agent-runner",
+            runtimeKinds: ["agent_runner"]
+          },
+          {
+            assignmentId: "proof-alice-runtime-assignment",
+            nodeId: "alice",
+            runnerId: "proof-user-runner",
+            runtimeKinds: ["human_interface"]
+          },
+          {
+            assignmentId: "proof-bob-runtime-assignment",
+            nodeId: "bob",
+            runnerId: "proof-reviewer-runner",
+            runtimeKinds: ["human_interface"]
+          }
+        ],
+        hostUrl: "http://host.example:7071",
+        reviewerUserNodeId: "bob",
+        reviewerUserRunnerId: "proof-reviewer-runner",
+        schemaVersion: 1,
+        userNodeId: "alice",
+        userRunnerId: "proof-user-runner"
+      })}\n`,
+      "utf8"
+    );
+
+    const customAssignmentProfileSelfTestJson = runStep(
+      "proof verifier custom-assignment profile self-test",
+      [
+        "scripts/federated-distributed-proof-verify.mjs",
+        "--self-test",
+        "--json",
+        "--profile",
+        proofProfilePath
+      ],
+      {
+        mustContain: "proof-agent-runtime-assignment"
+      }
+    );
+    verifySelfTestJson(customAssignmentProfileSelfTestJson);
+
+    writeFileSync(
+      proofProfilePath,
+      `${JSON.stringify({
         hostUrl: "http://host.example:7071",
         schemaVersion: 2
       })}\n`,

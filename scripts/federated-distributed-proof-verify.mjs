@@ -78,7 +78,7 @@ const gitServiceRefs =
     ? requestedGitServiceRefs
     : readProofProfileStringArray("gitServiceRefs");
 
-const expectedProfiles = [
+const defaultExpectedProfiles = [
   {
     agentEngineKind,
     assignmentId: `assignment-${agentRunnerId}`,
@@ -99,6 +99,7 @@ const expectedProfiles = [
     runtimeKind: "human_interface"
   }
 ];
+const expectedProfiles = buildExpectedProfilesFromProofProfile();
 
 function usage() {
   console.log(`Usage: pnpm ops:distributed-proof-verify [options]
@@ -230,6 +231,49 @@ function readProofProfileStringArray(key) {
   return Array.isArray(value)
     ? value.filter((entry) => typeof entry === "string" && entry.trim().length > 0)
     : [];
+}
+
+function buildExpectedProfilesFromProofProfile() {
+  if (
+    !Array.isArray(proofProfile?.assignments) ||
+    proofProfile.assignments.length === 0
+  ) {
+    return defaultExpectedProfiles;
+  }
+
+  return proofProfile.assignments.map((assignment) => {
+    const defaultProfile = defaultExpectedProfiles.find(
+      (profile) =>
+        profile.nodeId === assignment.nodeId &&
+        profile.runnerId === assignment.runnerId
+    );
+    const runtimeKind =
+      defaultProfile?.runtimeKind ?? selectRuntimeKind(assignment.runtimeKinds);
+
+    return {
+      agentEngineKind:
+        runtimeKind === "agent_runner" ? agentEngineKind : undefined,
+      assignmentId: assignment.assignmentId,
+      nodeId: assignment.nodeId,
+      runnerId: assignment.runnerId,
+      runtimeKind
+    };
+  });
+}
+
+function selectRuntimeKind(runtimeKinds) {
+  for (const preferred of [
+    "agent_runner",
+    "human_interface",
+    "service_runner",
+    "external_gateway"
+  ]) {
+    if (runtimeKinds.includes(preferred)) {
+      return preferred;
+    }
+  }
+
+  return runtimeKinds[0];
 }
 
 function parsePositiveInteger(value) {

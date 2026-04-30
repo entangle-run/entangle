@@ -162,7 +162,7 @@ pnpm ops:check-product-naming
 That check scans active code, deployment, example, script, package, and README
 surfaces so obsolete local product/profile labels do not return.
 
-The root test gate uses one aggregate Vitest run:
+The root test gate uses an aggregate Vitest run plus isolated service suites:
 
 ```bash
 pnpm test
@@ -173,10 +173,10 @@ It runs Vitest directly from the repository root with
 `pnpm --filter` execution, nested wrappers, or repeated Vitest child processes,
 because those paths reproduced intermittent no-output hangs in this
 environment. The aggregate config covers workspace `src/**/*.test.ts` files
-under `apps`, `packages`, and `services`. The root gate uses a single fork
+under `apps` and `packages`; Host and Runner service tests then run through
+their package-level scripts so their service-local fixtures keep their
+existing isolated process boundaries. The aggregate segment uses a single fork
 worker (`--pool=forks --maxWorkers=1`) for predictable local completion.
-Package-level test scripts keep their own targeted settings for focused
-verification.
 
 For manual API-backed testing, add `--keep-running`. The smoke keeps Host and
 all joined runner processes alive, keeps their temporary state roots, prints
@@ -254,6 +254,8 @@ ENTANGLE_HOST_TOKEN=dev-token pnpm ops:distributed-proof-verify \
 The verifier defaults the expected agent engine to `opencode_server`; custom
 proof profiles can pass `--agent-engine-kind <kind>` when the agent runner is
 intentionally configured for another engine adapter.
+When a proof profile includes explicit `assignments`, the verifier uses those
+manifest assignment ids instead of deriving `assignment-${runnerId}`.
 After the agent has produced projected work evidence, rerun the verifier with
 `--require-artifact-evidence` to require at least one projected artifact,
 source-change, source-history, or wiki ref from the agent node.
@@ -277,8 +279,9 @@ It also checks that duplicated User Client URLs and wrong runner runtime-kind
 or agent-engine capabilities fail the multi-user proof, that malformed proof
 profiles fail before Host inspection, and that missing artifact evidence,
 missing relay URLs, file-backed git services, or missing git service refs fail
-when explicitly required. It also checks the generated post-work artifact
-verifier command. It does not replace the real distributed proof above.
+when explicitly required. It also checks custom assignment ids from proof
+profiles and the generated post-work artifact verifier command. It does not
+replace the real distributed proof above.
 
 Managed Docker runners in the federated dev profile use the same join path.
 The Host passes inline join config JSON to the runner container and the runner

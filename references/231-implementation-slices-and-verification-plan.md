@@ -10,9 +10,10 @@ Root `pnpm test` now runs one direct aggregate Vitest command with
 `pnpm --filter ... && ...` chains, nested package test execution, repeated
 Vitest child processes, and a Node wrapper around Vitest reproduced no-output
 hangs in this environment. The aggregate config covers workspace
-`src/**/*.test.ts` files under `apps`, `packages`, and `services`, and the
-root gate uses a single fork worker for predictable local completion.
-Package-level test scripts keep their focused per-package pool settings.
+`src/**/*.test.ts` files under `apps` and `packages`, while Host and Runner
+service tests run through their package-level scripts so service-local
+fixtures keep isolated process boundaries. The aggregate segment uses a single
+fork worker for predictable local completion.
 Same-machine deployment smokes cover Compose, diagnostics, reliability,
 disposable runtime, and preview demo.
 
@@ -1087,7 +1088,9 @@ Current status:
   now writes repeatable topology and post-work artifact-evidence verifier
   scripts for generated proof kits; it also proves that missing artifact
   evidence, missing relay URLs, file-backed git services, and missing git
-  service refs fail when explicitly required;
+  service refs fail when explicitly required; the verifier now honors explicit
+  proof-profile assignment ids instead of always deriving them from runner ids,
+  and the smoke covers custom assignment ids;
 - runtime-context runner startup and the Human Interface Runtime now support
   mounted-file identity secret delivery as well as env-var delivery, matching
   generic runner join behavior;
