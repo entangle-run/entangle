@@ -72,5 +72,7 @@ CLI behavior.
 
 ## Open Questions
 
-- Should a future assignment detail surface link directly to the runtime,
-  runner, source-history, and command receipt detail panels?
+Closed by
+[`438-studio-assignment-related-navigation-slice.md`](438-studio-assignment-related-navigation-slice.md):
+assignment detail now links to the related runtime, runner, source-history, and
+command receipt panels.

@@ -596,7 +596,8 @@ This repository currently contains:
   Studio plus CLI compact projection output listing recent command receipts
   from Host projection, plus a dedicated CLI command receipt list with
   assignment, node, runner, command type, status, and limit filters, and a
-  Studio assignment timeline drilldown over the same Host endpoint;
+  Studio assignment timeline drilldown over the same Host endpoint with related
+  navigation to runtime, runner, source-history, and command receipt panels;
 - a Studio federation overview that joins User Node identities with runtime
   projection and conversation projection, so operators can see Human Interface
   Runtime state, runner placement, User Client links, conversation counts,

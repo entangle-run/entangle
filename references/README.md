@@ -680,6 +680,7 @@ files are the active federated redesign pack.
 436. [435-distributed-proof-kit-post-work-verifier-slice.md](435-distributed-proof-kit-post-work-verifier-slice.md)
 437. [436-root-test-gate-single-fork-worker-slice.md](436-root-test-gate-single-fork-worker-slice.md)
 438. [437-distributed-proof-verifier-assignment-profile-slice.md](437-distributed-proof-verifier-assignment-profile-slice.md)
+439. [438-studio-assignment-related-navigation-slice.md](438-studio-assignment-related-navigation-slice.md)
 
 ## Role of this corpus
 

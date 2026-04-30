@@ -222,6 +222,7 @@ import {
 import {
   buildUserNodeRuntimeSummaries,
   buildAssignmentOperationalDetailsForStudio,
+  buildAssignmentRelatedNavigationForStudio,
   canRevokeRunnerProjection,
   canTrustRunnerProjection,
   formatRuntimeAssignmentTimelineDetail,
@@ -290,6 +291,13 @@ type FlowProjection = {
 type EventStreamState = "connecting" | "live" | "closed" | "error";
 type EdgeMutationAction = "create" | "delete" | "replace";
 type NodeMutationAction = "create" | "delete" | "replace";
+
+const studioSectionIds = {
+  runnerRegistry: "studio-runner-registry",
+  runtimeCommandReceipts: "studio-runtime-command-receipts",
+  runtimeInspector: "studio-runtime-inspector",
+  runtimeSourceHistory: "studio-runtime-source-history"
+} as const;
 
 function normalizeError(
   caught: unknown,
@@ -2698,6 +2706,41 @@ export function App() {
     [managedGraphNodes]
   );
 
+  const scrollToStudioSection = useCallback((sectionId: string) => {
+    const scroll = () => {
+      globalThis.document
+        ?.getElementById(sectionId)
+        ?.scrollIntoView({ behavior: "smooth", block: "start" });
+    };
+
+    if (typeof globalThis.requestAnimationFrame === "function") {
+      globalThis.requestAnimationFrame(scroll);
+      return;
+    }
+
+    globalThis.setTimeout(scroll, 0);
+  }, []);
+
+  const focusRuntimeProjectionSection = useCallback(
+    (nodeId: string, sectionId: string) => {
+      const node = managedGraphNodes.find(
+        (candidate) => candidate.nodeId === nodeId
+      );
+
+      if (node) {
+        setSelectedManagedNodeId(nodeId);
+        setNodeDraft(buildManagedNodeEditorDraft(node));
+      } else {
+        setSelectedManagedNodeId(null);
+      }
+
+      setSelectedRuntimeId(nodeId);
+      setNodeMutationError(null);
+      scrollToStudioSection(sectionId);
+    },
+    [managedGraphNodes, scrollToStudioSection]
+  );
+
   const mutateManagedNode = useCallback(
     async (action: NodeMutationAction) => {
       try {
@@ -3464,31 +3507,52 @@ export function App() {
         : [],
     [selectedAssignmentTimeline]
   );
-  const selectedAssignmentOperationalDetails = useMemo(() => {
-    if (!projectionSnapshot || !selectedAssignmentTimelineId) {
-      return [];
+  const selectedAssignmentProjection = useMemo(() => {
+    if (!selectedAssignmentTimelineId) {
+      return undefined;
     }
 
-    const assignment = assignmentProjectionRows.find(
+    return assignmentProjectionRows.find(
       (candidate) => candidate.assignmentId === selectedAssignmentTimelineId
     );
-
-    if (!assignment) {
+  }, [assignmentProjectionRows, selectedAssignmentTimelineId]);
+  const selectedAssignmentOperationalDetails = useMemo(() => {
+    if (!projectionSnapshot || !selectedAssignmentProjection) {
       return [];
     }
 
-    const runnerRegistryEntry = runnerRegistryByRunnerId.get(assignment.runnerId);
+    const runnerRegistryEntry = runnerRegistryByRunnerId.get(
+      selectedAssignmentProjection.runnerId
+    );
 
     return buildAssignmentOperationalDetailsForStudio({
-      assignment,
+      assignment: selectedAssignmentProjection,
       projection: projectionSnapshot,
       ...(runnerRegistryEntry ? { runnerRegistryEntry } : {})
     });
   }, [
-    assignmentProjectionRows,
     projectionSnapshot,
     runnerRegistryByRunnerId,
-    selectedAssignmentTimelineId
+    selectedAssignmentProjection
+  ]);
+  const selectedAssignmentRelatedNavigation = useMemo(() => {
+    if (!projectionSnapshot || !selectedAssignmentProjection) {
+      return null;
+    }
+
+    const runnerRegistryEntry = runnerRegistryByRunnerId.get(
+      selectedAssignmentProjection.runnerId
+    );
+
+    return buildAssignmentRelatedNavigationForStudio({
+      assignment: selectedAssignmentProjection,
+      projection: projectionSnapshot,
+      ...(runnerRegistryEntry ? { runnerRegistryEntry } : {})
+    });
+  }, [
+    projectionSnapshot,
+    runnerRegistryByRunnerId,
+    selectedAssignmentProjection
   ]);
   const flowProjection = useMemo(
     () => projectGraphToFlow(graphInspection?.graph, selectedRuntimeId, selectedEdgeId),
@@ -3679,7 +3743,7 @@ export function App() {
           </div>
         </div>
 
-        <div className="artifact-detail-card">
+        <div id={studioSectionIds.runnerRegistry} className="artifact-detail-card">
           <div className="section-header">
             <h3>Runner Registry</h3>
             <span className="panel-caption">
@@ -3929,6 +3993,74 @@ export function App() {
                     ))}
                   </div>
                 ) : null}
+                {selectedAssignmentRelatedNavigation ? (
+                  <div className="related-link-grid">
+                    <button
+                      className="related-link-button"
+                      disabled={
+                        !selectedAssignmentRelatedNavigation.runtimeAvailable
+                      }
+                      onClick={() => {
+                        focusRuntimeProjectionSection(
+                          selectedAssignmentRelatedNavigation.runtimeNodeId,
+                          studioSectionIds.runtimeInspector
+                        );
+                      }}
+                      type="button"
+                    >
+                      <strong>Runtime</strong>
+                      <span>{selectedAssignmentRelatedNavigation.runtimeLabel}</span>
+                    </button>
+                    <button
+                      className="related-link-button"
+                      disabled={
+                        !selectedAssignmentRelatedNavigation.runnerAvailable
+                      }
+                      onClick={() => {
+                        scrollToStudioSection(studioSectionIds.runnerRegistry);
+                      }}
+                      type="button"
+                    >
+                      <strong>Runner</strong>
+                      <span>{selectedAssignmentRelatedNavigation.runnerLabel}</span>
+                    </button>
+                    <button
+                      className="related-link-button"
+                      disabled={
+                        !selectedAssignmentRelatedNavigation.sourceHistoryAvailable
+                      }
+                      onClick={() => {
+                        focusRuntimeProjectionSection(
+                          selectedAssignmentRelatedNavigation.runtimeNodeId,
+                          studioSectionIds.runtimeSourceHistory
+                        );
+                      }}
+                      type="button"
+                    >
+                      <strong>Source History</strong>
+                      <span>
+                        {selectedAssignmentRelatedNavigation.sourceHistoryLabel}
+                      </span>
+                    </button>
+                    <button
+                      className="related-link-button"
+                      disabled={
+                        !selectedAssignmentRelatedNavigation.commandReceiptAvailable
+                      }
+                      onClick={() => {
+                        scrollToStudioSection(
+                          studioSectionIds.runtimeCommandReceipts
+                        );
+                      }}
+                      type="button"
+                    >
+                      <strong>Command Receipts</strong>
+                      <span>
+                        {selectedAssignmentRelatedNavigation.commandReceiptLabel}
+                      </span>
+                    </button>
+                  </div>
+                ) : null}
                 <div className="compact-list">
                   {selectedAssignmentTimelineRows.slice(0, 12).map((entry) => (
                     <div
@@ -3973,7 +4105,10 @@ export function App() {
         )}
 
         {assignmentCommandReceiptRows.length > 0 ? (
-          <div className="compact-list">
+          <div
+            id={studioSectionIds.runtimeCommandReceipts}
+            className="compact-list"
+          >
             {assignmentCommandReceiptRows.slice(0, 6).map((receipt) => (
               <div
                 key={`${receipt.commandId}-${receipt.observedAt}-${receipt.receiptStatus}`}
@@ -5117,7 +5252,10 @@ export function App() {
             ) : null}
           </section>
 
-          <section className="runtime-section">
+          <section
+            id={studioSectionIds.runtimeInspector}
+            className="runtime-section"
+          >
             <div className="section-header">
               <h3>Runtime Recovery Inspector</h3>
               <span className={`status-pill status-${runtimeStateTone}`}>
@@ -6190,7 +6328,10 @@ export function App() {
                     ) : null}
                   </div>
 
-                  <div className="subpanel">
+                  <div
+                    id={studioSectionIds.runtimeSourceHistory}
+                    className="subpanel"
+                  >
                     <div className="section-header">
                       <h3>Source History</h3>
                       <span className="panel-caption">

@@ -102,7 +102,9 @@ Recently added:
   summaries when the registry read is available.
 - Studio assignment timeline drilldowns now join Host projection and runner
   registry evidence for compact runtime state, runner liveness/heartbeat,
-  source-history count, replay count, and command receipt count.
+  source-history count, replay count, and command receipt count, with related
+  navigation to the existing runtime, runner, source-history, and command
+  receipt panels.
 - Host status now includes bounded federated control/observe transport health,
   CLI host-status summaries include it, and Studio's Host Status panel renders
   the same Host-owned read model.

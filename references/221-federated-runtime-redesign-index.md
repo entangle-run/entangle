@@ -238,6 +238,7 @@ same-machine slice records.
 - [435-distributed-proof-kit-post-work-verifier-slice.md](435-distributed-proof-kit-post-work-verifier-slice.md)
 - [436-root-test-gate-single-fork-worker-slice.md](436-root-test-gate-single-fork-worker-slice.md)
 - [437-distributed-proof-verifier-assignment-profile-slice.md](437-distributed-proof-verifier-assignment-profile-slice.md)
+- [438-studio-assignment-related-navigation-slice.md](438-studio-assignment-related-navigation-slice.md)
 
 ## Audited Scope
 
@@ -828,7 +829,10 @@ evidence from the agent node after work is produced or relay WebSocket
 reachability for configured proof relays. The verifier can also optionally
 check Host catalog git services for distributed-proof suitability by rejecting
 missing or file-backed git services and probing the configured public git
-service base URL from the operator machine. The remaining blocking implementation
+service base URL from the operator machine. Studio assignment drilldowns now
+also provide related navigation to the Host-backed runtime inspector, runner
+registry, source-history panel, and runtime command receipt list for the
+selected assignment. The remaining blocking implementation
 areas are richer
 projection-backed source/wiki review services, infrastructure-backed
 multi-machine proof execution, and deeper production identity/authorization.

@@ -1,5 +1,15 @@
 # Entangle Wiki Log
 
+## [2026-04-29] studio | Added assignment-related navigation
+
+Added `references/438-studio-assignment-related-navigation-slice.md`.
+Studio assignment timeline drilldowns now derive related runtime, runner,
+source-history, and command-receipt navigation from Host projection and runner
+registry evidence.
+
+The buttons select or scroll to existing Host-backed operator panels without
+adding runner-direct behavior or new Host contracts.
+
 ## [2026-04-29] verification | Honored proof-profile assignment ids
 
 Added `references/437-distributed-proof-verifier-assignment-profile-slice.md`.

@@ -351,6 +351,38 @@ code {
   line-height: 1.45;
 }
 
+.related-link-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 8px;
+}
+
+.related-link-button {
+  display: grid;
+  gap: 4px;
+  min-width: 0;
+  border: 1px solid rgba(139, 193, 255, 0.24);
+  border-radius: 12px;
+  background: rgba(139, 193, 255, 0.06);
+  color: inherit;
+  cursor: pointer;
+  font: inherit;
+  padding: 10px 12px;
+  text-align: left;
+}
+
+.related-link-button:disabled {
+  cursor: not-allowed;
+  opacity: 0.5;
+}
+
+.related-link-button span {
+  overflow-wrap: anywhere;
+  color: rgba(247, 241, 232, 0.64);
+  font-size: 0.84rem;
+  line-height: 1.45;
+}
+
 .recovery-column {
   display: grid;
   gap: 14px;

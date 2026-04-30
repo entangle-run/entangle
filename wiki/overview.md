@@ -165,8 +165,9 @@ The most accurate current description is:
   command receipt rows in Studio, compact CLI projection output, and a
   dedicated CLI command receipt list with assignment, node, runner, command
   type, status, and limit filters, plus a Studio assignment timeline drilldown
-  over the same Host endpoint, without scanning generic events or reading
-  runner-local state;
+  over the same Host endpoint with related navigation to runtime, runner,
+  source-history, and command receipt panels, without scanning generic events
+  or reading runner-local state;
 - artifact source-change proposal requests are now exposed through CLI and
   Studio artifact inspection surfaces, using the same Host-signed runner
   control path while completion returns as both projected source-change
@@ -303,8 +304,9 @@ Federation panel for assigning graph nodes, including User Nodes, to trusted
 runners, plus runner trust/revoke controls through the Host runner registry
 boundary and runner liveness/capability detail from the full Host runner
 registry, plus assignment timeline operational summaries over runtime,
-runner, source-history, replay, and command-receipt evidence, while keeping
-participant chat/review inside the User Client.
+runner, source-history, replay, and command-receipt evidence with related
+navigation to the existing operator panels, while keeping participant
+chat/review inside the User Client.
 Host status now also carries bounded federated control/observe transport
 health, and CLI plus Studio render that Host-owned relay subscription status
 without probing relay state directly. Host status also reports bounded

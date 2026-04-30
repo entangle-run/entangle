@@ -8,6 +8,7 @@ import type {
 } from "@entangle/types";
 import {
   buildAssignmentOperationalDetailsForStudio,
+  buildAssignmentRelatedNavigationForStudio,
   buildUserNodeRuntimeSummaries,
   canRevokeRunnerProjection,
   canTrustRunnerProjection,
@@ -297,6 +298,18 @@ const runnerRegistryEntry: RunnerRegistryEntry = {
   staleAfterSeconds: 60
 };
 
+const assignmentRunnerRegistryEntry: RunnerRegistryEntry = {
+  ...runnerRegistryEntry,
+  heartbeat: {
+    ...runnerRegistryEntry.heartbeat!,
+    runnerId: "runner-alpha"
+  },
+  registration: {
+    ...runnerRegistryEntry.registration,
+    runnerId: "runner-alpha"
+  }
+};
+
 const assignmentTimeline: RuntimeAssignmentTimelineResponse = {
   assignment: {
     acceptedAt: "2026-04-26T12:00:30.000Z",
@@ -442,7 +455,7 @@ describe("Studio federation inspection helpers", () => {
       buildAssignmentOperationalDetailsForStudio({
         assignment: projection.assignments[0]!,
         projection,
-        runnerRegistryEntry
+        runnerRegistryEntry: assignmentRunnerRegistryEntry
       })
     ).toEqual([
       "runtime running / desired running",
@@ -452,6 +465,29 @@ describe("Studio federation inspection helpers", () => {
       "history replays 0",
       "command receipts 1"
     ]);
+  });
+
+  it("builds assignment related navigation from projection and runner registry", () => {
+    expect(
+      buildAssignmentRelatedNavigationForStudio({
+        assignment: projection.assignments[0]!,
+        projection,
+        runnerRegistryEntry: assignmentRunnerRegistryEntry
+      })
+    ).toMatchObject({
+      assignmentId: "assignment-alpha",
+      commandReceiptAvailable: true,
+      commandReceiptCount: 1,
+      commandReceiptLabel: "1 command receipt",
+      runnerAvailable: true,
+      runnerId: "runner-alpha",
+      runtimeAvailable: true,
+      runtimeLabel: "Runtime worker-it · running / desired running",
+      runtimeNodeId: "worker-it",
+      sourceHistoryAvailable: true,
+      sourceHistoryCount: 0,
+      sourceHistoryLabel: "0 source histories"
+    });
   });
 
   it("sorts and formats runtime projections", () => {

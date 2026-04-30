@@ -50,6 +50,22 @@ export type AssignmentOperationalDetailInput = {
   runnerRegistryEntry?: RunnerRegistryEntry;
 };
 
+export type AssignmentRelatedNavigation = {
+  assignmentId: string;
+  commandReceiptAvailable: boolean;
+  commandReceiptCount: number;
+  commandReceiptLabel: string;
+  runnerAvailable: boolean;
+  runnerId: string;
+  runnerLabel: string;
+  runtimeAvailable: boolean;
+  runtimeLabel: string;
+  runtimeNodeId: string;
+  sourceHistoryAvailable: boolean;
+  sourceHistoryCount: number;
+  sourceHistoryLabel: string;
+};
+
 export function summarizeFederationProjection(
   projection: HostProjectionSnapshot | null
 ): FederationProjectionSummary {
@@ -262,12 +278,7 @@ export function summarizeAssignmentCommandReceiptsForStudio(input: {
 export function buildAssignmentOperationalDetailsForStudio(
   input: AssignmentOperationalDetailInput
 ): string[] {
-  const runtime = input.projection.runtimes.find(
-    (candidate) =>
-      candidate.assignmentId === input.assignment.assignmentId ||
-      (candidate.nodeId === input.assignment.nodeId &&
-        candidate.runnerId === input.assignment.runnerId)
-  );
+  const runtime = findRuntimeForAssignment(input);
   const sourceHistoryCount = input.projection.sourceHistoryRefs.filter(
     (sourceHistory) =>
       sourceHistory.nodeId === input.assignment.nodeId &&
@@ -294,6 +305,72 @@ export function buildAssignmentOperationalDetailsForStudio(
     `history replays ${replayCount}`,
     `command receipts ${commandReceiptCount}`
   ].filter((part): part is string => Boolean(part));
+}
+
+function findRuntimeForAssignment(input: AssignmentOperationalDetailInput) {
+  return input.projection.runtimes.find(
+    (candidate) =>
+      candidate.assignmentId === input.assignment.assignmentId ||
+      (candidate.nodeId === input.assignment.nodeId &&
+        candidate.runnerId === input.assignment.runnerId)
+  );
+}
+
+function formatCountLabel(
+  count: number,
+  singular: string,
+  plural: string
+): string {
+  return `${count} ${count === 1 ? singular : plural}`;
+}
+
+export function buildAssignmentRelatedNavigationForStudio(
+  input: AssignmentOperationalDetailInput
+): AssignmentRelatedNavigation {
+  const runtime = findRuntimeForAssignment(input);
+  const runnerProjection = input.projection.runners.find(
+    (runner) => runner.runnerId === input.assignment.runnerId
+  );
+  const sourceHistoryCount = input.projection.sourceHistoryRefs.filter(
+    (sourceHistory) =>
+      sourceHistory.nodeId === input.assignment.nodeId &&
+      sourceHistory.runnerId === input.assignment.runnerId
+  ).length;
+  const commandReceiptCount = input.projection.runtimeCommandReceipts.filter(
+    (receipt) => receipt.assignmentId === input.assignment.assignmentId
+  ).length;
+  const runnerLiveness = input.runnerRegistryEntry?.liveness;
+
+  return {
+    assignmentId: input.assignment.assignmentId,
+    commandReceiptAvailable: commandReceiptCount > 0,
+    commandReceiptCount,
+    commandReceiptLabel: formatCountLabel(
+      commandReceiptCount,
+      "command receipt",
+      "command receipts"
+    ),
+    runnerAvailable:
+      input.runnerRegistryEntry !== undefined || runnerProjection !== undefined,
+    runnerId: input.assignment.runnerId,
+    runnerLabel: input.runnerRegistryEntry
+      ? `Runner ${input.assignment.runnerId} · ${runnerLiveness}`
+      : runnerProjection
+        ? `Runner ${input.assignment.runnerId} · ${runnerProjection.trustState} / ${runnerProjection.operationalState}`
+        : `Runner ${input.assignment.runnerId} not projected`,
+    runtimeAvailable: runtime !== undefined,
+    runtimeLabel: runtime
+      ? `Runtime ${runtime.nodeId} · ${runtime.observedState} / desired ${runtime.desiredState}`
+      : `Runtime ${input.assignment.nodeId} not projected`,
+    runtimeNodeId: input.assignment.nodeId,
+    sourceHistoryAvailable: runtime !== undefined,
+    sourceHistoryCount,
+    sourceHistoryLabel: formatCountLabel(
+      sourceHistoryCount,
+      "source history",
+      "source histories"
+    )
+  };
 }
 
 export function sortRuntimeAssignmentTimelineForStudio(
