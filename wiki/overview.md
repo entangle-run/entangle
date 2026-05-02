@@ -130,6 +130,13 @@ The most accurate current description is:
 - `pnpm ops:smoke-fake-openai-provider` now verifies that no-credential
   provider harness end to end, including streaming chat-completions and
   Responses API frames;
+- operators can now start a deterministic fake OpenCode server with
+  `pnpm ops:fake-opencode-server` for manual no-credential attached-server
+  route and permission-bridge plumbing tests;
+- `pnpm ops:smoke-fake-opencode-server` now verifies that fake OpenCode
+  harness end to end, including Basic-authenticated health, session creation,
+  SSE permission delivery, permission reply, deterministic assistant output,
+  and idle status;
 - `pnpm ops:check-product-naming` now verifies active product surfaces do not
   reintroduce obsolete local product/profile labels;
 - accepted source-candidate reviews now also emit signed `source_history.ref`

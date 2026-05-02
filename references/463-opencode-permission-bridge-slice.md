@@ -100,8 +100,9 @@ bridge only applies when the OpenCode profile has `baseUrl`.
 
 ## Open Questions
 
-- The next hardening step is a live OpenCode server smoke with a real or
-  operator-provided model provider.
+- A deterministic fake attached-server harness now exists in
+  `references/464-fake-opencode-server-harness-slice.md`; live OpenCode server
+  validation with a real or operator-provided model provider still remains.
 - The bridge currently replies with one-shot approvals. Persistent OpenCode
   `always` approvals should remain disabled until Entangle has a first-class
   policy UI for durable engine permission grants.

@@ -257,6 +257,13 @@ Current status:
 - `pnpm ops:smoke-fake-openai-provider` now starts that provider on an
   ephemeral port and verifies health, models, non-streaming chat completions,
   streaming chat completions, and streaming Responses API frames.
+- `pnpm ops:fake-opencode-server` now starts a deterministic fake attached
+  OpenCode server for no-credential route and permission-bridge plumbing
+  checks.
+- `pnpm ops:smoke-fake-opencode-server` now starts that fake OpenCode server
+  on an ephemeral port and verifies Basic-authenticated health, session
+  creation, SSE permission delivery, permission reply, deterministic assistant
+  output, and idle status.
 - `pnpm ops:check-product-naming` now checks active product surfaces for old
   local product/profile labels.
 - Docker managed runners can now receive inline join config JSON and the
@@ -799,6 +806,10 @@ Implementation record:
   runner's approval callback, publish signed `approval.request` messages to the
   requesting User Node, wait for the signed approval response, and then reply to
   OpenCode's `/permission/:requestID/reply` endpoint.
+- [464-fake-opencode-server-harness-slice.md](464-fake-opencode-server-harness-slice.md)
+  adds a deterministic OpenCode-like HTTP/SSE server plus smoke, narrowing the
+  gap between mocked adapter tests and manual live OpenCode/provider
+  validation.
 
 Verification:
 
@@ -810,6 +821,7 @@ Verification:
 - runtime inspection permission-mode contract and presentation tests;
 - permission bridge tests;
 - attached OpenCode SSE/permission-reply bridge tests;
+- fake OpenCode attached-server HTTP/SSE smoke;
 - cancellation tests;
 - source/artifact/wiki observation tests;
 - bounded tool evidence contract and presentation tests.

@@ -5529,3 +5529,12 @@ OpenCode server permission bridge: the adapter consumes OpenCode SSE
 signed approval response path, and then replies to OpenCode's permission
 endpoint with a one-shot allow or reject decision. CLI-only OpenCode execution
 remains conservative unless explicitly configured for `auto_approve`.
+
+## [2026-05-02] verification | Added fake OpenCode attached-server harness
+
+Added `references/464-fake-opencode-server-harness-slice.md`.
+`pnpm ops:fake-opencode-server` now starts a deterministic OpenCode-like
+HTTP/SSE server for manual no-credential attached-server plumbing tests, and
+`pnpm ops:smoke-fake-opencode-server` verifies Basic-authenticated health,
+session creation, SSE permission delivery, permission reply, deterministic
+assistant output, and idle status.

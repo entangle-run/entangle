@@ -172,6 +172,33 @@ That smoke starts the fake provider on an ephemeral port and verifies health,
 model listing, non-streaming chat completions, streaming chat completions, and
 streaming Responses API frames.
 
+For manual attached OpenCode permission-bridge plumbing tests without real
+model credentials, start the deterministic fake OpenCode server:
+
+```bash
+pnpm ops:fake-opencode-server -- --port 18081 --username entangle --password server-secret
+```
+
+It serves `/global/health`, `/event`, `/session`,
+`/session/:sessionID/prompt_async`, and `/permission/:requestID/reply` with a
+deterministic permission request and completion event. Point an
+`opencode_server` engine profile at `http://127.0.0.1:18081`, configure
+`permissionMode: "entangle_approval"`, and set
+`OPENCODE_SERVER_USERNAME=entangle` plus
+`OPENCODE_SERVER_PASSWORD=server-secret` in the runner environment when you
+want to validate the attached-server route wiring without a live provider.
+This does not validate real OpenCode model behavior.
+
+The fake OpenCode harness has its own no-credential smoke:
+
+```bash
+pnpm ops:smoke-fake-opencode-server
+```
+
+That smoke starts the fake OpenCode server on an ephemeral port and verifies
+Basic-authenticated health, session creation, SSE permission delivery,
+permission reply, deterministic assistant output, and idle status.
+
 Active product naming is also guarded:
 
 ```bash

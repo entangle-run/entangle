@@ -156,7 +156,12 @@ for chat completions, tool-loop continuation, and provider error mapping
 without live model credentials. A root `pnpm ops:fake-openai-provider` command
 now starts a deterministic OpenAI-compatible HTTP development server for manual
 catalog/auth/adapter wiring tests without live model credentials, and
-`pnpm ops:smoke-fake-openai-provider` verifies that harness end to end.
+`pnpm ops:smoke-fake-openai-provider` verifies that harness end to end. A root
+`pnpm ops:fake-opencode-server` command now starts a deterministic fake
+OpenCode attached server for manual no-credential route and permission-bridge
+plumbing checks, and `pnpm ops:smoke-fake-opencode-server` verifies that
+server's health, session, SSE permission, permission reply, completion, and
+idle flow end to end.
 `pnpm ops:check-product-naming` now guards active product surfaces against old
 local product/profile labels. Runner-owned source-history publication commands
 can now carry an approval id plus explicit git target selectors, allowing

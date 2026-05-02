@@ -34,6 +34,8 @@
     "ops:smoke-distributed-proof-tools": "node scripts/smoke-distributed-proof-tools.mjs",
     "ops:fake-openai-provider": "node scripts/fake-openai-compatible-provider.mjs",
     "ops:smoke-fake-openai-provider": "node scripts/smoke-fake-openai-compatible-provider.mjs",
+    "ops:fake-opencode-server": "node scripts/fake-opencode-server.mjs",
+    "ops:smoke-fake-opencode-server": "node scripts/smoke-fake-opencode-server.mjs",
     "test": "vitest run --config vitest.aggregate.config.ts --environment node --pool=forks --maxWorkers=1 --exclude 'services/host/src/**/*.test.ts' --exclude 'services/runner/src/**/*.test.ts' && pnpm --filter @entangle/runner test && pnpm --filter @entangle/host test",
     "test:coverage": "vitest run --config vitest.aggregate.config.ts --environment node --pool=forks --maxWorkers=1 --exclude 'services/host/src/**/*.test.ts' --exclude 'services/runner/src/**/*.test.ts' --coverage.enabled true && pnpm --filter @entangle/runner test -- --coverage.enabled true && pnpm --filter @entangle/host test -- --coverage.enabled true",
     "typecheck": "tsc -b tsconfig.solution.json --pretty false && pnpm --filter @entangle/studio typecheck && pnpm --filter @entangle/user-client typecheck",

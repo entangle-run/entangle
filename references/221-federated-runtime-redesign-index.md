@@ -259,6 +259,12 @@ same-machine slice records.
 - [456-opencode-session-continuity-slice.md](456-opencode-session-continuity-slice.md)
 - [457-opencode-session-continuity-process-smoke-slice.md](457-opencode-session-continuity-process-smoke-slice.md)
 - [458-host-cors-studio-dev-slice.md](458-host-cors-studio-dev-slice.md)
+- [459-opencode-permission-mode-slice.md](459-opencode-permission-mode-slice.md)
+- [460-agent-runtime-permission-mode-visibility-slice.md](460-agent-runtime-permission-mode-visibility-slice.md)
+- [461-studio-user-launch-boundary-slice.md](461-studio-user-launch-boundary-slice.md)
+- [462-user-node-inbox-outbox-projection-audit.md](462-user-node-inbox-outbox-projection-audit.md)
+- [463-opencode-permission-bridge-slice.md](463-opencode-permission-bridge-slice.md)
+- [464-fake-opencode-server-harness-slice.md](464-fake-opencode-server-harness-slice.md)
 
 ## Audited Scope
 
@@ -380,6 +386,14 @@ The repository is not fully federated:
 - `pnpm ops:smoke-fake-openai-provider` now verifies that deterministic
   provider harness end to end, including streaming chat-completions and
   Responses API frames;
+- operators can now start a deterministic fake OpenCode server through
+  `pnpm ops:fake-opencode-server`; it exposes the attached OpenCode
+  server routes Entangle consumes and emits deterministic SSE permission and
+  completion events without live model-provider credentials;
+- `pnpm ops:smoke-fake-opencode-server` now verifies that fake OpenCode
+  harness end to end, including Basic-authenticated health, session creation,
+  permission SSE delivery, permission reply, deterministic assistant output,
+  and idle status;
 - `pnpm ops:check-product-naming` now guards active product surfaces against
   obsolete local product/profile labels;
 - OpenCode-backed runner turns now probe `/global/health` before attaching to
