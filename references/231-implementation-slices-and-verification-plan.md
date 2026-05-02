@@ -809,7 +809,9 @@ Implementation record:
 - [464-fake-opencode-server-harness-slice.md](464-fake-opencode-server-harness-slice.md)
   adds a deterministic OpenCode-like HTTP/SSE server plus smoke, narrowing the
   gap between mocked adapter tests and manual live OpenCode/provider
-  validation.
+  validation; the runner adapter test also starts that fake server as a real
+  process and drives the attached OpenCode bridge through real HTTP/SSE
+  traffic.
 
 Verification:
 
@@ -822,6 +824,7 @@ Verification:
 - permission bridge tests;
 - attached OpenCode SSE/permission-reply bridge tests;
 - fake OpenCode attached-server HTTP/SSE smoke;
+- runner adapter test against the fake OpenCode child-process server;
 - cancellation tests;
 - source/artifact/wiki observation tests;
 - bounded tool evidence contract and presentation tests.

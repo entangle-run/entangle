@@ -5538,3 +5538,11 @@ HTTP/SSE server for manual no-credential attached-server plumbing tests, and
 `pnpm ops:smoke-fake-opencode-server` verifies Basic-authenticated health,
 session creation, SSE permission delivery, permission reply, deterministic
 assistant output, and idle status.
+
+## [2026-05-02] verification | Covered attached OpenCode against real fake server process
+
+The runner OpenCode adapter tests now start `scripts/fake-opencode-server.mjs`
+as a child process and execute an attached-server turn through real HTTP/SSE
+traffic. That closes the gap between mocked `fetch` fixtures and the
+operator-started fake OpenCode harness while still leaving real provider
+credentials for manual acceptance.

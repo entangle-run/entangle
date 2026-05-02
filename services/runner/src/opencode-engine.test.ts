@@ -1,7 +1,10 @@
-import { EventEmitter } from "node:events";
+import { spawn } from "node:child_process";
+import { EventEmitter, once } from "node:events";
 import { readFile, rm, writeFile } from "node:fs/promises";
 import path from "node:path";
+import { createInterface } from "node:readline";
 import { PassThrough } from "node:stream";
+import { fileURLToPath } from "node:url";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { AgentEngineExecutionError } from "@entangle/agent-engine";
 import {
@@ -36,6 +39,16 @@ type MockOpenCodeProcessStep = {
   stdoutLines?: string[];
 };
 
+type FakeOpenCodeServerHandle = {
+  authHeaders: Record<string, string>;
+  baseUrl: string;
+  permissionId: string;
+  sessionId: string;
+  stop: () => Promise<void>;
+  username: string;
+  password: string;
+};
+
 function buildTurnRequest(
   input: Partial<AgentEngineTurnRequest> = {}
 ): AgentEngineTurnRequest {
@@ -54,6 +67,159 @@ function buildTurnRequest(
     toolDefinitions: [],
     ...input
   });
+}
+
+async function startFakeOpenCodeServer(): Promise<FakeOpenCodeServerHandle> {
+  const username = "entangle";
+  const password = "server-secret";
+  const scriptPath = fileURLToPath(
+    new URL("../../../scripts/fake-opencode-server.mjs", import.meta.url)
+  );
+  const repoRoot = fileURLToPath(new URL("../../../", import.meta.url));
+  const child = spawn(
+    process.execPath,
+    [
+      scriptPath,
+      "--port",
+      "0",
+      "--username",
+      username,
+      "--password",
+      password,
+      "--json-log"
+    ],
+    {
+      cwd: repoRoot,
+      stdio: ["ignore", "pipe", "pipe"]
+    }
+  );
+
+  try {
+    const startup = await waitForFakeOpenCodeStartup(child);
+    const authHeaders = {
+      authorization: `Basic ${Buffer.from(`${username}:${password}`).toString(
+        "base64"
+      )}`
+    };
+
+    return {
+      authHeaders,
+      baseUrl: startup.baseUrl,
+      password,
+      permissionId: startup.permissionId,
+      sessionId: startup.sessionId,
+      stop: () => stopFakeOpenCodeServer(child),
+      username
+    };
+  } catch (error) {
+    await stopFakeOpenCodeServer(child);
+    throw error;
+  }
+}
+
+async function waitForFakeOpenCodeStartup(
+  child: ReturnType<typeof spawn>
+): Promise<{
+  baseUrl: string;
+  permissionId: string;
+  sessionId: string;
+}> {
+  if (!child.stdout || !child.stderr) {
+    throw new Error("Fake OpenCode process did not expose stdout/stderr.");
+  }
+
+  const stderrLines: string[] = [];
+  child.stderr.setEncoding("utf8");
+  child.stderr.on("data", (chunk: Buffer | string) => {
+    stderrLines.push(chunk.toString());
+  });
+
+  const reader = createInterface({
+    input: child.stdout,
+    terminal: false
+  });
+
+  const startupPromise = new Promise<{
+    baseUrl: string;
+    permissionId: string;
+    sessionId: string;
+  }>((resolve, reject) => {
+    const timeout = setTimeout(() => {
+      reject(
+        new Error(
+          `Timed out waiting for fake OpenCode startup. stderr=${stderrLines.join("").trim()}`
+        )
+      );
+    }, 5_000);
+
+    reader.once("line", (line) => {
+      clearTimeout(timeout);
+      reader.close();
+
+      try {
+        const parsed = JSON.parse(line) as unknown;
+
+        if (
+          !parsed ||
+          typeof parsed !== "object" ||
+          Array.isArray(parsed) ||
+          !("event" in parsed) ||
+          parsed.event !== "listening" ||
+          !("baseUrl" in parsed) ||
+          typeof parsed.baseUrl !== "string" ||
+          !("permissionId" in parsed) ||
+          typeof parsed.permissionId !== "string" ||
+          !("sessionId" in parsed) ||
+          typeof parsed.sessionId !== "string"
+        ) {
+          reject(new Error(`Unexpected fake OpenCode startup payload: ${line}`));
+          return;
+        }
+
+        resolve({
+          baseUrl: parsed.baseUrl,
+          permissionId: parsed.permissionId,
+          sessionId: parsed.sessionId
+        });
+      } catch (error) {
+        reject(
+          error instanceof Error
+            ? error
+            : new Error("Failed to parse fake OpenCode startup payload.")
+        );
+      }
+    });
+  });
+
+  const exitPromise = once(child, "exit").then(([code, signal]) => {
+    throw new Error(
+      `Fake OpenCode exited before startup: code=${code ?? "none"} signal=${signal ?? "none"} stderr=${stderrLines.join("").trim()}`
+    );
+  });
+
+  return Promise.race([startupPromise, exitPromise]);
+}
+
+async function stopFakeOpenCodeServer(
+  child: ReturnType<typeof spawn>
+): Promise<void> {
+  if (child.exitCode !== null || child.signalCode !== null) {
+    return;
+  }
+
+  child.kill("SIGTERM");
+
+  await Promise.race([
+    once(child, "exit"),
+    new Promise((resolve) => {
+      setTimeout(resolve, 2_000);
+    })
+  ]);
+
+  if (child.exitCode === null && child.signalCode === null) {
+    child.kill("SIGKILL");
+    await once(child, "exit");
+  }
 }
 
 function createMockOpenCodeSpawn(input: {
@@ -724,6 +890,88 @@ describe("OpenCode runner engine adapter", () => {
       providerStopReason: "opencode_server_idle",
       stopReason: "completed"
     });
+  });
+
+  it("runs attached OpenCode against the deterministic fake HTTP server", async () => {
+    const fakeServer = await startFakeOpenCodeServer();
+
+    try {
+      process.env.OPENCODE_SERVER_USERNAME = fakeServer.username;
+      process.env.OPENCODE_SERVER_PASSWORD = fakeServer.password;
+      const fixture = await createRuntimeFixture();
+      const context = {
+        ...fixture.context,
+        agentRuntimeContext: {
+          ...fixture.context.agentRuntimeContext,
+          engineProfile: {
+            ...fixture.context.agentRuntimeContext.engineProfile,
+            baseUrl: fakeServer.baseUrl,
+            permissionMode: "entangle_approval" as const
+          }
+        }
+      };
+      const permissionRequests: unknown[] = [];
+      const engine = createOpenCodeAgentEngine({
+        runtimeContext: context,
+        spawn: createMockOpenCodeSpawn().spawn
+      });
+
+      const result = await engine.executeTurn(buildTurnRequest(), {
+        requestPermission: (request) => {
+          permissionRequests.push(request);
+          return Promise.resolve({
+            approvalId: "approval-fake-opencode-http",
+            decision: "approved",
+            message: "Approved by fake OpenCode integration test."
+          });
+        }
+      });
+      const debugResponse = await fetch(
+        new URL("/debug/state", fakeServer.baseUrl),
+        {
+          headers: fakeServer.authHeaders
+        }
+      );
+      const debugState = (await debugResponse.json()) as {
+        permissionReplies?: Record<string, { reply?: unknown }>;
+        sessions?: Record<string, { completed?: unknown }>;
+      };
+
+      expect(debugResponse.ok).toBe(true);
+      expect(permissionRequests).toEqual([
+        expect.objectContaining({
+          operation: "git_commit",
+          patterns: ["git commit -m smoke"],
+          permission: "bash",
+          toolCallId: `tool-${fakeServer.permissionId}`
+        })
+      ]);
+      expect(debugState.permissionReplies?.[fakeServer.permissionId]?.reply).toBe(
+        "once"
+      );
+      expect(debugState.sessions?.[fakeServer.sessionId]?.completed).toBe(true);
+      expect(result).toMatchObject({
+        assistantMessages: ["Deterministic Entangle fake OpenCode response."],
+        engineSessionId: fakeServer.sessionId,
+        engineVersion: "server fake-opencode-1.0.0",
+        permissionObservations: [
+          {
+            decision: "pending",
+            operation: "git_commit",
+            permission: "bash"
+          },
+          {
+            decision: "allowed",
+            operation: "git_commit",
+            permission: "bash"
+          }
+        ],
+        providerStopReason: "opencode_server_idle",
+        stopReason: "completed"
+      });
+    } finally {
+      await fakeServer.stop();
+    }
   });
 
   it("fails before launching OpenCode run when the attached server is unhealthy", async () => {

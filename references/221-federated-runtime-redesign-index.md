@@ -394,6 +394,8 @@ The repository is not fully federated:
   harness end to end, including Basic-authenticated health, session creation,
   permission SSE delivery, permission reply, deterministic assistant output,
   and idle status;
+- runner OpenCode adapter tests now also start that fake server as a real child
+  process and drive an attached-server turn through actual HTTP/SSE traffic;
 - `pnpm ops:check-product-naming` now guards active product surfaces against
   obsolete local product/profile labels;
 - OpenCode-backed runner turns now probe `/global/health` before attaching to

@@ -35,6 +35,7 @@ the gap between mocked adapter tests and live API-backed manual validation.
 - `scripts/fake-opencode-server.mjs`
 - `scripts/smoke-fake-opencode-server.mjs`
 - `package.json`
+- `services/runner/src/opencode-engine.test.ts`
 - `README.md`
 - `references/221-federated-runtime-redesign-index.md`
 - `references/231-implementation-slices-and-verification-plan.md`
@@ -52,6 +53,9 @@ the gap between mocked adapter tests and live API-backed manual validation.
   prompt, answers the deterministic permission request, and verifies completion
   plus recorded debug state.
 - Add root package scripts for manual server start and CI/operator smoke.
+- Add runner adapter coverage that starts the fake server as a real child
+  process and drives the attached OpenCode adapter through real HTTP/SSE
+  traffic.
 - Document that this proves attached-server plumbing without live model
   credentials, while real OpenCode and real provider behavior remain manual
   acceptance work.
@@ -59,6 +63,7 @@ the gap between mocked adapter tests and live API-backed manual validation.
 ## Tests Required
 
 - `pnpm ops:smoke-fake-opencode-server`
+- `pnpm --filter @entangle/runner exec vitest run --config ../../vitest.config.ts --environment node --pool=forks --maxWorkers=1 src/opencode-engine.test.ts`
 - Runner OpenCode adapter tests remain the direct Entangle adapter gate.
 - Product naming guard remains required because the added scripts and docs are
   active public surfaces.

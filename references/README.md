@@ -161,7 +161,9 @@ catalog/auth/adapter wiring tests without live model credentials, and
 OpenCode attached server for manual no-credential route and permission-bridge
 plumbing checks, and `pnpm ops:smoke-fake-opencode-server` verifies that
 server's health, session, SSE permission, permission reply, completion, and
-idle flow end to end.
+idle flow end to end. The runner OpenCode adapter tests also start that fake
+server as a child process and execute an attached-server turn over real
+HTTP/SSE traffic.
 `pnpm ops:check-product-naming` now guards active product surfaces against old
 local product/profile labels. Runner-owned source-history publication commands
 can now carry an approval id plus explicit git target selectors, allowing
