@@ -268,6 +268,8 @@ Current status:
   `host catalog agent-engine upsert`, so an attached OpenCode or fake OpenCode
   profile can be created, made default, and then assigned to a node without
   manual catalog JSON editing.
+- CLI can now inspect those profiles with `host catalog agent-engine list|get`
+  and optional compact summaries, including the current default marker.
 - `pnpm ops:check-product-naming` now checks active product surfaces for old
   local product/profile labels.
 - Docker managed runners can now receive inline join config JSON and the
@@ -821,6 +823,9 @@ Implementation record:
   engine profiles, including attached OpenCode profiles, permission mode,
   state scope, default-profile selection, dry-run mutation payloads, and compact
   operator summaries.
+- [466-cli-agent-engine-profile-inspection-slice.md](466-cli-agent-engine-profile-inspection-slice.md)
+  adds focused `list` and `get` commands for active catalog agent engine
+  profiles with deterministic ordering and compact default-aware summaries.
 
 Verification:
 

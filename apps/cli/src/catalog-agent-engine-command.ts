@@ -23,6 +23,19 @@ export type CatalogAgentEngineUpsertOptions = {
   version?: string;
 };
 
+export type AgentEngineProfileSummary = {
+  baseUrl?: string;
+  defaultAgent?: string;
+  displayName: string;
+  executable?: string;
+  id: string;
+  isDefault: boolean;
+  kind: AgentEngineProfile["kind"];
+  permissionMode?: AgentEngineProfile["permissionMode"];
+  stateScope: AgentEngineProfile["stateScope"];
+  version?: string;
+};
+
 function parseAgentEngineStateScope(
   value: string | undefined
 ): "node" | "shared" | undefined {
@@ -52,6 +65,36 @@ export function projectAgentEngineProfileUpsertSummary(input: {
         }
       : {}),
     profile: input.profile
+  };
+}
+
+export function sortAgentEngineProfilesForCli(
+  profiles: AgentEngineProfile[]
+): AgentEngineProfile[] {
+  return [...profiles].sort((left, right) => left.id.localeCompare(right.id));
+}
+
+export function projectAgentEngineProfileSummary(input: {
+  catalog: DeploymentResourceCatalog;
+  profile: AgentEngineProfile;
+}): AgentEngineProfileSummary {
+  return {
+    ...(input.profile.baseUrl ? { baseUrl: input.profile.baseUrl } : {}),
+    ...(input.profile.defaultAgent
+      ? { defaultAgent: input.profile.defaultAgent }
+      : {}),
+    displayName: input.profile.displayName,
+    ...(input.profile.executable
+      ? { executable: input.profile.executable }
+      : {}),
+    id: input.profile.id,
+    isDefault: input.catalog.defaults.agentEngineProfileRef === input.profile.id,
+    kind: input.profile.kind,
+    ...(input.profile.permissionMode
+      ? { permissionMode: input.profile.permissionMode }
+      : {}),
+    stateScope: input.profile.stateScope,
+    ...(input.profile.version ? { version: input.profile.version } : {})
   };
 }
 

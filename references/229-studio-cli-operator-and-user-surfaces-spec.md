@@ -144,6 +144,8 @@ CLI has matching headless surfaces:
 - `entangle authority show`
 - `entangle authority export`
 - `entangle authority import`
+- `entangle host catalog agent-engine list`
+- `entangle host catalog agent-engine get <profileId>`
 - `entangle host catalog agent-engine upsert <profileId>`
 - `entangle runners list`
 - `entangle runners join-config --runner <runnerId> --output runner-join.json`
@@ -204,7 +206,8 @@ Node.
   `host catalog agent-engine upsert` for Host-backed agent engine profile
   creation/update, including attached OpenCode profiles, permission mode, state
   scope, default-profile selection, dry-run mutation payloads, and compact
-  summaries.
+  summaries. The same command group also exposes focused `list` and `get`
+  inspection with deterministic ordering and default-aware summaries.
 - Add runner join executable or CLI command surface for generating join config.
   Done: `entangle runners join-config` writes validated Host-derived JSON join
   configs, and `entangle-runner join --config` is advertised by the runner

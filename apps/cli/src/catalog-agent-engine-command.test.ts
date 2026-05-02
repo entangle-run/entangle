@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import type { DeploymentResourceCatalog } from "@entangle/types";
 import {
   buildAgentEngineProfileUpsertCatalog,
+  projectAgentEngineProfileSummary,
   projectAgentEngineProfileUpsertSummary
 } from "./catalog-agent-engine-command.js";
 
@@ -119,6 +120,36 @@ describe("catalog agent-engine command helpers", () => {
     expect(projectAgentEngineProfileUpsertSummary(result)).toEqual({
       defaultAgentEngineProfileRef: "opencode-attached",
       profile: result.profile
+    });
+  });
+
+  it("projects compact profile summaries with default marker", () => {
+    const result = buildAgentEngineProfileUpsertCatalog(
+      buildCatalog(),
+      "opencode-attached",
+      {
+        baseUrl: "http://127.0.0.1:18081",
+        defaultAgent: "general",
+        permissionMode: "entangle_approval",
+        setDefault: true,
+        stateScope: "shared"
+      }
+    );
+
+    expect(
+      projectAgentEngineProfileSummary({
+        catalog: result.catalog,
+        profile: result.profile
+      })
+    ).toEqual({
+      baseUrl: "http://127.0.0.1:18081",
+      defaultAgent: "general",
+      displayName: "opencode-attached",
+      id: "opencode-attached",
+      isDefault: true,
+      kind: "opencode_server",
+      permissionMode: "entangle_approval",
+      stateScope: "shared"
     });
   });
 

@@ -5554,3 +5554,11 @@ exposes `host catalog agent-engine upsert <profileId>` so operators can create
 or update typed agent engine profiles through Host, including attached OpenCode
 base URLs, permission mode, state scope, default-profile selection, dry-run
 mutation payloads, and compact summaries.
+
+## [2026-05-02] cli | Added agent engine profile inspection
+
+Added `references/466-cli-agent-engine-profile-inspection-slice.md`. CLI now
+exposes `host catalog agent-engine list` and
+`host catalog agent-engine get <profileId>` with optional compact summaries, so
+operators can confirm active engine profiles and the default profile without
+printing the whole catalog.

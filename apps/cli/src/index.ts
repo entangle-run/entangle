@@ -130,7 +130,9 @@ import {
 } from "./package-init-command.js";
 import {
   buildAgentEngineProfileUpsertCatalog,
+  projectAgentEngineProfileSummary,
   projectAgentEngineProfileUpsertSummary,
+  sortAgentEngineProfilesForCli,
   type CatalogAgentEngineUpsertOptions
 } from "./catalog-agent-engine-command.js";
 import { inspectPackageDirectory } from "./package-inspection-command.js";
@@ -2308,6 +2310,82 @@ hostCatalogCommand
 const hostCatalogAgentEngineCommand = hostCatalogCommand
   .command("agent-engine")
   .description("Manage agent engine profiles in the active deployment catalog.");
+
+hostCatalogAgentEngineCommand
+  .command("list")
+  .option("--summary", "Print compact profile summaries.")
+  .description("List agent engine profiles from the active deployment catalog.")
+  .action(async (options: { summary?: boolean }, command: Command) => {
+    const client = createCliHostClient(command);
+    const inspection = await client.getCatalog();
+
+    if (!inspection.catalog) {
+      throw new Error("Host catalog is unavailable or invalid.");
+    }
+
+    const catalog = inspection.catalog;
+    const profiles = sortAgentEngineProfilesForCli(catalog.agentEngineProfiles);
+
+    printJson(
+      options.summary
+        ? {
+            defaultAgentEngineProfileRef:
+              catalog.defaults.agentEngineProfileRef,
+            profiles: profiles.map((profile) =>
+              projectAgentEngineProfileSummary({
+                catalog,
+                profile
+              })
+            )
+          }
+        : {
+            defaultAgentEngineProfileRef:
+              catalog.defaults.agentEngineProfileRef,
+            profiles
+          }
+    );
+  });
+
+hostCatalogAgentEngineCommand
+  .command("get")
+  .argument("<profileId>", "Agent engine profile id.")
+  .option("--summary", "Print a compact profile summary.")
+  .description("Inspect one agent engine profile from the active deployment catalog.")
+  .action(
+    async (
+      profileId: string,
+      options: { summary?: boolean },
+      command: Command
+    ) => {
+      const client = createCliHostClient(command);
+      const inspection = await client.getCatalog();
+
+      if (!inspection.catalog) {
+        throw new Error("Host catalog is unavailable or invalid.");
+      }
+
+      const profile = inspection.catalog.agentEngineProfiles.find(
+        (candidate) => candidate.id === profileId
+      );
+
+      if (!profile) {
+        throw new Error(`Agent engine profile '${profileId}' was not found.`);
+      }
+
+      printJson(
+        options.summary
+          ? projectAgentEngineProfileSummary({
+              catalog: inspection.catalog,
+              profile
+            })
+          : {
+              defaultAgentEngineProfileRef:
+                inspection.catalog.defaults.agentEngineProfileRef,
+              profile
+            }
+      );
+    }
+  );
 
 hostCatalogAgentEngineCommand
   .command("upsert")

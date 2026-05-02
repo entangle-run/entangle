@@ -141,6 +141,9 @@ The most accurate current description is:
   `host catalog agent-engine upsert`, so operators can configure an attached
   OpenCode or fake OpenCode profile, make it default, and assign it to graph
   nodes without manual catalog JSON editing;
+- focused `host catalog agent-engine list|get` commands now inspect active
+  catalog engine profiles with deterministic ordering and default-aware compact
+  summaries;
 - `pnpm ops:check-product-naming` now verifies active product surfaces do not
   reintroduce obsolete local product/profile labels;
 - accepted source-candidate reviews now also emit signed `source_history.ref`
@@ -516,7 +519,7 @@ The repository now also contains the first real implementation baseline:
   node engine-state workspace, probes OpenCode version before turns, applies
   bounded probe/run process timeouts, probes attached OpenCode server
   health/version before `--attach` turns when configured, exposes CLI catalog
-  upsert for attached/process engine profiles, and persists generic
+  upsert/list/get for attached/process engine profiles, and persists generic
   engine-session ids
   plus engine versions and permission-block observations on turn outcomes,
   including `policy_denied` results when OpenCode one-shot CLI auto-rejects a

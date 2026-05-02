@@ -198,6 +198,8 @@ pnpm --filter @entangle/cli dev host catalog agent-engine upsert opencode-attach
   --permission-mode entangle_approval \
   --set-default \
   --summary
+
+pnpm --filter @entangle/cli dev host catalog agent-engine list --summary
 ```
 
 Then bind any agent node to that profile through the same Host boundary:

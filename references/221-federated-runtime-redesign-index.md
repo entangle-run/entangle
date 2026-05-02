@@ -266,6 +266,7 @@ same-machine slice records.
 - [463-opencode-permission-bridge-slice.md](463-opencode-permission-bridge-slice.md)
 - [464-fake-opencode-server-harness-slice.md](464-fake-opencode-server-harness-slice.md)
 - [465-cli-agent-engine-profile-upsert-slice.md](465-cli-agent-engine-profile-upsert-slice.md)
+- [466-cli-agent-engine-profile-inspection-slice.md](466-cli-agent-engine-profile-inspection-slice.md)
 
 ## Audited Scope
 
@@ -401,6 +402,9 @@ The repository is not fully federated:
   `host catalog agent-engine upsert`, including attached OpenCode base URLs,
   permission mode, state scope, default-agent notes, default-profile selection,
   dry-run payloads, and compact summaries;
+- CLI can now list and inspect those profiles through
+  `host catalog agent-engine list|get`, with deterministic ordering and compact
+  summaries that mark the current default profile;
 - `pnpm ops:check-product-naming` now guards active product surfaces against
   obsolete local product/profile labels;
 - OpenCode-backed runner turns now probe `/global/health` before attaching to
