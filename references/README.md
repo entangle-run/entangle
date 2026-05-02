@@ -170,6 +170,8 @@ editing. Focused `host catalog agent-engine list|get` commands now inspect the
 same profiles with deterministic ordering and default-aware compact summaries.
 Studio now also renders the active agent engine profiles in the graph editor
 with the default marker and compact kind/scope/permission/endpoint details.
+That same Studio panel can now create or update profiles through Host catalog
+apply, including attached OpenCode base URLs and default-profile selection.
 `pnpm ops:check-product-naming` now guards active product surfaces against old
 local product/profile labels. Runner-owned source-history publication commands
 can now carry an approval id plus explicit git target selectors, allowing
@@ -752,6 +754,7 @@ files are the active federated redesign pack.
 466. [465-cli-agent-engine-profile-upsert-slice.md](465-cli-agent-engine-profile-upsert-slice.md)
 467. [466-cli-agent-engine-profile-inspection-slice.md](466-cli-agent-engine-profile-inspection-slice.md)
 468. [467-studio-agent-engine-profile-visibility-slice.md](467-studio-agent-engine-profile-visibility-slice.md)
+469. [468-studio-agent-engine-profile-editor-slice.md](468-studio-agent-engine-profile-editor-slice.md)
 
 ## Role of this corpus
 

@@ -222,6 +222,8 @@ Node.
   for the same assignment timeline model. Studio graph editing now also shows
   active catalog agent engine profiles with the current default marker and
   compact kind/scope/permission/endpoint detail before node assignment editing.
+  The same panel can now create or update profile records through Host catalog
+  apply while leaving node-level assignment as a separate explicit action.
 - Keep Studio browser access on Host API boundaries. Done for development:
   Host has configured CORS allow-list support, preflight requests are answered
   before operator auth, and the federated dev profile allows the default Studio

@@ -5569,3 +5569,10 @@ Added `references/467-studio-agent-engine-profile-visibility-slice.md`. Studio
 now renders active catalog agent engine profiles in the graph editor with the
 default marker and compact kind, scope, permission, endpoint/executable,
 default-agent, and version detail before node assignment editing.
+
+## [2026-05-02] studio | Added agent engine profile editing
+
+Added `references/468-studio-agent-engine-profile-editor-slice.md`. Studio can
+now create or update typed agent engine profiles through Host catalog apply,
+including attached OpenCode base URLs, executable, permission mode, state
+scope, default-agent/version notes, and catalog default selection.

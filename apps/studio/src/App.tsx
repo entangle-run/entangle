@@ -68,6 +68,16 @@ import type {
   UserNodeIdentityRecord
 } from "@entangle/types";
 import {
+  agentEnginePermissionModeOptions,
+  agentEngineProfileKindOptions,
+  agentEngineStateScopeOptions,
+  buildAgentEngineProfileCatalogMutation,
+  buildAgentEngineProfileEditorDraft,
+  createEmptyAgentEngineProfileEditorDraft,
+  isAgentEngineProfileDraftSaveDisabled,
+  type AgentEngineProfileEditorDraft
+} from "./agent-engine-profile-editor.js";
+import {
   buildEdgeCreateRequest,
   buildEdgeEditorDraft,
   buildEdgeReplacementRequest,
@@ -558,6 +568,18 @@ export function App() {
   const [catalogInspection, setCatalogInspection] =
     useState<CatalogInspectionResponse | null>(null);
   const [catalogError, setCatalogError] = useState<string | null>(null);
+  const [agentEngineProfileDraft, setAgentEngineProfileDraft] =
+    useState<AgentEngineProfileEditorDraft>(
+      createEmptyAgentEngineProfileEditorDraft
+    );
+  const [agentEngineProfileMutationError, setAgentEngineProfileMutationError] =
+    useState<string | null>(null);
+  const [
+    lastAgentEngineProfileMutationSummary,
+    setLastAgentEngineProfileMutationSummary
+  ] = useState<string | null>(null);
+  const [pendingAgentEngineProfileMutation, setPendingAgentEngineProfileMutation] =
+    useState(false);
   const [packageSources, setPackageSources] = useState<
     PackageSourceInspectionResponse[]
   >([]);
@@ -2924,6 +2946,68 @@ export function App() {
     ]
   );
 
+  const saveAgentEngineProfile = useCallback(async () => {
+    if (!catalogInspection?.catalog) {
+      setAgentEngineProfileMutationError(
+        "Cannot save an agent engine profile because the active catalog is unavailable."
+      );
+      return;
+    }
+
+    try {
+      setPendingAgentEngineProfileMutation(true);
+      setAgentEngineProfileMutationError(null);
+      setLastAgentEngineProfileMutationSummary(null);
+
+      const nextCatalog = buildAgentEngineProfileCatalogMutation(
+        catalogInspection.catalog,
+        agentEngineProfileDraft
+      );
+      const response = await client.applyCatalog(nextCatalog);
+      const validationMessage = summarizeValidationReport(response.validation);
+
+      if (validationMessage) {
+        setCatalogInspection(response);
+        setAgentEngineProfileMutationError(validationMessage);
+        return;
+      }
+
+      const savedProfile = response.catalog?.agentEngineProfiles.find(
+        (profile) => profile.id === agentEngineProfileDraft.profileId.trim()
+      );
+
+      setCatalogInspection(response);
+      setCatalogError(null);
+      setAgentEngineProfileMutationError(null);
+      setLastAgentEngineProfileMutationSummary(
+        `Saved ${agentEngineProfileDraft.profileId.trim()}${
+          response.catalog?.defaults.agentEngineProfileRef ===
+          agentEngineProfileDraft.profileId.trim()
+            ? " as default"
+            : ""
+        }.`
+      );
+
+      if (response.catalog && savedProfile) {
+        setAgentEngineProfileDraft(
+          buildAgentEngineProfileEditorDraft({
+            catalog: response.catalog,
+            profile: savedProfile
+          })
+        );
+      }
+    } catch (caught: unknown) {
+      setAgentEngineProfileMutationError(
+        normalizeError(
+          caught,
+          "Unknown error while saving the agent engine profile."
+        )
+      );
+    } finally {
+      setPendingAgentEngineProfileMutation(false);
+    }
+  }, [agentEngineProfileDraft, catalogInspection, client]);
+
   const admitPackageSource = useCallback(async () => {
     try {
       setPendingPackageAdmission(true);
@@ -4537,11 +4621,32 @@ export function App() {
                     <div className="agent-engine-profile-card" key={profile.id}>
                       <div className="agent-engine-profile-card-header">
                         <strong>{profile.displayName}</strong>
-                        {profile.id === defaultAgentEngineProfileRef ? (
-                          <span className="status-pill status-healthy">
-                            Default
-                          </span>
-                        ) : null}
+                        <div className="inline-action-group">
+                          {profile.id === defaultAgentEngineProfileRef ? (
+                            <span className="status-pill status-healthy">
+                              Default
+                            </span>
+                          ) : null}
+                          <button
+                            className="secondary-button"
+                            disabled={pendingAgentEngineProfileMutation}
+                            onClick={() => {
+                              if (catalogInspection?.catalog) {
+                                setAgentEngineProfileDraft(
+                                  buildAgentEngineProfileEditorDraft({
+                                    catalog: catalogInspection.catalog,
+                                    profile
+                                  })
+                                );
+                                setAgentEngineProfileMutationError(null);
+                                setLastAgentEngineProfileMutationSummary(null);
+                              }
+                            }}
+                            type="button"
+                          >
+                            Edit
+                          </button>
+                        </div>
                       </div>
                       <code>{profile.id}</code>
                       <span>{formatAgentEngineProfileDetail(profile)}</span>
@@ -4553,6 +4658,218 @@ export function App() {
                   <p>No agent engine profiles are available in the active catalog.</p>
                 </div>
               )}
+
+              {agentEngineProfileMutationError ? (
+                <p className="error-box">{agentEngineProfileMutationError}</p>
+              ) : null}
+              {lastAgentEngineProfileMutationSummary ? (
+                <p className="notice-box">{lastAgentEngineProfileMutationSummary}</p>
+              ) : null}
+
+              <form
+                className="field-grid"
+                onSubmit={(event) => {
+                  event.preventDefault();
+                  void saveAgentEngineProfile();
+                }}
+              >
+                <label className="field">
+                  <span>Profile id</span>
+                  <input
+                    disabled={pendingAgentEngineProfileMutation}
+                    onChange={(event) => {
+                      setAgentEngineProfileDraft((current) => ({
+                        ...current,
+                        profileId: event.target.value
+                      }));
+                    }}
+                    value={agentEngineProfileDraft.profileId}
+                  />
+                </label>
+
+                <label className="field">
+                  <span>Display name</span>
+                  <input
+                    disabled={pendingAgentEngineProfileMutation}
+                    onChange={(event) => {
+                      setAgentEngineProfileDraft((current) => ({
+                        ...current,
+                        displayName: event.target.value
+                      }));
+                    }}
+                    value={agentEngineProfileDraft.displayName}
+                  />
+                </label>
+
+                <label className="field">
+                  <span>Engine kind</span>
+                  <select
+                    disabled={pendingAgentEngineProfileMutation}
+                    onChange={(event) => {
+                      setAgentEngineProfileDraft((current) => ({
+                        ...current,
+                        kind: event.target.value as AgentEngineProfileEditorDraft["kind"]
+                      }));
+                    }}
+                    value={agentEngineProfileDraft.kind}
+                  >
+                    {agentEngineProfileKindOptions.map((kind) => (
+                      <option key={kind} value={kind}>
+                        {kind}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+
+                <label className="field">
+                  <span>Base URL</span>
+                  <input
+                    disabled={pendingAgentEngineProfileMutation}
+                    onChange={(event) => {
+                      setAgentEngineProfileDraft((current) => ({
+                        ...current,
+                        baseUrl: event.target.value
+                      }));
+                    }}
+                    placeholder="http://127.0.0.1:18081"
+                    value={agentEngineProfileDraft.baseUrl}
+                  />
+                </label>
+
+                <label className="field">
+                  <span>Executable</span>
+                  <input
+                    disabled={pendingAgentEngineProfileMutation}
+                    onChange={(event) => {
+                      setAgentEngineProfileDraft((current) => ({
+                        ...current,
+                        executable: event.target.value
+                      }));
+                    }}
+                    placeholder="opencode"
+                    value={agentEngineProfileDraft.executable}
+                  />
+                </label>
+
+                <label className="field">
+                  <span>Permission mode</span>
+                  <select
+                    disabled={pendingAgentEngineProfileMutation}
+                    onChange={(event) => {
+                      setAgentEngineProfileDraft((current) => ({
+                        ...current,
+                        permissionMode:
+                          event.target
+                            .value as AgentEngineProfileEditorDraft["permissionMode"]
+                      }));
+                    }}
+                    value={agentEngineProfileDraft.permissionMode}
+                  >
+                    <option value="">Catalog default behavior</option>
+                    {agentEnginePermissionModeOptions.map((mode) => (
+                      <option key={mode} value={mode}>
+                        {mode}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+
+                <label className="field">
+                  <span>State scope</span>
+                  <select
+                    disabled={pendingAgentEngineProfileMutation}
+                    onChange={(event) => {
+                      setAgentEngineProfileDraft((current) => ({
+                        ...current,
+                        stateScope:
+                          event.target
+                            .value as AgentEngineProfileEditorDraft["stateScope"]
+                      }));
+                    }}
+                    value={agentEngineProfileDraft.stateScope}
+                  >
+                    {agentEngineStateScopeOptions.map((scope) => (
+                      <option key={scope} value={scope}>
+                        {scope}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+
+                <label className="field">
+                  <span>Default engine agent</span>
+                  <input
+                    disabled={pendingAgentEngineProfileMutation}
+                    onChange={(event) => {
+                      setAgentEngineProfileDraft((current) => ({
+                        ...current,
+                        defaultAgent: event.target.value
+                      }));
+                    }}
+                    value={agentEngineProfileDraft.defaultAgent}
+                  />
+                </label>
+
+                <label className="field">
+                  <span>Version note</span>
+                  <input
+                    disabled={pendingAgentEngineProfileMutation}
+                    onChange={(event) => {
+                      setAgentEngineProfileDraft((current) => ({
+                        ...current,
+                        version: event.target.value
+                      }));
+                    }}
+                    value={agentEngineProfileDraft.version}
+                  />
+                </label>
+
+                <label className="field toggle-field">
+                  <input
+                    checked={agentEngineProfileDraft.setDefault}
+                    disabled={pendingAgentEngineProfileMutation}
+                    onChange={(event) => {
+                      setAgentEngineProfileDraft((current) => ({
+                        ...current,
+                        setDefault: event.target.checked
+                      }));
+                    }}
+                    type="checkbox"
+                  />
+                  <span>Use as catalog default</span>
+                </label>
+
+                <div className="action-row">
+                  <button
+                    className="secondary-button"
+                    disabled={pendingAgentEngineProfileMutation}
+                    onClick={() => {
+                      setAgentEngineProfileDraft(
+                        createEmptyAgentEngineProfileEditorDraft()
+                      );
+                      setAgentEngineProfileMutationError(null);
+                      setLastAgentEngineProfileMutationSummary(null);
+                    }}
+                    type="button"
+                  >
+                    New Profile
+                  </button>
+                  <button
+                    className="action-button"
+                    disabled={
+                      pendingAgentEngineProfileMutation ||
+                      isAgentEngineProfileDraftSaveDisabled(
+                        agentEngineProfileDraft
+                      )
+                    }
+                    type="submit"
+                  >
+                    {pendingAgentEngineProfileMutation
+                      ? "Saving..."
+                      : "Save Profile"}
+                  </button>
+                </div>
+              </form>
             </div>
 
             <div className="subpanel">

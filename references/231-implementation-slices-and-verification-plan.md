@@ -272,6 +272,8 @@ Current status:
   and optional compact summaries, including the current default marker.
 - Studio now renders active catalog agent engine profiles in the graph editor
   with default marker and compact engine detail before node assignment editing.
+- Studio can now create or update active catalog agent engine profiles through
+  Host catalog apply while keeping node-level profile assignment explicit.
 - `pnpm ops:check-product-naming` now checks active product surfaces for old
   local product/profile labels.
 - Docker managed runners can now receive inline join config JSON and the
@@ -832,6 +834,9 @@ Implementation record:
   adds a read-only Studio graph-editor subpanel for active catalog agent engine
   profiles, including default marker and compact kind/scope/permission/endpoint
   detail.
+- [468-studio-agent-engine-profile-editor-slice.md](468-studio-agent-engine-profile-editor-slice.md)
+  adds Studio catalog profile editing through Host catalog apply, with typed
+  draft helpers and validation tests for attached OpenCode profiles.
 
 Verification:
 
