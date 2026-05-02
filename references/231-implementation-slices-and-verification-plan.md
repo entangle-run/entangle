@@ -270,6 +270,8 @@ Current status:
   manual catalog JSON editing.
 - CLI can now inspect those profiles with `host catalog agent-engine list|get`
   and optional compact summaries, including the current default marker.
+- Studio now renders active catalog agent engine profiles in the graph editor
+  with default marker and compact engine detail before node assignment editing.
 - `pnpm ops:check-product-naming` now checks active product surfaces for old
   local product/profile labels.
 - Docker managed runners can now receive inline join config JSON and the
@@ -826,6 +828,10 @@ Implementation record:
 - [466-cli-agent-engine-profile-inspection-slice.md](466-cli-agent-engine-profile-inspection-slice.md)
   adds focused `list` and `get` commands for active catalog agent engine
   profiles with deterministic ordering and compact default-aware summaries.
+- [467-studio-agent-engine-profile-visibility-slice.md](467-studio-agent-engine-profile-visibility-slice.md)
+  adds a read-only Studio graph-editor subpanel for active catalog agent engine
+  profiles, including default marker and compact kind/scope/permission/endpoint
+  detail.
 
 Verification:
 

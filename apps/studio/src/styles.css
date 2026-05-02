@@ -581,6 +581,11 @@ code {
   gap: 10px;
 }
 
+.agent-engine-profile-list {
+  display: grid;
+  gap: 10px;
+}
+
 .package-source-list {
   display: grid;
   gap: 10px;
@@ -635,6 +640,29 @@ code {
 .node-chip.is-selected {
   border-color: rgba(212, 168, 109, 0.66);
   background: rgba(212, 168, 109, 0.08);
+}
+
+.agent-engine-profile-card {
+  display: grid;
+  gap: 6px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 16px;
+  background: rgba(255, 255, 255, 0.03);
+  padding: 12px 14px;
+}
+
+.agent-engine-profile-card-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.agent-engine-profile-card code,
+.agent-engine-profile-card span:not(.status-pill) {
+  color: rgba(247, 241, 232, 0.64);
+  font-size: 0.86rem;
+  line-height: 1.45;
 }
 
 .package-source-card {

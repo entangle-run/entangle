@@ -29,6 +29,7 @@ import {
   sortRuntimeMemoryPagesForPresentation
 } from "@entangle/host-client";
 import type {
+  AgentEngineProfile,
   ApprovalRecord,
   ArtifactRecord,
   CatalogInspectionResponse,
@@ -443,6 +444,24 @@ function formatRuntimeStateTone(
 
 function formatRuntimeIdList(ids: string[] | undefined): string {
   return ids && ids.length > 0 ? ids.join(", ") : "none";
+}
+
+function formatAgentEngineProfileDetail(profile: AgentEngineProfile): string {
+  const executionTarget = profile.baseUrl
+    ? `base ${profile.baseUrl}`
+    : profile.executable
+      ? `exec ${profile.executable}`
+      : "no launch target";
+  const details = [
+    profile.kind,
+    `scope ${profile.stateScope}`,
+    profile.permissionMode ? `permission ${profile.permissionMode}` : undefined,
+    profile.defaultAgent ? `agent ${profile.defaultAgent}` : undefined,
+    executionTarget,
+    profile.version ? `version ${profile.version}` : undefined
+  ].filter((value): value is string => Boolean(value));
+
+  return details.join(" | ");
 }
 
 function formatEventStreamStateTone(state: EventStreamState): string {
@@ -2770,6 +2789,8 @@ export function App() {
       ),
     [catalogInspection]
   );
+  const defaultAgentEngineProfileRef =
+    catalogInspection?.catalog?.defaults.agentEngineProfileRef;
   const graphEdges = useMemo(
     () => sortGraphEdges(graphInspection?.graph?.edges ?? []),
     [graphInspection]
@@ -4500,6 +4521,38 @@ export function App() {
                   {pendingPackageAdmission ? "Admitting..." : "Admit Package Source"}
                 </button>
               </div>
+            </div>
+
+            <div className="subpanel">
+              <div className="section-header">
+                <h3>Agent Engine Profiles</h3>
+                <span className="panel-caption">
+                  {agentEngineProfiles.length} profiles
+                </span>
+              </div>
+
+              {agentEngineProfiles.length > 0 ? (
+                <div className="agent-engine-profile-list">
+                  {agentEngineProfiles.map((profile) => (
+                    <div className="agent-engine-profile-card" key={profile.id}>
+                      <div className="agent-engine-profile-card-header">
+                        <strong>{profile.displayName}</strong>
+                        {profile.id === defaultAgentEngineProfileRef ? (
+                          <span className="status-pill status-healthy">
+                            Default
+                          </span>
+                        ) : null}
+                      </div>
+                      <code>{profile.id}</code>
+                      <span>{formatAgentEngineProfileDetail(profile)}</span>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <div className="inline-empty-state">
+                  <p>No agent engine profiles are available in the active catalog.</p>
+                </div>
+              )}
             </div>
 
             <div className="subpanel">

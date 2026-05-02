@@ -267,6 +267,7 @@ same-machine slice records.
 - [464-fake-opencode-server-harness-slice.md](464-fake-opencode-server-harness-slice.md)
 - [465-cli-agent-engine-profile-upsert-slice.md](465-cli-agent-engine-profile-upsert-slice.md)
 - [466-cli-agent-engine-profile-inspection-slice.md](466-cli-agent-engine-profile-inspection-slice.md)
+- [467-studio-agent-engine-profile-visibility-slice.md](467-studio-agent-engine-profile-visibility-slice.md)
 
 ## Audited Scope
 
@@ -405,6 +406,9 @@ The repository is not fully federated:
 - CLI can now list and inspect those profiles through
   `host catalog agent-engine list|get`, with deterministic ordering and compact
   summaries that mark the current default profile;
+- Studio's graph admin surface now lists active catalog agent engine profiles
+  with default marker, engine kind, state scope, permission mode, endpoint or
+  executable, default agent, and version note before node assignment editing;
 - `pnpm ops:check-product-naming` now guards active product surfaces against
   obsolete local product/profile labels;
 - OpenCode-backed runner turns now probe `/global/health` before attaching to

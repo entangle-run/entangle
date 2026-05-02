@@ -168,6 +168,8 @@ HTTP/SSE traffic. CLI can now upsert active catalog agent engine profiles with
 created, made default, and assigned to a graph node without manual catalog JSON
 editing. Focused `host catalog agent-engine list|get` commands now inspect the
 same profiles with deterministic ordering and default-aware compact summaries.
+Studio now also renders the active agent engine profiles in the graph editor
+with the default marker and compact kind/scope/permission/endpoint details.
 `pnpm ops:check-product-naming` now guards active product surfaces against old
 local product/profile labels. Runner-owned source-history publication commands
 can now carry an approval id plus explicit git target selectors, allowing
@@ -749,6 +751,7 @@ files are the active federated redesign pack.
 465. [464-fake-opencode-server-harness-slice.md](464-fake-opencode-server-harness-slice.md)
 466. [465-cli-agent-engine-profile-upsert-slice.md](465-cli-agent-engine-profile-upsert-slice.md)
 467. [466-cli-agent-engine-profile-inspection-slice.md](466-cli-agent-engine-profile-inspection-slice.md)
+468. [467-studio-agent-engine-profile-visibility-slice.md](467-studio-agent-engine-profile-visibility-slice.md)
 
 ## Role of this corpus
 
