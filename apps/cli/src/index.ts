@@ -128,6 +128,11 @@ import {
   buildPackageInitOptions,
   type PackageInitCliOptions
 } from "./package-init-command.js";
+import {
+  buildAgentEngineProfileUpsertCatalog,
+  projectAgentEngineProfileUpsertSummary,
+  type CatalogAgentEngineUpsertOptions
+} from "./catalog-agent-engine-command.js";
 import { inspectPackageDirectory } from "./package-inspection-command.js";
 import { buildPackageSourceAdmissionRequestFromCli } from "./package-source-command.js";
 import {
@@ -2299,6 +2304,92 @@ hostCatalogCommand
 
     printJson(await client.applyCatalog(request));
   });
+
+const hostCatalogAgentEngineCommand = hostCatalogCommand
+  .command("agent-engine")
+  .description("Manage agent engine profiles in the active deployment catalog.");
+
+hostCatalogAgentEngineCommand
+  .command("upsert")
+  .argument("<profileId>", "Agent engine profile id to create or update.")
+  .option(
+    "--kind <kind>",
+    "Engine kind: opencode_server, claude_agent_sdk, external_process, or external_http."
+  )
+  .option("--display-name <name>", "Human-readable engine profile name.")
+  .option("--executable <command>", "Process executable for process-backed engines.")
+  .option("--clear-executable", "Remove the executable from the profile.")
+  .option("--base-url <url>", "HTTP base URL for attached or HTTP engines.")
+  .option("--clear-base-url", "Remove the base URL from the profile.")
+  .option("--default-agent <agent>", "Default engine agent name.")
+  .option("--clear-default-agent", "Remove the default engine agent.")
+  .option(
+    "--permission-mode <mode>",
+    "OpenCode permission mode: auto_reject, auto_approve, or entangle_approval."
+  )
+  .option("--clear-permission-mode", "Remove the explicit permission mode.")
+  .option("--state-scope <scope>", "Engine state scope: node or shared.")
+  .option("--version <version>", "Version/operator note for the engine profile.")
+  .option("--clear-version", "Remove the version/operator note.")
+  .option("--set-default", "Set this profile as the catalog default agent engine.")
+  .option(
+    "--dry-run",
+    "Print the canonical catalog mutation without mutating the host."
+  )
+  .option("--summary", "Print only the mutated profile and default ref.")
+  .description(
+    "Create or update an agent engine profile and apply the catalog through entangle-host."
+  )
+  .action(
+    async (
+      profileId: string,
+      options: CatalogAgentEngineUpsertOptions & {
+        dryRun?: boolean;
+        summary?: boolean;
+      },
+      command: Command
+    ) => {
+      const client = createCliHostClient(command);
+      const inspection = await client.getCatalog();
+
+      if (!inspection.catalog) {
+        throw new Error("Host catalog is unavailable or invalid.");
+      }
+
+      const upsert = buildAgentEngineProfileUpsertCatalog(
+        inspection.catalog,
+        profileId,
+        options
+      );
+
+      if (options.dryRun) {
+        printJson(
+          buildCliMutationDryRun({
+            mutation: "host.catalog.agent_engine.upsert",
+            request: upsert.catalog,
+            target: {
+              profileId
+            }
+          })
+        );
+        return;
+      }
+
+      const response = await client.applyCatalog(upsert.catalog);
+      const appliedProfile = response.catalog?.agentEngineProfiles.find(
+        (profile) => profile.id === profileId
+      );
+
+      printJson(
+        options.summary && response.catalog && appliedProfile
+          ? projectAgentEngineProfileUpsertSummary({
+              catalog: response.catalog,
+              profile: appliedProfile
+            })
+          : response
+      );
+    }
+  );
 
 const hostPackageSourcesCommand = hostCommand
   .command("package-sources")

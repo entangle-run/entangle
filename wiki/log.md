@@ -5546,3 +5546,11 @@ as a child process and execute an attached-server turn through real HTTP/SSE
 traffic. That closes the gap between mocked `fetch` fixtures and the
 operator-started fake OpenCode harness while still leaving real provider
 credentials for manual acceptance.
+
+## [2026-05-02] cli | Added agent engine profile catalog upsert
+
+Added `references/465-cli-agent-engine-profile-upsert-slice.md`. CLI now
+exposes `host catalog agent-engine upsert <profileId>` so operators can create
+or update typed agent engine profiles through Host, including attached OpenCode
+base URLs, permission mode, state scope, default-profile selection, dry-run
+mutation payloads, and compact summaries.

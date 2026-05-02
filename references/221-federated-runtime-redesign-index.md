@@ -265,6 +265,7 @@ same-machine slice records.
 - [462-user-node-inbox-outbox-projection-audit.md](462-user-node-inbox-outbox-projection-audit.md)
 - [463-opencode-permission-bridge-slice.md](463-opencode-permission-bridge-slice.md)
 - [464-fake-opencode-server-harness-slice.md](464-fake-opencode-server-harness-slice.md)
+- [465-cli-agent-engine-profile-upsert-slice.md](465-cli-agent-engine-profile-upsert-slice.md)
 
 ## Audited Scope
 
@@ -396,6 +397,10 @@ The repository is not fully federated:
   and idle status;
 - runner OpenCode adapter tests now also start that fake server as a real child
   process and drive an attached-server turn through actual HTTP/SSE traffic;
+- CLI can now upsert active catalog agent engine profiles through
+  `host catalog agent-engine upsert`, including attached OpenCode base URLs,
+  permission mode, state scope, default-agent notes, default-profile selection,
+  dry-run payloads, and compact summaries;
 - `pnpm ops:check-product-naming` now guards active product surfaces against
   obsolete local product/profile labels;
 - OpenCode-backed runner turns now probe `/global/health` before attaching to

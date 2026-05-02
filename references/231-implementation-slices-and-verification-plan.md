@@ -264,6 +264,10 @@ Current status:
   on an ephemeral port and verifies Basic-authenticated health, session
   creation, SSE permission delivery, permission reply, deterministic assistant
   output, and idle status.
+- CLI can now configure active catalog agent engine profiles with
+  `host catalog agent-engine upsert`, so an attached OpenCode or fake OpenCode
+  profile can be created, made default, and then assigned to a node without
+  manual catalog JSON editing.
 - `pnpm ops:check-product-naming` now checks active product surfaces for old
   local product/profile labels.
 - Docker managed runners can now receive inline join config JSON and the
@@ -812,6 +816,11 @@ Implementation record:
   validation; the runner adapter test also starts that fake server as a real
   process and drives the attached OpenCode bridge through real HTTP/SSE
   traffic.
+- [465-cli-agent-engine-profile-upsert-slice.md](465-cli-agent-engine-profile-upsert-slice.md)
+  adds a Host-backed CLI catalog command for creating and updating typed agent
+  engine profiles, including attached OpenCode profiles, permission mode,
+  state scope, default-profile selection, dry-run mutation payloads, and compact
+  operator summaries.
 
 Verification:
 

@@ -144,6 +144,7 @@ CLI has matching headless surfaces:
 - `entangle authority show`
 - `entangle authority export`
 - `entangle authority import`
+- `entangle host catalog agent-engine upsert <profileId>`
 - `entangle runners list`
 - `entangle runners join-config --runner <runnerId> --output runner-join.json`
 - `entangle runners trust <runnerId>`
@@ -199,7 +200,11 @@ Node.
   `host runtimes source-history-replays` and
   `host runtimes source-history-replay-get` for inspecting observed replay
   outcomes from Host projection. CLI also exposes `assignments timeline` for
-  the per-assignment lifecycle and receipt read model.
+  the per-assignment lifecycle and receipt read model. CLI now exposes
+  `host catalog agent-engine upsert` for Host-backed agent engine profile
+  creation/update, including attached OpenCode profiles, permission mode, state
+  scope, default-profile selection, dry-run mutation payloads, and compact
+  summaries.
 - Add runner join executable or CLI command surface for generating join config.
   Done: `entangle runners join-config` writes validated Host-derived JSON join
   configs, and `entangle-runner join --config` is advertised by the runner

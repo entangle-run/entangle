@@ -189,6 +189,25 @@ deterministic permission request and completion event. Point an
 want to validate the attached-server route wiring without a live provider.
 This does not validate real OpenCode model behavior.
 
+With a Host running, the profile can be added to the active catalog without
+editing JSON:
+
+```bash
+pnpm --filter @entangle/cli dev host catalog agent-engine upsert opencode-attached \
+  --base-url http://127.0.0.1:18081 \
+  --permission-mode entangle_approval \
+  --set-default \
+  --summary
+```
+
+Then bind any agent node to that profile through the same Host boundary:
+
+```bash
+pnpm --filter @entangle/cli dev host nodes agent-runtime builder \
+  --engine-profile-ref opencode-attached \
+  --summary
+```
+
 The fake OpenCode harness has its own no-credential smoke:
 
 ```bash

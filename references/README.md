@@ -163,7 +163,10 @@ plumbing checks, and `pnpm ops:smoke-fake-opencode-server` verifies that
 server's health, session, SSE permission, permission reply, completion, and
 idle flow end to end. The runner OpenCode adapter tests also start that fake
 server as a child process and execute an attached-server turn over real
-HTTP/SSE traffic.
+HTTP/SSE traffic. CLI can now upsert active catalog agent engine profiles with
+`host catalog agent-engine upsert`, so an attached OpenCode profile can be
+created, made default, and assigned to a graph node without manual catalog JSON
+editing.
 `pnpm ops:check-product-naming` now guards active product surfaces against old
 local product/profile labels. Runner-owned source-history publication commands
 can now carry an approval id plus explicit git target selectors, allowing
@@ -742,6 +745,8 @@ files are the active federated redesign pack.
 462. [461-studio-user-launch-boundary-slice.md](461-studio-user-launch-boundary-slice.md)
 463. [462-user-node-inbox-outbox-projection-audit.md](462-user-node-inbox-outbox-projection-audit.md)
 464. [463-opencode-permission-bridge-slice.md](463-opencode-permission-bridge-slice.md)
+465. [464-fake-opencode-server-harness-slice.md](464-fake-opencode-server-harness-slice.md)
+466. [465-cli-agent-engine-profile-upsert-slice.md](465-cli-agent-engine-profile-upsert-slice.md)
 
 ## Role of this corpus
 
