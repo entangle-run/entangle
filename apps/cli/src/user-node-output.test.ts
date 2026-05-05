@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import type {
   HostProjectionSnapshot,
+  RuntimeAssignmentRecord,
   RuntimeCommandReceiptProjectionRecord,
   UserConversationProjectionRecord,
   UserNodeIdentityRecord,
@@ -9,6 +10,7 @@ import type {
 import {
   buildUserNodeClientSummariesForCli,
   filterUserNodeCommandReceiptsForCli,
+  listCurrentUserNodeAssignmentsForCli,
   projectUserNodeCommandReceiptSummary,
   projectUserConversationSummary,
   projectUserNodeIdentitySummary,
@@ -185,6 +187,85 @@ const projection: HostProjectionSnapshot = {
   wikiRefs: []
 };
 
+const assignments: RuntimeAssignmentRecord[] = [
+  {
+    acceptedAt: "2026-04-26T12:01:00.000Z",
+    assignmentId: "assignment-active",
+    assignmentRevision: 0,
+    graphId: "team-alpha",
+    graphRevisionId: "graph-revision-alpha",
+    hostAuthorityPubkey:
+      "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+    lease: {
+      expiresAt: "2026-04-26T13:01:00.000Z",
+      issuedAt: "2026-04-26T12:01:00.000Z",
+      leaseId: "lease-active",
+      renewBy: "2026-04-26T12:51:00.000Z"
+    },
+    nodeId: "user-a",
+    offeredAt: "2026-04-26T12:00:00.000Z",
+    runnerId: "runner-user-a",
+    runnerPubkey:
+      "dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd",
+    runtimeKind: "human_interface",
+    schemaVersion: "1",
+    status: "active",
+    updatedAt: "2026-04-26T12:01:00.000Z"
+  },
+  {
+    assignmentId: "assignment-revoked",
+    assignmentRevision: 0,
+    graphId: "team-alpha",
+    graphRevisionId: "graph-revision-alpha",
+    hostAuthorityPubkey:
+      "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+    nodeId: "user-a",
+    offeredAt: "2026-04-26T11:00:00.000Z",
+    revokedAt: "2026-04-26T11:30:00.000Z",
+    runnerId: "runner-old",
+    runnerPubkey:
+      "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+    runtimeKind: "human_interface",
+    schemaVersion: "1",
+    status: "revoked",
+    updatedAt: "2026-04-26T11:30:00.000Z"
+  },
+  {
+    assignmentId: "assignment-offered",
+    assignmentRevision: 0,
+    graphId: "team-alpha",
+    graphRevisionId: "graph-revision-alpha",
+    hostAuthorityPubkey:
+      "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+    nodeId: "user-a",
+    offeredAt: "2026-04-26T12:02:00.000Z",
+    runnerId: "runner-user-b",
+    runnerPubkey:
+      "ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff",
+    runtimeKind: "human_interface",
+    schemaVersion: "1",
+    status: "offered",
+    updatedAt: "2026-04-26T12:02:00.000Z"
+  },
+  {
+    assignmentId: "assignment-worker",
+    assignmentRevision: 0,
+    graphId: "team-alpha",
+    graphRevisionId: "graph-revision-alpha",
+    hostAuthorityPubkey:
+      "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+    nodeId: "worker-a",
+    offeredAt: "2026-04-26T12:03:00.000Z",
+    runnerId: "runner-worker-a",
+    runnerPubkey:
+      "9999999999999999999999999999999999999999999999999999999999999999",
+    runtimeKind: "agent_runner",
+    schemaVersion: "1",
+    status: "offered",
+    updatedAt: "2026-04-26T12:03:00.000Z"
+  }
+];
+
 describe("user node CLI output", () => {
   it("sorts and projects User Node conversation projection records", () => {
     expect(
@@ -253,6 +334,15 @@ describe("user node CLI output", () => {
         unreadCount: 0
       }
     ]);
+  });
+
+  it("finds current User Node assignments for explicit reassignment", () => {
+    expect(
+      listCurrentUserNodeAssignmentsForCli({
+        assignments,
+        nodeId: "user-a"
+      }).map((assignment) => assignment.assignmentId)
+    ).toEqual(["assignment-active", "assignment-offered"]);
   });
 
   it("filters projected command receipts to one User Node requester", () => {

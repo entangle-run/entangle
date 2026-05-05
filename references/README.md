@@ -837,6 +837,7 @@ files are the active federated redesign pack.
 505. [504-user-node-client-workload-summary-slice.md](504-user-node-client-workload-summary-slice.md)
 506. [505-studio-user-node-workload-summary-slice.md](505-studio-user-node-workload-summary-slice.md)
 507. [506-canonical-user-node-surface-spec-repair.md](506-canonical-user-node-surface-spec-repair.md)
+508. [507-user-node-runtime-reassignment-surface-slice.md](507-user-node-runtime-reassignment-surface-slice.md)
 
 ## Role of this corpus
 

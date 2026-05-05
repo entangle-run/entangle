@@ -623,6 +623,7 @@ describe("Studio federation inspection helpers", () => {
 
     expect(userSummary).toMatchObject({
       activeConversationCount: 2,
+      assignmentId: "assignment-user-a",
       clientUrl: "http://127.0.0.1:4174/",
       commandReceiptCount: 2,
       conversationCount: 2,
@@ -634,6 +635,9 @@ describe("Studio federation inspection helpers", () => {
     });
     expect(formatUserNodeRuntimeSummaryLabel(userSummary!)).toBe(
       "user-a · active · running"
+    );
+    expect(formatUserNodeRuntimeSummaryDetail(userSummary!)).toContain(
+      "assignment assignment-user-a"
     );
     expect(formatUserNodeRuntimeSummaryDetail(userSummary!)).toContain(
       "approvals 1"

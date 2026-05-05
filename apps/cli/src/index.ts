@@ -27,6 +27,7 @@ import {
   type HostEventRecord,
   nodeCreateRequestSchema,
   nodeReplacementRequestSchema,
+  type RuntimeAssignmentRecord,
   runtimeArtifactRestoreRequestSchema,
   runtimeArtifactSourceChangeProposalRequestSchema,
   runtimeAssignmentOfferRequestSchema,
@@ -108,6 +109,7 @@ import {
 import {
   buildUserNodeClientSummariesForCli,
   filterUserNodeCommandReceiptsForCli,
+  listCurrentUserNodeAssignmentsForCli,
   projectUserNodeCommandReceiptSummary,
   projectUserConversationSummary,
   projectUserNodeIdentitySummary,
@@ -1489,6 +1491,112 @@ userNodesCommand
     });
 
     printJson(options.summary ? { clients } : { generatedAt: projection.generatedAt, clients });
+  });
+
+userNodesCommand
+  .command("assign")
+  .argument("<nodeId>", "User Node identifier.")
+  .requiredOption(
+    "--runner <runnerId>",
+    "Trusted runner id to receive the User Node."
+  )
+  .option("--assignment-id <assignmentId>", "Explicit assignment id.")
+  .option(
+    "--lease-duration-seconds <seconds>",
+    "Lease duration in seconds.",
+    "600"
+  )
+  .option(
+    "--policy-revision-id <policyRevisionId>",
+    "Optional policy revision id."
+  )
+  .option(
+    "--revoke-existing",
+    "Revoke current offered/accepted/active assignments for this User Node before offering the new assignment."
+  )
+  .option(
+    "--revoke-reason <reason>",
+    "Reason used when revoking existing assignments.",
+    "User Node reassignment"
+  )
+  .option(
+    "--revoked-by <operatorId>",
+    "Operator identifier for reassignment revocation audit.",
+    "cli"
+  )
+  .option("--summary", "Print a compact assignment summary.")
+  .description("Offer a Human Interface Runtime assignment for one User Node.")
+  .action(async (
+    nodeId: string,
+    options: {
+      assignmentId?: string;
+      leaseDurationSeconds: string;
+      policyRevisionId?: string;
+      revokeExisting?: boolean;
+      revokeReason: string;
+      revokedBy: string;
+      runner: string;
+      summary?: boolean;
+    },
+    command: Command
+  ) => {
+    const request = runtimeAssignmentOfferRequestSchema.parse({
+      ...(options.assignmentId ? { assignmentId: options.assignmentId } : {}),
+      leaseDurationSeconds: parsePositiveIntegerOption(
+        options.leaseDurationSeconds,
+        "--lease-duration-seconds"
+      ),
+      nodeId,
+      ...(options.policyRevisionId
+        ? { policyRevisionId: options.policyRevisionId }
+        : {}),
+      runnerId: options.runner
+    });
+    const client = createCliHostClient(command);
+    const userNodes = await client.listUserNodes();
+    const userNode = userNodes.userNodes.find(
+      (candidate) => candidate.nodeId === nodeId
+    );
+
+    if (!userNode) {
+      throw new Error(`User Node ${nodeId} is not active or does not exist.`);
+    }
+
+    const revokedAssignments: RuntimeAssignmentRecord[] = [];
+
+    if (options.revokeExisting) {
+      const assignments = await client.listAssignments();
+      const currentAssignments = listCurrentUserNodeAssignmentsForCli({
+        assignments: assignments.assignments,
+        nodeId
+      });
+
+      for (const assignment of currentAssignments) {
+        const response = await client.revokeAssignment(assignment.assignmentId, {
+          reason: options.revokeReason,
+          revokedBy: options.revokedBy
+        });
+        revokedAssignments.push(response.assignment);
+      }
+    }
+
+    const response = await client.offerAssignment(request);
+
+    printJson(
+      options.summary
+        ? {
+            assignment: projectRuntimeAssignmentSummary(response.assignment),
+            revokedAssignments: revokedAssignments.map(
+              projectRuntimeAssignmentSummary
+            ),
+            userNode: projectUserNodeIdentitySummary(userNode)
+          }
+        : {
+            assignment: response.assignment,
+            revokedAssignments,
+            userNode
+          }
+    );
   });
 
 userNodesCommand

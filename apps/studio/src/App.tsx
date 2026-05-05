@@ -304,6 +304,7 @@ type EdgeMutationAction = "create" | "delete" | "replace";
 type NodeMutationAction = "create" | "delete" | "replace";
 
 const studioSectionIds = {
+  runtimeAssignmentControl: "studio-runtime-assignment-control",
   runnerRegistry: "studio-runner-registry",
   runtimeCommandReceipts: "studio-runtime-command-receipts",
   runtimeInspector: "studio-runtime-inspector",
@@ -3624,6 +3625,38 @@ export function App() {
     () => buildRuntimeAssignmentRunnerOptions(projectionSnapshot),
     [projectionSnapshot]
   );
+  const prepareUserNodeRuntimeAssignment = useCallback(
+    (input: { nodeId: string; runnerId?: string | undefined }) => {
+      setAssignmentDraft((current) => {
+        const runnerOptionIds = new Set(
+          assignmentRunnerOptions.map((option) => option.id)
+        );
+        const selectedRunnerId = runnerOptionIds.has(current.runnerId)
+          ? current.runnerId
+          : undefined;
+        const projectedRunnerId =
+          input.runnerId && runnerOptionIds.has(input.runnerId)
+            ? input.runnerId
+            : undefined;
+
+        return {
+          leaseDurationSeconds: current.leaseDurationSeconds.trim()
+            ? current.leaseDurationSeconds
+            : "3600",
+          nodeId: input.nodeId,
+          runnerId:
+            selectedRunnerId ??
+            projectedRunnerId ??
+            assignmentRunnerOptions[0]?.id ??
+            ""
+        };
+      });
+      setAssignmentMutationError(null);
+      setLastAssignmentOfferSummary(`Prepared assignment for ${input.nodeId}`);
+      scrollToStudioSection(studioSectionIds.runtimeAssignmentControl);
+    },
+    [assignmentRunnerOptions, scrollToStudioSection]
+  );
   const projectedRunnerRows = useMemo(
     () => sortRunnerProjectionsForStudio(projectionSnapshot?.runners ?? []),
     [projectionSnapshot]
@@ -3959,6 +3992,7 @@ export function App() {
         </div>
 
         <form
+          id={studioSectionIds.runtimeAssignmentControl}
           className="artifact-detail-card"
           onSubmit={(event) => {
             event.preventDefault();
@@ -4300,6 +4334,35 @@ export function App() {
                     Open User Client
                   </a>
                 ) : null}
+                <div className="action-row">
+                  <button
+                    className="secondary-button"
+                    onClick={() => {
+                      prepareUserNodeRuntimeAssignment({
+                        nodeId: summary.nodeId,
+                        ...(summary.runnerId
+                          ? { runnerId: summary.runnerId }
+                          : {})
+                      });
+                    }}
+                    type="button"
+                  >
+                    Prepare Assignment
+                  </button>
+                  {summary.assignmentId ? (
+                    <button
+                      className="secondary-button"
+                      onClick={() => {
+                        if (summary.assignmentId) {
+                          void loadAssignmentTimeline(summary.assignmentId);
+                        }
+                      }}
+                      type="button"
+                    >
+                      Assignment Timeline
+                    </button>
+                  ) : null}
+                </div>
               </div>
             ))}
           </div>

@@ -1,5 +1,6 @@
 import type {
   HostProjectionSnapshot,
+  RuntimeAssignmentRecord,
   RuntimeCommandReceiptProjectionRecord,
   RuntimeProjectionRecord,
   UserConversationProjectionRecord,
@@ -113,6 +114,56 @@ export function sortUserNodeIdentitiesForCli(
 ): UserNodeIdentityRecord[] {
   return [...userNodes].sort((left, right) =>
     left.nodeId.localeCompare(right.nodeId)
+  );
+}
+
+export function sortUserNodeRuntimeAssignmentsForCli(
+  assignments: RuntimeAssignmentRecord[]
+): RuntimeAssignmentRecord[] {
+  return [...assignments].sort((left, right) => {
+    const statusOrder =
+      userNodeAssignmentStatusPriority(left.status) -
+      userNodeAssignmentStatusPriority(right.status);
+
+    if (statusOrder !== 0) {
+      return statusOrder;
+    }
+
+    return left.assignmentId.localeCompare(right.assignmentId);
+  });
+}
+
+function userNodeAssignmentStatusPriority(
+  status: RuntimeAssignmentRecord["status"]
+): number {
+  switch (status) {
+    case "active":
+      return 0;
+    case "accepted":
+      return 1;
+    case "offered":
+      return 2;
+    case "revoking":
+      return 3;
+    case "rejected":
+      return 4;
+    case "expired":
+      return 5;
+    case "revoked":
+      return 6;
+  }
+}
+
+export function listCurrentUserNodeAssignmentsForCli(input: {
+  assignments: RuntimeAssignmentRecord[];
+  nodeId: string;
+}): RuntimeAssignmentRecord[] {
+  return sortUserNodeRuntimeAssignmentsForCli(
+    input.assignments.filter(
+      (assignment) =>
+        assignment.nodeId === input.nodeId &&
+        ["active", "accepted", "offered"].includes(assignment.status)
+    )
   );
 }
 

@@ -31,6 +31,7 @@ export type FederationProjectionSummary = {
 
 export type UserNodeRuntimeSummary = {
   activeConversationCount: number;
+  assignmentId?: string;
   clientUrl?: string;
   commandReceiptCount: number;
   conversationCount: number;
@@ -508,6 +509,7 @@ export function buildUserNodeRuntimeSummaries(
     return {
       activeConversationCount: conversations.filter(isActiveUserConversation)
         .length,
+      ...(runtime?.assignmentId ? { assignmentId: runtime.assignmentId } : {}),
       ...(runtime?.clientUrl ? { clientUrl: runtime.clientUrl } : {}),
       commandReceiptCount: commandReceipts.length,
       conversationCount: conversations.length,
@@ -601,6 +603,7 @@ export function formatUserNodeRuntimeSummaryDetail(
 ): string {
   return [
     `graph ${summary.graphId}`,
+    summary.assignmentId ? `assignment ${summary.assignmentId}` : undefined,
     summary.runnerId ? `runner ${summary.runnerId}` : "runner unassigned",
     `conversations ${summary.conversationCount}`,
     `active ${summary.activeConversationCount}`,
@@ -610,5 +613,5 @@ export function formatUserNodeRuntimeSummaryDetail(
     `failed commands ${summary.failedCommandReceiptCount}`,
     `gateways ${summary.gatewayCount}`,
     `pubkey ${summary.publicKeyPrefix}`
-  ].join(" · ");
+  ].filter((part): part is string => Boolean(part)).join(" · ");
 }

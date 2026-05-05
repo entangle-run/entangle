@@ -25,7 +25,8 @@ groups projected runner receipts under assignment rows.
 Missing surfaces:
 
 - deeper per-relay transport diagnostics;
-- richer User Node runtime reassignment workflow controls in Studio and CLI;
+- richer participant-aware runtime reassignment workflows beyond the current
+  CLI operator command and Studio prepare/timeline controls;
 - richer participant-side review flows beyond the current scoped artifact,
   source-change, wiki, command-receipt, workload, and runtime-status surfaces;
 - production authentication/key-custody flows for User Client access;
@@ -99,6 +100,12 @@ Recently added:
   own projected runtime status: assignment, backend, runner, desired/observed
   lifecycle state, restart generation, last-seen time, status message, and
   projected client URL.
+- CLI now exposes `entangle user-nodes assign <nodeId> --runner <runnerId>`,
+  including optional `--revoke-existing`, as a User Node-focused wrapper around
+  the Host assignment boundary.
+- Studio User Node runtime rows can prepare the Host assignment form for that
+  User Node and open the projected assignment timeline when an assignment id is
+  known.
 - Studio now has a Federation panel assignment control that offers any active
   graph node, including User Nodes, to a Host-projected trusted runner via the
   Host assignment API.
@@ -168,6 +175,7 @@ CLI has matching headless surfaces:
 - `entangle inbox list --user-node <nodeId>`
 - `entangle inbox show <conversationId> --user-node <nodeId>`
 - `entangle user-nodes clients`
+- `entangle user-nodes assign <nodeId> --runner <runnerId> --revoke-existing`
 - `entangle reply <messageId> "..." --user-node <nodeId>`
 - `entangle approve --user-node <nodeId> --from-message <eventId>`
 - `entangle reject --user-node <nodeId> --from-message <eventId>`
@@ -246,8 +254,9 @@ Node.
 - Add Studio User Node runtime visibility and User Client open action. The
   projection-derived User Node runtime summaries, workload counts,
   participant-requested command receipt counts, and `clientUrl` open actions
-  are implemented; richer reassignment workflow controls and production
-  health/key-custody panels remain open.
+  are implemented; runtime rows can also prepare the Host assignment form and
+  open assignment timelines. Richer participant-aware reassignment workflow
+  controls and production health/key-custody panels remain open.
 - Build the dedicated User Client for conversation list, message detail,
   replies, and approvals. A usable runner-served shell now has conversation
   list, selected thread metadata, recorded inbound/outbound messages, and

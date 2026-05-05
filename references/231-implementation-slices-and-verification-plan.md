@@ -1051,8 +1051,12 @@ participant-requested command receipt count, and failed command receipt count.
 Studio's User Node roster now reports the same participant-requested command
 receipt and failed receipt counts alongside the existing conversation and
 runtime placement summary.
-Remaining User Node surface work is now focused on runtime reassignment UX
-without violating Host authority and participant-side source/wiki review depth.
+User Node reassignment now has an explicit CLI operator wrapper over the Host
+assignment API, including optional revocation of current offered/accepted/active
+assignments, and Studio User Node runtime rows can prepare the Host assignment
+form and open the current assignment timeline. Remaining reassignment work is
+now focused on richer participant-aware workflow guidance without violating
+Host authority and participant-side source/wiki review depth.
 The canonical surface and authority specs were repaired in
 [506-canonical-user-node-surface-spec-repair.md](506-canonical-user-node-surface-spec-repair.md)
 so they classify these shipped behaviors as current baseline rather than open
@@ -1438,6 +1442,9 @@ Current status:
 - canonical User Node, entity, and Studio/CLI specs now match the implemented
   Host Authority, runner registry, User Node signing, scoped command-receipt,
   workload, and own-runtime status baseline;
+- CLI and Studio now expose User Node-focused assignment/reassignment entry
+  points on top of the same Host assignment API instead of requiring operators
+  to discover the generic graph-node assignment surface;
 - the remaining distributed proof hardening is infrastructure-backed
   orchestration that can provision multiple machines or VM/container boundaries
   around the verifier.

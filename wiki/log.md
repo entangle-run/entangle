@@ -5970,3 +5970,14 @@ The remaining documented gaps are now production hardening, richer
 reassignment workflows, external identity/key custody, and deeper
 participant-side review flows rather than already-shipped baseline federation
 surfaces.
+
+## [2026-05-05] cli/studio | Added User Node runtime assignment surface
+
+Added `references/507-user-node-runtime-reassignment-surface-slice.md`. CLI now
+has `entangle user-nodes assign <nodeId> --runner <runnerId>` as a User
+Node-focused wrapper over the Host assignment API, with optional
+`--revoke-existing` behavior for explicit reassignment.
+
+Studio User Node runtime rows now expose operator actions to prepare the Host
+assignment form for that User Node and to open the projected assignment
+timeline when an assignment id is known.
