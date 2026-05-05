@@ -93,7 +93,7 @@ pnpm ops:check-product-naming
 Added-line local-assumption audit:
 
 ```bash
-git diff -U0 | rg "^\+.*(Entangle Local|entangle-local|runtimeProfile.*local|contextPath|runtimeRoot|shared volume|effective-runtime-context|Docker)"
+git diff -U0 | rg "^\+.*(old product identity markers|runtimeProfile.*local|contextPath|runtimeRoot|shared volume|effective-runtime-context|Docker)"
 ```
 
 No added lines matched that local-only assumption scan.

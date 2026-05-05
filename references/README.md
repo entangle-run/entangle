@@ -191,6 +191,10 @@ executes `external_http` profiles by POSTing the same shared turn payload to
 the configured endpoint and validating the shared turn result response. Active
 agent engine kind validation now exposes only runner-executable kinds:
 `opencode_server`, `external_process`, and `external_http`.
+Historical slice notes no longer preserve literal old product-name strings in
+local-assumption audit command examples; they now refer generically to old
+product identity markers while active naming remains guarded by
+`pnpm ops:check-product-naming`.
 `pnpm ops:check-product-naming` now guards active product surfaces against old
 local product/profile labels. Runner-owned source-history publication commands
 can now carry an approval id plus explicit git target selectors, allowing
@@ -788,6 +792,7 @@ files are the active federated redesign pack.
 477. [476-external-process-agent-engine-adapter-slice.md](476-external-process-agent-engine-adapter-slice.md)
 478. [477-external-http-agent-engine-adapter-slice.md](477-external-http-agent-engine-adapter-slice.md)
 479. [478-active-agent-engine-kind-contract-slice.md](478-active-agent-engine-kind-contract-slice.md)
+480. [479-legacy-product-name-residue-cleanup-slice.md](479-legacy-product-name-residue-cleanup-slice.md)
 
 ## Role of this corpus
 

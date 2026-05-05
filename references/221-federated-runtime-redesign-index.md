@@ -279,6 +279,7 @@ same-machine slice records.
 - [476-external-process-agent-engine-adapter-slice.md](476-external-process-agent-engine-adapter-slice.md)
 - [477-external-http-agent-engine-adapter-slice.md](477-external-http-agent-engine-adapter-slice.md)
 - [478-active-agent-engine-kind-contract-slice.md](478-active-agent-engine-kind-contract-slice.md)
+- [479-legacy-product-name-residue-cleanup-slice.md](479-legacy-product-name-residue-cleanup-slice.md)
 
 ## Audited Scope
 

@@ -60,7 +60,7 @@ Implemented and passed:
 - `pnpm lint`
 - `pnpm ops:check-product-naming`
 - `git diff --check`
-- `git diff -U0 | rg "^\\+.*(Entangle Local|entangle-local|runtimeProfile.*local|contextPath|runtimeRoot|shared volume|effective-runtime-context|Docker)"`
+- `git diff -U0 | rg "^\\+.*(old product identity markers|runtimeProfile.*local|contextPath|runtimeRoot|shared volume|effective-runtime-context|Docker)"`
 
 The added-line local-assumption audit produced no hits.
 

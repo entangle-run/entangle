@@ -1,5 +1,13 @@
 # Entangle Wiki Log
 
+## [2026-05-05] docs | Removed legacy product-name residue
+
+Added `references/479-legacy-product-name-residue-cleanup-slice.md`.
+Historical slice notes no longer preserve literal old product-name strings
+inside local-assumption audit command examples. The audit notes now refer
+generically to old product identity markers while active naming remains guarded
+by `pnpm ops:check-product-naming`.
+
 ## [2026-05-05] contracts | Removed inactive Claude engine kind placeholder
 
 Added `references/478-active-agent-engine-kind-contract-slice.md`.

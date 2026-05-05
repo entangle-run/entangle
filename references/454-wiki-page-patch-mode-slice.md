@@ -73,9 +73,9 @@ if the diff matches the current page content.
 
 ## Audit notes
 
-The added-line local-assumption audit found no new `Entangle Local`,
-`entangle-local`, `runtimeProfile.*local`, `contextPath`, `runtimeRoot`,
-shared-volume, `effective-runtime-context`, or Docker assumptions.
+The added-line local-assumption audit found no new old product identity
+markers, `runtimeProfile.*local`, `contextPath`, `runtimeRoot`, shared-volume,
+`effective-runtime-context`, or Docker assumptions.
 
 ## Open questions
 

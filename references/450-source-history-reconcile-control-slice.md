@@ -104,7 +104,7 @@ runner invocation above is the targeted verification for this slice.
 Added-line local-assumption audit:
 
 ```bash
-git diff -U0 | rg "^\+.*(Entangle Local|entangle-local|runtimeProfile.*local|contextPath|runtimeRoot|shared volume|effective-runtime-context|Docker)"
+git diff -U0 | rg "^\+.*(old product identity markers|runtimeProfile.*local|contextPath|runtimeRoot|shared volume|effective-runtime-context|Docker)"
 ```
 
 Findings:
