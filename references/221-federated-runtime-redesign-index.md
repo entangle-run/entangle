@@ -289,6 +289,7 @@ same-machine slice records.
 - [486-host-test-pool-stability-slice.md](486-host-test-pool-stability-slice.md)
 - [487-session-cancellation-federated-only-slice.md](487-session-cancellation-federated-only-slice.md)
 - [488-studio-user-client-boundary-audit.md](488-studio-user-client-boundary-audit.md)
+- [489-deployment-repair-missing-host-state-directories-slice.md](489-deployment-repair-missing-host-state-directories-slice.md)
 
 ## Audited Scope
 
@@ -1033,12 +1034,15 @@ request records into runner runtime roots; it requires an accepted federated
 assignment and active control-plane publication. The current Studio/User Client
 boundary is now documented explicitly: Studio is the operator/admin console,
 while participant chat, task launch, approvals, and review actions live in the
-running User Client or CLI User Node surfaces. The highest-value remaining
-implementation areas are richer
+running User Client or CLI User Node surfaces. Deployment repair can now safely
+restore missing standard `.entangle/host` state directories for compatible
+existing deployments without mutating authoritative state files, while
+unreadable or unsupported state layouts remain blocked for manual inspection.
+The highest-value remaining implementation areas are richer
 model-guided memory maintenance, deeper delegated-session semantics beyond the
 current controlled handoff path, collaborative wiki merge UI and multi-page
 patch-set semantics on top of the participant-scoped page upsert command,
 repository lifecycle and replicated/fallback artifact behavior,
-infrastructure-backed multi-machine proof execution, non-disposable upgrade and
-repair behavior, and deeper production identity/authorization beyond the
-scoped bootstrap-token boundary.
+infrastructure-backed multi-machine proof execution, non-disposable upgrade
+behavior, and deeper production identity/authorization beyond the scoped
+bootstrap-token boundary.

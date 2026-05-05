@@ -180,6 +180,7 @@ function buildRepairActions(input: {
       status: "blocked",
       summary: "Inspect unreadable Entangle state layout"
     });
+    return actions;
   }
 
   if (
@@ -195,6 +196,24 @@ function buildRepairActions(input: {
       risk: "manual",
       status: "blocked",
       summary: "Resolve unsupported Entangle state layout"
+    });
+    return actions;
+  }
+
+  const missingSkeletonDirectories = hostStateSkeletonDirectories.filter(
+    (directory) => !existsSync(path.join(hostStatePath, directory))
+  );
+
+  if (missingSkeletonDirectories.length > 0) {
+    actions.push({
+      actionId: "create_missing_host_state_directories",
+      category: "state",
+      detail:
+        "Create missing standard host state directories without modifying existing state files: " +
+        missingSkeletonDirectories.join(", "),
+      risk: "safe",
+      status: "pending",
+      summary: "Create missing Entangle host state directories"
     });
   }
 
@@ -240,6 +259,19 @@ async function applySafeRepairActions(input: {
         layoutPath,
         `${JSON.stringify(buildCurrentStateLayoutRecord(input.generatedAt), null, 2)}\n`,
         "utf8"
+      );
+      appliedActions.push({
+        ...action,
+        status: "applied"
+      });
+      continue;
+    }
+
+    if (action.actionId === "create_missing_host_state_directories") {
+      await Promise.all(
+        hostStateSkeletonDirectories.map((directory) =>
+          mkdir(path.join(hostStatePath, directory), { recursive: true })
+        )
       );
       appliedActions.push({
         ...action,

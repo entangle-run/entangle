@@ -967,8 +967,8 @@ This repository currently contains:
   exclusion, and restore-time state-layout compatibility checks;
 - a first conservative same-machine repair command through `entangle deployment repair`,
   defaulting to dry-run previews and applying only safe host-state
-  initialization or missing layout-marker repairs when `--apply-safe` is
-  supplied;
+  initialization, missing layout-marker, or missing standard host-state
+  directory repairs when `--apply-safe` is supplied;
 - a disposable same-machine profile smoke through `pnpm ops:smoke-federated-dev:disposable`
   that runs strict preflight, builds the runner image, starts the stable
   Compose services, waits for active smoke success, and tears the profile down;
@@ -1388,8 +1388,8 @@ This repository currently contains:
   now provide the first versioned
   `.entangle/host` backup and validated restore path without bundling local
   secrets, while `entangle deployment repair` provides a dry-run-first conservative
-  repair surface for safe host-state initialization and missing layout-marker
-  recovery;
+  repair surface for safe host-state initialization, missing layout-marker
+  recovery, and missing standard host-state directory recovery;
 - the next bounded Studio completion slice where the operator can now select
   one runtime-scoped session summary and inspect host-backed per-node session
   detail without widening the host API or inventing client-owned session

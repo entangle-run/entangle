@@ -1382,6 +1382,9 @@ Current status:
   control and active relay publication;
 - the Studio/User Client boundary is now documented as operator/admin Studio
   plus participant User Client and headless CLI, matching the current code;
+- `entangle deployment repair` now recreates missing standard `.entangle/host`
+  skeleton directories for compatible existing deployments while leaving
+  unreadable or unsupported layouts blocked for manual inspection;
 - the remaining distributed proof hardening is infrastructure-backed
   orchestration that can provision multiple machines or VM/container boundaries
   around the verifier.

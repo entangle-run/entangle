@@ -819,6 +819,7 @@ files are the active federated redesign pack.
 487. [486-host-test-pool-stability-slice.md](486-host-test-pool-stability-slice.md)
 488. [487-session-cancellation-federated-only-slice.md](487-session-cancellation-federated-only-slice.md)
 489. [488-studio-user-client-boundary-audit.md](488-studio-user-client-boundary-audit.md)
+490. [489-deployment-repair-missing-host-state-directories-slice.md](489-deployment-repair-missing-host-state-directories-slice.md)
 
 ## Role of this corpus
 

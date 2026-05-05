@@ -5774,3 +5774,15 @@ audit no longer says Studio needs full participant chat composition.
 The documented boundary now matches the implementation: Studio is the
 operator/admin console, while participant chat, task launch, approval, and
 review behavior belongs to the running User Client or CLI User Node surfaces.
+
+## [2026-05-05] cli | Repaired missing Host state directory skeletons
+
+Added
+`references/489-deployment-repair-missing-host-state-directories-slice.md`.
+`entangle deployment repair` now detects compatible `.entangle/host` state
+directories that are missing standard skeleton subdirectories and offers a
+safe `create_missing_host_state_directories` action.
+
+`--apply-safe` recreates only the known Host-owned directories and records the
+repair trace. Unreadable, unsupported future, or unsupported legacy state
+layouts still block repair before any directory mutation is attempted.

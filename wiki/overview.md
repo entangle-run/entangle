@@ -1116,7 +1116,8 @@ The repository now also contains the first real implementation baseline:
   provide the first versioned `.entangle/host` backup and validated restore
   path without bundling Entangle secrets, and `entangle deployment repair` provides a
   dry-run-first conservative repair surface for safe host-state initialization
-  and missing layout-marker recovery;
+  missing layout-marker recovery, and missing standard host-state directory
+  recovery;
 - an active same-machine profile smoke through `pnpm ops:smoke-federated-dev`, covering
   running Compose services, the local runner image, host status/events, Studio
   HTTP, Gitea HTTP reachability, and the local `strfry` Nostr WebSocket
@@ -1270,8 +1271,7 @@ The current implementation-truth audit now lives in
   lifecycle behavior, and explicit fallback or
   replication behavior,
   while the next deployment-grade gap is
-  non-disposable local-profile upgrade and repair behavior for older Gitea
-  volumes;
+  non-disposable profile upgrade behavior for older Gitea volumes;
 - complete CLI parity where it adds real headless operational value;
 - continue narrowing the remaining delegated-session gaps now that controlled
   autonomous `task.handoff` emission and runner-local active-conversation

@@ -1,4 +1,4 @@
-import { mkdir, mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
+import { mkdir, mkdtemp, readFile, rm, stat, writeFile } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 import { afterEach, describe, expect, it } from "vitest";
@@ -118,6 +118,74 @@ describe("deployment repair command helpers", () => {
       schemaVersion: "1",
       status: "repaired"
     });
+  });
+
+  it("applies safe repair for missing host-state directories", async () => {
+    const repositoryRoot = await createTempRoot("entangle-repair-dirs-");
+    await mkdir(path.join(repositoryRoot, ".entangle/host/desired"), {
+      recursive: true
+    });
+    await writeJson(path.join(repositoryRoot, ".entangle/host/state-layout.json"), {
+      createdAt: "2026-04-26T00:00:00.000Z",
+      layoutVersion: 1,
+      product: "entangle",
+      schemaVersion: "1",
+      updatedAt: "2026-04-26T00:00:00.000Z"
+    });
+
+    const preview = await buildDeploymentRepairReport(
+      {
+        repositoryRoot,
+        skipLive: true
+      },
+      createRepairDeps()
+    );
+
+    expect(preview).toMatchObject({
+      applied: false,
+      status: "would_repair",
+      summary: {
+        pending: 1
+      }
+    });
+    expect(preview.actions[0]).toMatchObject({
+      actionId: "create_missing_host_state_directories",
+      risk: "safe",
+      status: "pending"
+    });
+    expect(preview.actions[0]?.detail).toContain("observed");
+
+    const report = await buildDeploymentRepairReport(
+      {
+        applySafe: true,
+        repositoryRoot,
+        skipLive: true
+      },
+      createRepairDeps()
+    );
+
+    expect(report).toMatchObject({
+      applied: true,
+      status: "repaired",
+      summary: {
+        applied: 1
+      }
+    });
+
+    for (const directory of [
+      "desired",
+      "observed",
+      "traces",
+      "imports",
+      "workspaces",
+      "cache"
+    ]) {
+      expect(
+        (await stat(path.join(repositoryRoot, ".entangle/host", directory)))
+          .isDirectory()
+      ).toBe(true);
+    }
+    expect(report.repairRecordPath).toBeDefined();
   });
 
   it("blocks repair when the existing state layout is from a future version", async () => {
