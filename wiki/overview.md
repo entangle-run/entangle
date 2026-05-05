@@ -253,6 +253,8 @@ The most accurate current description is:
   start from visible Host projection without exposing runner-local paths;
 - failed stale-edit wiki page receipts now render as explicit User Client
   conflict summaries using projected expected/current hashes;
+- CLI summary output exposes the same structured `wikiConflict` object for
+  global projection and User Node command receipt summaries;
 - joined runners now publish session/conversation observations for later
   lifecycle transitions after handoffs, coordination result/close, approval
   request/response, completion, cancellation, and failure paths;
@@ -1342,7 +1344,7 @@ The current implementation-truth audit now lives in
   plus single-page wiki patch mode plus projected-preview draft prefill with
   automatic expected-hash population plus User Client source-history reconcile
   plus local wiki draft diff preview plus stale-edit conflict receipt summaries
-  plus approval-response turn correlation;
+  in the browser and CLI plus approval-response turn correlation;
   the next git gaps are richer collaborative wiki merge UI, repository
   lifecycle behavior, and explicit fallback or
   replication behavior,

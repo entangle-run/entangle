@@ -769,7 +769,9 @@ This repository currently contains:
   edits inside the node-local client rather than requiring manual copy/paste
   from projection cards. Failed stale-edit wiki page receipts now render as
   explicit conflict summaries in the User Client using projected
-  expected/current hashes.
+  expected/current hashes, and CLI summary output exposes the same structured
+  `wikiConflict` object for global projection and User Node command receipt
+  summaries.
   Public deep runtime reads
   for accepted federated
   assignments now ignore Host-local runtime files and use projected
@@ -1561,8 +1563,8 @@ The highest-value remaining gaps are:
   with runner-enforced stale-edit detection, single-page patch mode, and
   projected-preview draft prefill with automatic expected-hash population, User
   Client local wiki draft diff preview plus stale-edit conflict receipt
-  summaries, approval-response turn correlation, richer collaborative wiki
-  merge UI and repository lifecycle behavior beyond
+  summaries in the browser and CLI, approval-response turn correlation, richer
+  collaborative wiki merge UI and repository lifecycle behavior beyond
   explicit target publication, and replicated fallback paths;
 - production identity and authorization beyond the bootstrap operator-token
   boundary, multi-token attribution, visible status summary, route-level

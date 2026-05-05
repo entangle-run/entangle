@@ -8,6 +8,8 @@ import type {
   UserNodeMessageRecord,
   UserNodeMessagePublishResponse
 } from "@entangle/types";
+import type { RuntimeCommandReceiptWikiConflictCliSummary } from "./runtime-command-receipt-output.js";
+import { projectRuntimeCommandReceiptWikiConflictSummary } from "./runtime-command-receipt-output.js";
 
 export type UserNodeClientCliSummary = {
   assignmentId?: string;
@@ -122,6 +124,7 @@ export type UserNodeCommandReceiptCliSummary = {
   runnerId: string;
   sourceHistoryId?: string;
   wikiArtifactId?: string;
+  wikiConflict?: RuntimeCommandReceiptWikiConflictCliSummary;
   wikiPagePath?: string;
 };
 
@@ -274,6 +277,8 @@ export function filterUserNodeCommandReceiptsForCli(input: {
 export function projectUserNodeCommandReceiptSummary(
   receipt: RuntimeCommandReceiptProjectionRecord
 ): UserNodeCommandReceiptCliSummary {
+  const wikiConflict = projectRuntimeCommandReceiptWikiConflictSummary(receipt);
+
   return {
     ...(receipt.artifactId ? { artifactId: receipt.artifactId } : {}),
     commandEventType: receipt.commandEventType,
@@ -286,6 +291,7 @@ export function projectUserNodeCommandReceiptSummary(
       ? { sourceHistoryId: receipt.sourceHistoryId }
       : {}),
     ...(receipt.wikiArtifactId ? { wikiArtifactId: receipt.wikiArtifactId } : {}),
+    ...(wikiConflict ? { wikiConflict } : {}),
     ...(receipt.wikiPagePath ? { wikiPagePath: receipt.wikiPagePath } : {})
   };
 }

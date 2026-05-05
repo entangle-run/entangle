@@ -332,6 +332,7 @@ same-machine slice records.
 - [529-distributed-proof-kit-junit-script-slice.md](529-distributed-proof-kit-junit-script-slice.md)
 - [530-bootstrap-operator-token-expiry-slice.md](530-bootstrap-operator-token-expiry-slice.md)
 - [531-user-client-wiki-conflict-receipts-slice.md](531-user-client-wiki-conflict-receipts-slice.md)
+- [532-cli-wiki-conflict-receipts-slice.md](532-cli-wiki-conflict-receipts-slice.md)
 
 ## Audited Scope
 
@@ -1170,8 +1171,10 @@ updates carry stale-edit protection by default; it also renders a local line
 diff for replace/append wiki drafts before sending the runner-owned mutation
 request. Failed stale-edit wiki page receipts now render as explicit User
 Client conflict blocks over the projected expected/current page hashes instead
-of only generic command receipt lines. Focused-register lifecycle transition
-history now also has a runner-owned indexed wiki page at
+of only generic command receipt lines, and CLI summary output now includes the
+same structured `wikiConflict` object on both global projection and User Node
+command receipt summaries. Focused-register lifecycle transition history now
+also has a runner-owned indexed wiki page at
 `wiki/summaries/focused-register-transition-history.md`, so closure,
 completion, replacement, consolidation, and exact-overlap retirements flow into
 future memory refs and projected wiki evidence instead of remaining only in

@@ -3,6 +3,8 @@ import type {
   RuntimeCommandReceiptProjectionRecord,
   RuntimeProjectionRecord
 } from "@entangle/types";
+import type { RuntimeCommandReceiptWikiConflictCliSummary } from "./runtime-command-receipt-output.js";
+import { projectRuntimeCommandReceiptWikiConflictSummary } from "./runtime-command-receipt-output.js";
 
 export type RuntimeProjectionCliSummary = {
   assignmentId?: string;
@@ -43,6 +45,7 @@ export type RuntimeCommandReceiptCliSummary = {
   receiptStatus: string;
   requestedBy?: string;
   runnerId: string;
+  wikiConflict?: RuntimeCommandReceiptWikiConflictCliSummary;
   wikiPageExpectedSha256?: string;
   wikiPageNextSha256?: string;
   wikiPagePath?: string;
@@ -166,6 +169,8 @@ export function filterRuntimeCommandReceiptsForCli(
 export function projectRuntimeCommandReceiptSummary(
   receipt: RuntimeCommandReceiptProjectionRecord
 ): RuntimeCommandReceiptCliSummary {
+  const wikiConflict = projectRuntimeCommandReceiptWikiConflictSummary(receipt);
+
   return {
     ...(receipt.assignmentId ? { assignmentId: receipt.assignmentId } : {}),
     commandEventType: receipt.commandEventType,
@@ -182,6 +187,7 @@ export function projectRuntimeCommandReceiptSummary(
     ...(receipt.wikiPagePreviousSha256
       ? { wikiPagePreviousSha256: receipt.wikiPagePreviousSha256 }
       : {}),
+    ...(wikiConflict ? { wikiConflict } : {}),
     receiptStatus: receipt.receiptStatus,
     ...(receipt.requestedBy ? { requestedBy: receipt.requestedBy } : {}),
     runnerId: receipt.runnerId

@@ -249,6 +249,48 @@ describe("projection CLI output", () => {
     ).toEqual(["cmd-start-alpha", "cmd-publish-beta"]);
   });
 
+  it("projects wiki conflict summaries for failed runtime command receipts", () => {
+    expect(
+      projectRuntimeCommandReceiptSummary({
+        assignmentId: "assignment-alpha",
+        commandEventType: "runtime.wiki.upsert_page",
+        commandId: "cmd-wiki-conflict",
+        graphId: "team-alpha",
+        hostAuthorityPubkey:
+          "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        nodeId: "worker-b",
+        observedAt: "2026-05-05T12:00:00.000Z",
+        projection: {
+          source: "observation_event",
+          updatedAt: "2026-05-05T12:00:00.000Z"
+        },
+        receiptStatus: "failed",
+        requestedBy: "user-main",
+        runnerId: "runner-alpha",
+        runnerPubkey:
+          "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+        targetPath: "wiki/summaries/working-context.md",
+        wikiPageExpectedSha256:
+          "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+        wikiPagePath: "wiki/summaries/working-context.md",
+        wikiPagePreviousSha256:
+          "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee"
+      })
+    ).toMatchObject({
+      commandId: "cmd-wiki-conflict",
+      wikiConflict: {
+        commandId: "cmd-wiki-conflict",
+        currentSha256:
+          "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+        currentShort: "eeeeeeeeeeee",
+        expectedSha256:
+          "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+        expectedShort: "cccccccccccc",
+        path: "wiki/summaries/working-context.md"
+      }
+    });
+  });
+
   it("validates runtime command receipt status options", () => {
     expect(parseRuntimeCommandReceiptStatusForCli("completed")).toBe(
       "completed"

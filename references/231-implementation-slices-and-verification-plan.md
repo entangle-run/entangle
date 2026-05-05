@@ -1484,6 +1484,8 @@ Current status:
   runner-owned mutation request is sent;
 - failed stale-edit wiki page receipts now render as explicit User Client
   conflict summaries using the projected expected/current hashes;
+- CLI summary output now includes the same structured `wikiConflict` object
+  for global projection and User Node command receipt summaries;
 - focused-register lifecycle transition history now writes an indexed wiki
   summary page and future memory ref, so closures, completions, replacements,
   consolidations, and exact-overlap retirements are visible through the node

@@ -1,5 +1,21 @@
 # Entangle Wiki Log
 
+## [2026-05-05] cli | Added wiki conflict receipt summaries
+
+Added `references/532-cli-wiki-conflict-receipts-slice.md`.
+CLI summary output now includes a structured `wikiConflict` object for failed
+stale-edit `runtime.wiki.upsert_page` receipts.
+
+The object is emitted by both global projection command receipt summaries and
+User Node command receipt summaries, keeping browser and headless participant
+inspection aligned without changing Host protocol or projection schemas.
+
+Targeted checks passed:
+
+- `pnpm --filter @entangle/cli test -- src/projection-output.test.ts src/user-node-output.test.ts`
+- `pnpm --filter @entangle/cli typecheck`
+- `pnpm --filter @entangle/cli lint`
+
 ## [2026-05-05] user-client | Added wiki conflict receipt summaries
 
 Added `references/531-user-client-wiki-conflict-receipts-slice.md`.

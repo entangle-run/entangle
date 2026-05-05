@@ -455,6 +455,44 @@ describe("user node CLI output", () => {
     ).toEqual(["cmd-user-a-wiki-publish"]);
   });
 
+  it("projects User Node wiki conflict command receipts", () => {
+    expect(
+      projectUserNodeCommandReceiptSummary({
+        assignmentId: "assignment-worker-b",
+        commandEventType: "runtime.wiki.upsert_page",
+        commandId: "cmd-user-a-wiki-conflict",
+        graphId: "team-alpha",
+        hostAuthorityPubkey:
+          "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        nodeId: "worker-b",
+        observedAt: "2026-05-05T12:00:00.000Z",
+        projection: {
+          source: "observation_event",
+          updatedAt: "2026-05-05T12:00:00.000Z"
+        },
+        receiptStatus: "failed",
+        requestedBy: "user-a",
+        runnerId: "runner-worker-b",
+        runnerPubkey:
+          "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+        targetPath: "wiki/summaries/working-context.md",
+        wikiPageExpectedSha256:
+          "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+        wikiPagePath: "wiki/summaries/working-context.md",
+        wikiPagePreviousSha256:
+          "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee"
+      })
+    ).toMatchObject({
+      commandId: "cmd-user-a-wiki-conflict",
+      wikiConflict: {
+        currentShort: "eeeeeeeeeeee",
+        expectedShort: "cccccccccccc",
+        path: "wiki/summaries/working-context.md"
+      },
+      wikiPagePath: "wiki/summaries/working-context.md"
+    });
+  });
+
   it("projects published User Node messages", () => {
     expect(
       projectUserNodeMessagePublishSummary({
