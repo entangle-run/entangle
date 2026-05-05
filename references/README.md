@@ -770,6 +770,7 @@ files are the active federated redesign pack.
 472. [471-process-smoke-attached-fake-opencode-slice.md](471-process-smoke-attached-fake-opencode-slice.md)
 473. [472-process-smoke-user-client-source-history-reconcile-slice.md](472-process-smoke-user-client-source-history-reconcile-slice.md)
 474. [473-fake-opencode-demo-command-slice.md](473-fake-opencode-demo-command-slice.md)
+475. [474-federated-pivot-remaining-gap-audit.md](474-federated-pivot-remaining-gap-audit.md)
 
 ## Role of this corpus
 

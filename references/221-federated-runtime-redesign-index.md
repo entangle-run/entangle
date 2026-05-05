@@ -274,6 +274,7 @@ same-machine slice records.
 - [471-process-smoke-attached-fake-opencode-slice.md](471-process-smoke-attached-fake-opencode-slice.md)
 - [472-process-smoke-user-client-source-history-reconcile-slice.md](472-process-smoke-user-client-source-history-reconcile-slice.md)
 - [473-fake-opencode-demo-command-slice.md](473-fake-opencode-demo-command-slice.md)
+- [474-federated-pivot-remaining-gap-audit.md](474-federated-pivot-remaining-gap-audit.md)
 
 ## Audited Scope
 
@@ -739,8 +740,12 @@ for delegated sessions without copying transcripts.
     runner-owned wiki page upsert command now replaces/appends markdown pages
     without Host filesystem writes; the User Client can request that page
     upsert path for visible `wiki_page` resources in the selected User Node
-    conversation. Source merge/reconcile services, collaborative wiki patch/diff
-    semantics, and richer memory promotion remain open.
+    conversation; runner-enforced stale-edit guards and single-page wiki patch
+    mode are implemented; and the User Client can request visible
+    source-history reconcile through the Human Interface Runtime. Richer
+    collaborative wiki merge UI, multi-page patch-set semantics, repository
+    lifecycle behavior, replicated/fallback artifact behavior, and richer
+    memory promotion remain open.
 12. Studio and CLI operator/user-node federation surfaces. CLI and Studio now
     both expose first-pass assignment offer and revoke operations through
     Host-owned APIs.
@@ -968,11 +973,11 @@ source-history publication from the agent node, tightening the proof that
 runner-owned work handoff reached a git-backed substrate. The verifier can now
 also optionally run `git ls-remote` from the operator machine against projected
 published git artifact locators to prove the advertised branch contains the
-projected commit. The remaining blocking implementation
-areas are richer
-projection-backed source review and merge/reconcile services, collaborative
-wiki merge UI and multi-page patch-set semantics on top of the
-participant-scoped page upsert command, runner-enforced wiki page
-`expectedCurrentSha256` stale-edit guard, and single-page `patch` mode,
-infrastructure-backed multi-machine proof execution, and deeper
-production identity/authorization beyond the scoped bootstrap-token boundary.
+projected commit. The highest-value remaining implementation areas are richer
+model-guided memory maintenance, deeper delegated-session semantics beyond the
+current controlled handoff path, collaborative wiki merge UI and multi-page
+patch-set semantics on top of the participant-scoped page upsert command,
+repository lifecycle and replicated/fallback artifact behavior,
+infrastructure-backed multi-machine proof execution, non-disposable upgrade and
+repair behavior, and deeper production identity/authorization beyond the
+scoped bootstrap-token boundary.

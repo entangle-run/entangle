@@ -1,5 +1,13 @@
 # Entangle Wiki Log
 
+## [2026-05-05] documentation | Repaired stale remaining-gap summary
+
+Added `references/474-federated-pivot-remaining-gap-audit.md`. The federated
+pivot index no longer lists runner-enforced wiki stale-edit guards,
+single-page wiki patch mode, or policy-permissive User Client source-history
+reconcile as open implementation blockers, because those paths are already
+implemented and process-smoke covered where applicable.
+
 ## [2026-05-05] verification | Added fake OpenCode demo command
 
 Added `references/473-fake-opencode-demo-command-slice.md`.
