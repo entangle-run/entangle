@@ -3140,6 +3140,10 @@ describe("runner runtime context", () => {
       expect(pageBody).toContain("expected aaaaaaaaaaaa");
       expect(pageBody).toContain("current bbbbbbbbbbbb");
       expect(pageBody).toContain("command cmd-user-wiki-conflict-alpha");
+      expect(pageBody).toContain("/wiki/pages");
+      expect(pageBody).toContain("/wiki/pages/patch-set");
+      expect(pageBody).toContain("Update wiki page");
+      expect(pageBody).toContain("Request wiki patch set");
 
       const jsonReadResponse = await fetch(
         new URL("/api/conversations/conversation-alpha/read", handle.clientUrl),
@@ -3322,6 +3326,50 @@ describe("runner runtime context", () => {
         method: "POST"
       });
       expect(approvalResponse.status).toBe(200);
+
+      const htmlWikiPageResponse = await fetch(
+        new URL("/wiki/pages", handle.clientUrl),
+        {
+          body: new URLSearchParams({
+            content: "# Operator Notes\n\nHTML fallback update.",
+            conversationId: "conversation-alpha",
+            mode: "replace",
+            nodeId: "worker-it",
+            path: "operator/notes.md",
+            reason: "HTML fallback wiki page update."
+          }),
+          headers: {
+            "content-type": "application/x-www-form-urlencoded"
+          },
+          method: "POST"
+        }
+      );
+      expect(htmlWikiPageResponse.status).toBe(200);
+      expect(await htmlWikiPageResponse.text()).toContain(
+        "Requested wiki page update"
+      );
+
+      const htmlWikiPatchSetResponse = await fetch(
+        new URL("/wiki/pages/patch-set", handle.clientUrl),
+        {
+          body: new URLSearchParams({
+            content: "# Operator Notes\n\nHTML fallback batch.",
+            conversationId: "conversation-alpha",
+            mode: "replace",
+            nodeId: "worker-it",
+            path: "operator/notes.md",
+            reason: "HTML fallback wiki patch-set."
+          }),
+          headers: {
+            "content-type": "application/x-www-form-urlencoded"
+          },
+          method: "POST"
+        }
+      );
+      expect(htmlWikiPatchSetResponse.status).toBe(200);
+      expect(await htmlWikiPatchSetResponse.text()).toContain(
+        "Requested wiki patch-set"
+      );
     } finally {
       await handle.stop();
       await new Promise<void>((resolve, reject) => {
@@ -3637,6 +3685,40 @@ describe("runner runtime context", () => {
       (inboundRequest?.body as { message?: { work?: { summary?: string } } })
         .message?.work?.summary
     ).toBe("Inbound worker result.");
+
+    const htmlWikiPageRequests = hostRequests.filter(
+      (request) =>
+        request.method === "POST" &&
+        request.url === "/v1/runtimes/worker-it/wiki/pages"
+    );
+    expect(htmlWikiPageRequests.at(-1)?.body).toMatchObject({
+      content: "# Operator Notes\n\nHTML fallback update.",
+      expectedCurrentSha256:
+        "1d51c694fc9955cd6da1da6756dc1a57794f4e15c1194c904db4c5f370982f90",
+      mode: "replace",
+      path: "operator/notes.md",
+      reason: "HTML fallback wiki page update.",
+      requestedBy: "user-main"
+    });
+
+    const htmlWikiPatchSetRequests = hostRequests.filter(
+      (request) =>
+        request.method === "POST" &&
+        request.url === "/v1/runtimes/worker-it/wiki/pages/patch-set"
+    );
+    expect(htmlWikiPatchSetRequests.at(-1)?.body).toMatchObject({
+      pages: [
+        {
+          content: "# Operator Notes\n\nHTML fallback batch.",
+          expectedCurrentSha256:
+            "1d51c694fc9955cd6da1da6756dc1a57794f4e15c1194c904db4c5f370982f90",
+          mode: "replace",
+          path: "operator/notes.md"
+        }
+      ],
+      reason: "HTML fallback wiki patch-set.",
+      requestedBy: "user-main"
+    });
   });
 
   it("can advertise a configured public Human Interface Runtime URL", async () => {

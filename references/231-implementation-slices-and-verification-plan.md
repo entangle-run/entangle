@@ -642,6 +642,10 @@ Current status:
 - the React User Client now exposes the same participant patch-set request path
   in the wiki resource panel through a queued page draft list and request
   action;
+- the Human Interface Runtime fallback HTML client now exposes visible wiki
+  page update and single-page patch-set forms over the same participant-scoped
+  Host control path, with expected base hashes derived from visible projected
+  previews when omitted;
 - deterministic runner task memory now records source-change candidate ids,
   status, totals, diff availability, and changed-file summaries from the live
   turn record, and recent-work summaries surface that compact code-change

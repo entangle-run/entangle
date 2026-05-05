@@ -283,6 +283,9 @@ The most accurate current description is:
   global projection and User Node command receipt summaries;
 - the Human Interface Runtime fallback HTML client renders the same conflict
   block inside participant command receipt cards;
+- the Human Interface Runtime fallback HTML client now exposes visible wiki
+  page update and single-page patch-set forms over the same participant-scoped
+  Host control path as the React User Client;
 - joined runners now publish session/conversation observations for later
   lifecycle transitions after handoffs, coordination result/close, approval
   request/response, completion, cancellation, and failure paths;

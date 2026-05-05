@@ -6534,3 +6534,10 @@ Added `references/549-source-change-ledger-memory-slice.md`. Post-turn memory
 maintenance now rebuilds `memory/wiki/summaries/source-change-ledger.md` from
 source-change-bearing task pages, links it from the node wiki index, and feeds
 it into future turn memory refs plus bounded memory briefs.
+
+## [2026-05-05] runner | Added fallback wiki controls
+
+Added `references/550-human-runtime-fallback-wiki-controls-slice.md`. The
+Human Interface Runtime fallback HTML client now renders visible wiki page
+update and single-page patch-set forms and forwards those requests through the
+same participant-scoped Host control path as the React User Client.

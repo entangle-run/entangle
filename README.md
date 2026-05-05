@@ -164,6 +164,9 @@ pending source reviews, command receipt statuses, source-history/wiki refs,
 and reachable targets.
 The Human Interface Runtime fallback HTML client renders the same workload
 categories when the React bundle is not available.
+The fallback HTML client can also request visible wiki page updates and
+single-page wiki patch-sets through the same participant-scoped Host control
+path as the React User Client.
 The smoke still runs without live model credentials. Live OpenCode
 behavior and real-provider credentials remain manual/operator validation, but
 the fake OpenCode path now proves same-session `--session` continuity through a

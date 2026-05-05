@@ -350,6 +350,7 @@ same-machine slice records.
 - [547-user-client-wiki-patch-set-ui-slice.md](547-user-client-wiki-patch-set-ui-slice.md)
 - [548-source-change-task-memory-slice.md](548-source-change-task-memory-slice.md)
 - [549-source-change-ledger-memory-slice.md](549-source-change-ledger-memory-slice.md)
+- [550-human-runtime-fallback-wiki-controls-slice.md](550-human-runtime-fallback-wiki-controls-slice.md)
 
 ## Audited Scope
 
@@ -1251,6 +1252,10 @@ content.
 The React User Client now also exposes that capability from the wiki resource
 panel with a small queued patch-set draft list, per-entry removal, and a
 request action over the same Human Interface Runtime boundary.
+The Human Interface Runtime fallback HTML client now exposes visible wiki page
+update and single-page patch-set forms over the same participant-scoped Host
+control path, deriving expected base hashes from visible projected previews
+when the form leaves them blank.
 Deterministic runner task memory now also preserves bounded source-change
 candidate ids, status, totals, diff availability, and changed-file summaries
 from the live turn record, and the derived recent-work summary surfaces the

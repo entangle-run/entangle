@@ -3200,7 +3200,12 @@ function renderApprovalResource(
     nodeId: message.fromNodeId,
     refs: relatedSourceHistoryRefs,
     resource
-  })}${renderWikiRefCards(relatedWikiRefs)}${sourceDiffAction}${sourceReviewControls}`;
+  })}${renderWikiRefCards(relatedWikiRefs)}${renderWikiPageMutationControls({
+    conversationId: message.conversationId,
+    nodeId: message.fromNodeId,
+    refs: relatedWikiRefs,
+    resource
+  })}${sourceDiffAction}${sourceReviewControls}`;
 }
 
 function renderArtifactLocator(ref: ArtifactRef): string {
@@ -3381,6 +3386,102 @@ function renderWikiRefsForPeer(input: {
     renderWikiRefCards(refs) ||
     `<p class="empty">No projected wiki refs for this thread.</p>`
   );
+}
+
+function resolveWikiPageMutationPath(input: {
+  refs: WikiRefProjectionRecord[];
+  resource: ApprovalResource;
+}): string | undefined {
+  if (input.resource.kind !== "wiki_page") {
+    return undefined;
+  }
+
+  const resourcePath = normalizeUserClientWikiPagePath(input.resource.id);
+
+  if (resourcePath) {
+    return resourcePath;
+  }
+
+  for (const ref of input.refs) {
+    const pathFromRef = normalizeUserClientWikiPagePath(
+      ref.artifactRef.locator.path
+    );
+
+    if (pathFromRef) {
+      return pathFromRef;
+    }
+  }
+
+  return undefined;
+}
+
+function renderWikiPageMutationControls(input: {
+  conversationId: string;
+  nodeId: string;
+  refs: WikiRefProjectionRecord[];
+  resource: ApprovalResource;
+}): string {
+  const pagePath = resolveWikiPageMutationPath({
+    refs: input.refs,
+    resource: input.resource
+  });
+
+  if (!pagePath) {
+    return "";
+  }
+
+  const preview = input.refs.find(
+    (ref) =>
+      normalizeUserClientWikiPagePath(ref.artifactRef.locator.path) ===
+        pagePath && ref.artifactPreview?.available
+  )?.artifactPreview;
+  const draftContent = preview?.available ? preview.content : "";
+  const hiddenInputs = [
+    `<input type="hidden" name="nodeId" value="${escapeHtml(input.nodeId)}" />`,
+    `<input type="hidden" name="conversationId" value="${escapeHtml(input.conversationId)}" />`,
+    `<input type="hidden" name="path" value="${escapeHtml(pagePath)}" />`
+  ].join("");
+
+  return `<form class="artifact-proposal-actions" method="post" action="/wiki/pages">
+      ${hiddenInputs}
+      <label>Wiki page draft
+        <textarea name="content" rows="6" required>${escapeHtml(draftContent)}</textarea>
+      </label>
+      <label>Mode
+        <select name="mode">
+          <option value="replace">Replace</option>
+          <option value="append">Append</option>
+          <option value="patch">Patch</option>
+        </select>
+      </label>
+      <label>Expected current SHA-256
+        <input name="expectedCurrentSha256" placeholder="optional; derived from visible projection when blank" />
+      </label>
+      <label>Reason
+        <input name="reason" placeholder="why this page should change" />
+      </label>
+      <button type="submit">Update wiki page</button>
+    </form>
+    <form class="artifact-proposal-actions" method="post" action="/wiki/pages/patch-set">
+      ${hiddenInputs}
+      <label>Patch-set page draft
+        <textarea name="content" rows="6" required>${escapeHtml(draftContent)}</textarea>
+      </label>
+      <label>Mode
+        <select name="mode">
+          <option value="replace">Replace</option>
+          <option value="append">Append</option>
+          <option value="patch">Patch</option>
+        </select>
+      </label>
+      <label>Expected current SHA-256
+        <input name="expectedCurrentSha256" placeholder="optional; derived from visible projection when blank" />
+      </label>
+      <label>Reason
+        <input name="reason" placeholder="why this patch-set should change together" />
+      </label>
+      <button type="submit">Request wiki patch set</button>
+    </form>`;
 }
 
 function shortCommandReceiptHash(value: string): string {
@@ -6029,6 +6130,216 @@ export async function startHumanInterfaceRuntime(input: {
                 error instanceof Error
                   ? error.message
                   : "Source-history reconcile request failed.",
+              selectedConversationId: selectedConversationIdForError
+            })
+          );
+        }
+        return;
+      }
+
+      if (
+        request.method === "POST" &&
+        (requestUrl.pathname === "/wiki/pages" ||
+          requestUrl.pathname === "/wiki/pages/patch-set")
+      ) {
+        let selectedConversationIdForError: string | undefined;
+
+        try {
+          const form = new URLSearchParams(await readRequestBody(request));
+          const content = form.get("content") ?? "";
+          const conversationId = form.get("conversationId")?.trim() ?? "";
+          const expectedCurrentSha256 =
+            form.get("expectedCurrentSha256")?.trim().toLowerCase() ||
+            undefined;
+          const nodeId = form.get("nodeId")?.trim() ?? "";
+          const pagePath = form.get("path")?.trim() ?? "";
+          const reason = form.get("reason")?.trim() || undefined;
+          const rawMode = form.get("mode")?.trim() || "replace";
+          const mode =
+            rawMode === "append" || rawMode === "patch" || rawMode === "replace"
+              ? rawMode
+              : undefined;
+          selectedConversationIdForError = conversationId;
+
+          if (!nodeId || !conversationId) {
+            writeHtml(
+              response,
+              400,
+              await renderHome({
+                context: input.context,
+                hostApi: input.hostApi,
+                notice: "Runtime node and conversation are required.",
+                selectedConversationId: conversationId
+              })
+            );
+            return;
+          }
+
+          if (!content) {
+            writeHtml(
+              response,
+              400,
+              await renderHome({
+                context: input.context,
+                hostApi: input.hostApi,
+                notice: "Wiki page content is required.",
+                selectedConversationId: conversationId
+              })
+            );
+            return;
+          }
+
+          if (!mode) {
+            writeHtml(
+              response,
+              400,
+              await renderHome({
+                context: input.context,
+                hostApi: input.hostApi,
+                notice: "Wiki page mutation mode is invalid.",
+                selectedConversationId: conversationId
+              })
+            );
+            return;
+          }
+
+          if (
+            expectedCurrentSha256 &&
+            !/^[0-9a-f]{64}$/.test(expectedCurrentSha256)
+          ) {
+            writeHtml(
+              response,
+              400,
+              await renderHome({
+                context: input.context,
+                hostApi: input.hostApi,
+                notice: "Expected current wiki page SHA-256 is invalid.",
+                selectedConversationId: conversationId
+              })
+            );
+            return;
+          }
+
+          const visibleWikiPage = await resolveUserClientVisibleWikiPage({
+            conversationId,
+            hostApi: input.hostApi,
+            nodeId,
+            path: pagePath,
+            userNodeId: input.context.binding.node.nodeId
+          });
+
+          if ("error" in visibleWikiPage) {
+            writeHtml(
+              response,
+              visibleWikiPage.statusCode,
+              await renderHome({
+                context: input.context,
+                hostApi: input.hostApi,
+                notice: visibleWikiPage.error,
+                selectedConversationId: conversationId
+              })
+            );
+            return;
+          }
+
+          const pageExpectedCurrentSha256 =
+            expectedCurrentSha256 ?? visibleWikiPage.expectedCurrentSha256;
+
+          if (requestUrl.pathname === "/wiki/pages/patch-set") {
+            const mutation = await requestRuntimeWikiPatchSet({
+              hostApi: input.hostApi,
+              nodeId,
+              pages: [
+                {
+                  content,
+                  ...(pageExpectedCurrentSha256
+                    ? { expectedCurrentSha256: pageExpectedCurrentSha256 }
+                    : {}),
+                  mode,
+                  path: visibleWikiPage.path
+                }
+              ],
+              reason,
+              userNodeId: input.context.binding.node.nodeId,
+              wikiRefs: visibleWikiPage.wikiRefs
+            });
+
+            if (mutation.error || !mutation.detail) {
+              writeHtml(
+                response,
+                mutation.statusCode ?? 502,
+                await renderHome({
+                  context: input.context,
+                  hostApi: input.hostApi,
+                  notice: mutation.error ?? "Wiki patch-set request failed.",
+                  selectedConversationId: conversationId
+                })
+              );
+              return;
+            }
+
+            writeHtml(
+              response,
+              200,
+              await renderHome({
+                context: input.context,
+                hostApi: input.hostApi,
+                notice: `Requested wiki patch-set ${mutation.detail.commandId} for ${mutation.detail.pageCount} page.`,
+                selectedConversationId: conversationId
+              })
+            );
+            return;
+          }
+
+          const mutation = await requestRuntimeWikiPageUpsert({
+            content,
+            ...(pageExpectedCurrentSha256
+              ? { expectedCurrentSha256: pageExpectedCurrentSha256 }
+              : {}),
+            hostApi: input.hostApi,
+            mode,
+            nodeId,
+            path: visibleWikiPage.path,
+            reason,
+            userNodeId: input.context.binding.node.nodeId,
+            wikiRefs: visibleWikiPage.wikiRefs
+          });
+
+          if (mutation.error || !mutation.detail) {
+            writeHtml(
+              response,
+              mutation.statusCode ?? 502,
+              await renderHome({
+                context: input.context,
+                hostApi: input.hostApi,
+                notice: mutation.error ?? "Wiki page mutation request failed.",
+                selectedConversationId: conversationId
+              })
+            );
+            return;
+          }
+
+          writeHtml(
+            response,
+            200,
+            await renderHome({
+              context: input.context,
+              hostApi: input.hostApi,
+              notice: `Requested wiki page update ${mutation.detail.commandId} for ${mutation.detail.path}.`,
+              selectedConversationId: conversationId
+            })
+          );
+        } catch (error) {
+          writeHtml(
+            response,
+            500,
+            await renderHome({
+              context: input.context,
+              hostApi: input.hostApi,
+              notice:
+                error instanceof Error
+                  ? error.message
+                  : "Wiki page mutation request failed.",
               selectedConversationId: selectedConversationIdForError
             })
           );
