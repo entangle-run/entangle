@@ -6,6 +6,7 @@ import type {
   RuntimeArtifactRestoreResponse,
   RuntimeArtifactSourceChangeProposalResponse,
   RuntimeCommandReceiptProjectionRecord,
+  RuntimeProjectionRecord,
   RuntimeSourceChangeCandidateFilePreviewResponse,
   RuntimeSourceChangeCandidateInspectionResponse,
   RuntimeSourceHistoryPublishResponse,
@@ -38,11 +39,21 @@ export type UserClientState = {
   graphId: string;
   graphRevisionId: string;
   runtime: {
+    assignmentId?: string;
+    backendKind?: RuntimeProjectionRecord["backendKind"];
+    clientUrl?: string;
+    desiredState?: RuntimeProjectionRecord["desiredState"];
     hostApiBaseUrl?: string;
     hostApiConfigured: boolean;
     identityPublicKey: string;
+    lastSeenAt?: string;
+    observedState?: RuntimeProjectionRecord["observedState"];
     primaryRelayProfileRef?: string;
+    projectionUpdatedAt?: string;
     relayUrls: string[];
+    restartGeneration?: RuntimeProjectionRecord["restartGeneration"];
+    runnerId?: string;
+    statusMessage?: string;
   };
   sourceChangeRefs: SourceChangeRefProjectionRecord[];
   sourceHistoryRefs: SourceHistoryRefProjectionRecord[];

@@ -5931,3 +5931,14 @@ command receipts whose `requestedBy` matches the selected User Node.
 host-client exposes the route, `entangle user-nodes command-receipts <nodeId>`
 uses it instead of fetching the full projection, and Human Interface Runtime
 uses the same scoped API when building running User Client state.
+
+## [2026-05-05] user-client | Added own runtime status projection
+
+Added `references/503-user-client-runtime-status-projection-slice.md`. Human
+Interface Runtime now includes Host-projected status for its own User Node
+runtime in `/api/state`: assignment, backend, runner, desired/observed state,
+last seen, projected client URL, restart generation, and status message.
+
+The React User Client and server-rendered fallback page show those read-only
+fields so a human participant can inspect where their node is running without
+using Studio for basic node-local health context.

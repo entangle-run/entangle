@@ -1006,8 +1006,36 @@ function RuntimeStatus({ state }: { state: UserClientState }) {
         <dd>{state.runtime.identityPublicKey}</dd>
       </div>
       <div>
+        <dt>Observed</dt>
+        <dd>{state.runtime.observedState ?? "unprojected"}</dd>
+      </div>
+      <div>
+        <dt>Desired</dt>
+        <dd>{state.runtime.desiredState ?? "unknown"}</dd>
+      </div>
+      <div>
+        <dt>Runner</dt>
+        <dd>{state.runtime.runnerId ?? "unassigned"}</dd>
+      </div>
+      <div>
+        <dt>Assignment</dt>
+        <dd>{state.runtime.assignmentId ?? "none"}</dd>
+      </div>
+      <div>
+        <dt>Client URL</dt>
+        <dd>{state.runtime.clientUrl ?? "not projected"}</dd>
+      </div>
+      <div>
+        <dt>Last seen</dt>
+        <dd>{state.runtime.lastSeenAt ?? "never"}</dd>
+      </div>
+      <div>
         <dt>Relay</dt>
         <dd>{state.runtime.relayUrls.join(", ") || "none"}</dd>
+      </div>
+      <div>
+        <dt>Status</dt>
+        <dd>{state.runtime.statusMessage ?? "none"}</dd>
       </div>
     </dl>
   );

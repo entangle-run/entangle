@@ -150,7 +150,10 @@ receipts requested by its own User Node while `entangle user-nodes
 command-receipts <nodeId>` provides the same headless participant view. Both
 participant surfaces read Host's scoped
 `/v1/user-nodes/:nodeId/command-receipts` route, while operator surfaces retain
-the full Host projection.
+the full Host projection. The running User Client state also shows its own
+Host-projected `human_interface` runtime assignment, runner, desired/observed
+state, last-seen timestamp, projected client URL, restart generation, and
+status message.
 The smoke still runs without live model credentials. Live OpenCode
 behavior and real-provider credentials remain manual/operator validation, but
 the fake OpenCode path now proves same-session `--session` continuity through a
@@ -834,9 +837,10 @@ This repository currently contains:
   from Host projection, plus a dedicated CLI command receipt list with
   assignment, node, runner, command type, status, requester, and limit filters,
   participant-scoped command receipt visibility in the running User Client and
-  User Node CLI through a scoped Host route, and a Studio assignment timeline
-  drilldown over the same Host endpoint with related navigation to runtime,
-  runner, source-history, and command receipt panels;
+  User Node CLI through a scoped Host route, read-only User Client visibility
+  into its own projected Human Interface Runtime status, and a Studio
+  assignment timeline drilldown over the same Host endpoint with related
+  navigation to runtime, runner, source-history, and command receipt panels;
 - a Studio federation overview that joins User Node identities with runtime
   projection and conversation projection, so operators can see Human Interface
   Runtime state, runner placement, User Client links, conversation counts,
@@ -1475,8 +1479,9 @@ The highest-value remaining gaps are:
   runtime inspection surface;
 - deeper delegated-session runtime semantics beyond the current controlled
   autonomous handoff and runner-local active-conversation reconciliation path,
-  especially formal cross-runtime relation modeling and automated repair
-  workflows beyond the first owner-aware memory projection;
+  especially formal cross-runtime relation modeling, participant runtime
+  reassignment UX beyond read-only User Client runtime status, and automated
+  repair workflows beyond the first owner-aware memory projection;
 - advanced git widening beyond the current locator-specific handoff,
   runner-owned source-history publication, bounded artifact
   history/diff/preview inspection, and backend-cache history/diff for projected

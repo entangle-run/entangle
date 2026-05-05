@@ -1128,6 +1128,28 @@ describe("runner runtime context", () => {
               ],
               generatedAt: "2026-04-26T12:02:00.000Z",
               hostAuthorityPubkey: hostPublicKey,
+              runtimes: [
+                {
+                  assignmentId: "assignment-user-main",
+                  backendKind: "federated",
+                  clientUrl: "http://127.0.0.1:4301/",
+                  desiredState: "running",
+                  graphId: "graph-alpha",
+                  graphRevisionId: "graph-alpha-rev-1",
+                  hostAuthorityPubkey: hostPublicKey,
+                  lastSeenAt: "2026-04-26T12:05:00.000Z",
+                  nodeId: "user-main",
+                  observedState: "running",
+                  projection: {
+                    source: "observation_event",
+                    updatedAt: "2026-04-26T12:05:00.000Z"
+                  },
+                  restartGeneration: 1,
+                  runnerId: "runner-user-main",
+                  runnerPubkey: runnerPublicKey,
+                  statusMessage: "Human Interface Runtime listening"
+                }
+              ],
               runtimeCommandReceipts: [
                 {
                   assignmentId: "assignment-alpha",
@@ -2112,11 +2134,21 @@ describe("runner runtime context", () => {
           }
         ],
         runtime: {
+          assignmentId: "assignment-user-main",
+          backendKind: "federated",
+          clientUrl: "http://127.0.0.1:4301/",
+          desiredState: "running",
           hostApiBaseUrl: `http://127.0.0.1:${hostAddress.port}`,
           hostApiConfigured: true,
           identityPublicKey: runnerPublicKey,
+          lastSeenAt: "2026-04-26T12:05:00.000Z",
+          observedState: "running",
           primaryRelayProfileRef: "preview-relay",
-          relayUrls: ["ws://strfry:7777"]
+          projectionUpdatedAt: "2026-04-26T12:05:00.000Z",
+          relayUrls: ["ws://strfry:7777"],
+          restartGeneration: 1,
+          runnerId: "runner-user-main",
+          statusMessage: "Human Interface Runtime listening"
         },
         userNodeId: "user-main"
       });

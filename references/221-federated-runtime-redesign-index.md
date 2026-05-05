@@ -303,6 +303,7 @@ same-machine slice records.
 - [500-user-client-command-receipt-visibility-slice.md](500-user-client-command-receipt-visibility-slice.md)
 - [501-user-node-cli-command-receipts-slice.md](501-user-node-cli-command-receipts-slice.md)
 - [502-user-node-command-receipts-host-api-slice.md](502-user-node-command-receipts-host-api-slice.md)
+- [503-user-client-runtime-status-projection-slice.md](503-user-client-runtime-status-projection-slice.md)
 
 ## Audited Scope
 
@@ -623,7 +624,10 @@ The repository is not fully federated:
   commands. Host now exposes `GET /v1/user-nodes/:nodeId/command-receipts`,
   so the running User Client and headless User Node CLI can list only the
   receipts requested by one User Node without consuming the full operator
-  projection. Studio can fetch the same Host assignment
+  projection. The running User Client state also includes the Host-projected
+  status of its own `human_interface` runtime: assignment, runner, desired and
+  observed state, last seen, projected client URL, restart generation, and
+  status message. Studio can fetch the same Host assignment
   timeline endpoint per projected assignment and render lifecycle, assignment
   receipt, and runtime command receipt entries without direct runner access;
 - User Client source-candidate accept/reject now publishes signed
@@ -1088,11 +1092,12 @@ a runner-owned indexed wiki page at
 completion, replacement, consolidation, and exact-overlap retirements flow into
 future memory refs and projected wiki evidence instead of remaining only in
 runtime-local carry state.
-The highest-value remaining implementation areas are richer
-model-guided memory maintenance, deeper delegated-session semantics beyond the
-current controlled handoff path and first owner-aware memory projection,
-collaborative wiki merge UI and multi-page
-patch-set semantics on top of the participant-scoped page upsert command,
+The highest-value remaining implementation areas are richer model-guided
+memory maintenance, deeper delegated-session semantics beyond the current
+controlled handoff path and first owner-aware memory projection, participant
+runtime reassignment UX beyond the current read-only User Client runtime
+status projection, collaborative wiki merge UI and multi-page patch-set
+semantics on top of the participant-scoped page upsert command,
 repository lifecycle and replicated/fallback artifact behavior,
 infrastructure-backed multi-machine proof execution, non-disposable upgrade
 behavior, external audit retention, and deeper production identity and

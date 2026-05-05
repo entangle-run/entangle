@@ -17,6 +17,7 @@ import type {
   RuntimeArtifactRestoreResponse,
   RuntimeArtifactSourceChangeProposalResponse,
   RuntimeCommandReceiptProjectionRecord,
+  RuntimeProjectionRecord,
   RuntimeSourceChangeCandidateDiffResponse,
   RuntimeSourceChangeCandidateFilePreviewResponse,
   RuntimeSourceChangeCandidateInspectionResponse,
@@ -90,11 +91,21 @@ type UserClientState = {
   graphId: string;
   graphRevisionId: string;
   runtime: {
+    assignmentId?: string;
+    backendKind?: RuntimeProjectionRecord["backendKind"];
+    clientUrl?: string;
+    desiredState?: RuntimeProjectionRecord["desiredState"];
     hostApiBaseUrl?: string;
     hostApiConfigured: boolean;
     identityPublicKey: string;
+    lastSeenAt?: string;
+    observedState?: RuntimeProjectionRecord["observedState"];
     primaryRelayProfileRef?: string;
+    projectionUpdatedAt?: string;
     relayUrls: string[];
+    restartGeneration?: RuntimeProjectionRecord["restartGeneration"];
+    runnerId?: string;
+    statusMessage?: string;
   };
   sourceChangeRefs: SourceChangeRefProjectionRecord[];
   sourceHistoryRefs: SourceHistoryRefProjectionRecord[];
@@ -633,6 +644,18 @@ function buildUserClientStateFingerprint(state: UserClientState): string {
       updatedAt: conversation.projection.updatedAt
     })),
     generatedAt: state.generatedAt,
+    runtime: {
+      assignmentId: state.runtime.assignmentId,
+      backendKind: state.runtime.backendKind,
+      clientUrl: state.runtime.clientUrl,
+      desiredState: state.runtime.desiredState,
+      lastSeenAt: state.runtime.lastSeenAt,
+      observedState: state.runtime.observedState,
+      projectionUpdatedAt: state.runtime.projectionUpdatedAt,
+      restartGeneration: state.runtime.restartGeneration,
+      runnerId: state.runtime.runnerId,
+      statusMessage: state.runtime.statusMessage
+    },
     sourceChangeRefs: state.sourceChangeRefs.map((ref) => [
       ref.nodeId,
       ref.candidateId,
@@ -777,6 +800,9 @@ async function buildUserClientState(input: {
       userNodeId
     })
   ]);
+  const ownRuntime = projection.detail?.runtimes.find(
+    (runtime) => runtime.nodeId === userNodeId
+  );
 
   return {
     conversations: inbox.conversations,
@@ -791,18 +817,40 @@ async function buildUserClientState(input: {
     graphId: input.context.binding.graphId,
     graphRevisionId: input.context.binding.graphRevisionId,
     runtime: {
+      ...(ownRuntime?.assignmentId
+        ? { assignmentId: ownRuntime.assignmentId }
+        : {}),
+      ...(ownRuntime?.backendKind ? { backendKind: ownRuntime.backendKind } : {}),
+      ...(ownRuntime?.clientUrl ? { clientUrl: ownRuntime.clientUrl } : {}),
+      ...(ownRuntime?.desiredState
+        ? { desiredState: ownRuntime.desiredState }
+        : {}),
       ...(input.hostApi?.baseUrl
         ? { hostApiBaseUrl: input.hostApi.baseUrl }
         : {}),
       hostApiConfigured: input.hostApi !== undefined,
       identityPublicKey: input.context.identityContext.publicKey,
+      ...(ownRuntime?.lastSeenAt ? { lastSeenAt: ownRuntime.lastSeenAt } : {}),
+      ...(ownRuntime?.observedState
+        ? { observedState: ownRuntime.observedState }
+        : {}),
       ...(input.context.relayContext.primaryRelayProfileRef
         ? {
             primaryRelayProfileRef:
               input.context.relayContext.primaryRelayProfileRef
           }
         : {}),
-      relayUrls: listRelayUrls(input.context)
+      ...(ownRuntime?.projection.updatedAt
+        ? { projectionUpdatedAt: ownRuntime.projection.updatedAt }
+        : {}),
+      relayUrls: listRelayUrls(input.context),
+      ...(ownRuntime?.restartGeneration !== undefined
+        ? { restartGeneration: ownRuntime.restartGeneration }
+        : {}),
+      ...(ownRuntime?.runnerId ? { runnerId: ownRuntime.runnerId } : {}),
+      ...(ownRuntime?.statusMessage
+        ? { statusMessage: ownRuntime.statusMessage }
+        : {})
     },
     sourceChangeRefs: projection.detail?.sourceChangeRefs ?? [],
     sourceHistoryRefs: projection.detail?.sourceHistoryRefs ?? [],
@@ -3616,9 +3664,16 @@ async function renderHome(input: {
             <h2>Runtime</h2>
             <dl class="detail-list">
               <div><dt>Identity</dt><dd>${escapeHtml(state.runtime.identityPublicKey)}</dd></div>
+              <div><dt>Observed</dt><dd>${escapeHtml(state.runtime.observedState ?? "unprojected")}</dd></div>
+              <div><dt>Desired</dt><dd>${escapeHtml(state.runtime.desiredState ?? "unknown")}</dd></div>
+              <div><dt>Runner</dt><dd>${escapeHtml(state.runtime.runnerId ?? "unassigned")}</dd></div>
+              <div><dt>Assignment</dt><dd>${escapeHtml(state.runtime.assignmentId ?? "none")}</dd></div>
               <div><dt>Host API</dt><dd>${escapeHtml(state.runtime.hostApiBaseUrl ?? (state.runtime.hostApiConfigured ? "configured" : "not configured"))}</dd></div>
+              <div><dt>Client URL</dt><dd>${escapeHtml(state.runtime.clientUrl ?? "not projected")}</dd></div>
+              <div><dt>Last seen</dt><dd>${escapeHtml(state.runtime.lastSeenAt ?? "never")}</dd></div>
               <div><dt>Primary relay</dt><dd>${escapeHtml(state.runtime.primaryRelayProfileRef ?? "none")}</dd></div>
               <div><dt>Relays</dt><dd>${escapeHtml(relayList)}</dd></div>
+              <div><dt>Status</dt><dd>${escapeHtml(state.runtime.statusMessage ?? "none")}</dd></div>
               <div><dt>Targets</dt><dd>${escapeHtml(state.targets.map((target) => target.nodeId).join(", ") || "none")}</dd></div>
             </dl>
           </section>

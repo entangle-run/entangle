@@ -301,6 +301,10 @@ The most accurate current description is:
   running User Client state and `entangle user-nodes command-receipts <nodeId>`
   read Host's scoped `/v1/user-nodes/:nodeId/command-receipts` route for one
   participant, while Studio plus operator CLI retain full projection access;
+- the running User Client now also shows the Host-projected status of its own
+  `human_interface` runtime: assignment, runner, desired/observed state,
+  last-seen timestamp, projected client URL, restart generation, and status
+  message;
 - the running User Client can now request runner-owned artifact restore for
   artifacts visible in the selected User Node conversation, and the
   process-runner smoke proves that path through a completed projected
@@ -1295,8 +1299,8 @@ The current implementation-truth audit now lives in
 - continue narrowing the remaining delegated-session gaps now that controlled
   autonomous `task.handoff` emission and runner-local active-conversation
   reconciliation plus host-derived conversation lifecycle diagnostics,
-  consistency findings, and first owner-aware memory projection are
-  implemented;
+  consistency findings, read-only participant runtime status, and first
+  owner-aware memory projection are implemented;
 - deepen the bootstrap host operator-token boundary, multi-token request audit,
   status reporting, server-filterable event inspection, route-level bootstrap
   permissions, coarse read-only `viewer` enforcement, Host event hash-chain

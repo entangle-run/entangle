@@ -379,6 +379,7 @@ Implementation record:
 - [500-user-client-command-receipt-visibility-slice.md](500-user-client-command-receipt-visibility-slice.md)
 - [501-user-node-cli-command-receipts-slice.md](501-user-node-cli-command-receipts-slice.md)
 - [502-user-node-command-receipts-host-api-slice.md](502-user-node-command-receipts-host-api-slice.md)
+- [503-user-client-runtime-status-projection-slice.md](503-user-client-runtime-status-projection-slice.md)
 - [401-root-test-gate-reliability-slice.md](401-root-test-gate-reliability-slice.md)
 - [446-runner-test-gate-fork-stability-slice.md](446-runner-test-gate-fork-stability-slice.md)
 - [447-runner-owned-wiki-page-upsert-slice.md](447-runner-owned-wiki-page-upsert-slice.md)
@@ -1038,9 +1039,11 @@ session trace, cancellation, and inspection surfaces, while participant task
 publication remains in User Client/CLI signed User Node paths.
 
 The previously listed durable User Node inbox/outbox projection gap is closed
-in the current implementation. Remaining User Node surface work is now focused
-on richer runtime reassignment/health panels and participant-side source/wiki
-review depth.
+in the current implementation. The running User Client now also exposes its own
+Host-projected `human_interface` runtime assignment, runner, desired/observed
+state, last-seen timestamp, client URL, restart generation, and status message.
+Remaining User Node surface work is now focused on runtime reassignment UX
+without violating Host authority and participant-side source/wiki review depth.
 
 ### Slice 13: Product Naming Migration
 
