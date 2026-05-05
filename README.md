@@ -341,6 +341,11 @@ For no-credential distributed checks against the attached OpenCode route, pass
 agent node to that profile, and the generated agent-runner env can carry the
 optional fake-server Basic-auth variables. Start `pnpm ops:fake-opencode-server`
 on a machine reachable from the agent runner before sending work.
+For generic custom-engine checks, pass
+`--external-process-engine-executable <cmd>` or
+`--external-http-engine-url <url>`. The kit infers the matching active engine
+kind when `--agent-engine-kind` is omitted, upserts the profile through Host,
+and binds the agent node before assignment.
 Pass `--check-relay-health` with at least one `--relay-url` when the generated
 operator command should also probe relay WebSocket reachability from the
 operator machine.

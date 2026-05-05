@@ -280,6 +280,7 @@ same-machine slice records.
 - [477-external-http-agent-engine-adapter-slice.md](477-external-http-agent-engine-adapter-slice.md)
 - [478-active-agent-engine-kind-contract-slice.md](478-active-agent-engine-kind-contract-slice.md)
 - [479-legacy-product-name-residue-cleanup-slice.md](479-legacy-product-name-residue-cleanup-slice.md)
+- [480-distributed-proof-custom-agent-engine-setup-slice.md](480-distributed-proof-custom-agent-engine-setup-slice.md)
 
 ## Audited Scope
 
@@ -651,6 +652,9 @@ The repository is not fully federated:
   response body;
 - the active agent engine kind contract now exposes only runner-executable
   kinds: `opencode_server`, `external_process`, and `external_http`;
+- the distributed proof kit can now generate Host operator setup for
+  `external_process` and `external_http` profiles, infer the matching runner
+  capability when omitted, and bind the agent node before assignment;
 - joined runners now publish session/conversation observations after outbound
   handoff writes, coordination close/result transitions, approval request and
   response transitions, session completion, and failure/cancellation paths, so

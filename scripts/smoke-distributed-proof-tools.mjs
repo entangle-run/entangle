@@ -207,6 +207,50 @@ try {
     mustContain: "'external_process'"
   });
 
+  runStep("proof kit external-http engine setup dry-run", [
+    "scripts/federated-distributed-proof-kit.mjs",
+    "--dry-run",
+    "--output",
+    "/tmp/entangle-distributed-proof-ci-external-http",
+    "--host-url",
+    "http://host.example:7071",
+    "--relay-url",
+    "ws://relay.example:7777",
+    "--external-http-engine-url",
+    "http://agent-engine.example:8080/turn"
+  ], {
+    mustContain: [
+      "custom agent engine profile: distributed-external-http (external_http)",
+      "host catalog agent-engine upsert 'distributed-external-http'",
+      "--kind external_http",
+      "--base-url 'http://agent-engine.example:8080/turn'",
+      "host nodes agent-runtime 'builder'",
+      '"agentEngineKind":"external_http"'
+    ]
+  });
+
+  runStep("proof kit external-process engine setup dry-run", [
+    "scripts/federated-distributed-proof-kit.mjs",
+    "--dry-run",
+    "--output",
+    "/tmp/entangle-distributed-proof-ci-external-process",
+    "--host-url",
+    "http://host.example:7071",
+    "--relay-url",
+    "ws://relay.example:7777",
+    "--external-process-engine-executable",
+    "/usr/local/bin/entangle-agent-engine"
+  ], {
+    mustContain: [
+      "custom agent engine profile: distributed-external-process (external_process)",
+      "host catalog agent-engine upsert 'distributed-external-process'",
+      "--kind external_process",
+      "--executable '/usr/local/bin/entangle-agent-engine'",
+      "host nodes agent-runtime 'builder'",
+      '"agentEngineKind":"external_process"'
+    ]
+  });
+
   runStep("proof kit fake-opencode dry-run", [
     "scripts/federated-distributed-proof-kit.mjs",
     "--dry-run",
@@ -251,6 +295,50 @@ try {
     {
       mustContain:
         "--fake-opencode-server-url requires the agent runner to advertise opencode_server"
+    }
+  );
+
+  runFailureStep(
+    "proof kit external-http wrong engine dry-run",
+    [
+      "scripts/federated-distributed-proof-kit.mjs",
+      "--dry-run",
+      "--output",
+      "/tmp/entangle-distributed-proof-ci-external-http-wrong-engine",
+      "--host-url",
+      "http://host.example:7071",
+      "--relay-url",
+      "ws://relay.example:7777",
+      "--agent-engine-kind",
+      "opencode_server",
+      "--external-http-engine-url",
+      "http://agent-engine.example:8080/turn"
+    ],
+    {
+      mustContain:
+        "--external-http-engine-url requires the agent runner to advertise external_http"
+    }
+  );
+
+  runFailureStep(
+    "proof kit conflicting external engines dry-run",
+    [
+      "scripts/federated-distributed-proof-kit.mjs",
+      "--dry-run",
+      "--output",
+      "/tmp/entangle-distributed-proof-ci-conflicting-external-engine",
+      "--host-url",
+      "http://host.example:7071",
+      "--relay-url",
+      "ws://relay.example:7777",
+      "--external-http-engine-url",
+      "http://agent-engine.example:8080/turn",
+      "--external-process-engine-executable",
+      "/usr/local/bin/entangle-agent-engine"
+    ],
+    {
+      mustContain:
+        "Choose either --external-process-engine-executable or --external-http-engine-url"
     }
   );
 

@@ -1,5 +1,14 @@
 # Entangle Wiki Log
 
+## [2026-05-05] ops | Added custom engine setup to distributed proof kit
+
+Added `references/480-distributed-proof-custom-agent-engine-setup-slice.md`.
+`pnpm ops:distributed-proof-kit` can now configure generic custom agent
+engines with `--external-process-engine-executable` or
+`--external-http-engine-url`. The generated operator commands upsert the
+matching Host profile, bind the agent node to it, and then proceed through the
+same trust, assignment, User Node task, and verifier path.
+
 ## [2026-05-05] docs | Removed legacy product-name residue
 
 Added `references/479-legacy-product-name-residue-cleanup-slice.md`.

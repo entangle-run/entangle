@@ -38,15 +38,31 @@ const heartbeatIntervalMs = readFlagValue("--heartbeat-interval-ms") ?? "1000";
 const requestedAgentEngineKinds = splitRepeatedValues(
   readFlagValues("--agent-engine-kind")
 );
-const proofAgentEngineKinds =
-  requestedAgentEngineKinds.length > 0
-    ? requestedAgentEngineKinds
-    : ["opencode_server"];
 const fakeOpenCodeServerUrl = readFlagValue("--fake-opencode-server-url");
 const fakeOpenCodeProfileId =
   readFlagValue("--fake-opencode-profile") ?? "distributed-fake-opencode";
 const fakeOpenCodeUsername = readFlagValue("--fake-opencode-username");
 const fakeOpenCodePassword = readFlagValue("--fake-opencode-password");
+const externalProcessEngineExecutable = readFlagValue(
+  "--external-process-engine-executable"
+);
+const externalHttpEngineUrl = readFlagValue("--external-http-engine-url");
+const configuredCustomAgentEngineKind = externalHttpEngineUrl
+  ? "external_http"
+  : externalProcessEngineExecutable
+    ? "external_process"
+    : undefined;
+const customAgentEngineProfileId =
+  readFlagValue("--custom-agent-engine-profile") ??
+  (configuredCustomAgentEngineKind === "external_http"
+    ? "distributed-external-http"
+    : "distributed-external-process");
+const proofAgentEngineKinds =
+  requestedAgentEngineKinds.length > 0
+    ? requestedAgentEngineKinds
+    : configuredCustomAgentEngineKind
+      ? [configuredCustomAgentEngineKind]
+      : ["opencode_server"];
 const agentRunnerId = readFlagValue("--agent-runner") ?? "distributed-agent-runner";
 const userRunnerId = readFlagValue("--user-runner") ?? "distributed-user-runner";
 const reviewerUserRunnerId =
@@ -116,6 +132,10 @@ Options:
   --fake-opencode-profile <id>      Agent engine profile id for the fake OpenCode server. Default: distributed-fake-opencode
   --fake-opencode-username <user>   Optional Basic auth username for the fake OpenCode server.
   --fake-opencode-password <pass>   Optional Basic auth password for the fake OpenCode server.
+  --external-process-engine-executable <cmd>
+                                    Configure operator commands for an external_process profile and bind the agent node to it.
+  --external-http-engine-url <url>   Configure operator commands for an external_http profile and bind the agent node to it.
+  --custom-agent-engine-profile <id> Agent engine profile id for external_process/external_http setup.
   --agent-runner <id>               Agent runner id. Default: distributed-agent-runner
   --user-runner <id>                Primary User Node runner id. Default: distributed-user-runner
   --reviewer-user-runner <id>       Reviewer User Node runner id. Default: distributed-reviewer-user-runner
@@ -361,7 +381,7 @@ function buildOperatorCommandsScript() {
     '  pnpm --filter @entangle/cli dev "$@"',
     "}",
     "",
-    ...buildFakeOpenCodeOperatorCommands(),
+    ...buildAgentEngineProfileOperatorCommands(),
     "run_cli runners list --summary"
   ];
 
@@ -389,6 +409,18 @@ function buildOperatorCommandsScript() {
   return `${lines.join("\n")}\n`;
 }
 
+function buildAgentEngineProfileOperatorCommands() {
+  if (fakeOpenCodeServerUrl) {
+    return buildFakeOpenCodeOperatorCommands();
+  }
+
+  if (externalProcessEngineExecutable || externalHttpEngineUrl) {
+    return buildCustomAgentEngineOperatorCommands();
+  }
+
+  return [];
+}
+
 function buildFakeOpenCodeOperatorCommands() {
   if (!fakeOpenCodeServerUrl) {
     return [];
@@ -414,6 +446,47 @@ function buildFakeOpenCodeOperatorCommands() {
       "--mode coding_agent",
       "--engine-profile-ref",
       shellQuote(fakeOpenCodeProfileId),
+      "--summary"
+    ].join(" "),
+    ""
+  ];
+}
+
+function buildCustomAgentEngineOperatorCommands() {
+  const engineKind = configuredCustomAgentEngineKind;
+
+  if (!engineKind) {
+    return [];
+  }
+
+  const profileDisplayName =
+    engineKind === "external_http"
+      ? "Distributed External HTTP"
+      : "Distributed External Process";
+  const profileArgs =
+    engineKind === "external_http"
+      ? ["--base-url", shellQuote(externalHttpEngineUrl)]
+      : ["--executable", shellQuote(externalProcessEngineExecutable)];
+
+  return [
+    [
+      "run_cli host catalog agent-engine upsert",
+      shellQuote(customAgentEngineProfileId),
+      "--kind",
+      engineKind,
+      "--display-name",
+      shellQuote(profileDisplayName),
+      ...profileArgs,
+      "--state-scope node",
+      "--set-default",
+      "--summary"
+    ].join(" "),
+    [
+      "run_cli host nodes agent-runtime",
+      shellQuote(agentNodeId),
+      "--mode coding_agent",
+      "--engine-profile-ref",
+      shellQuote(customAgentEngineProfileId),
       "--summary"
     ].join(" "),
     ""
@@ -540,6 +613,7 @@ Git service refs: ${gitServiceRefs.length > 0 ? gitServiceRefs.join(", ") : "Hos
 ${runnerRows}
 
 ${buildFakeOpenCodeReadmeSection()}
+${buildCustomAgentEngineReadmeSection()}
 
 ## Machine Steps
 
@@ -615,6 +689,34 @@ the kit.
 `;
 }
 
+function buildCustomAgentEngineReadmeSection() {
+  if (!configuredCustomAgentEngineKind) {
+    return "";
+  }
+
+  const target =
+    configuredCustomAgentEngineKind === "external_http"
+      ? externalHttpEngineUrl
+      : externalProcessEngineExecutable;
+  const setupDescription =
+    configuredCustomAgentEngineKind === "external_http"
+      ? "POST endpoint"
+      : "runner-machine executable";
+
+  return `## Custom Agent Engine Path
+
+This kit was generated with a custom ${configuredCustomAgentEngineKind} profile:
+
+- profile id: \`${customAgentEngineProfileId}\`
+- ${setupDescription}: \`${target}\`
+
+\`operator/commands.sh\` upserts that profile through Host and binds
+\`${agentNodeId}\` to it before runner assignment. The custom engine must
+implement Entangle's shared \`AgentEngineTurnRequest\`/\`AgentEngineTurnResult\`
+contract.
+`;
+}
+
 async function writeKit() {
   if (dryRun) {
     console.log(`[dry-run] output: ${outputDir}`);
@@ -634,6 +736,16 @@ async function writeKit() {
         `[dry-run] fake OpenCode runner env: ${
           fakeOpenCodeUsername ? "OPENCODE_SERVER_USERNAME" : "no username"
         }, ${fakeOpenCodePassword ? "OPENCODE_SERVER_PASSWORD" : "no password"}`
+      );
+    }
+    if (configuredCustomAgentEngineKind) {
+      console.log(
+        `[dry-run] custom agent engine profile: ${customAgentEngineProfileId} (${configuredCustomAgentEngineKind})`
+      );
+      console.log(
+        `[dry-run] custom agent engine operator setup: ${
+          buildCustomAgentEngineOperatorCommands().filter(Boolean).join(" && ")
+        }`
       );
     }
     console.log(`[dry-run] operator verifier command: ${buildVerifierCommand()}`);
@@ -725,6 +837,27 @@ try {
   if (fakeOpenCodeServerUrl && !proofAgentEngineKinds.includes("opencode_server")) {
     throw new Error(
       "--fake-opencode-server-url requires the agent runner to advertise opencode_server."
+    );
+  }
+
+  if (fakeOpenCodeServerUrl && configuredCustomAgentEngineKind) {
+    throw new Error(
+      "Choose either --fake-opencode-server-url or a custom external agent engine profile, not both."
+    );
+  }
+
+  if (externalProcessEngineExecutable && externalHttpEngineUrl) {
+    throw new Error(
+      "Choose either --external-process-engine-executable or --external-http-engine-url, not both."
+    );
+  }
+
+  if (
+    configuredCustomAgentEngineKind &&
+    !proofAgentEngineKinds.includes(configuredCustomAgentEngineKind)
+  ) {
+    throw new Error(
+      `--${configuredCustomAgentEngineKind === "external_http" ? "external-http-engine-url" : "external-process-engine-executable"} requires the agent runner to advertise ${configuredCustomAgentEngineKind}.`
     );
   }
 

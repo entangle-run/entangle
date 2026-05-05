@@ -362,6 +362,9 @@ With `--fake-opencode-server-url <url>`, the same kit now prepares Host
 operator commands that upsert a deterministic attached fake OpenCode profile,
 bind the agent node to it, and write optional runner Basic-auth env for
 no-credential distributed checks.
+The kit can also configure generic custom engines with
+`--external-process-engine-executable` or `--external-http-engine-url`, upsert
+the matching Host profile, and bind the agent node before assignment.
 That profile is now a typed package contract and a script-validated ops
 contract, so malformed schema versions or assignment/runtime-kind mismatches
 fail before Host inspection.

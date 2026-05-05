@@ -195,6 +195,9 @@ Historical slice notes no longer preserve literal old product-name strings in
 local-assumption audit command examples; they now refer generically to old
 product identity markers while active naming remains guarded by
 `pnpm ops:check-product-naming`.
+The distributed proof kit can now configure generic custom agent engines:
+`--external-process-engine-executable` and `--external-http-engine-url`
+generate Host profile upsert plus node-binding commands for the agent node.
 `pnpm ops:check-product-naming` now guards active product surfaces against old
 local product/profile labels. Runner-owned source-history publication commands
 can now carry an approval id plus explicit git target selectors, allowing
@@ -793,6 +796,7 @@ files are the active federated redesign pack.
 478. [477-external-http-agent-engine-adapter-slice.md](477-external-http-agent-engine-adapter-slice.md)
 479. [478-active-agent-engine-kind-contract-slice.md](478-active-agent-engine-kind-contract-slice.md)
 480. [479-legacy-product-name-residue-cleanup-slice.md](479-legacy-product-name-residue-cleanup-slice.md)
+481. [480-distributed-proof-custom-agent-engine-setup-slice.md](480-distributed-proof-custom-agent-engine-setup-slice.md)
 
 ## Role of this corpus
 

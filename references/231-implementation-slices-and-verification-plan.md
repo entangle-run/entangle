@@ -871,6 +871,9 @@ Implementation record:
   removes the non-executable `claude_agent_sdk` placeholder from active profile
   kind validation, CLI help, Host default selection, and distributed proof
   profiles until a native runner adapter exists.
+- [480-distributed-proof-custom-agent-engine-setup-slice.md](480-distributed-proof-custom-agent-engine-setup-slice.md)
+  teaches the distributed proof kit to upsert and bind `external_process` and
+  `external_http` profiles through generated Host operator commands.
 - [465-cli-agent-engine-profile-upsert-slice.md](465-cli-agent-engine-profile-upsert-slice.md)
   adds a Host-backed CLI catalog command for creating and updating typed agent
   engine profiles, including attached OpenCode profiles, permission mode,
