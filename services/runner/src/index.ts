@@ -187,7 +187,7 @@ function createAgentEngineForRuntimeContext(input: {
   }
 
   throw new Error(
-    `Runner for node '${runtimeContext.binding.node.nodeId}' is configured for agent engine '${agentRuntime.engineProfileRef}' (${agentRuntime.engineProfile.kind}), but this runner build only has OpenCode, external-process, and external-HTTP adapters wired.`
+    `Runner for node '${runtimeContext.binding.node.nodeId}' is configured for agent engine '${agentRuntime.engineProfileRef}', but this runner build only has OpenCode, external-process, and external-HTTP adapters wired.`
   );
 }
 
