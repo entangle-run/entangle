@@ -145,6 +145,35 @@ textarea {
   font-weight: 700;
 }
 
+.workload-card {
+  display: grid;
+  gap: 8px;
+  margin-bottom: 16px;
+  border: 1px solid #d7dde5;
+  border-radius: 7px;
+  background: #ffffff;
+  padding: 10px;
+}
+
+.workload-card h2 {
+  margin: 0;
+  font-size: 14px;
+  line-height: 1.2;
+}
+
+.workload-card ul {
+  display: grid;
+  gap: 5px;
+  margin: 0;
+  padding-left: 18px;
+}
+
+.workload-card li {
+  color: #68717c;
+  font-size: 12px;
+  overflow-wrap: anywhere;
+}
+
 .receipt-list {
   display: grid;
   gap: 8px;

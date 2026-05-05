@@ -26,6 +26,7 @@ import {
   formatDeliveryLabel,
   formatRuntimeCommandReceiptDetailLines,
   formatSignerLabel,
+  formatUserClientWorkloadLines,
   markConversationRead,
   normalizeApiBaseUrl,
   proposeArtifactSourceChange,
@@ -37,6 +38,7 @@ import {
   renderArtifactLocator,
   reviewSourceChangeCandidate,
   restoreArtifact,
+  summarizeUserClientWorkload,
   upsertWikiPage,
   type UserClientState
 } from "./runtime-api.js";
@@ -1058,6 +1060,21 @@ function RuntimeStatus({ state }: { state: UserClientState }) {
   );
 }
 
+function RuntimeWorkloadSummary({ state }: { state: UserClientState }) {
+  const summary = summarizeUserClientWorkload(state);
+
+  return (
+    <section className="workload-card" aria-label="Workload summary">
+      <h2>Workload</h2>
+      <ul>
+        {formatUserClientWorkloadLines(summary).map((line) => (
+          <li key={line}>{line}</li>
+        ))}
+      </ul>
+    </section>
+  );
+}
+
 function RuntimeCommandReceiptList({
   receipts
 }: {
@@ -1543,6 +1560,7 @@ export function App() {
           {state ? (
             <>
               <RuntimeStatus state={state} />
+              <RuntimeWorkloadSummary state={state} />
               <RuntimeCommandReceiptList
                 receipts={state.runtimeCommandReceipts}
               />

@@ -859,6 +859,7 @@ files are the active federated redesign pack.
 519. [518-release-naming-guardrail-slice.md](518-release-naming-guardrail-slice.md)
 520. [519-reference-wiki-naming-guardrail-slice.md](519-reference-wiki-naming-guardrail-slice.md)
 521. [520-agentic-dev-runtime-smoke-wrapper-slice.md](520-agentic-dev-runtime-smoke-wrapper-slice.md)
+522. [521-user-client-workload-summary-slice.md](521-user-client-workload-summary-slice.md)
 
 ## Role of this corpus
 

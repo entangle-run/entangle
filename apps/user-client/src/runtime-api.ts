@@ -635,6 +635,84 @@ export function formatConversationTimestamp(
   return conversation.lastMessageAt ?? conversation.projection.updatedAt;
 }
 
+export type UserClientWorkloadSummary = {
+  commandReceipts: {
+    completed: number;
+    failed: number;
+    received: number;
+  };
+  conversationCount: number;
+  openConversationCount: number;
+  pendingApprovalCount: number;
+  pendingSourceChangeCount: number;
+  sourceHistoryRefCount: number;
+  targetCount: number;
+  unreadCount: number;
+  wikiRefCount: number;
+};
+
+const openConversationStatuses = new Set([
+  "acknowledged",
+  "awaiting_approval",
+  "blocked",
+  "opened",
+  "working"
+]);
+
+export function summarizeUserClientWorkload(
+  state: UserClientState
+): UserClientWorkloadSummary {
+  const pendingApprovalIds = new Set(
+    state.conversations.flatMap((conversation) => conversation.pendingApprovalIds)
+  );
+  const commandReceipts = state.runtimeCommandReceipts.reduce<
+    UserClientWorkloadSummary["commandReceipts"]
+  >(
+    (counts, receipt) => ({
+      ...counts,
+      [receipt.receiptStatus]: counts[receipt.receiptStatus] + 1
+    }),
+    {
+      completed: 0,
+      failed: 0,
+      received: 0
+    }
+  );
+
+  return {
+    commandReceipts,
+    conversationCount: state.conversations.length,
+    openConversationCount: state.conversations.filter((conversation) =>
+      openConversationStatuses.has(conversation.status)
+    ).length,
+    pendingApprovalCount: pendingApprovalIds.size,
+    pendingSourceChangeCount: state.sourceChangeRefs.filter(
+      (ref) => ref.status === "pending_review"
+    ).length,
+    sourceHistoryRefCount: state.sourceHistoryRefs.length,
+    targetCount: state.targets.length,
+    unreadCount: state.conversations.reduce(
+      (total, conversation) => total + conversation.unreadCount,
+      0
+    ),
+    wikiRefCount: state.wikiRefs.length
+  };
+}
+
+export function formatUserClientWorkloadLines(
+  summary: UserClientWorkloadSummary
+): string[] {
+  return [
+    `${summary.conversationCount} conversations, ${summary.openConversationCount} open`,
+    `${summary.unreadCount} unread messages`,
+    `${summary.pendingApprovalCount} pending approvals`,
+    `${summary.pendingSourceChangeCount} source changes awaiting review`,
+    `${summary.commandReceipts.received} received, ${summary.commandReceipts.completed} completed, ${summary.commandReceipts.failed} failed commands`,
+    `${summary.sourceHistoryRefCount} source histories, ${summary.wikiRefCount} wiki refs`,
+    `${summary.targetCount} reachable targets`
+  ];
+}
+
 export function formatDeliveryLabel(message: UserNodeMessageRecord): string {
   if (message.direction === "inbound") {
     return "received";

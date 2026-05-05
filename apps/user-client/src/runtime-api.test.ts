@@ -15,6 +15,7 @@ import {
   formatDeliveryLabel,
   formatRuntimeCommandReceiptDetailLines,
   formatSignerLabel,
+  formatUserClientWorkloadLines,
   markConversationRead,
   normalizeApiBaseUrl,
   proposeArtifactSourceChange,
@@ -24,6 +25,8 @@ import {
   reconcileSourceHistory,
   restoreArtifact,
   reviewSourceChangeCandidate,
+  summarizeUserClientWorkload,
+  type UserClientState,
   upsertWikiPage
 } from "./runtime-api.js";
 
@@ -151,6 +154,118 @@ describe("user client runtime API helpers", () => {
       "wiki previous eeeeeeeeeeee",
       "wiki next dddddddddddd"
     ]);
+  });
+
+  it("summarizes User Client workload from projected state", () => {
+    const state = {
+      conversations: [
+        {
+          conversationId: "conversation-alpha",
+          pendingApprovalIds: ["approval-alpha", "approval-beta"],
+          projection: {
+            source: "observation_event",
+            updatedAt: "2026-05-05T12:00:00.000Z"
+          },
+          status: "working",
+          unreadCount: 2
+        },
+        {
+          conversationId: "conversation-beta",
+          pendingApprovalIds: ["approval-alpha"],
+          projection: {
+            source: "observation_event",
+            updatedAt: "2026-05-05T12:00:00.000Z"
+          },
+          status: "closed",
+          unreadCount: 1
+        }
+      ],
+      runtimeCommandReceipts: [
+        {
+          commandEventType: "runtime.wiki.publish",
+          commandId: "cmd-received",
+          graphId: "graph-alpha",
+          hostAuthorityPubkey:
+            "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+          nodeId: "worker-it",
+          observedAt: "2026-05-05T12:00:00.000Z",
+          projection: {
+            source: "observation_event",
+            updatedAt: "2026-05-05T12:00:00.000Z"
+          },
+          receiptStatus: "received",
+          runnerId: "runner-alpha",
+          runnerPubkey:
+            "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"
+        },
+        {
+          commandEventType: "runtime.wiki.publish",
+          commandId: "cmd-completed",
+          graphId: "graph-alpha",
+          hostAuthorityPubkey:
+            "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+          nodeId: "worker-it",
+          observedAt: "2026-05-05T12:00:01.000Z",
+          projection: {
+            source: "observation_event",
+            updatedAt: "2026-05-05T12:00:01.000Z"
+          },
+          receiptStatus: "completed",
+          runnerId: "runner-alpha",
+          runnerPubkey:
+            "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"
+        },
+        {
+          commandEventType: "runtime.wiki.publish",
+          commandId: "cmd-failed",
+          graphId: "graph-alpha",
+          hostAuthorityPubkey:
+            "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+          nodeId: "worker-it",
+          observedAt: "2026-05-05T12:00:02.000Z",
+          projection: {
+            source: "observation_event",
+            updatedAt: "2026-05-05T12:00:02.000Z"
+          },
+          receiptStatus: "failed",
+          runnerId: "runner-alpha",
+          runnerPubkey:
+            "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"
+        }
+      ],
+      sourceChangeRefs: [
+        {
+          candidateId: "candidate-alpha",
+          status: "pending_review"
+        }
+      ],
+      sourceHistoryRefs: [{}],
+      targets: [{ channel: "graph", nodeId: "worker-it", relation: "delegates_to" }],
+      wikiRefs: [{}, {}]
+    } as unknown as UserClientState;
+    const summary = summarizeUserClientWorkload(state);
+
+    expect(summary).toMatchObject({
+      commandReceipts: {
+        completed: 1,
+        failed: 1,
+        received: 1
+      },
+      conversationCount: 2,
+      openConversationCount: 1,
+      pendingApprovalCount: 2,
+      pendingSourceChangeCount: 1,
+      sourceHistoryRefCount: 1,
+      targetCount: 1,
+      unreadCount: 3,
+      wikiRefCount: 2
+    });
+    expect(formatUserClientWorkloadLines(summary)).toContain(
+      "2 pending approvals"
+    );
+    expect(formatUserClientWorkloadLines(summary)).toContain(
+      "1 received, 1 completed, 1 failed commands"
+    );
   });
 
   it("builds wiki page drafts only from complete projected previews", () => {

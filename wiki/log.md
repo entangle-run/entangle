@@ -6123,3 +6123,14 @@ profile.
 The active smoke command now proves joined agent and User Node runners, signed
 User Node messages, OpenCode permission approval bridging, source/wiki/artifact
 projection, and User Client routes without live model-provider credentials.
+
+## [2026-05-05] user-client | Added running User Node workload summary
+
+Added `references/521-user-client-workload-summary-slice.md`. The running
+React User Client now derives a compact Workload sidebar panel from its
+participant-scoped projection.
+
+The panel summarizes conversations, open work, unread messages, unique pending
+approvals, pending source-change reviews, command receipt statuses,
+source-history/wiki refs, and reachable targets without adding a new authority
+or mutation path.

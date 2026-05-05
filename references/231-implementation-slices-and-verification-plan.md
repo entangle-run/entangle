@@ -1060,6 +1060,11 @@ Host authority and participant-side source/wiki review depth.
 The React User Client and fallback HTML now render detailed participant command
 receipt evidence for assignment, artifact/source/wiki ids, target paths,
 replay/restore/proposal ids, session ids, and shortened wiki hash transitions.
+The dedicated React User Client now also renders a compact Workload sidebar
+summary over projected conversations, open conversations, unread messages,
+unique pending approvals, pending source-change reviews, participant command
+receipt statuses, visible source-history refs, wiki refs, and reachable
+targets.
 The canonical surface and authority specs were repaired in
 [506-canonical-user-node-surface-spec-repair.md](506-canonical-user-node-surface-spec-repair.md)
 so they classify these shipped behaviors as current baseline rather than open
@@ -1467,6 +1472,10 @@ Current status:
 - User Client command receipt cards now expose bounded command closure evidence
   beyond command id/status, including wiki hash transitions and operation
   target ids;
+- the running React User Client now renders a compact participant Workload
+  summary from projected conversations, unread counts, unique pending
+  approvals, source-change reviews, command receipt statuses,
+  source-history/wiki refs, and reachable targets;
 - User Client wiki page cards can now load complete projected previews into
   the participant page-update form as replacement drafts, so a running User
   Node can review and edit visible wiki memory without copying content out of

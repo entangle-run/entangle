@@ -321,6 +321,7 @@ same-machine slice records.
 - [518-release-naming-guardrail-slice.md](518-release-naming-guardrail-slice.md)
 - [519-reference-wiki-naming-guardrail-slice.md](519-reference-wiki-naming-guardrail-slice.md)
 - [520-agentic-dev-runtime-smoke-wrapper-slice.md](520-agentic-dev-runtime-smoke-wrapper-slice.md)
+- [521-user-client-workload-summary-slice.md](521-user-client-workload-summary-slice.md)
 
 ## Audited Scope
 
