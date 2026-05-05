@@ -366,10 +366,13 @@ The most accurate current description is:
 - lifecycle start/stop/restart and session cancellation now emit
   `runtime.command.receipt` observations as command-id closure while keeping
   assignment receipts and session observations as the domain lifecycle model;
-- the largest remaining gaps are projection-backed replacement for deep runtime
-  detail APIs, source merge/reconcile services, collaborative wiki patch/diff
-  semantics on top of participant-scoped page upsert, and
-  infrastructure-backed multi-machine proof execution.
+- source-history commits and published source-history artifact commits now use
+  resolved primary git principal attribution when available, aligning
+  git-facing contribution metadata with each node's configured profile;
+- the largest remaining gaps are richer collaborative wiki merge UI beyond
+  conflict-base recovery, repository lifecycle and fallback/replication
+  behavior, infrastructure-backed multi-machine proof execution, production
+  identity/authorization, and deeper delegated-session runtime semantics.
 
 The Human Interface Runtime now has a first usable running User Client for
 human graph participants. It can inspect projected inbox state, publish

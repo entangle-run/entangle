@@ -2437,6 +2437,25 @@ describe("RunnerService", () => {
     expect(historyRecord.sourceHistoryId).toBe(
       "source-history-source-change-review-alpha"
     );
+    const sourceHistoryAuthorEmail = spawnSync(
+      "git",
+      [
+        "--git-dir",
+        sourceBaseline.gitDir,
+        "show",
+        "-s",
+        "--format=%ae",
+        historyRecord.commit
+      ],
+      {
+        encoding: "utf8"
+      }
+    );
+
+    expect(sourceHistoryAuthorEmail.status).toBe(0);
+    expect(sourceHistoryAuthorEmail.stdout.trim()).toBe(
+      "worker-it@entangle.example"
+    );
     const artifactRecord = artifactRecords.find(
       (record) =>
         record.ref.artifactId ===
@@ -2449,6 +2468,33 @@ describe("RunnerService", () => {
       backend: "git",
       status: "published"
     });
+    const publishedCommit =
+      artifactRecord?.ref.backend === "git"
+        ? artifactRecord.ref.locator.commit
+        : undefined;
+    if (!publishedCommit || !fixture.remoteRepositoryPath) {
+      throw new Error("Expected a published source-history git commit.");
+    }
+
+    const publishedAuthorEmail = spawnSync(
+      "git",
+      [
+        "--git-dir",
+        fixture.remoteRepositoryPath,
+        "show",
+        "-s",
+        "--format=%ae",
+        publishedCommit
+      ],
+      {
+        encoding: "utf8"
+      }
+    );
+
+    expect(publishedAuthorEmail.status).toBe(0);
+    expect(publishedAuthorEmail.stdout.trim()).toBe(
+      "worker-it@entangle.example"
+    );
     expect(observedArtifacts[0]).toMatchObject({
       artifactRecord: {
         ref: {

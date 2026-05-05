@@ -6561,3 +6561,10 @@ Added `references/552-user-client-wiki-conflict-recovery-slice.md`. The React
 User Client now surfaces matching stale-edit wiki conflict receipts next to the
 visible page editor and can load the current projected page as a retry draft
 with the current hash prefilled as the next `expectedCurrentSha256` guard.
+
+## [2026-05-05] runner | Aligned source-history git attribution
+
+Added `references/553-source-history-git-attribution-slice.md`. Source-history
+commits and published source-history artifact commits now use the node's
+resolved primary git principal attribution when available, matching wiki
+repository commits and preserving per-node git-facing contribution metadata.

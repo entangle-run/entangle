@@ -1260,6 +1260,10 @@ The React User Client now also places matching stale-edit wiki conflict
 receipts beside the visible page editor and can load the current projected page
 as a retry draft with the current hash prefilled as the next
 `expectedCurrentSha256` guard.
+Source-history commits and published source-history artifact commits now use
+the node's resolved primary git principal attribution, matching wiki repository
+commit behavior and keeping git-facing contribution metadata aligned with the
+configured per-node profile.
 Deterministic runner task memory now also preserves bounded source-change
 candidate ids, status, totals, diff availability, and changed-file summaries
 from the live turn record, and the derived recent-work summary surfaces the

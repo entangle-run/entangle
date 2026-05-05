@@ -797,6 +797,10 @@ This repository currently contains:
   Client also surfaces matching stale-edit conflicts beside the visible page
   editor and can load the current projected page as a retry draft with the
   current hash prefilled.
+  Source-history commits and published source-history artifact commits now use
+  the resolved primary git principal attribution when available, so node code
+  contributions carry the configured git-facing profile instead of the fallback
+  node email.
   Public deep runtime reads
   for accepted federated
   assignments now ignore Host-local runtime files and use projected

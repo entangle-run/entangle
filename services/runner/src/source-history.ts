@@ -679,30 +679,14 @@ async function materializeSourceHistoryPublicationCommit(input: {
   const artifactCommit =
     parentCommit && parentTree === tree
       ? parentCommit
-      : await runGitCommand(
-          input.repoPath,
-          [
-            "commit-tree",
-            tree,
-            "-m",
-            [
-              `entangle(${input.history.nodeId}): publish ${input.history.sourceHistoryId}`,
-              "",
-              `source_history: ${input.history.sourceHistoryId}`,
-              `candidate: ${input.history.candidateId}`,
-              `source_commit: ${input.history.commit}`
-            ].join("\n"),
-            ...(parentCommit ? ["-p", parentCommit] : [])
-          ],
-          {
-            env: {
-              GIT_AUTHOR_EMAIL: `${input.history.nodeId}@entangle.invalid`,
-              GIT_AUTHOR_NAME: input.context.binding.node.displayName,
-              GIT_COMMITTER_EMAIL: `${input.history.nodeId}@entangle.invalid`,
-              GIT_COMMITTER_NAME: input.context.binding.node.displayName
-            }
-          }
-        );
+      : await createPublishedSourceHistoryArtifactCommit({
+          branchName: input.branchName,
+          context: input.context,
+          history: input.history,
+          parentCommit,
+          repoPath: input.repoPath,
+          tree
+        });
 
   await runGitCommand(input.repoPath, [
     "update-ref",
@@ -713,6 +697,43 @@ async function materializeSourceHistoryPublicationCommit(input: {
   await runGitCommand(input.repoPath, ["reset", "--hard", artifactCommit]);
 
   return artifactCommit;
+}
+
+async function createPublishedSourceHistoryArtifactCommit(input: {
+  branchName: string;
+  context: EffectiveRuntimeContext;
+  history: SourceHistoryRecord;
+  parentCommit?: string | undefined;
+  repoPath: string;
+  tree: string;
+}): Promise<string> {
+  const attribution = resolvePrimaryGitAttribution(input.context);
+
+  return runGitCommand(
+    input.repoPath,
+    [
+      "commit-tree",
+      input.tree,
+      "-m",
+      [
+        `entangle(${input.history.nodeId}): publish ${input.history.sourceHistoryId}`,
+        "",
+        `source_history: ${input.history.sourceHistoryId}`,
+        `candidate: ${input.history.candidateId}`,
+        `source_commit: ${input.history.commit}`,
+        `branch: ${input.branchName}`
+      ].join("\n"),
+      ...(input.parentCommit ? ["-p", input.parentCommit] : [])
+    ],
+    {
+      env: {
+        GIT_AUTHOR_EMAIL: attribution.email,
+        GIT_AUTHOR_NAME: attribution.name,
+        GIT_COMMITTER_EMAIL: attribution.email,
+        GIT_COMMITTER_NAME: attribution.name
+      }
+    }
+  );
 }
 
 function buildSourceHistoryArtifactRecord(input: {
@@ -1016,6 +1037,7 @@ async function createSourceHistoryCommit(input: {
   sourceWorkspaceRoot: string;
 }): Promise<string> {
   let parentCommit: string | undefined;
+  const attribution = resolvePrimaryGitAttribution(input.context);
 
   try {
     parentCommit = await runGitCommand(
@@ -1047,10 +1069,10 @@ async function createSourceHistoryCommit(input: {
     ],
     {
       env: {
-        GIT_AUTHOR_EMAIL: `${input.context.binding.node.nodeId}@entangle.invalid`,
-        GIT_AUTHOR_NAME: input.context.binding.node.displayName,
-        GIT_COMMITTER_EMAIL: `${input.context.binding.node.nodeId}@entangle.invalid`,
-        GIT_COMMITTER_NAME: input.context.binding.node.displayName
+        GIT_AUTHOR_EMAIL: attribution.email,
+        GIT_AUTHOR_NAME: attribution.name,
+        GIT_COMMITTER_EMAIL: attribution.email,
+        GIT_COMMITTER_NAME: attribution.name
       },
       gitDir: input.gitDir,
       workTree: input.sourceWorkspaceRoot

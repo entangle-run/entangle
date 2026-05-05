@@ -649,6 +649,10 @@ Current status:
 - the React User Client now surfaces matching stale-edit wiki conflict receipts
   next to the visible page editor and can load the current projected page as a
   retry draft with the current hash installed as the next stale-edit guard;
+- source-history commits and published source-history artifact commits now use
+  resolved primary git principal attribution, so git-facing contribution
+  metadata matches the configured per-node profile instead of the deterministic
+  node fallback whenever a principal is available;
 - deterministic runner task memory now records source-change candidate ids,
   status, totals, diff availability, and changed-file summaries from the live
   turn record, and recent-work summaries surface that compact code-change
