@@ -931,6 +931,7 @@ afterEach(async () => {
   delete process.env.ENTANGLE_DEFAULT_GIT_TRANSPORT;
   delete process.env.ENTANGLE_HOST_OPERATOR_TOKEN;
   delete process.env.ENTANGLE_HOST_OPERATOR_TOKENS_JSON;
+  delete process.env.ENTANGLE_HOST_OPERATOR_TOKEN_EXPIRES_AT;
   delete process.env.ENTANGLE_HOST_CORS_ORIGINS;
   delete process.env.ENTANGLE_HOST_OPERATOR_ID;
   delete process.env.ENTANGLE_HOST_OPERATOR_PERMISSIONS;
@@ -1348,6 +1349,66 @@ describe("buildHostServer", () => {
     }
   });
 
+  it("rejects expired bootstrap operator tokens and reports token expiry status", async () => {
+    process.env.ENTANGLE_HOST_OPERATOR_TOKENS_JSON = JSON.stringify([
+      {
+        expiresAt: "2099-01-01T00:00:00.000Z",
+        operatorId: "ops-admin",
+        operatorRole: "admin",
+        token: "admin-secret"
+      },
+      {
+        expiresAt: "2000-01-01T00:00:00.000Z",
+        operatorId: "audit-viewer",
+        operatorRole: "viewer",
+        token: "viewer-secret"
+      }
+    ]);
+    const server = await createTestServer();
+
+    try {
+      const expiredResponse = await server.inject({
+        headers: {
+          authorization: "Bearer viewer-secret"
+        },
+        method: "GET",
+        url: "/v1/host/status"
+      });
+
+      expect(expiredResponse.statusCode).toBe(401);
+
+      const authorizedResponse = await server.inject({
+        headers: {
+          authorization: "Bearer admin-secret"
+        },
+        method: "GET",
+        url: "/v1/host/status"
+      });
+
+      expect(authorizedResponse.statusCode).toBe(200);
+      expect(hostStatusResponseSchema.parse(authorizedResponse.json()).security).toEqual({
+        operatorAuthMode: "bootstrap_operator_tokens",
+        operatorCount: 2,
+        operators: [
+          {
+            operatorExpiresAt: "2099-01-01T00:00:00.000Z",
+            operatorId: "ops-admin",
+            operatorRole: "admin",
+            operatorTokenStatus: "active"
+          },
+          {
+            operatorExpiresAt: "2000-01-01T00:00:00.000Z",
+            operatorId: "audit-viewer",
+            operatorRole: "viewer",
+            operatorTokenStatus: "expired"
+          }
+        ]
+      });
+    } finally {
+      await server.close();
+    }
+  });
+
   it("rejects invalid hashed bootstrap operator token records", async () => {
     process.env.ENTANGLE_HOST_OPERATOR_TOKENS_JSON = JSON.stringify([
       {
@@ -1359,6 +1420,21 @@ describe("buildHostServer", () => {
 
     await expect(createTestServer()).rejects.toThrow(
       "ENTANGLE_HOST_OPERATOR_TOKENS_JSON record 0 tokenSha256 must be a 64-character SHA-256 hex digest."
+    );
+  });
+
+  it("rejects invalid bootstrap operator token expiry values", async () => {
+    process.env.ENTANGLE_HOST_OPERATOR_TOKENS_JSON = JSON.stringify([
+      {
+        expiresAt: "not-a-date",
+        operatorId: "ops-admin",
+        operatorRole: "admin",
+        token: "admin-secret"
+      }
+    ]);
+
+    await expect(createTestServer()).rejects.toThrow(
+      "ENTANGLE_HOST_OPERATOR_TOKENS_JSON record 0 expiresAt must be a valid ISO timestamp."
     );
   });
 

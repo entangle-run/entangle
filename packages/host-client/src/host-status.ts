@@ -123,11 +123,21 @@ export function formatHostSecuritySummary(status: HostStatusResponse): string {
     const scopedOperatorCount = security.operators.filter(
       (operator) => operator.operatorPermissions !== undefined
     ).length;
+    const expiringOperatorCount = security.operators.filter(
+      (operator) => operator.operatorExpiresAt !== undefined
+    ).length;
+    const expiredOperatorCount = security.operators.filter(
+      (operator) => operator.operatorTokenStatus === "expired"
+    ).length;
 
     return [
       "bootstrap operator tokens",
       `${security.operatorCount} operators`,
-      scopedOperatorCount > 0 ? `${scopedOperatorCount} scoped` : undefined
+      scopedOperatorCount > 0 ? `${scopedOperatorCount} scoped` : undefined,
+      expiringOperatorCount > 0
+        ? `${expiringOperatorCount} with expiry`
+        : undefined,
+      expiredOperatorCount > 0 ? `${expiredOperatorCount} expired` : undefined
     ].filter((part): part is string => Boolean(part)).join(" · ");
   }
 
@@ -137,7 +147,11 @@ export function formatHostSecuritySummary(status: HostStatusResponse): string {
     security.operatorRole,
     security.operatorPermissions
       ? `permissions ${security.operatorPermissions.join(", ")}`
-      : undefined
+      : undefined,
+    security.operatorExpiresAt
+      ? `expires ${security.operatorExpiresAt}`
+      : undefined,
+    security.operatorTokenStatus === "expired" ? "expired" : undefined
   ].filter((part): part is string => Boolean(part)).join(" · ");
 }
 

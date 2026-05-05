@@ -868,6 +868,7 @@ files are the active federated redesign pack.
 528. [527-user-client-wiki-draft-diff-preview-slice.md](527-user-client-wiki-draft-diff-preview-slice.md)
 529. [528-distributed-proof-verifier-junit-slice.md](528-distributed-proof-verifier-junit-slice.md)
 530. [529-distributed-proof-kit-junit-script-slice.md](529-distributed-proof-kit-junit-script-slice.md)
+531. [530-bootstrap-operator-token-expiry-slice.md](530-bootstrap-operator-token-expiry-slice.md)
 
 ## Role of this corpus
 

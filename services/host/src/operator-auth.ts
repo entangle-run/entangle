@@ -9,6 +9,7 @@ import {
 } from "@entangle/types";
 
 export type HostOperatorPrincipal = {
+  operatorExpiresAt?: string;
   operatorId: string;
   operatorPermissions?: OperatorPermission[];
   operatorRole: OperatorRole;
@@ -16,6 +17,7 @@ export type HostOperatorPrincipal = {
 };
 
 type HostOperatorTokenRecord = {
+  expiresAt?: unknown;
   operatorId?: unknown;
   operatorRole?: unknown;
   permissions?: unknown;
@@ -43,6 +45,27 @@ function normalizeTokenSha256(value: unknown): string | undefined {
 
   const normalizedHash = value.trim().toLowerCase();
   return /^[a-f0-9]{64}$/.test(normalizedHash) ? normalizedHash : undefined;
+}
+
+function normalizeOperatorExpiresAt(input: {
+  source: string;
+  value: unknown;
+}): string | undefined {
+  if (input.value === undefined || input.value === null) {
+    return undefined;
+  }
+
+  if (typeof input.value !== "string" || input.value.trim().length === 0) {
+    throw new Error(`${input.source} must be a valid ISO timestamp.`);
+  }
+
+  const timestamp = Date.parse(input.value.trim());
+
+  if (Number.isNaN(timestamp)) {
+    throw new Error(`${input.source} must be a valid ISO timestamp.`);
+  }
+
+  return new Date(timestamp).toISOString();
 }
 
 function resolveTokenHashFromRecord(input: {
@@ -146,12 +169,16 @@ function normalizeOperatorPermissions(input: {
 }
 
 function buildHostOperatorPrincipal(input: {
+  operatorExpiresAt?: string;
   operatorId: string;
   operatorPermissions?: OperatorPermission[];
   operatorRole: OperatorRole;
   tokenHash: string;
 }): HostOperatorPrincipal {
   return {
+    ...(input.operatorExpiresAt
+      ? { operatorExpiresAt: input.operatorExpiresAt }
+      : {}),
     operatorId: input.operatorId,
     ...(input.operatorPermissions
       ? { operatorPermissions: input.operatorPermissions }
@@ -199,8 +226,16 @@ function parseOperatorTokenRecords(
       permissions: tokenRecord.permissions ?? tokenRecord.scopes,
       source: `ENTANGLE_HOST_OPERATOR_TOKENS_JSON record ${index}`
     });
+    const operatorExpiresAt =
+      tokenRecord.expiresAt !== undefined && tokenRecord.expiresAt !== null
+        ? normalizeOperatorExpiresAt({
+            source: `ENTANGLE_HOST_OPERATOR_TOKENS_JSON record ${index} expiresAt`,
+            value: tokenRecord.expiresAt
+          })
+        : undefined;
 
     return buildHostOperatorPrincipal({
+      ...(operatorExpiresAt ? { operatorExpiresAt } : {}),
       operatorId: normalizeOperatorId(tokenRecord.operatorId),
       ...(operatorPermissions ? { operatorPermissions } : {}),
       operatorRole: normalizeOperatorRole(
@@ -239,9 +274,14 @@ export function resolveHostOperatorPrincipalsFromEnv(
       permissions: env.ENTANGLE_HOST_OPERATOR_PERMISSIONS,
       source: "ENTANGLE_HOST_OPERATOR_PERMISSIONS"
     });
+    const operatorExpiresAt = normalizeOperatorExpiresAt({
+      source: "ENTANGLE_HOST_OPERATOR_TOKEN_EXPIRES_AT",
+      value: env.ENTANGLE_HOST_OPERATOR_TOKEN_EXPIRES_AT
+    });
 
     principals.push(
       buildHostOperatorPrincipal({
+        ...(operatorExpiresAt ? { operatorExpiresAt } : {}),
         operatorId: normalizeOperatorId(env.ENTANGLE_HOST_OPERATOR_ID),
         ...(operatorPermissions ? { operatorPermissions } : {}),
         operatorRole: normalizeOperatorRole(env.ENTANGLE_HOST_OPERATOR_ROLE),
@@ -259,13 +299,32 @@ export function resolveHostOperatorPrincipalsFromEnv(
   return principals;
 }
 
+function resolveHostOperatorTokenStatus(
+  principal: HostOperatorPrincipal,
+  now = new Date()
+): "active" | "expired" | undefined {
+  if (!principal.operatorExpiresAt) {
+    return undefined;
+  }
+
+  return Date.parse(principal.operatorExpiresAt) <= now.getTime()
+    ? "expired"
+    : "active";
+}
+
 function buildHostOperatorStatusPrincipal(principal: HostOperatorPrincipal) {
+  const operatorTokenStatus = resolveHostOperatorTokenStatus(principal);
+
   return {
+    ...(principal.operatorExpiresAt
+      ? { operatorExpiresAt: principal.operatorExpiresAt }
+      : {}),
     operatorId: principal.operatorId,
     ...(principal.operatorPermissions
       ? { operatorPermissions: principal.operatorPermissions }
       : {}),
-    operatorRole: principal.operatorRole
+    operatorRole: principal.operatorRole,
+    ...(operatorTokenStatus ? { operatorTokenStatus } : {})
   };
 }
 
@@ -298,16 +357,20 @@ export function buildHostOperatorSecurityStatusFromEnv(
 
 export function resolveHostOperatorPrincipalForRequest(input: {
   authorization: string | undefined;
+  now?: Date;
   principals: HostOperatorPrincipal[];
   query: unknown;
   upgrade: string | undefined;
 }): HostOperatorPrincipal | undefined {
+  const now = input.now ?? new Date();
   const bearerToken = extractBearerToken(input.authorization);
 
   if (bearerToken) {
     const bearerTokenHash = hashOperatorToken(bearerToken);
     return input.principals.find(
-      (principal) => principal.tokenHash === bearerTokenHash
+      (principal) =>
+        principal.tokenHash === bearerTokenHash &&
+        resolveHostOperatorTokenStatus(principal, now) !== "expired"
     );
   }
 
@@ -323,7 +386,9 @@ export function resolveHostOperatorPrincipalForRequest(input: {
 
   const accessTokenHash = hashOperatorToken(accessToken);
   return input.principals.find(
-    (principal) => principal.tokenHash === accessTokenHash
+    (principal) =>
+      principal.tokenHash === accessTokenHash &&
+      resolveHostOperatorTokenStatus(principal, now) !== "expired"
   );
 }
 

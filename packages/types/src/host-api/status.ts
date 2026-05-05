@@ -145,9 +145,11 @@ export const hostOperatorSecurityStatusSchema = z.discriminatedUnion(
     }),
     z.object({
       operatorAuthMode: z.literal("bootstrap_operator_token"),
+      operatorExpiresAt: nonEmptyStringSchema.optional(),
       operatorId: identifierSchema,
       operatorPermissions: z.array(operatorPermissionSchema).optional(),
-      operatorRole: operatorRoleSchema
+      operatorRole: operatorRoleSchema,
+      operatorTokenStatus: z.enum(["active", "expired"]).optional()
     }),
     z.object({
       operatorAuthMode: z.literal("bootstrap_operator_tokens"),
@@ -155,9 +157,11 @@ export const hostOperatorSecurityStatusSchema = z.discriminatedUnion(
       operators: z
         .array(
           z.object({
+            operatorExpiresAt: nonEmptyStringSchema.optional(),
             operatorId: identifierSchema,
             operatorPermissions: z.array(operatorPermissionSchema).optional(),
-            operatorRole: operatorRoleSchema
+            operatorRole: operatorRoleSchema,
+            operatorTokenStatus: z.enum(["active", "expired"]).optional()
           })
         )
         .min(2)

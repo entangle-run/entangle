@@ -551,9 +551,11 @@ This repository currently contains:
   without exposing token material; token-protected Hosts now enforce the
   bootstrap `viewer` role as read-only, include `operatorRole` in protected
   mutation audit events, and can attribute requests to distinct bootstrap
-  operator tokens and scoped permissions; host-client and CLI event summaries
-  now render those audit events with operator id, role, method, path, status,
-  and auth mode, and Host
+  operator tokens and scoped permissions; bootstrap token records can now carry
+  expiration timestamps, expired tokens no longer authorize Host API or
+  WebSocket operator requests, and Host status reports non-secret expiry
+  metadata; host-client and CLI event summaries now render those audit events
+  with operator id, role, method, path, status, and auth mode, and Host
   event listing now applies audit filters server-side before limit slicing;
 - host-managed external principal records for backend-facing identities such as
   git principals, exposed through the same host boundary, safely removable
@@ -1561,10 +1563,11 @@ The highest-value remaining gaps are:
   explicit target publication, and replicated fallback paths;
 - production identity and authorization beyond the bootstrap operator-token
   boundary, multi-token attribution, visible status summary, route-level
-  bootstrap permissions, and coarse read-only `viewer` enforcement, including
-  durable principals, policy-backed permission sources, and external audit
-  retention beyond the current Host-verifiable chain, Host Authority-signed
-  integrity report, typed audit-bundle export, and CLI file handoff;
+  bootstrap permissions, coarse read-only `viewer` enforcement, and bootstrap
+  token expiry, including durable principals, policy-backed permission sources,
+  and external audit retention beyond the current Host-verifiable chain, Host
+  Authority-signed integrity report, typed audit-bundle export, and CLI file
+  handoff;
 - stronger end-to-end deployment and integration hardening beyond the current
   disposable same-machine profile, especially infrastructure-backed
   multi-machine proof execution and non-disposable upgrade/repair behavior.

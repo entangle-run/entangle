@@ -1275,9 +1275,10 @@ Current status:
   bootstrap attribution; token-protected Hosts now enforce `viewer` as a
   read-only bootstrap role, can distinguish multiple configured bootstrap
   operator tokens, can compare hash-only token records, can enforce explicit
-  route-level bootstrap permissions when configured, and record matched
-  operator identity/role/permissions on protected mutation audit events while
-  keeping production identity/authorization as an
+  route-level bootstrap permissions when configured, can reject expired token
+  records while reporting non-secret expiry status, and record matched operator
+  identity/role/permissions on protected mutation audit events while keeping
+  production identity/authorization as an
   explicit remaining hardening track; host-client and CLI summary output now
   presents those audit events with operator id, role, method, path, status, and
   auth mode;

@@ -121,13 +121,15 @@ describe("host status presentation helpers", () => {
         ...status,
         security: {
           operatorAuthMode: "bootstrap_operator_token",
+          operatorExpiresAt: "2099-01-01T00:00:00.000Z",
           operatorId: "assignment-ops",
           operatorPermissions: ["host.assignments.write", "host.read"],
-          operatorRole: "operator"
+          operatorRole: "operator",
+          operatorTokenStatus: "active"
         }
       })
     ).toBe(
-      "bootstrap operator token · assignment-ops · operator · permissions host.assignments.write, host.read"
+      "bootstrap operator token · assignment-ops · operator · permissions host.assignments.write, host.read · expires 2099-01-01T00:00:00.000Z"
     );
     expect(
       formatHostSecuritySummary({
@@ -142,13 +144,17 @@ describe("host status presentation helpers", () => {
               operatorRole: "admin"
             },
             {
+              operatorExpiresAt: "2000-01-01T00:00:00.000Z",
               operatorId: "audit-viewer",
-              operatorRole: "viewer"
+              operatorRole: "viewer",
+              operatorTokenStatus: "expired"
             }
           ]
         }
       })
-    ).toBe("bootstrap operator tokens · 2 operators · 1 scoped");
+    ).toBe(
+      "bootstrap operator tokens · 2 operators · 1 scoped · 1 with expiry · 1 expired"
+    );
     expect(
       formatHostArtifactBackendCacheClearSummary({
         completedAt: "2026-04-25T08:00:03.000Z",

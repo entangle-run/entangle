@@ -492,7 +492,10 @@ tokenless deployments report `none`, single-token
 bootstrap role, and `ENTANGLE_HOST_OPERATOR_TOKENS_JSON` deployments report a
 tokenless list of bootstrap operator ids and roles. Multi-token records can
 use `tokenSha256` instead of raw token values and can opt into explicit Host
-permissions for scoped bootstrap access.
+permissions for scoped bootstrap access. Bootstrap token records can now also
+carry expiration timestamps; expired tokens do not authorize Host API or
+WebSocket operator requests, and Host status reports only non-secret expiry
+metadata.
 CLI can now generate a Host-derived `runner-join.json` with
 `entangle runners join-config`, and the runner package advertises
 `entangle-runner join --config` for generic runner startup outside smoke
@@ -1351,7 +1354,8 @@ The current implementation-truth audit now lives in
   owner-aware memory projection are implemented;
 - deepen the bootstrap host operator-token boundary, multi-token request audit,
   status reporting, server-filterable event inspection, route-level bootstrap
-  permissions, coarse read-only `viewer` enforcement, Host event hash-chain
+  permissions, coarse read-only `viewer` enforcement, bootstrap token expiry,
+  Host event hash-chain
   tamper evidence, typed audit-bundle export, and CLI file handoff into real
   production identity, authorization, and external audit retention only through
   explicit contracts, tests, policy decisions, enforced roles, and

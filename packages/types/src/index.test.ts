@@ -4311,12 +4311,16 @@ describe("reconciliation contracts", () => {
         operatorCount: 2,
         operators: [
           {
+            operatorExpiresAt: "2099-01-01T00:00:00.000Z",
             operatorId: "ops-admin",
-            operatorRole: "admin"
+            operatorRole: "admin",
+            operatorTokenStatus: "active"
           },
           {
+            operatorExpiresAt: "2000-01-01T00:00:00.000Z",
             operatorId: "audit-viewer",
-            operatorRole: "viewer"
+            operatorRole: "viewer",
+            operatorTokenStatus: "expired"
           }
         ]
       },
@@ -4346,12 +4350,16 @@ describe("reconciliation contracts", () => {
       operatorCount: 2,
       operators: [
         {
+          operatorExpiresAt: "2099-01-01T00:00:00.000Z",
           operatorId: "ops-admin",
-          operatorRole: "admin"
+          operatorRole: "admin",
+          operatorTokenStatus: "active"
         },
         {
+          operatorExpiresAt: "2000-01-01T00:00:00.000Z",
           operatorId: "audit-viewer",
-          operatorRole: "viewer"
+          operatorRole: "viewer",
+          operatorTokenStatus: "expired"
         }
       ]
     });

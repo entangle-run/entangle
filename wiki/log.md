@@ -1,5 +1,28 @@
 # Entangle Wiki Log
 
+## [2026-05-05] host | Added bootstrap operator token expiry
+
+Added `references/530-bootstrap-operator-token-expiry-slice.md`.
+Bootstrap Host operator token records now accept optional expiry timestamps,
+and expired matching tokens no longer authorize Host API or WebSocket operator
+requests.
+
+Host status reports only non-secret expiry metadata and active/expired state,
+while host-client/CLI summaries include that status in the existing bootstrap
+security presentation.
+
+Targeted checks passed:
+
+- `pnpm --filter @entangle/types test -- src/index.test.ts`
+- `pnpm --filter @entangle/types typecheck`
+- `pnpm --filter @entangle/types lint`
+- `pnpm --filter @entangle/host test -- src/index.test.ts`
+- `pnpm --filter @entangle/host typecheck`
+- `pnpm --filter @entangle/host lint`
+- `pnpm --filter @entangle/host-client test -- src/host-status.test.ts`
+- `pnpm --filter @entangle/host-client typecheck`
+- `pnpm --filter @entangle/host-client lint`
+
 ## [2026-05-05] ops | Added proof-kit JUnit report hooks
 
 Added `references/529-distributed-proof-kit-junit-script-slice.md`.

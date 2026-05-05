@@ -330,6 +330,7 @@ same-machine slice records.
 - [527-user-client-wiki-draft-diff-preview-slice.md](527-user-client-wiki-draft-diff-preview-slice.md)
 - [528-distributed-proof-verifier-junit-slice.md](528-distributed-proof-verifier-junit-slice.md)
 - [529-distributed-proof-kit-junit-script-slice.md](529-distributed-proof-kit-junit-script-slice.md)
+- [530-bootstrap-operator-token-expiry-slice.md](530-bootstrap-operator-token-expiry-slice.md)
 
 ## Audited Scope
 
@@ -1068,8 +1069,11 @@ single-token environment contract. Those records can use `tokenSha256` hashes
 instead of raw token values for process-configuration hardening. Bootstrap
 tokens can now also opt into explicit route-level Host permissions; scoped
 tokens must carry `host.admin` or the route-specific permission after role
-checks, while unscoped tokens keep compatibility behavior. This remains
-bootstrap authorization, not final production RBAC. Host event listing now also
+checks, while unscoped tokens keep compatibility behavior. Bootstrap token
+records can now also carry expiration timestamps; expired tokens no longer
+authorize Host API or WebSocket operator requests, and Host status reports
+non-secret expiry metadata. This remains bootstrap authorization, not final
+production RBAC. Host event listing now also
 applies category, node,
 operator, status-code, and type-prefix filters before limit slicing, so CLI and
 host-client audit inspection do not lose older matching events behind unrelated
@@ -1187,4 +1191,4 @@ semantics on top of the participant-scoped page upsert command,
 repository lifecycle and replicated/fallback artifact behavior,
 infrastructure-backed multi-machine proof execution, non-disposable upgrade
 behavior, external audit retention, and deeper production identity and
-authorization beyond the scoped bootstrap-token boundary.
+authorization beyond the scoped and expiry-aware bootstrap-token boundary.
