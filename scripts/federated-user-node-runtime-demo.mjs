@@ -14,6 +14,9 @@ const help = args.includes("--help") || args.includes("-h");
 const dryRun = args.includes("--dry-run");
 const skipBuild = args.includes("--skip-build");
 const skipRelay = args.includes("--skip-relay");
+const fakeOpenCodeServer =
+  args.includes("--fake-opencode-server") ||
+  args.includes("--use-fake-opencode-server");
 const relayUrl =
   readFlagValue("--relay-url") ??
   process.env.ENTANGLE_RELAY_URL ??
@@ -37,6 +40,7 @@ Options:
   --relay-url <url>              Relay URL for Host and runners. Default: ws://localhost:7777
   --timeout-ms <milliseconds>    Timeout passed to the process-runner smoke.
   --user-client-static-dir <dir> Serve a specific built User Client directory.
+  --fake-opencode-server         Use the deterministic attached fake OpenCode server profile.
   --skip-build                   Do not build apps/user-client before running.
   --skip-relay                   Do not start the local strfry service first.
   --dry-run                      Print the commands without running them.
@@ -44,6 +48,7 @@ Options:
 
 Examples:
   pnpm ops:demo-user-node-runtime
+  pnpm ops:demo-user-node-runtime:fake-opencode
   pnpm ops:demo-user-node-runtime -- --keep-temp
   pnpm ops:demo-user-node-runtime --skip-relay --relay-url ws://relay.example:7777
 `);
@@ -98,6 +103,13 @@ function buildSmokeArgs() {
 
   if (userClientStaticDir) {
     smokeArgs.push(`--user-client-static-dir=${userClientStaticDir}`);
+  }
+
+  if (
+    fakeOpenCodeServer &&
+    !passThroughArgs.includes("--use-fake-opencode-server")
+  ) {
+    smokeArgs.push("--use-fake-opencode-server");
   }
 
   smokeArgs.push(...passThroughArgs);

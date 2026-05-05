@@ -142,6 +142,10 @@ The most accurate current description is:
   runner, including User Node-signed OpenCode permission approvals, source
   workspace mutation, and attached-server session continuity without live model
   credentials;
+- the same attached fake OpenCode proof now has shorter root commands:
+  `pnpm ops:smoke-federated-process-runner:fake-opencode` for the
+  non-interactive smoke and `pnpm ops:demo-user-node-runtime:fake-opencode`
+  for the keep-running User Node runtime demo;
 - CLI can now upsert active catalog agent engine profiles with
   `host catalog agent-engine upsert`, so operators can configure an attached
   OpenCode or fake OpenCode profile, make it default, and assign it to graph
@@ -329,6 +333,10 @@ projected Human Interface Runtime placement and User Client URLs.
 `pnpm ops:demo-user-node-runtime` now wraps that shortest interactive path by
 building the dedicated User Client, starting the development relay, and running
 the process-runner proof in `--keep-running` mode.
+`pnpm ops:demo-user-node-runtime:fake-opencode` runs the same keep-running
+path with the attached fake OpenCode server profile, so operators can inspect
+User Node approval and attached-engine continuity without live model
+credentials.
 `pnpm ops:distributed-proof-kit` now prepares a copyable three-runner proof kit
 for a reachable Host/relay/git topology, including Host-derived runner join
 configs, runner-local env/start scripts, and operator trust/assignment/User

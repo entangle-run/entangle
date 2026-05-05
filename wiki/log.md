@@ -1,5 +1,14 @@
 # Entangle Wiki Log
 
+## [2026-05-05] verification | Added fake OpenCode demo command
+
+Added `references/473-fake-opencode-demo-command-slice.md`.
+`pnpm ops:smoke-federated-process-runner:fake-opencode` now exposes the
+attached fake OpenCode process proof without requiring operators to remember
+the underlying smoke flags, and
+`pnpm ops:demo-user-node-runtime:fake-opencode` runs the keep-running User Node
+runtime demo against the same deterministic attached fake OpenCode profile.
+
 ## [2026-04-29] verification | Added proof-profile conversation health checks
 
 Added `references/439-distributed-proof-profile-conversation-health-slice.md`.

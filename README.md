@@ -157,6 +157,12 @@ the same smoke with the fake attached server profile:
 pnpm ops:smoke-federated-process-runner -- --relay-url ws://localhost:7777 --timeout-ms 60000 --use-fake-opencode-server
 ```
 
+The same proof is also available as a shorter root command:
+
+```bash
+pnpm ops:smoke-federated-process-runner:fake-opencode
+```
+
 That mode starts the deterministic fake OpenCode HTTP/SSE server, configures it
 as the builder node's default `opencode_server` profile, approves OpenCode
 permission requests through the running User Client as the assigned User Node,
@@ -285,6 +291,17 @@ It builds the dedicated User Client app, starts the development relay, runs the
 process-runner smoke in `--keep-running` mode, and prints the Host URL,
 operator token, and both User Client URLs. Stop it with `Ctrl-C` in the demo
 terminal.
+
+To run the interactive demo with the attached fake OpenCode server profile
+instead of the temporary fake executable, use:
+
+```bash
+pnpm ops:demo-user-node-runtime:fake-opencode
+```
+
+That command keeps the same Host, runner, relay, and User Client path, but uses
+the deterministic attached OpenCode fixture so the permission bridge and
+attached-session continuity can be exercised without live model credentials.
 
 To prepare a generic runner outside the smoke path, start Host, export a runner
 Nostr secret on the runner machine, then generate and use a Host-derived join

@@ -166,7 +166,11 @@ server as a child process and execute an attached-server turn over real
 HTTP/SSE traffic. The federated process-runner smoke can also run with
 `--use-fake-opencode-server` to prove an attached `opencode_server` profile,
 User Node-signed permission approvals, workspace mutation, and session
-continuity without live model credentials. CLI can now upsert active catalog
+continuity without live model credentials. The shorter root commands
+`pnpm ops:smoke-federated-process-runner:fake-opencode` and
+`pnpm ops:demo-user-node-runtime:fake-opencode` expose that same deterministic
+fixture-backed path for non-interactive and keep-running operator checks. CLI
+can now upsert active catalog
 agent engine profiles with
 `host catalog agent-engine upsert`, so an attached OpenCode profile can be
 created, made default, and assigned to a graph node without manual catalog JSON
@@ -765,6 +769,7 @@ files are the active federated redesign pack.
 471. [470-fake-opencode-server-workspace-write-slice.md](470-fake-opencode-server-workspace-write-slice.md)
 472. [471-process-smoke-attached-fake-opencode-slice.md](471-process-smoke-attached-fake-opencode-slice.md)
 473. [472-process-smoke-user-client-source-history-reconcile-slice.md](472-process-smoke-user-client-source-history-reconcile-slice.md)
+474. [473-fake-opencode-demo-command-slice.md](473-fake-opencode-demo-command-slice.md)
 
 ## Role of this corpus
 

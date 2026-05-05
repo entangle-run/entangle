@@ -273,6 +273,7 @@ same-machine slice records.
 - [470-fake-opencode-server-workspace-write-slice.md](470-fake-opencode-server-workspace-write-slice.md)
 - [471-process-smoke-attached-fake-opencode-slice.md](471-process-smoke-attached-fake-opencode-slice.md)
 - [472-process-smoke-user-client-source-history-reconcile-slice.md](472-process-smoke-user-client-source-history-reconcile-slice.md)
+- [473-fake-opencode-demo-command-slice.md](473-fake-opencode-demo-command-slice.md)
 
 ## Audited Scope
 

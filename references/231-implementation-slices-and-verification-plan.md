@@ -272,6 +272,10 @@ Current status:
   running User Client as the assigned User Node, verify source workspace
   mutation, and prove attached-server session continuity without live model
   credentials.
+- `pnpm ops:smoke-federated-process-runner:fake-opencode` now exposes that
+  attached fake OpenCode process proof as a shorter root command, and
+  `pnpm ops:demo-user-node-runtime:fake-opencode` runs the keep-running
+  interactive User Node demo against the same attached fake OpenCode profile.
 - The process-runner smoke now also requests source-history reconcile through
   the running User Client for a visible plain `source_history` resource and
   verifies the completed Host-projected `runtime.source_history.reconcile`
@@ -850,6 +854,10 @@ Implementation record:
   attached OpenCode server, configures it as Host's default `opencode_server`
   profile, approves OpenCode permission requests through the running User
   Client, and carries the normal source/artifact/wiki smoke flow forward.
+- [473-fake-opencode-demo-command-slice.md](473-fake-opencode-demo-command-slice.md)
+  adds shorter root smoke and interactive demo commands for the attached fake
+  OpenCode path while keeping the fake server as a deterministic fixture over
+  the normal federated runtime path.
 - [465-cli-agent-engine-profile-upsert-slice.md](465-cli-agent-engine-profile-upsert-slice.md)
   adds a Host-backed CLI catalog command for creating and updating typed agent
   engine profiles, including attached OpenCode profiles, permission mode,
@@ -1245,6 +1253,11 @@ Current status:
   Node runtime proof by building the dedicated User Client app, starting the
   development relay, and running the process-runner smoke in `--keep-running`
   mode so operators can open both projected User Client URLs;
+- `pnpm ops:demo-user-node-runtime:fake-opencode` now wraps that same
+  keep-running User Node runtime proof with the attached fake OpenCode server
+  profile, and `pnpm ops:smoke-federated-process-runner:fake-opencode`
+  exposes the non-interactive attached fake OpenCode proof without requiring
+  operators to remember the underlying smoke flags;
 - `pnpm ops:distributed-proof-kit` now generates a three-runner proof kit for
   a reachable Host/relay/git topology, including Host-derived runner join
   configs, runner-local env/start scripts, and operator trust/assignment/User
