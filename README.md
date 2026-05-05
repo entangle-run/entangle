@@ -557,7 +557,9 @@ This repository currently contains:
   operator tokens and scoped permissions; bootstrap token records can now carry
   expiration timestamps, expired tokens no longer authorize Host API or
   WebSocket operator requests, and Host status reports non-secret expiry
-  metadata; host-client and CLI event summaries now render those audit events
+  metadata; explicit bootstrap operator ids and roles now fail fast when
+  malformed while omitted fields still use bootstrap defaults; host-client and
+  CLI event summaries now render those audit events
   with operator id, role, method, path, status, and auth mode, and Host
   event listing now applies audit filters server-side before limit slicing;
 - host-managed external principal records for backend-facing identities such as

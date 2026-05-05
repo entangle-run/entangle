@@ -1277,8 +1277,10 @@ Current status:
   operator tokens, can compare hash-only token records, can enforce explicit
   route-level bootstrap permissions when configured, can reject expired token
   records while reporting non-secret expiry status, and record matched operator
-  identity/role/permissions on protected mutation audit events while keeping
-  production identity/authorization as an
+  identity/role/permissions on protected mutation audit events; explicit
+  bootstrap operator ids and roles now fail fast when malformed while omitted
+  fields still use bootstrap defaults, with
+  production identity/authorization still tracked as an
   explicit remaining hardening track; host-client and CLI summary output now
   presents those audit events with operator id, role, method, path, status, and
   auth mode;

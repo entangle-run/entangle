@@ -1,5 +1,21 @@
 # Entangle Wiki Log
 
+## [2026-05-05] host | Hardened bootstrap operator config validation
+
+Added `references/537-bootstrap-operator-config-validation-slice.md`.
+Bootstrap operator token config now fails fast when an explicit operator id or
+role is invalid.
+
+Missing ids and roles still use the existing bootstrap defaults, but malformed
+configured values no longer silently collapse audit attribution or role
+semantics.
+
+Targeted checks passed:
+
+- `pnpm --filter @entangle/host test -- src/operator-auth.test.ts`
+- `pnpm --filter @entangle/host typecheck`
+- `pnpm --filter @entangle/host lint`
+
 ## [2026-05-05] cli | Added backup external volume count
 
 Added `references/536-deployment-backup-external-volume-summary-slice.md`.

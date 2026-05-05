@@ -108,25 +108,45 @@ function resolveTokenHashFromRecord(input: {
   return tokenHash ?? configuredTokenHash!;
 }
 
-function normalizeOperatorId(operatorId: unknown): string {
+function normalizeOperatorId(input: {
+  defaultOperatorId: string;
+  operatorId: unknown;
+  source: string;
+}): string {
   const normalizedOperatorId =
-    typeof operatorId === "string" ? operatorId.trim() : "";
+    typeof input.operatorId === "string" ? input.operatorId.trim() : "";
+
+  if (!normalizedOperatorId) {
+    return input.defaultOperatorId;
+  }
+
   const parsedOperatorId = identifierSchema.safeParse(normalizedOperatorId);
 
   if (parsedOperatorId.success) {
     return parsedOperatorId.data;
   }
 
-  return "bootstrap-operator";
+  throw new Error(`${input.source} must be a valid Entangle identifier.`);
 }
 
-function normalizeOperatorRole(operatorRole: unknown): OperatorRole {
-  const candidate = typeof operatorRole === "string" ? operatorRole.trim() : "";
-  const parsedOperatorRole = operatorRoleSchema.safeParse(
-    candidate || "operator"
-  );
+function normalizeOperatorRole(input: {
+  operatorRole: unknown;
+  source: string;
+}): OperatorRole {
+  const candidate =
+    typeof input.operatorRole === "string" ? input.operatorRole.trim() : "";
 
-  return parsedOperatorRole.success ? parsedOperatorRole.data : "operator";
+  if (!candidate) {
+    return "operator";
+  }
+
+  const parsedOperatorRole = operatorRoleSchema.safeParse(candidate);
+
+  if (parsedOperatorRole.success) {
+    return parsedOperatorRole.data;
+  }
+
+  throw new Error(`${input.source} must be a supported operator role.`);
 }
 
 function normalizeOperatorPermissions(input: {
@@ -236,11 +256,16 @@ function parseOperatorTokenRecords(
 
     return buildHostOperatorPrincipal({
       ...(operatorExpiresAt ? { operatorExpiresAt } : {}),
-      operatorId: normalizeOperatorId(tokenRecord.operatorId),
+      operatorId: normalizeOperatorId({
+        defaultOperatorId: "bootstrap-operator",
+        operatorId: tokenRecord.operatorId,
+        source: `ENTANGLE_HOST_OPERATOR_TOKENS_JSON record ${index} operatorId`
+      }),
       ...(operatorPermissions ? { operatorPermissions } : {}),
-      operatorRole: normalizeOperatorRole(
-        tokenRecord.operatorRole ?? tokenRecord.role
-      ),
+      operatorRole: normalizeOperatorRole({
+        operatorRole: tokenRecord.operatorRole ?? tokenRecord.role,
+        source: `ENTANGLE_HOST_OPERATOR_TOKENS_JSON record ${index} operatorRole`
+      }),
       tokenHash: resolveTokenHashFromRecord({
         index,
         record: tokenRecord
@@ -282,9 +307,16 @@ export function resolveHostOperatorPrincipalsFromEnv(
     principals.push(
       buildHostOperatorPrincipal({
         ...(operatorExpiresAt ? { operatorExpiresAt } : {}),
-        operatorId: normalizeOperatorId(env.ENTANGLE_HOST_OPERATOR_ID),
+        operatorId: normalizeOperatorId({
+          defaultOperatorId: "bootstrap-operator",
+          operatorId: env.ENTANGLE_HOST_OPERATOR_ID,
+          source: "ENTANGLE_HOST_OPERATOR_ID"
+        }),
         ...(operatorPermissions ? { operatorPermissions } : {}),
-        operatorRole: normalizeOperatorRole(env.ENTANGLE_HOST_OPERATOR_ROLE),
+        operatorRole: normalizeOperatorRole({
+          operatorRole: env.ENTANGLE_HOST_OPERATOR_ROLE,
+          source: "ENTANGLE_HOST_OPERATOR_ROLE"
+        }),
         tokenHash: hashOperatorToken(singleToken)
       })
     );

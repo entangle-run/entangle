@@ -875,6 +875,7 @@ files are the active federated redesign pack.
 535. [534-distributed-proof-external-host-url-slice.md](534-distributed-proof-external-host-url-slice.md)
 536. [535-deployment-backup-external-volume-inventory-slice.md](535-deployment-backup-external-volume-inventory-slice.md)
 537. [536-deployment-backup-external-volume-summary-slice.md](536-deployment-backup-external-volume-summary-slice.md)
+538. [537-bootstrap-operator-config-validation-slice.md](537-bootstrap-operator-config-validation-slice.md)
 
 ## Role of this corpus
 

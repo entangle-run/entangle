@@ -337,6 +337,7 @@ same-machine slice records.
 - [534-distributed-proof-external-host-url-slice.md](534-distributed-proof-external-host-url-slice.md)
 - [535-deployment-backup-external-volume-inventory-slice.md](535-deployment-backup-external-volume-inventory-slice.md)
 - [536-deployment-backup-external-volume-summary-slice.md](536-deployment-backup-external-volume-summary-slice.md)
+- [537-bootstrap-operator-config-validation-slice.md](537-bootstrap-operator-config-validation-slice.md)
 
 ## Audited Scope
 
@@ -1078,9 +1079,10 @@ tokens must carry `host.admin` or the route-specific permission after role
 checks, while unscoped tokens keep compatibility behavior. Bootstrap token
 records can now also carry expiration timestamps; expired tokens no longer
 authorize Host API or WebSocket operator requests, and Host status reports
-non-secret expiry metadata. This remains bootstrap authorization, not final
-production RBAC. Host event listing now also
-applies category, node,
+non-secret expiry metadata. Explicit bootstrap operator ids and roles now fail
+fast when malformed, while omitted fields still use the bootstrap defaults.
+This remains bootstrap authorization, not final production RBAC. Host event
+listing now also applies category, node,
 operator, status-code, and type-prefix filters before limit slicing, so CLI and
 host-client audit inspection do not lose older matching events behind unrelated
 recent trace records.

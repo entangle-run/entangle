@@ -503,7 +503,8 @@ use `tokenSha256` instead of raw token values and can opt into explicit Host
 permissions for scoped bootstrap access. Bootstrap token records can now also
 carry expiration timestamps; expired tokens do not authorize Host API or
 WebSocket operator requests, and Host status reports only non-secret expiry
-metadata.
+metadata. Explicit bootstrap operator ids and roles now fail fast when
+malformed while omitted fields still use bootstrap defaults.
 CLI can now generate a Host-derived `runner-join.json` with
 `entangle runners join-config`, and the runner package advertises
 `entangle-runner join --config` for generic runner startup outside smoke
