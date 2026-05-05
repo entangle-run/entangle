@@ -266,6 +266,12 @@ Current status:
   on an ephemeral port and verifies Basic-authenticated health, session
   creation, SSE permission delivery, permission reply, deterministic assistant
   output, and idle status.
+- `pnpm ops:smoke-federated-process-runner` can now run with
+  `--use-fake-opencode-server` to configure the builder node with that attached
+  fake OpenCode server, approve OpenCode permission requests through the
+  running User Client as the assigned User Node, verify source workspace
+  mutation, and prove attached-server session continuity without live model
+  credentials.
 - CLI can now configure active catalog agent engine profiles with
   `host catalog agent-engine upsert`, so an attached OpenCode or fake OpenCode
   profile can be created, made default, and then assigned to a node without
@@ -832,6 +838,11 @@ Implementation record:
   extends the fake attached server with safe workspace writes and verifies
   action-block parsing plus source workspace mutation through the real
   fake-server process.
+- [471-process-smoke-attached-fake-opencode-slice.md](471-process-smoke-attached-fake-opencode-slice.md)
+  adds an opt-in federated process-runner smoke mode that starts the fake
+  attached OpenCode server, configures it as Host's default `opencode_server`
+  profile, approves OpenCode permission requests through the running User
+  Client, and carries the normal source/artifact/wiki smoke flow forward.
 - [465-cli-agent-engine-profile-upsert-slice.md](465-cli-agent-engine-profile-upsert-slice.md)
   adds a Host-backed CLI catalog command for creating and updating typed agent
   engine profiles, including attached OpenCode profiles, permission mode,
@@ -863,6 +874,8 @@ Verification:
 - attached OpenCode SSE/permission-reply bridge tests;
 - fake OpenCode attached-server HTTP/SSE smoke;
 - runner adapter test against the fake OpenCode child-process server;
+- federated process smoke with attached fake OpenCode server, User Node-signed
+  permission approvals, workspace mutation, and session continuity;
 - cancellation tests;
 - source/artifact/wiki observation tests;
 - bounded tool evidence contract and presentation tests.

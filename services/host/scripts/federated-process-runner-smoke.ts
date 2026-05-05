@@ -80,6 +80,18 @@ const operatorToken = "process-runner-smoke-token";
 const scriptDirectory = path.dirname(fileURLToPath(import.meta.url));
 const repoRoot = path.resolve(scriptDirectory, "..", "..", "..");
 const userClientStaticDir = resolveUserClientStaticDir();
+const useFakeOpenCodeServer = process.argv.includes(
+  "--use-fake-opencode-server"
+);
+
+type StartedAttachedFakeOpenCodeServer = {
+  baseUrl: string;
+  child: ChildProcessByStdio<null, Readable, Readable>;
+  password: string;
+  stderr: () => string;
+  stdout: () => string;
+  username: string;
+};
 
 function readFlagValue(name: string): string | undefined {
   const inlinePrefix = `${name}=`;
@@ -599,6 +611,128 @@ function appendBounded(current: string, chunk: Buffer | string): string {
   return truncateLog(current + chunk.toString(), 12000);
 }
 
+async function startAttachedFakeOpenCodeServer(input: {
+  content: string;
+  permissionId: string;
+  writeContent: string;
+  writeFile: string;
+}): Promise<StartedAttachedFakeOpenCodeServer> {
+  const username = "entangle";
+  const password = "server-secret";
+  let stdout = "";
+  let stderr = "";
+  let lineBuffer = "";
+  let settled = false;
+  const child = spawn(
+    process.execPath,
+    [
+      path.join(repoRoot, "scripts", "fake-opencode-server.mjs"),
+      "--port",
+      "0",
+      "--username",
+      username,
+      "--password",
+      password,
+      "--permission-id",
+      input.permissionId,
+      "--session-id",
+      "opencode-smoke-session",
+      "--version",
+      "fake-opencode-1.0.0",
+      "--content",
+      input.content,
+      "--write-file",
+      input.writeFile,
+      "--write-content",
+      input.writeContent,
+      "--json-log"
+    ],
+    {
+      cwd: repoRoot,
+      stdio: ["ignore", "pipe", "pipe"]
+    }
+  );
+
+  const baseUrl = await new Promise<string>((resolve, reject) => {
+    const timer = setTimeout(() => {
+      settle(
+        new Error(
+          `Fake OpenCode attached server did not start within ${Math.min(timeoutMs, 5000)}ms.\nstdout:\n${stdout}\nstderr:\n${stderr}`
+        )
+      );
+    }, Math.min(timeoutMs, 5000));
+
+    function settle(error: Error | undefined, value?: string): void {
+      if (settled) {
+        return;
+      }
+
+      settled = true;
+      clearTimeout(timer);
+
+      if (error) {
+        reject(error);
+        return;
+      }
+
+      resolve(value ?? "");
+    }
+
+    child.stdout.on("data", (chunk: Buffer | string) => {
+      stdout = appendBounded(stdout, chunk);
+      lineBuffer += chunk.toString();
+
+      while (lineBuffer.includes("\n")) {
+        const newlineIndex = lineBuffer.indexOf("\n");
+        const line = lineBuffer.slice(0, newlineIndex).trim();
+        lineBuffer = lineBuffer.slice(newlineIndex + 1);
+
+        if (!line) {
+          continue;
+        }
+
+        try {
+          const parsed = JSON.parse(line) as unknown;
+
+          if (
+            parsed &&
+            typeof parsed === "object" &&
+            !Array.isArray(parsed) &&
+            (parsed as { event?: unknown }).event === "listening" &&
+            typeof (parsed as { baseUrl?: unknown }).baseUrl === "string"
+          ) {
+            settle(undefined, (parsed as { baseUrl: string }).baseUrl);
+          }
+        } catch {
+          // Ignore non-JSON startup noise; stderr/stdout are included on timeout.
+        }
+      }
+    });
+    child.stderr.on("data", (chunk: Buffer | string) => {
+      stderr = appendBounded(stderr, chunk);
+    });
+    child.once("close", (code, signal) => {
+      settle(
+        new Error(
+          `Fake OpenCode attached server exited before listening: code=${code ?? "null"} signal=${signal ?? "null"}.\nstdout:\n${stdout}\nstderr:\n${stderr}`
+        )
+      );
+    });
+  }).catch(async (error: unknown) => {
+    await stopRunnerProcess(child);
+    throw error;
+  });
+
+  return {
+    baseUrl,
+    child,
+    password,
+    stderr: () => stderr,
+    stdout: () => stdout,
+    username
+  };
+}
+
 function assertSignerMatchesFromPubkey(
   value: {
     fromPubkey: string;
@@ -809,6 +943,9 @@ async function main(): Promise<void> {
   let userRunnerStderr = "";
   let reviewerUserRunnerStdout = "";
   let reviewerUserRunnerStderr = "";
+  let attachedFakeOpenCodeServer:
+    | StartedAttachedFakeOpenCodeServer
+    | undefined;
   let runnerExit:
     | {
         code: number | null;
@@ -834,6 +971,49 @@ async function main(): Promise<void> {
     "ENTANGLE_PROCESS_RUNNER_SMOKE_REVIEWER_USER_RUNNER_SECRET";
 
   try {
+    if (useFakeOpenCodeServer) {
+      const fakeServerActionBlock = JSON.stringify({
+        approvalRequestDirectives: [
+          {
+            approvalId: engineApprovalId,
+            approverNodeIds: ["user"],
+            operation: "source_application",
+            reason: "Approve deterministic attached-server source application.",
+            resource: {
+              id: engineSourceChangeId,
+              kind: "source_change_candidate",
+              label: engineSourceChangeId
+            }
+          }
+        ]
+      });
+      attachedFakeOpenCodeServer = await startAttachedFakeOpenCodeServer({
+        content: [
+          "Smoke fake OpenCode attached server completed a deterministic turn.",
+          "```entangle-actions",
+          fakeServerActionBlock,
+          "```"
+        ].join("\n"),
+        permissionId: `permission-${runId}`,
+        writeContent: `export const smokeSourceChange = '${engineSourceChangeId}';\n`,
+        writeFile: "src/smoke-generated.ts"
+      });
+      process.env.ENTANGLE_DEFAULT_AGENT_ENGINE_ID =
+        "opencode-attached-fake-smoke";
+      process.env.ENTANGLE_DEFAULT_AGENT_ENGINE_DISPLAY_NAME =
+        "Smoke Fake OpenCode Server";
+      process.env.ENTANGLE_DEFAULT_AGENT_ENGINE_VERSION =
+        "fake-opencode-1.0.0";
+      process.env.ENTANGLE_DEFAULT_AGENT_ENGINE_BASE_URL =
+        attachedFakeOpenCodeServer.baseUrl;
+      process.env.ENTANGLE_DEFAULT_AGENT_ENGINE_PERMISSION_MODE =
+        "entangle_approval";
+      printPass(
+        "attached-fake-opencode-server",
+        attachedFakeOpenCodeServer.baseUrl
+      );
+    }
+
     const [stateModule, hostModule, controlPlaneModule, hostTransportModule] =
       await Promise.all([
         import("../src/state.js"),
@@ -1112,6 +1292,12 @@ async function main(): Promise<void> {
           ENTANGLE_SMOKE_ENGINE_APPROVAL_ID: engineApprovalId,
           ENTANGLE_SMOKE_ENGINE_SOURCE_CHANGE_ID: engineSourceChangeId,
           PATH: smokePath,
+          ...(attachedFakeOpenCodeServer
+            ? {
+                OPENCODE_SERVER_PASSWORD: attachedFakeOpenCodeServer.password,
+                OPENCODE_SERVER_USERNAME: attachedFakeOpenCodeServer.username
+              }
+            : {}),
           ...(userClientStaticDir
             ? { ENTANGLE_USER_CLIENT_STATIC_DIR: userClientStaticDir }
             : {}),
@@ -1959,6 +2145,115 @@ async function main(): Promise<void> {
       "user-node-intake",
       `session=${userMessageIntake.sessionRecord.sessionId}; conversation=${userMessageIntake.conversationRecord.conversationId}`
     );
+
+    if (attachedFakeOpenCodeServer) {
+      const projectedOpenCodePermissionApproval = await waitFor(
+        "Host projected OpenCode permission approval",
+        async () => {
+          const approvalList = runtimeApprovalListResponseSchema.parse(
+            await hostRequest({
+              baseUrl: hostBaseUrl,
+              path: "/v1/runtimes/builder/approvals"
+            })
+          );
+          const approval = approvalList.approvals.find(
+            (candidate) =>
+              candidate.requestedByNodeId === "builder" &&
+              candidate.sourceMessageId === userMessage.eventId &&
+              candidate.sessionId === userMessage.sessionId &&
+              candidate.reason?.startsWith(
+                "OpenCode requested permission 'bash'"
+              ) &&
+              candidate.status === "pending"
+          );
+
+          if (!approval) {
+            return undefined;
+          }
+
+          const inspection = runtimeApprovalInspectionResponseSchema.parse(
+            await hostRequest({
+              baseUrl: hostBaseUrl,
+              path: `/v1/runtimes/builder/approvals/${approval.approvalId}`
+            })
+          );
+
+          return inspection.approval.status === "pending"
+            ? inspection.approval
+            : undefined;
+        },
+        () => `\nstdout:\n${runnerStdout}\nstderr:\n${runnerStderr}\nfake OpenCode stdout:\n${attachedFakeOpenCodeServer?.stdout() ?? ""}\nfake OpenCode stderr:\n${attachedFakeOpenCodeServer?.stderr() ?? ""}`
+      );
+      printPass(
+        "projected-opencode-permission-approval",
+        `approval=${projectedOpenCodePermissionApproval.approvalId}; status=${projectedOpenCodePermissionApproval.status}`
+      );
+
+      const openCodePermissionApprovalResponse = await fetch(
+        new URL("/api/messages", userClientUrl),
+        {
+          body: JSON.stringify({
+            approval: {
+              approvalId: projectedOpenCodePermissionApproval.approvalId,
+              decision: "approved"
+            },
+            conversationId: userMessage.conversationId,
+            messageType: "approval.response",
+            parentMessageId: userMessage.eventId,
+            responsePolicy: {
+              closeOnResult: false,
+              maxFollowups: 0,
+              responseRequired: false
+            },
+            sessionId: userMessage.sessionId,
+            summary: `Approved ${projectedOpenCodePermissionApproval.approvalId} for fake OpenCode.`,
+            targetNodeId: "builder"
+          }),
+          headers: {
+            "content-type": "application/json"
+          },
+          method: "POST"
+        }
+      );
+      await assertResponseOk(
+        openCodePermissionApprovalResponse,
+        "User Client JSON OpenCode permission approval response"
+      );
+      const openCodePermissionApprovalResponseMessage =
+        userNodeMessagePublishResponseSchema.parse(
+          await openCodePermissionApprovalResponse.json()
+        );
+      assertSignerMatchesFromPubkey(
+        openCodePermissionApprovalResponseMessage,
+        "User Client JSON OpenCode permission approval response"
+      );
+      assertCondition(
+        openCodePermissionApprovalResponseMessage.signerPubkey ===
+          materializedUserContext.identityContext.publicKey,
+        "User Client JSON OpenCode permission approval response must be signed by the assigned User Node identity."
+      );
+
+      const projectedApprovedOpenCodePermissionApproval = await waitFor(
+        "Host projected approved OpenCode permission approval",
+        async () => {
+          const inspection = runtimeApprovalInspectionResponseSchema.parse(
+            await hostRequest({
+              baseUrl: hostBaseUrl,
+              path: `/v1/runtimes/builder/approvals/${projectedOpenCodePermissionApproval.approvalId}`
+            })
+          );
+
+          return inspection.approval.status === "approved"
+            ? inspection.approval
+            : undefined;
+        },
+        () => `\nstdout:\n${runnerStdout}\nstderr:\n${runnerStderr}\nfake OpenCode stdout:\n${attachedFakeOpenCodeServer?.stdout() ?? ""}\nfake OpenCode stderr:\n${attachedFakeOpenCodeServer?.stderr() ?? ""}`
+      );
+      printPass(
+        "user-node-opencode-permission-approval-response",
+        `approval=${projectedApprovedOpenCodePermissionApproval.approvalId}; status=${projectedApprovedOpenCodePermissionApproval.status}`
+      );
+    }
 
     const projectedBuilderTurn = await waitFor(
       "Host projected builder turn read API",
@@ -2998,6 +3293,121 @@ async function main(): Promise<void> {
         materializedUserContext.identityContext.publicKey,
       "User Client JSON continuation publish must be signed by the assigned User Node identity."
     );
+
+    if (attachedFakeOpenCodeServer) {
+      const projectedContinuationOpenCodePermissionApproval = await waitFor(
+        "Host projected continuation OpenCode permission approval",
+        async () => {
+          const approvalList = runtimeApprovalListResponseSchema.parse(
+            await hostRequest({
+              baseUrl: hostBaseUrl,
+              path: "/v1/runtimes/builder/approvals"
+            })
+          );
+          const approval = approvalList.approvals.find(
+            (candidate) =>
+              candidate.requestedByNodeId === "builder" &&
+              candidate.sourceMessageId === continuationMessage.eventId &&
+              candidate.sessionId === userMessage.sessionId &&
+              candidate.reason?.startsWith(
+                "OpenCode requested permission 'bash'"
+              ) &&
+              candidate.status === "pending"
+          );
+
+          if (!approval) {
+            return undefined;
+          }
+
+          const inspection = runtimeApprovalInspectionResponseSchema.parse(
+            await hostRequest({
+              baseUrl: hostBaseUrl,
+              path: `/v1/runtimes/builder/approvals/${approval.approvalId}`
+            })
+          );
+
+          return inspection.approval.status === "pending"
+            ? inspection.approval
+            : undefined;
+        },
+        () => `\nstdout:\n${runnerStdout}\nstderr:\n${runnerStderr}\nfake OpenCode stdout:\n${attachedFakeOpenCodeServer?.stdout() ?? ""}\nfake OpenCode stderr:\n${attachedFakeOpenCodeServer?.stderr() ?? ""}`
+      );
+      printPass(
+        "projected-continuation-opencode-permission-approval",
+        `approval=${projectedContinuationOpenCodePermissionApproval.approvalId}; status=${projectedContinuationOpenCodePermissionApproval.status}`
+      );
+
+      const continuationOpenCodePermissionApprovalResponse = await fetch(
+        new URL("/api/messages", userClientUrl),
+        {
+          body: JSON.stringify({
+            approval: {
+              approvalId:
+                projectedContinuationOpenCodePermissionApproval.approvalId,
+              decision: "approved"
+            },
+            conversationId: userMessage.conversationId,
+            messageType: "approval.response",
+            parentMessageId: continuationMessage.eventId,
+            responsePolicy: {
+              closeOnResult: false,
+              maxFollowups: 0,
+              responseRequired: false
+            },
+            sessionId: userMessage.sessionId,
+            summary: `Approved ${projectedContinuationOpenCodePermissionApproval.approvalId} for fake OpenCode continuation.`,
+            targetNodeId: "builder"
+          }),
+          headers: {
+            "content-type": "application/json"
+          },
+          method: "POST"
+        }
+      );
+      await assertResponseOk(
+        continuationOpenCodePermissionApprovalResponse,
+        "User Client JSON continuation OpenCode permission approval response"
+      );
+      const continuationOpenCodePermissionApprovalResponseMessage =
+        userNodeMessagePublishResponseSchema.parse(
+          await continuationOpenCodePermissionApprovalResponse.json()
+        );
+      assertSignerMatchesFromPubkey(
+        continuationOpenCodePermissionApprovalResponseMessage,
+        "User Client JSON continuation OpenCode permission approval response"
+      );
+      assertCondition(
+        continuationOpenCodePermissionApprovalResponseMessage.signerPubkey ===
+          materializedUserContext.identityContext.publicKey,
+        "User Client JSON continuation OpenCode permission approval response must be signed by the assigned User Node identity."
+      );
+
+      const projectedApprovedContinuationOpenCodePermissionApproval =
+        await waitFor(
+          "Host projected approved continuation OpenCode permission approval",
+          async () => {
+            const inspection = runtimeApprovalInspectionResponseSchema.parse(
+              await hostRequest({
+                baseUrl: hostBaseUrl,
+                path: `/v1/runtimes/builder/approvals/${projectedContinuationOpenCodePermissionApproval.approvalId}`
+              })
+            );
+
+            return inspection.approval.status === "approved"
+              ? inspection.approval
+              : undefined;
+          },
+          () => `\nstdout:\n${runnerStdout}\nstderr:\n${runnerStderr}\nfake OpenCode stdout:\n${attachedFakeOpenCodeServer?.stdout() ?? ""}\nfake OpenCode stderr:\n${attachedFakeOpenCodeServer?.stderr() ?? ""}`
+        );
+      printPass(
+        "user-node-continuation-opencode-permission-approval-response",
+        `approval=${projectedApprovedContinuationOpenCodePermissionApproval.approvalId}; status=${projectedApprovedContinuationOpenCodePermissionApproval.status}`
+      );
+    }
+
+    const expectedContinuedEngineSessionId = attachedFakeOpenCodeServer
+      ? "opencode-smoke-session"
+      : "opencode-smoke-session-continued";
     const projectedContinuedEngineTurn = await waitFor(
       "Host projected OpenCode continued engine turn",
       async () => {
@@ -3012,7 +3422,7 @@ async function main(): Promise<void> {
             candidate.messageId === continuationMessage.eventId &&
             candidate.sessionId === userMessage.sessionId &&
             candidate.engineOutcome?.engineSessionId ===
-              "opencode-smoke-session-continued"
+              expectedContinuedEngineSessionId
         );
 
         if (!turn) {
@@ -3027,7 +3437,7 @@ async function main(): Promise<void> {
         );
 
         return inspection.turn.engineOutcome?.engineSessionId ===
-          "opencode-smoke-session-continued"
+          expectedContinuedEngineSessionId
           ? inspection.turn
           : undefined;
       },
@@ -4456,6 +4866,7 @@ async function main(): Promise<void> {
     await stopRunnerProcess(runnerProcess);
     await stopRunnerProcess(userRunnerProcess);
     await stopRunnerProcess(reviewerUserRunnerProcess);
+    await stopRunnerProcess(attachedFakeOpenCodeServer?.child);
     await server?.close();
     await controlPlane?.close();
 
@@ -4469,6 +4880,11 @@ async function main(): Promise<void> {
     delete process.env.ENTANGLE_DEFAULT_RELAY_WRITE_URL;
     delete process.env.ENTANGLE_DEFAULT_GIT_TRANSPORT;
     delete process.env.ENTANGLE_DEFAULT_GIT_REMOTE_BASE;
+    delete process.env.ENTANGLE_DEFAULT_AGENT_ENGINE_ID;
+    delete process.env.ENTANGLE_DEFAULT_AGENT_ENGINE_DISPLAY_NAME;
+    delete process.env.ENTANGLE_DEFAULT_AGENT_ENGINE_VERSION;
+    delete process.env.ENTANGLE_DEFAULT_AGENT_ENGINE_BASE_URL;
+    delete process.env.ENTANGLE_DEFAULT_AGENT_ENGINE_PERMISSION_MODE;
 
     if (!keepTemp) {
       await rm(tempRoot, { force: true, recursive: true });

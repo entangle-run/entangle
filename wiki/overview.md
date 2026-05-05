@@ -137,6 +137,11 @@ The most accurate current description is:
   harness end to end, including Basic-authenticated health, session creation,
   SSE permission delivery, permission reply, deterministic assistant output,
   optional workspace mutation through `x-opencode-directory`, and idle status;
+- `pnpm ops:smoke-federated-process-runner -- --use-fake-opencode-server` now
+  proves the attached `opencode_server` profile path through the real joined
+  runner, including User Node-signed OpenCode permission approvals, source
+  workspace mutation, and attached-server session continuity without live model
+  credentials;
 - CLI can now upsert active catalog agent engine profiles with
   `host catalog agent-engine upsert`, so operators can configure an attached
   OpenCode or fake OpenCode profile, make it default, and assign it to graph

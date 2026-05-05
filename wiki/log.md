@@ -5598,3 +5598,19 @@ The fake-server smoke verifies that workspace mutation, and the runner
 attached-server adapter test now verifies permission bridging, Entangle action
 block parsing, and source workspace mutation through the real fake-server
 process.
+
+## [2026-05-05] verification | Added attached fake OpenCode process smoke
+
+Added `references/471-process-smoke-attached-fake-opencode-slice.md`.
+`pnpm ops:smoke-federated-process-runner` now accepts
+`--use-fake-opencode-server`, starts the deterministic fake OpenCode HTTP/SSE
+server on an ephemeral port, configures it as Host's default
+`opencode_server` profile, and passes Basic auth credentials to the joined
+agent runner.
+
+The smoke now proves the real attached-server path without model credentials:
+OpenCode `permission.asked` events become Host-projected approvals, the running
+User Client signs approval responses as the assigned User Node, the fake server
+writes into the runner-owned source workspace after approval, and the same
+attached OpenCode session id is reused on a continuation turn. The default
+fast smoke still uses the temporary fake executable.

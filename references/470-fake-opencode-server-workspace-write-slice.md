@@ -58,5 +58,6 @@ affects the deterministic fake OpenCode test server.
 
 ## Open Questions
 
-The next process-smoke hardening step is to let the federated process runner
-smoke run an optional attached fake OpenCode server profile end to end.
+The federated process-runner smoke now has an optional attached fake OpenCode
+server profile mode. Remaining validation is live OpenCode/provider behavior
+with real model credentials.

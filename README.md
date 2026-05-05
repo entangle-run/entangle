@@ -148,6 +148,19 @@ second User Node task and Host-projected engine outcome; the OpenAI-compatible
 agent-engine HTTP boundary is now covered by a deterministic local provider
 fixture.
 
+For stronger no-credential coverage of the attached OpenCode server path, run
+the same smoke with the fake attached server profile:
+
+```bash
+pnpm ops:smoke-federated-process-runner -- --relay-url ws://localhost:7777 --timeout-ms 60000 --use-fake-opencode-server
+```
+
+That mode starts the deterministic fake OpenCode HTTP/SSE server, configures it
+as the builder node's default `opencode_server` profile, approves OpenCode
+permission requests through the running User Client as the assigned User Node,
+verifies source workspace mutation, and proves attached-server session
+continuity without live model credentials.
+
 For manual no-credential provider plumbing tests, start the deterministic
 OpenAI-compatible development server:
 

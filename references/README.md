@@ -163,7 +163,11 @@ plumbing checks, and `pnpm ops:smoke-fake-opencode-server` verifies that
 server's health, session, SSE permission, permission reply, completion, and
 idle flow end to end. The runner OpenCode adapter tests also start that fake
 server as a child process and execute an attached-server turn over real
-HTTP/SSE traffic. CLI can now upsert active catalog agent engine profiles with
+HTTP/SSE traffic. The federated process-runner smoke can also run with
+`--use-fake-opencode-server` to prove an attached `opencode_server` profile,
+User Node-signed permission approvals, workspace mutation, and session
+continuity without live model credentials. CLI can now upsert active catalog
+agent engine profiles with
 `host catalog agent-engine upsert`, so an attached OpenCode profile can be
 created, made default, and assigned to a graph node without manual catalog JSON
 editing. Focused `host catalog agent-engine list|get` commands now inspect the
@@ -757,6 +761,7 @@ files are the active federated redesign pack.
 469. [468-studio-agent-engine-profile-editor-slice.md](468-studio-agent-engine-profile-editor-slice.md)
 470. [469-host-agent-engine-profile-upsert-api-slice.md](469-host-agent-engine-profile-upsert-api-slice.md)
 471. [470-fake-opencode-server-workspace-write-slice.md](470-fake-opencode-server-workspace-write-slice.md)
+472. [471-process-smoke-attached-fake-opencode-slice.md](471-process-smoke-attached-fake-opencode-slice.md)
 
 ## Role of this corpus
 

@@ -271,6 +271,7 @@ same-machine slice records.
 - [468-studio-agent-engine-profile-editor-slice.md](468-studio-agent-engine-profile-editor-slice.md)
 - [469-host-agent-engine-profile-upsert-api-slice.md](469-host-agent-engine-profile-upsert-api-slice.md)
 - [470-fake-opencode-server-workspace-write-slice.md](470-fake-opencode-server-workspace-write-slice.md)
+- [471-process-smoke-attached-fake-opencode-slice.md](471-process-smoke-attached-fake-opencode-slice.md)
 
 ## Audited Scope
 
@@ -406,6 +407,12 @@ The repository is not fully federated:
   the OpenCode workspace declared by `x-opencode-directory`, and the attached
   server adapter test verifies permission bridging, action-block parsing, and
   workspace mutation through that real fake-server process;
+- `pnpm ops:smoke-federated-process-runner` can now run with
+  `--use-fake-opencode-server` to start that deterministic fake attached
+  OpenCode server, configure it as the default `opencode_server` profile,
+  approve real OpenCode permission requests through the running User Client as
+  the assigned User Node, verify workspace mutation, and prove attached-server
+  session continuity without live model credentials;
 - CLI can now upsert active catalog agent engine profiles through
   `host catalog agent-engine upsert`, including attached OpenCode base URLs,
   permission mode, state scope, default-agent notes, default-profile selection,

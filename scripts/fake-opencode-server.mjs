@@ -148,6 +148,8 @@ async function handleRequest(input) {
       const sessionId = decodeURIComponent(promptMatch[1]);
       const session = getOrCreateSession(sessionId);
       const body = parseJsonObject(await readIncomingBody(input.request));
+      session.completed = false;
+      session.permissionAsked = false;
       session.promptBody = body;
       session.workspace = readWorkspaceHeader(input.request) ?? session.workspace;
       requests.push({
