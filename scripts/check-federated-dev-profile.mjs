@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 
-import { existsSync } from "node:fs";
+import { existsSync, readFileSync } from "node:fs";
 import path from "node:path";
 import { spawnSync } from "node:child_process";
 import { fileURLToPath } from "node:url";
@@ -55,6 +55,38 @@ for (const requiredPath of requiredFederatedDevProfilePaths) {
       ? "found"
       : "missing required federated dev profile file"
   );
+}
+
+function composeVolumeHasExplicitName(composeText, volumeName) {
+  const escapedVolumeName = volumeName.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+  const pattern = new RegExp(
+    `\\n  ${escapedVolumeName}:\\n(?:    [^\\n]*\\n)*    name: ${escapedVolumeName}(?:\\n|$)`,
+    "u"
+  );
+
+  return pattern.test(`\n${composeText}`);
+}
+
+if (existsSync(path.join(repositoryRoot, federatedDevProfileComposeFile))) {
+  const composeText = readFileSync(
+    path.join(repositoryRoot, federatedDevProfileComposeFile),
+    "utf8"
+  );
+
+  for (const volumeName of [
+    "entangle-host-state",
+    "entangle-secret-state",
+    "gitea-data",
+    "strfry-data"
+  ]) {
+    addCheck(
+      `compose-volume:${volumeName}`,
+      composeVolumeHasExplicitName(composeText, volumeName) ? "pass" : "fail",
+      composeVolumeHasExplicitName(composeText, volumeName)
+        ? "explicit name"
+        : "missing explicit Compose volume name"
+    );
+  }
 }
 
 const nodeMajor = Number.parseInt(process.versions.node.split(".")[0] ?? "0", 10);

@@ -259,6 +259,16 @@ describe("deployment doctor command helpers", () => {
         expect.objectContaining({
           category: "state",
           status: "pass",
+          summary: "Gitea data volume"
+        }),
+        expect.objectContaining({
+          category: "state",
+          status: "pass",
+          summary: "strfry data volume"
+        }),
+        expect.objectContaining({
+          category: "state",
+          status: "pass",
           summary: "Entangle state layout"
         }),
         expect.objectContaining({
@@ -300,10 +310,66 @@ describe("deployment doctor command helpers", () => {
     expect(
       defaultReport.checks.find((check) => check.summary === "Docker CLI")?.status
     ).toBe("warn");
+    expect(
+      defaultReport.checks.find((check) => check.summary === "Gitea data volume")
+    ).toBeUndefined();
     expect(strictReport.status).toBe("fail");
     expect(
       strictReport.checks.find((check) => check.summary === "Docker CLI")?.status
     ).toBe("fail");
+  });
+
+  it("warns when legacy Compose-prefixed external service volumes are present", async () => {
+    const report = await buildDeploymentDoctorReport(
+      {
+        repositoryRoot: "/repo",
+        skipLive: true
+      },
+      {
+        ...createPassingDeps(),
+        commandRunner: (command, args) => {
+          if (
+            command === "docker" &&
+            args[0] === "volume" &&
+            args[1] === "inspect"
+          ) {
+            return {
+              status:
+                args[2] === "compose_gitea-data" ||
+                args[2] === "entangle-secret-state"
+                  ? 0
+                  : 1,
+              stdout: args[2] === "entangle-secret-state" ? "found\n" : "",
+              stderr:
+                args[2] === "gitea-data" || args[2] === "strfry-data"
+                  ? "not found\n"
+                  : ""
+            };
+          }
+
+          return {
+            status: 0,
+            stdout: `${command} ok\n`,
+            stderr: ""
+          };
+        }
+      }
+    );
+
+    expect(report.status).toBe("warn");
+    expect(
+      report.checks.find((check) => check.summary === "Gitea data volume")
+    ).toMatchObject({
+      detail:
+        "legacy Compose-prefixed volume compose_gitea-data exists; expected gitea-data",
+      status: "warn"
+    });
+    expect(
+      report.checks.find((check) => check.summary === "strfry data volume")
+    ).toMatchObject({
+      detail: "volume strfry-data not found",
+      status: "warn"
+    });
   });
 
   it("renders human-readable output with remediation lines", async () => {

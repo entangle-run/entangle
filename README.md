@@ -1038,7 +1038,9 @@ This repository currently contains:
   `.entangle/host`, selected same-machine profile config snapshots, explicit secret
   exclusion, machine-readable external volume inventory for Gitea, strfry, and
   Host secret state, `externalVolumeCount` summary output, and restore-time
-  state-layout compatibility checks;
+  state-layout compatibility checks; the federated dev Compose profile now
+  gives those service volumes stable explicit names and doctor warns when older
+  Compose-prefixed service volumes are present;
 - a first conservative same-machine repair command through `entangle deployment repair`,
   defaulting to dry-run previews and applying only safe host-state
   initialization, missing layout-marker, or missing standard host-state
@@ -1473,7 +1475,8 @@ This repository currently contains:
   the runner image, OpenCode availability on the host and inside the runner
   image, bundled User Client assets inside the runner image, `.entangle/host`,
   Entangle state layout compatibility, host status, host-reported state layout
-  status, runtime workspace health, git principals, Studio, Gitea, and the local
+  status, stable external service volumes, runtime workspace health, git
+  principals, Studio, Gitea, and the local
   relay, with human-readable and JSON output plus strict/offline modes, while
   `entangle deployment diagnostics` writes a redacted JSON support bundle
   containing doctor output, bounded Compose status/logs, runner-image

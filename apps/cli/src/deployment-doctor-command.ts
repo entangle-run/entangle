@@ -68,6 +68,23 @@ export interface DeploymentDoctorDeps {
 
 const federatedDevProfileComposeFile = "deploy/federated-dev/compose/docker-compose.federated-dev.yml";
 
+const externalServiceVolumes = [
+  {
+    legacyVolume: "compose_gitea-data",
+    summary: "Gitea data volume",
+    volume: "gitea-data"
+  },
+  {
+    legacyVolume: "compose_strfry-data",
+    summary: "strfry data volume",
+    volume: "strfry-data"
+  },
+  {
+    summary: "Host secret state volume",
+    volume: "entangle-secret-state"
+  }
+] as const;
+
 const requiredFederatedDevProfilePaths = [
   federatedDevProfileComposeFile,
   "deploy/federated-dev/config/nginx.studio.conf",
@@ -272,6 +289,64 @@ function checkCommand(input: {
     summary: input.summary
   });
   return false;
+}
+
+function dockerVolumeExists(input: {
+  deps: Required<Pick<DeploymentDoctorDeps, "commandRunner">>;
+  options: DeploymentDoctorOptions;
+  volume: string;
+}): boolean {
+  const result = runCommand(input.deps, input.options, "docker", [
+    "volume",
+    "inspect",
+    input.volume
+  ]);
+
+  return result.status === 0;
+}
+
+function addExternalServiceVolumeChecks(input: {
+  checks: DeploymentDoctorCheck[];
+  deps: Required<Pick<DeploymentDoctorDeps, "commandRunner">>;
+  options: DeploymentDoctorOptions;
+}): void {
+  for (const volume of externalServiceVolumes) {
+    if (
+      dockerVolumeExists({
+        deps: input.deps,
+        options: input.options,
+        volume: volume.volume
+      })
+    ) {
+      addCheck(input.checks, {
+        category: "state",
+        detail: `found ${volume.volume}`,
+        status: "pass",
+        summary: volume.summary
+      });
+      continue;
+    }
+
+    const legacyVolumeFound =
+      "legacyVolume" in volume &&
+      dockerVolumeExists({
+        deps: input.deps,
+        options: input.options,
+        volume: volume.legacyVolume
+      });
+
+    addCheck(input.checks, {
+      category: "state",
+      detail: legacyVolumeFound
+        ? `legacy Compose-prefixed volume ${volume.legacyVolume} exists; expected ${volume.volume}`
+        : `volume ${volume.volume} not found`,
+      remediation: legacyVolumeFound
+        ? `Copy ${volume.legacyVolume} into ${volume.volume} before treating this profile as non-disposable.`
+        : `Start the Federated dev profile once to create ${volume.volume}, or restore it from a service-level backup.`,
+      status: "warn",
+      summary: volume.summary
+    });
+  }
 }
 
 function sanitizeRuntimePath(
@@ -794,6 +869,12 @@ export async function buildDeploymentDoctorReport(
         summary: "Federated dev Compose config"
       });
     }
+
+    addExternalServiceVolumeChecks({
+      checks,
+      deps: commandDeps,
+      options
+    });
   }
 
   checkCommand({

@@ -880,6 +880,7 @@ files are the active federated redesign pack.
 537. [536-deployment-backup-external-volume-summary-slice.md](536-deployment-backup-external-volume-summary-slice.md)
 538. [537-bootstrap-operator-config-validation-slice.md](537-bootstrap-operator-config-validation-slice.md)
 539. [538-root-test-gate-package-level-slice.md](538-root-test-gate-package-level-slice.md)
+540. [539-federated-dev-explicit-service-volumes-slice.md](539-federated-dev-explicit-service-volumes-slice.md)
 
 ## Role of this corpus
 

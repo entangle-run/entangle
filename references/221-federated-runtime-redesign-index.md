@@ -339,6 +339,7 @@ same-machine slice records.
 - [536-deployment-backup-external-volume-summary-slice.md](536-deployment-backup-external-volume-summary-slice.md)
 - [537-bootstrap-operator-config-validation-slice.md](537-bootstrap-operator-config-validation-slice.md)
 - [538-root-test-gate-package-level-slice.md](538-root-test-gate-package-level-slice.md)
+- [539-federated-dev-explicit-service-volumes-slice.md](539-federated-dev-explicit-service-volumes-slice.md)
 
 ## Audited Scope
 

@@ -108,6 +108,11 @@ and external service state such as Docker volumes, Gitea internals, and relay
 data. The manifest also records the known excluded external volumes:
 `gitea:gitea-data->/data`, `strfry:strfry-data->/app/strfry-db`, and
 `host:entangle-secret-state->/entangle-secrets`.
+These service volumes have explicit Compose names so backup inventory and
+doctor output refer to stable names rather than project-prefixed volume names.
+If an older profile still has `compose_gitea-data` or `compose_strfry-data`,
+copy that service data into `gitea-data` or `strfry-data` before treating the
+profile as non-disposable.
 
 Validate a restore without changing Entangle state:
 
@@ -405,13 +410,16 @@ you want that client to use.
 
 ## Runtime State
 
-The Compose profile keeps host state and secret state in Docker volumes:
+The Compose profile keeps host, secret, git-service, and relay state in
+explicitly named container volumes:
 
 - `entangle-host-state`
 - `entangle-secret-state`
+- `gitea-data`
+- `strfry-data`
 
-Those volumes have explicit Compose names so Host state survives profile
-restarts. Managed runner containers created by `entangle-host` in join mode
+Those volumes have explicit Compose names so service state survives profile
+restarts with stable names. Managed runner containers created by `entangle-host` in join mode
 receive inline `ENTANGLE_RUNNER_JOIN_CONFIG_JSON` and retrieve their assignment
 bundle through Host API; they do not mount Host state or secret volumes just to
 read `runner-join.json`. Join mode is also the Docker launcher default. Direct

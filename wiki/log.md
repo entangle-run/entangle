@@ -1,5 +1,24 @@
 # Entangle Wiki Log
 
+## [2026-05-05] deploy | Stabilized federated dev service volume names
+
+Added `references/539-federated-dev-explicit-service-volumes-slice.md`.
+The federated dev Compose profile now gives Gitea and strfry data volumes
+stable explicit names matching the deployment backup inventory.
+
+The preflight checks those names statically, and `entangle deployment doctor`
+now reports the expected external service volumes while warning when legacy
+Compose-prefixed Gitea or strfry volumes are present.
+
+Targeted checks passed:
+
+- `node --check scripts/check-federated-dev-profile.mjs`
+- `pnpm ops:check-federated-dev`
+- `pnpm ops:check-federated-dev:strict`
+- `pnpm --filter @entangle/cli test -- src/deployment-doctor-command.test.ts`
+- `pnpm --filter @entangle/cli typecheck`
+- `pnpm --filter @entangle/cli lint`
+
 ## [2026-05-05] tooling | Replaced root aggregate test gate
 
 Added `references/538-root-test-gate-package-level-slice.md`.

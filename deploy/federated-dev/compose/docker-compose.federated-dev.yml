@@ -86,7 +86,9 @@ volumes:
   entangle-secret-state:
     name: entangle-secret-state
   gitea-data:
+    name: gitea-data
   strfry-data:
+    name: strfry-data
 
 networks:
   entangle:
