@@ -776,6 +776,10 @@ The repository now also contains the first real implementation baseline:
   peer/status/response-policy/follow-up/artifact metadata from the runner-owned
   session snapshot, giving future turns deterministic coordination context for
   delegated sessions;
+- an owner-aware session-memory refinement where the bounded synthesis prompt
+  and durable `working-context.md` page now record session owner,
+  originating-node, entrypoint-node, last-message, and active-route metadata so
+  delegated sessions resume with explicit topology context;
 - a memory-synthesis observability refinement where optional synthesis now
   persists a canonical bounded outcome on `RunnerTurnRecord` and that same
   outcome now surfaces through host-owned runner activity and runtime-trace
@@ -1278,8 +1282,9 @@ The current implementation-truth audit now lives in
 - complete CLI parity where it adds real headless operational value;
 - continue narrowing the remaining delegated-session gaps now that controlled
   autonomous `task.handoff` emission and runner-local active-conversation
-  reconciliation plus host-derived conversation lifecycle diagnostics and
-  consistency findings are implemented;
+  reconciliation plus host-derived conversation lifecycle diagnostics,
+  consistency findings, and first owner-aware memory projection are
+  implemented;
 - deepen the bootstrap host operator-token boundary, multi-token request audit,
   status reporting, server-filterable event inspection, route-level bootstrap
   permissions, coarse read-only `viewer` enforcement, and Host event hash-chain

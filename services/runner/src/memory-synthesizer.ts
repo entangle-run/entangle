@@ -2022,6 +2022,10 @@ function renderSessionContextLines(
     return ["- No current session snapshot was available during synthesis."];
   }
 
+  const entrypointNode = sessionSnapshot.session.entrypointNodeId ?? "unknown";
+  const originatingNode =
+    sessionSnapshot.session.originatingNodeId ?? "unknown";
+  const lastMessageType = sessionSnapshot.session.lastMessageType ?? "unknown";
   const approvalStatusCounts = sessionSnapshot.approvals.reduce(
     (counts, approval) => {
       counts.set(approval.status, (counts.get(approval.status) ?? 0) + 1);
@@ -2039,6 +2043,10 @@ function renderSessionContextLines(
 
   return [
     `- Session status: \`${sessionSnapshot.session.status}\``,
+    `- Owner node: \`${sessionSnapshot.session.ownerNodeId}\``,
+    `- Originating node: \`${originatingNode}\``,
+    `- Entrypoint node: \`${entrypointNode}\``,
+    `- Last message type: \`${lastMessageType}\``,
     `- Active conversations: ${sessionSnapshot.session.activeConversationIds.length}`,
     `- Waiting approvals: ${sessionSnapshot.counts.waitingApprovalCount}`,
     `- Recorded approvals: ${sessionSnapshot.counts.approvalCount}`,
@@ -2096,6 +2104,9 @@ function renderConversationContextLines(
       ? sessionSnapshot.conversations
           .slice(0, maxSynthesisConversations)
           .map((conversation) => {
+            const active = sessionSnapshot.session.activeConversationIds.includes(
+              conversation.conversationId
+            );
             const lastMessageType = conversation.lastMessageType
               ? ` lastType=\`${conversation.lastMessageType}\``
               : "";
@@ -2103,6 +2114,7 @@ function renderConversationContextLines(
             return (
               `- \`${conversation.conversationId}\` peer=\`${conversation.peerNodeId}\` ` +
               `status=\`${conversation.status}\` initiator=\`${conversation.initiator}\` ` +
+              `active=${active} ` +
               `followups=${conversation.followupCount} ` +
               `responseRequired=${conversation.responsePolicy.responseRequired} ` +
               `closeOnResult=${conversation.responsePolicy.closeOnResult} ` +

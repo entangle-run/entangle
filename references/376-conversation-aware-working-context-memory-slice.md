@@ -62,6 +62,8 @@ future memory-synthesis pass.
 
 ## Open Questions
 
-- Should future session snapshots distinguish currently open delegated
-  conversations from historical closed conversations in a separate bounded
-  field?
+- `494-owner-aware-session-memory-slice.md` adds an explicit active/inactive
+  route flag plus owner/origin/entrypoint session topology to the bounded
+  prompt and working-context page. A future slice may still add a higher-level
+  relation enum once the product model decides how to label user-originated
+  work versus peer delegation in operator and participant surfaces.

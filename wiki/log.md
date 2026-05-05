@@ -1,5 +1,15 @@
 # Entangle Wiki Log
 
+## [2026-05-05] runner | Added owner-aware session memory
+
+Added `references/494-owner-aware-session-memory-slice.md`. Runner session
+snapshots now preserve `originatingNodeId` and render owner, origin,
+entrypoint, last-message, and active-route metadata into both the bounded
+model-guided memory prompt and deterministic `working-context.md`.
+
+This gives delegated sessions a stronger durable continuation basis without
+moving session mutation authority out of the runner.
+
 ## [2026-05-05] verification | Stabilized Host test pool
 
 Added `references/486-host-test-pool-stability-slice.md`. Host package tests

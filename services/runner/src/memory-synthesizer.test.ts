@@ -37,7 +37,9 @@ async function seedCurrentSessionState(input: {
     entrypointNodeId: "lead-it",
     graphId: "graph-alpha",
     intent: "Review the relay recovery follow-up.",
+    lastMessageType: "task.request",
     openedAt: "2026-04-24T11:00:00.000Z",
+    originatingNodeId: "lead-it",
     ownerNodeId: "worker-it",
     rootArtifactIds: ["artifact-output"],
     sessionId: "session-alpha",
@@ -660,6 +662,18 @@ describe("model-guided memory synthesis", () => {
       "Session status: `active`"
     );
     expect(capturedRequest?.interactionPromptParts.join("\n")).toContain(
+      "Session owner node: `worker-it`"
+    );
+    expect(capturedRequest?.interactionPromptParts.join("\n")).toContain(
+      "Session originating node: `lead-it`"
+    );
+    expect(capturedRequest?.interactionPromptParts.join("\n")).toContain(
+      "Session entrypoint node: `lead-it`"
+    );
+    expect(capturedRequest?.interactionPromptParts.join("\n")).toContain(
+      "Last message type: `task.request`"
+    );
+    expect(capturedRequest?.interactionPromptParts.join("\n")).toContain(
       "approval-memory [pending] requestedBy=worker-it approvers=1 conversation=conv-alpha"
     );
     expect(capturedRequest?.interactionPromptParts.join("\n")).toContain(
@@ -751,6 +765,10 @@ describe("model-guided memory synthesis", () => {
     );
     expect(workingContextPage).toContain("## Session Context");
     expect(workingContextPage).toContain("- Session status: `active`");
+    expect(workingContextPage).toContain("- Owner node: `worker-it`");
+    expect(workingContextPage).toContain("- Originating node: `lead-it`");
+    expect(workingContextPage).toContain("- Entrypoint node: `lead-it`");
+    expect(workingContextPage).toContain("- Last message type: `task.request`");
     expect(workingContextPage).toContain("- Active conversations: 1");
     expect(workingContextPage).toContain("- Waiting approvals: 1");
     expect(workingContextPage).toContain("- Recorded approvals: 1");
@@ -768,7 +786,7 @@ describe("model-guided memory synthesis", () => {
       "- Active conversation ids: `conv-alpha`"
     );
     expect(workingContextPage).toContain(
-      "`conv-alpha` peer=`reviewer-it` status=`working` initiator=`self` followups=1 responseRequired=true closeOnResult=true maxFollowups=1 artifacts=1"
+      "`conv-alpha` peer=`reviewer-it` status=`working` initiator=`self` active=true followups=1 responseRequired=true closeOnResult=true maxFollowups=1 artifacts=1"
     );
     expect(workingContextPage).toContain("### Durable Session Insights");
     expect(workingContextPage).toContain(

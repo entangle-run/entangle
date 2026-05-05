@@ -74,8 +74,9 @@ The next delegated-session runtime steps should be explicit, not implicit:
 
 - operator-visible repair commands for lifecycle mismatches that require human
   confirmation or lack last-message context;
-- cross-runtime owner-level synthesis that distinguishes upstream session
-  ownership from downstream delegated work;
+- deeper cross-runtime owner-level synthesis beyond the first
+  `494-owner-aware-session-memory-slice.md` projection, especially if Entangle
+  adds a formal relation enum for user-originated work versus peer delegation;
 - host event emission that makes runner-owned repair activity observable
   without moving mutation authority into the host.
 

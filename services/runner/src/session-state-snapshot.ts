@@ -79,6 +79,7 @@ export type RunnerSessionSummary = {
   entrypointNodeId?: string;
   intent: string;
   lastMessageType?: SessionRecord["lastMessageType"];
+  originatingNodeId?: string;
   ownerNodeId: string;
   rootArtifactIds: string[];
   sessionId: string;
@@ -321,6 +322,11 @@ export async function buildRunnerSessionStateSnapshot(input: {
             lastMessageType: sessionRecord.lastMessageType
           }
         : {}),
+      ...(sessionRecord.originatingNodeId
+        ? {
+            originatingNodeId: sessionRecord.originatingNodeId
+          }
+        : {}),
       ownerNodeId: sessionRecord.ownerNodeId,
       rootArtifactIds: sessionRecord.rootArtifactIds,
       sessionId: sessionRecord.sessionId,
@@ -334,13 +340,21 @@ export async function buildRunnerSessionStateSnapshot(input: {
 export function renderRunnerSessionStateSnapshotForPrompt(
   snapshot: RunnerSessionStateSnapshot
 ): string {
+  const entrypointNode = snapshot.session.entrypointNodeId ?? "unknown";
+  const originatingNode = snapshot.session.originatingNodeId ?? "unknown";
+  const lastMessageType = snapshot.session.lastMessageType ?? "unknown";
   const conversationLines =
     snapshot.conversations.length > 0
-      ? snapshot.conversations.map(
-          (conversation) =>
+      ? snapshot.conversations.map((conversation) => {
+          const active = snapshot.session.activeConversationIds.includes(
+            conversation.conversationId
+          );
+
+          return (
             `  - ${conversation.conversationId} with ${conversation.peerNodeId} [` +
-            `${conversation.status}] followups=${conversation.followupCount}`
-        )
+            `${conversation.status}] active=${active} followups=${conversation.followupCount}`
+          );
+        })
       : ["  - none"];
   const recentTurnLines =
     snapshot.recentTurns.length > 0
@@ -391,6 +405,10 @@ export function renderRunnerSessionStateSnapshotForPrompt(
     "Current session snapshot:",
     `- Session status: \`${snapshot.session.status}\``,
     `- Session intent: ${snapshot.session.intent}`,
+    `- Session owner node: \`${snapshot.session.ownerNodeId}\``,
+    `- Session originating node: \`${originatingNode}\``,
+    `- Session entrypoint node: \`${entrypointNode}\``,
+    `- Last message type: \`${lastMessageType}\``,
     `- Active conversations: ${snapshot.counts.activeConversationCount}`,
     `- Waiting approvals: ${snapshot.counts.waitingApprovalCount}`,
     `- Recorded approvals: ${snapshot.counts.approvalCount}`,

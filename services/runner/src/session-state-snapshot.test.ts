@@ -31,6 +31,7 @@ async function seedSessionState(runtimeRoot: string): Promise<void> {
     intent: "Review the relay recovery follow-up.",
     lastMessageType: "task.update",
     openedAt: "2026-04-24T11:00:00.000Z",
+    originatingNodeId: "lead-it",
     ownerNodeId: "worker-it",
     rootArtifactIds: ["artifact-session-root"],
     sessionId: "session-alpha",
@@ -305,10 +306,20 @@ describe("session state snapshot", () => {
       "artifact-output",
       "artifact-session-root"
     ]);
+    expect(snapshot.session).toMatchObject({
+      entrypointNodeId: "lead-it",
+      lastMessageType: "task.update",
+      originatingNodeId: "lead-it",
+      ownerNodeId: "worker-it"
+    });
 
     const rendered = renderRunnerSessionStateSnapshotForPrompt(snapshot);
     expect(rendered).toContain("Current session snapshot:");
     expect(rendered).toContain("Session status: `active`");
+    expect(rendered).toContain("Session owner node: `worker-it`");
+    expect(rendered).toContain("Session originating node: `lead-it`");
+    expect(rendered).toContain("Session entrypoint node: `lead-it`");
+    expect(rendered).toContain("Last message type: `task.update`");
     expect(rendered).toContain("Active conversations: 2");
     expect(rendered).toContain("Waiting approvals: 1");
     expect(rendered).toContain("Recorded approvals: 2");
@@ -316,7 +327,9 @@ describe("session state snapshot", () => {
       "approval-1 [pending] requestedBy=worker-it approvers=1 conversation=conv-alpha"
     );
     expect(rendered).toContain("Conversations observed: 2");
-    expect(rendered).toContain("conv-alpha with lead-it [acknowledged] followups=2");
+    expect(rendered).toContain(
+      "conv-alpha with lead-it [acknowledged] active=true followups=2"
+    );
     expect(rendered).toContain(
       "turn-newer [persisting/message] outcome=completed produced=1 consumed=1"
     );

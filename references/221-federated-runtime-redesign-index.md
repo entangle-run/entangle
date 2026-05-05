@@ -294,6 +294,7 @@ same-machine slice records.
 - [491-host-event-integrity-inspection-slice.md](491-host-event-integrity-inspection-slice.md)
 - [492-studio-host-event-integrity-slice.md](492-studio-host-event-integrity-slice.md)
 - [493-signed-host-event-integrity-report-slice.md](493-signed-host-event-integrity-report-slice.md)
+- [494-owner-aware-session-memory-slice.md](494-owner-aware-session-memory-slice.md)
 
 ## Audited Scope
 
@@ -1052,10 +1053,14 @@ summary for operator visibility. Host can also export the same integrity result
 as a Host Authority-signed report through `GET /v1/events/integrity/signed`
 and `entangle host events integrity --signed`. This is tamper evidence and
 signed provenance for the Host trace, not final production retention or durable
-operator identity.
+operator identity. Runner-owned session memory now also carries owner,
+originating-node, entrypoint-node, last-message, and active-route metadata in
+both the model-guided memory prompt and deterministic working-context wiki
+page, giving delegated sessions a stronger owner-aware continuation basis.
 The highest-value remaining implementation areas are richer
 model-guided memory maintenance, deeper delegated-session semantics beyond the
-current controlled handoff path, collaborative wiki merge UI and multi-page
+current controlled handoff path and first owner-aware memory projection,
+collaborative wiki merge UI and multi-page
 patch-set semantics on top of the participant-scoped page upsert command,
 repository lifecycle and replicated/fallback artifact behavior,
 infrastructure-backed multi-machine proof execution, non-disposable upgrade

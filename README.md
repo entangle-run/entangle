@@ -1137,6 +1137,10 @@ This repository currently contains:
   peer, lifecycle, response-policy, follow-up, artifact-count, and last-message
   metadata, so delegated sessions can resume from typed coordination context
   instead of model prose alone;
+- an owner-aware session-memory refinement where bounded synthesis prompts and
+  the durable `working-context.md` page now carry session owner,
+  originating-node, entrypoint-node, last-message, and active-route metadata so
+  each node can resume delegated work with explicit topology context;
 - a memory-synthesis observability refinement where optional synthesis now
   persists a canonical bounded outcome on `RunnerTurnRecord` and that same
   outcome now surfaces through host-owned runner activity and runtime-trace
@@ -1451,12 +1455,12 @@ The highest-value remaining gaps are:
 
 - richer model-guided memory maintenance on top of the now stronger
   session-aware, artifact-aware/artifact-carrying, engine-outcome-aware,
-  execution-insight-carrying, and source-change-aware bounded runtime
-  inspection surface;
+  execution-insight-carrying, source-change-aware, and owner-aware bounded
+  runtime inspection surface;
 - deeper delegated-session runtime semantics beyond the current controlled
   autonomous handoff and runner-local active-conversation reconciliation path,
-  especially cross-runtime owner-level synthesis and automated repair
-  workflows;
+  especially formal cross-runtime relation modeling and automated repair
+  workflows beyond the first owner-aware memory projection;
 - advanced git widening beyond the current locator-specific handoff,
   runner-owned source-history publication, bounded artifact
   history/diff/preview inspection, and backend-cache history/diff for projected

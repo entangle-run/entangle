@@ -1392,6 +1392,10 @@ Current status:
   partially unverifiable event chains, and Studio renders the same Host-owned
   event-integrity summary in Host Status; Host and CLI can also export a Host
   Authority-signed integrity report for compact audit provenance;
+- runner-owned session memory now carries owner, originating-node,
+  entrypoint-node, last-message, and active-route metadata in both the bounded
+  synthesis prompt and deterministic working-context wiki page, giving
+  delegated sessions owner-aware continuation context;
 - the remaining distributed proof hardening is infrastructure-backed
   orchestration that can provision multiple machines or VM/container boundaries
   around the verifier.
