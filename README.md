@@ -1215,6 +1215,10 @@ This repository currently contains:
   including candidate ids, totals, changed-file summaries, file-preview
   metadata, and diff availability, instead of depending only on model prose to
   remember code-change evidence;
+- a deterministic source-change ledger refinement where post-turn memory
+  maintenance now rebuilds `memory/wiki/summaries/source-change-ledger.md`
+  from source-change-bearing task pages and feeds that page into future
+  memory refs plus bounded memory briefs;
 - a handoff-aware working-context refinement where optional model-guided memory
   synthesis sees bounded handoff evidence from the completed turn, and the
   durable `working-context.md` page now carries emitted handoff message ids
@@ -1572,7 +1576,7 @@ The highest-value remaining gaps are:
   session-aware, artifact-aware/artifact-carrying, engine-outcome-aware,
   execution-insight-carrying, source-change-aware, owner-aware, and
   coordination-map-aware bounded runtime inspection surface plus deterministic
-  task-page source-change memory;
+  task-page source-change memory plus the source-change ledger;
 - deeper delegated-session runtime semantics beyond the current controlled
   autonomous handoff and runner-local active-conversation reconciliation path,
   especially formal cross-runtime relation modeling, richer participant-aware

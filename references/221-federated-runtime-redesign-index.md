@@ -349,6 +349,7 @@ same-machine slice records.
 - [546-process-smoke-user-client-wiki-patch-set-slice.md](546-process-smoke-user-client-wiki-patch-set-slice.md)
 - [547-user-client-wiki-patch-set-ui-slice.md](547-user-client-wiki-patch-set-ui-slice.md)
 - [548-source-change-task-memory-slice.md](548-source-change-task-memory-slice.md)
+- [549-source-change-ledger-memory-slice.md](549-source-change-ledger-memory-slice.md)
 
 ## Audited Scope
 
@@ -795,6 +796,9 @@ the model summary omits the details. It also carries active conversation ids
 and bounded peer/status/response-policy/follow-up/artifact metadata from the
 runner-owned session snapshot, preserving deterministic coordination context
 for delegated sessions without copying transcripts.
+Post-turn memory maintenance now also rebuilds a deterministic
+`source-change-ledger.md` page from source-change-bearing task pages and feeds
+that page into future memory refs and bounded memory briefs.
 
 ## Planned Implementation Slices
 
@@ -1251,6 +1255,10 @@ Deterministic runner task memory now also preserves bounded source-change
 candidate ids, status, totals, diff availability, and changed-file summaries
 from the live turn record, and the derived recent-work summary surfaces the
 same code-change memory for future turns.
+Post-turn memory maintenance now also rebuilds
+`summaries/source-change-ledger.md` from source-change-bearing task pages,
+links it from the node wiki index, and exposes it through future turn
+`memoryRefs` and bounded memory briefs.
 The highest-value remaining implementation areas are richer model-guided
 memory maintenance, deeper delegated-session semantics beyond the current
 controlled handoff path and first owner-aware memory projection, participant

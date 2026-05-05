@@ -646,6 +646,10 @@ Current status:
   status, totals, diff availability, and changed-file summaries from the live
   turn record, and recent-work summaries surface that compact code-change
   memory for future turns;
+- post-turn memory maintenance now rebuilds
+  `summaries/source-change-ledger.md` from source-change-bearing task pages,
+  links it from the node wiki index, and feeds it into future turn
+  `memoryRefs` plus bounded memory briefs;
 - model-guided runner memory synthesis now writes
   `summaries/coordination-map.md` as a focused graph-relation memory page,
   carrying local node relation, inbound message provenance, active peer

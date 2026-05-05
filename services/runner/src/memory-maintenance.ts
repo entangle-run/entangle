@@ -21,6 +21,7 @@ type PostTurnMemoryUpdateInput = {
 type PostTurnMemoryUpdateResult = {
   indexPath: string;
   logPath: string;
+  sourceChangeLedgerPagePath: string;
   summaryPagePath: string;
   taskPagePath: string;
 };
@@ -36,7 +37,10 @@ export const coordinationMapSummaryRelativePath =
   "summaries/coordination-map.md";
 export const focusedRegisterTransitionHistoryRelativePath =
   "summaries/focused-register-transition-history.md";
+export const sourceChangeLedgerSummaryRelativePath =
+  "summaries/source-change-ledger.md";
 const maxRecentSummaryEntries = 5;
+const maxSourceChangeLedgerEntries = 12;
 
 function buildTaskPageRelativePath(input: {
   sessionId: string;
@@ -227,6 +231,10 @@ export function resolveFocusedRegisterTransitionHistoryPath(
   wikiRoot: string
 ): string {
   return path.join(wikiRoot, focusedRegisterTransitionHistoryRelativePath);
+}
+
+export function resolveSourceChangeLedgerSummaryPath(wikiRoot: string): string {
+  return path.join(wikiRoot, sourceChangeLedgerSummaryRelativePath);
 }
 
 function buildTaskPageTitle(input: {
@@ -494,6 +502,33 @@ function extractTaskPageSourceChange(content: string): string | undefined {
     : undefined;
 }
 
+function sourceChangeMemoryHasDurableSignal(summary: string): boolean {
+  const lines = summary.split("\n").map((line) => line.trim());
+
+  return lines.some((line) => {
+    if (line === "- Candidate ids: none") {
+      return false;
+    }
+
+    if (line === "- Source changes: none recorded for this turn") {
+      return false;
+    }
+
+    if (line === "- Changed files: none") {
+      return false;
+    }
+
+    return (
+      line.startsWith("- Candidate ids:") ||
+      (line.startsWith("- Source changes:") &&
+        !line.includes("none recorded")) ||
+      /^- (added|modified|deleted|renamed|copied|type_changed|unknown) `/.test(
+        line
+      )
+    );
+  });
+}
+
 async function buildRecentWorkSummaryContent(input: {
   wikiRoot: string;
 }): Promise<string> {
@@ -558,6 +593,67 @@ async function buildRecentWorkSummaryContent(input: {
   return contentLines.join("\n");
 }
 
+async function buildSourceChangeLedgerContent(input: {
+  wikiRoot: string;
+}): Promise<string> {
+  const taskRoot = path.join(input.wikiRoot, "tasks");
+  const taskPaths = await collectMarkdownFilesRecursively(taskRoot);
+  const taskEntries = await Promise.all(
+    taskPaths.map(async (taskPath) => ({
+      content: await readFile(taskPath, "utf8"),
+      modifiedAt: (await stat(taskPath)).mtimeMs,
+      relativePath: path
+        .relative(input.wikiRoot, taskPath)
+        .split(path.sep)
+        .join(path.posix.sep)
+    }))
+  );
+
+  const sourceChangeEntries = taskEntries
+    .map((entry) => {
+      const sourceChangeSummary = extractTaskPageSourceChange(entry.content);
+
+      return {
+        ...entry,
+        sourceChangeSummary
+      };
+    })
+    .filter((entry): entry is typeof entry & { sourceChangeSummary: string } => {
+      const sourceChangeSummary = entry.sourceChangeSummary;
+
+      return (
+        sourceChangeSummary !== undefined &&
+        sourceChangeMemoryHasDurableSignal(sourceChangeSummary)
+      );
+    })
+    .sort((left, right) => right.modifiedAt - left.modifiedAt)
+    .slice(0, maxSourceChangeLedgerEntries);
+
+  const contentLines = ["# Source Change Ledger", "", "## Latest Source Changes", ""];
+
+  if (sourceChangeEntries.length === 0) {
+    contentLines.push("No source-change turns have been recorded yet.", "");
+    return contentLines.join("\n");
+  }
+
+  for (const entry of sourceChangeEntries) {
+    const title = extractTaskPageTitle(
+      entry.content,
+      path.basename(entry.relativePath, ".md")
+    );
+
+    contentLines.push(
+      `### ${title}`,
+      "",
+      `- Task page: [${title}](${entry.relativePath})`,
+      entry.sourceChangeSummary,
+      ""
+    );
+  }
+
+  return contentLines.join("\n");
+}
+
 export async function performPostTurnMemoryUpdate(
   input: PostTurnMemoryUpdateInput
 ): Promise<PostTurnMemoryUpdateResult> {
@@ -565,6 +661,8 @@ export async function performPostTurnMemoryUpdate(
   const indexPath = path.join(wikiRoot, "index.md");
   const logPath = path.join(wikiRoot, "log.md");
   const summaryPagePath = resolveRecentWorkSummaryPath(wikiRoot);
+  const sourceChangeLedgerPagePath =
+    resolveSourceChangeLedgerSummaryPath(wikiRoot);
   const taskPageRelativePath = buildTaskPageRelativePath({
     sessionId: input.envelope.message.sessionId,
     turnId: input.turnId
@@ -593,10 +691,16 @@ export async function performPostTurnMemoryUpdate(
   ]);
   const indexBullet = `- [${taskPageTitle}](${taskPageRelativePath})`;
   const summaryBullet = "- [Recent Work Summary](summaries/recent-work.md)";
+  const sourceChangeLedgerBullet =
+    "- [Source Change Ledger](summaries/source-change-ledger.md)";
   const nextIndex = appendSectionBullet(
-    appendSectionBullet(currentIndex, "Task Pages", indexBullet),
+    appendSectionBullet(
+      appendSectionBullet(currentIndex, "Task Pages", indexBullet),
+      "Summaries",
+      summaryBullet
+    ),
     "Summaries",
-    summaryBullet
+    sourceChangeLedgerBullet
   );
   const nextLog = `${currentLog.trimEnd()}\n\n${buildLogEntry({
     nodeId: input.context.binding.node.nodeId,
@@ -613,12 +717,22 @@ export async function performPostTurnMemoryUpdate(
   const recentWorkSummary = await buildRecentWorkSummaryContent({
     wikiRoot
   });
+  const sourceChangeLedger = await buildSourceChangeLedgerContent({
+    wikiRoot
+  });
 
-  await writeTextFile(summaryPagePath, `${recentWorkSummary.trimEnd()}\n`);
+  await Promise.all([
+    writeTextFile(summaryPagePath, `${recentWorkSummary.trimEnd()}\n`),
+    writeTextFile(
+      sourceChangeLedgerPagePath,
+      `${sourceChangeLedger.trimEnd()}\n`
+    )
+  ]);
 
   return {
     indexPath,
     logPath,
+    sourceChangeLedgerPagePath,
     summaryPagePath,
     taskPagePath
   };

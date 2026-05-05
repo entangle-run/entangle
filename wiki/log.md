@@ -6527,3 +6527,10 @@ record.
 The derived recent-work summary also surfaces that compact code-change memory,
 so future turns can see recent source-change shape even when model-guided
 synthesis is disabled or fails.
+
+## [2026-05-05] runner | Added source-change ledger memory
+
+Added `references/549-source-change-ledger-memory-slice.md`. Post-turn memory
+maintenance now rebuilds `memory/wiki/summaries/source-change-ledger.md` from
+source-change-bearing task pages, links it from the node wiki index, and feeds
+it into future turn memory refs plus bounded memory briefs.

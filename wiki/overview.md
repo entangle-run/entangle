@@ -267,6 +267,10 @@ The most accurate current description is:
 - deterministic task memory now preserves bounded source-change candidate ids,
   status, totals, diff availability, and changed-file summaries from the live
   turn record, and recent-work memory surfaces that code-change context;
+- post-turn memory maintenance now rebuilds a deterministic
+  `memory/wiki/summaries/source-change-ledger.md` from source-change-bearing
+  task pages and feeds that page into future memory refs plus bounded memory
+  briefs;
 - the process-runner smoke now proves that patch mode through the running
   User Client JSON API, including expected-base hash forwarding, completed
   command receipt projection, and projected patched wiki preview content;
@@ -846,6 +850,10 @@ The repository now also contains the first real implementation baseline:
   including candidate ids, totals, changed-file summaries, file-preview
   metadata, and diff availability, instead of depending only on model prose to
   remember code-change evidence;
+- a deterministic source-change ledger refinement where post-turn memory
+  maintenance now rebuilds `summaries/source-change-ledger.md` from
+  source-change-bearing task pages and feeds that page into future memory refs
+  plus bounded memory briefs;
 - a handoff-aware working-context refinement where optional model-guided memory
   synthesis receives bounded emitted-handoff evidence and the durable
   `working-context.md` page now records emitted handoff message ids without
@@ -1410,7 +1418,7 @@ The current implementation-truth audit now lives in
   and otherwise deepen model-guided memory maintenance on top of the now
   stronger session-aware, artifact-aware/artifact-carrying,
   engine-outcome-aware, execution-insight-carrying, and source-change-aware
-  bounded runtime inspection surface;
+  bounded runtime inspection surface plus deterministic source-change ledger;
 - keep later CLI widening focused only on real operational leverage, not
   surface parity for its own sake;
 - keep Studio host-first as it deepens, so richer operator flows continue to

@@ -79,12 +79,13 @@ describe("post-turn memory maintenance", () => {
       turnId: "turn-memory-001"
     });
 
-    const [taskPage, logPage, indexPage, summaryPage, turnRequest] =
+    const [taskPage, logPage, indexPage, summaryPage, sourceLedgerPage, turnRequest] =
       await Promise.all([
         readFile(memoryUpdate.taskPagePath, "utf8"),
         readFile(memoryUpdate.logPath, "utf8"),
         readFile(memoryUpdate.indexPath, "utf8"),
         readFile(memoryUpdate.summaryPagePath, "utf8"),
+        readFile(memoryUpdate.sourceChangeLedgerPagePath, "utf8"),
         buildAgentEngineTurnRequest(context)
       ]);
 
@@ -107,15 +108,27 @@ describe("post-turn memory maintenance", () => {
     expect(summaryPage).toContain("- Candidate ids: `source-change-parser`");
     expect(summaryPage).toContain("- Totals: files=1 additions=3 deletions=1");
     expect(summaryPage).toContain("- modified `src/parser.ts` +3 -1");
+    expect(sourceLedgerPage).toContain("# Source Change Ledger");
+    expect(sourceLedgerPage).toContain("### session-alpha / turn-memory-001");
+    expect(sourceLedgerPage).toContain(
+      "- Task page: [session-alpha / turn-memory-001](tasks/session-alpha/turn-memory-001.md)"
+    );
+    expect(sourceLedgerPage).toContain("- Candidate ids: `source-change-parser`");
+    expect(sourceLedgerPage).toContain("- Source changes: `changed`");
+    expect(sourceLedgerPage).toContain("- modified `src/parser.ts` +3 -1");
     expect(logPage).toContain("runner turn | session-alpha / turn-memory-001");
     expect(indexPage).toContain(
       "[session-alpha / turn-memory-001](tasks/session-alpha/turn-memory-001.md)"
     );
     expect(indexPage).toContain("[Recent Work Summary](summaries/recent-work.md)");
+    expect(indexPage).toContain(
+      "[Source Change Ledger](summaries/source-change-ledger.md)"
+    );
     expect(turnRequest.memoryRefs).toEqual(
       expect.arrayContaining([
         path.join(context.workspace.memoryRoot, "wiki", "log.md"),
         memoryUpdate.summaryPagePath,
+        memoryUpdate.sourceChangeLedgerPagePath,
         memoryUpdate.taskPagePath
       ])
     );
