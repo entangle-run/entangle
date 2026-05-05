@@ -12,6 +12,7 @@ import type {
   RuntimeSourceHistoryPublishResponse,
   RuntimeSourceHistoryReconcileResponse,
   RuntimeWikiPublishResponse,
+  RuntimeWikiPatchSetResponse,
   RuntimeWikiUpsertPageResponse,
   SourceChangeRefProjectionRecord,
   SourceChangeSummary,
@@ -130,6 +131,12 @@ export type UserClientWikiPublishResponse = RuntimeWikiPublishResponse & {
 };
 
 export type UserClientWikiPageUpsertResponse = RuntimeWikiUpsertPageResponse & {
+  source: "runtime";
+  userNodeId: string;
+  wikiRefs: WikiRefProjectionRecord[];
+};
+
+export type UserClientWikiPatchSetResponse = RuntimeWikiPatchSetResponse & {
   source: "runtime";
   userNodeId: string;
   wikiRefs: WikiRefProjectionRecord[];
@@ -573,6 +580,42 @@ export function upsertWikiPage(input: {
         mode: input.mode ?? "replace",
         nodeId: input.nodeId,
         path: input.path,
+        ...(input.reason ? { reason: input.reason } : {})
+      }),
+      headers: {
+        "content-type": "application/json"
+      },
+      method: "POST"
+    }
+  });
+}
+
+export function patchWikiPages(input: {
+  baseUrl: string;
+  conversationId: string;
+  nodeId: string;
+  pages: Array<{
+    content: string;
+    expectedCurrentSha256?: string | undefined;
+    mode?: "append" | "patch" | "replace" | undefined;
+    path: string;
+  }>;
+  reason?: string | undefined;
+}): Promise<UserClientWikiPatchSetResponse> {
+  return fetchJson<UserClientWikiPatchSetResponse>("/api/wiki/pages/patch-set", {
+    baseUrl: input.baseUrl,
+    init: {
+      body: JSON.stringify({
+        conversationId: input.conversationId,
+        nodeId: input.nodeId,
+        pages: input.pages.map((page) => ({
+          content: page.content,
+          ...(page.expectedCurrentSha256
+            ? { expectedCurrentSha256: page.expectedCurrentSha256 }
+            : {}),
+          mode: page.mode ?? "replace",
+          path: page.path
+        })),
         ...(input.reason ? { reason: input.reason } : {})
       }),
       headers: {

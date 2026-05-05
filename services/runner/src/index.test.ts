@@ -2045,6 +2045,57 @@ describe("runner runtime context", () => {
 
         if (
           request.method === "POST" &&
+          request.url === "/v1/runtimes/worker-it/wiki/pages/patch-set"
+        ) {
+          const requestBody = requestRecord.body;
+          const rawPages =
+            typeof requestBody === "object" &&
+            requestBody !== null &&
+            "pages" in requestBody &&
+            Array.isArray(requestBody.pages)
+              ? requestBody.pages
+              : [];
+          response.end(
+            JSON.stringify({
+              assignmentId: "assignment-alpha",
+              commandId: "cmd-wiki-patch-set-alpha",
+              nodeId: "worker-it",
+              pageCount: rawPages.length,
+              pages: rawPages.map((page) => {
+                const pageRecord =
+                  typeof page === "object" && page !== null
+                    ? (page as Record<string, unknown>)
+                    : {};
+                const mode =
+                  pageRecord.mode === "append" ||
+                  pageRecord.mode === "patch" ||
+                  pageRecord.mode === "replace"
+                    ? pageRecord.mode
+                    : "replace";
+
+                return {
+                  ...(typeof pageRecord.expectedCurrentSha256 === "string"
+                    ? {
+                        expectedCurrentSha256:
+                          pageRecord.expectedCurrentSha256
+                      }
+                    : {}),
+                  mode,
+                  path:
+                    typeof pageRecord.path === "string"
+                      ? pageRecord.path
+                      : "operator/notes.md"
+                };
+              }),
+              requestedAt: "2026-04-26T12:06:40.000Z",
+              status: "requested"
+            })
+          );
+          return;
+        }
+
+        if (
+          request.method === "POST" &&
           request.url ===
             "/v1/runtimes/worker-it/source-history/source-history-turn-alpha/publish"
         ) {
@@ -2563,6 +2614,77 @@ describe("runner runtime context", () => {
             nodeId: "worker-it"
           }
         ]
+      });
+
+      const jsonWikiPatchSetResponse = await fetch(
+        new URL("/api/wiki/pages/patch-set", handle.clientUrl),
+        {
+          body: JSON.stringify({
+            conversationId: "conversation-alpha",
+            nodeId: "worker-it",
+            pages: [
+              {
+                content: "# Operator Notes\n\nBatch update.",
+                mode: "replace",
+                path: "/operator/notes.md"
+              }
+            ],
+            reason: "Batch update reviewed wiki page."
+          }),
+          headers: {
+            "content-type": "application/json"
+          },
+          method: "POST"
+        }
+      );
+      expect(jsonWikiPatchSetResponse.status).toBe(200);
+      await expect(jsonWikiPatchSetResponse.json()).resolves.toMatchObject({
+        commandId: "cmd-wiki-patch-set-alpha",
+        nodeId: "worker-it",
+        pageCount: 1,
+        pages: [
+          {
+            expectedCurrentSha256:
+              "1d51c694fc9955cd6da1da6756dc1a57794f4e15c1194c904db4c5f370982f90",
+            mode: "replace",
+            path: "operator/notes.md"
+          }
+        ],
+        source: "runtime",
+        status: "requested",
+        userNodeId: "user-main",
+        wikiRefs: [
+          {
+            artifactId: "wiki-page-alpha",
+            nodeId: "worker-it"
+          }
+        ]
+      });
+
+      const jsonMismatchedWikiPatchSetResponse = await fetch(
+        new URL("/api/wiki/pages/patch-set", handle.clientUrl),
+        {
+          body: JSON.stringify({
+            conversationId: "conversation-alpha",
+            nodeId: "worker-it",
+            pages: [
+              {
+                content: "# Hidden\n",
+                path: "hidden/page.md"
+              }
+            ]
+          }),
+          headers: {
+            "content-type": "application/json"
+          },
+          method: "POST"
+        }
+      );
+      expect(jsonMismatchedWikiPatchSetResponse.status).toBe(403);
+      await expect(
+        jsonMismatchedWikiPatchSetResponse.json()
+      ).resolves.toMatchObject({
+        error: "Wiki page is not visible in the selected User Node conversation."
       });
 
       const jsonMismatchedWikiPageUpsertResponse = await fetch(
@@ -3250,6 +3372,24 @@ describe("runner runtime context", () => {
             "/v1/runtimes/worker-it/source-change-candidates/source-change-turn-alpha/diff"
       )
     ).toBe(false);
+    const wikiPatchSetRequest = hostRequests.find(
+      (request) =>
+        request.method === "POST" &&
+        request.url === "/v1/runtimes/worker-it/wiki/pages/patch-set"
+    );
+    expect(wikiPatchSetRequest?.body).toMatchObject({
+      pages: [
+        {
+          content: "# Operator Notes\n\nBatch update.",
+          expectedCurrentSha256:
+            "1d51c694fc9955cd6da1da6756dc1a57794f4e15c1194c904db4c5f370982f90",
+          mode: "replace",
+          path: "operator/notes.md"
+        }
+      ],
+      reason: "Batch update reviewed wiki page.",
+      requestedBy: "user-main"
+    });
     const sourceReviewRequest = hostRequests.find(
       (request) =>
         request.method === "POST" &&

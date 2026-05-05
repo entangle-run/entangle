@@ -255,6 +255,10 @@ The most accurate current description is:
   writing, rejects stale or invalid sets without partial page mutation, syncs
   the wiki repository once, and projects page-count receipts plus per-page
   `wiki.ref` evidence;
+- the running User Client can now request visible wiki page patch-sets through
+  its Human Interface Runtime JSON API, with every page checked against the
+  selected User Node conversation and `requestedBy` set to the stable User Node
+  id before Host publishes the runner-owned command;
 - the process-runner smoke now proves that patch mode through the running
   User Client JSON API, including expected-base hash forwarding, completed
   command receipt projection, and projected patched wiki preview content;
@@ -1370,8 +1374,9 @@ The current implementation-truth audit now lives in
   automatic expected-hash population plus User Client source-history reconcile
   plus bounded operator batch requests for multiple existing wiki page-upsert
   commands plus signed runner-owned multi-page wiki patch-set commands plus
-  local wiki draft diff preview plus stale-edit conflict receipt summaries in
-  the browser, CLI, and fallback Human Interface Runtime plus
+  User Client participant JSON requests for visible wiki patch-sets plus local
+  wiki draft diff preview plus stale-edit conflict receipt summaries in the
+  browser, CLI, and fallback Human Interface Runtime plus
   approval-response turn correlation;
   the next git gaps are richer collaborative wiki merge UI, repository
   lifecycle behavior, and explicit fallback or replication behavior,

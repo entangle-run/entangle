@@ -630,6 +630,11 @@ Current status:
   mutations; the runner validates every path, base hash, duplicate path, and
   patch hunk before writing pages, syncs the wiki repository once, and emits a
   page-count command receipt plus per-page `wiki.ref` evidence;
+- the running User Client can now request the same runner-owned patch-set
+  command through the Human Interface Runtime JSON API when every page is
+  visible in the selected User Node conversation; the runtime forwards
+  `requestedBy` as the stable User Node id and derives expected base hashes
+  from complete projected wiki previews when needed;
 - model-guided runner memory synthesis now writes
   `summaries/coordination-map.md` as a focused graph-relation memory page,
   carrying local node relation, inbound message provenance, active peer
@@ -644,9 +649,9 @@ Current status:
 - Studio can inspect per-assignment timeline entries through the Host
   assignment timeline endpoint, keeping operator drilldown aligned with CLI;
 - richer collaborative wiki merge UI still needs product work on top of the
-  participant-scoped wiki page upsert command, runner-enforced stale-edit
-  guard, single-page patch mode, non-atomic operator batch requests, and the
-  new protocol-backed patch-set command.
+  participant-scoped wiki page upsert and patch-set commands,
+  runner-enforced stale-edit guard, single-page patch mode, and non-atomic
+  operator batch requests.
 
 ### Slice 9: User Node Runtime
 

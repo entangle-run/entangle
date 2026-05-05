@@ -345,6 +345,7 @@ same-machine slice records.
 - [542-coordination-map-memory-slice.md](542-coordination-map-memory-slice.md)
 - [543-deployment-repair-previous-service-volume-slice.md](543-deployment-repair-previous-service-volume-slice.md)
 - [544-runtime-wiki-patch-set-slice.md](544-runtime-wiki-patch-set-slice.md)
+- [545-user-client-wiki-patch-set-slice.md](545-user-client-wiki-patch-set-slice.md)
 
 ## Audited Scope
 
@@ -1232,13 +1233,16 @@ command: Host, host-client, CLI, runner join, and runner service can request
 multiple page mutations as one patch-set, the runner validates all paths,
 base hashes, duplicate paths, and patch hunks before writing, syncs the wiki
 repository once, and projects page-count receipts plus per-page wiki refs.
+The running User Client can now request the same patch-set command through its
+Human Interface Runtime JSON API when every page is visible in the selected User
+Node conversation; the runtime derives base hashes from projected page previews
+when needed and forwards the request with the stable User Node id.
 The highest-value remaining implementation areas are richer model-guided
 memory maintenance, deeper delegated-session semantics beyond the current
 controlled handoff path and first owner-aware memory projection, participant
 runtime reassignment UX beyond the current read-only User Client runtime
 status projection, collaborative wiki merge UI on top of the participant-scoped
-page upsert command, the non-atomic operator batch surface, and the new
-patch-set command,
+page upsert and patch-set commands,
 repository lifecycle and replicated/fallback artifact behavior,
 infrastructure-backed multi-machine proof execution, non-disposable upgrade
 behavior, external audit retention, and deeper production identity and

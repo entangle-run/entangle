@@ -6491,3 +6491,14 @@ host-client, CLI, runner join, and runner service now support the signed
 The assigned runner validates all pages before writing, rejects stale or
 invalid sets without partial page mutation, syncs the wiki repository once,
 and projects page-count command receipts plus per-page wiki refs.
+
+## [2026-05-05] user-client | Added visible wiki patch-set requests
+
+Added `references/545-user-client-wiki-patch-set-slice.md`. Running User
+Clients can now request runner-owned wiki patch-sets through the Human
+Interface Runtime JSON API when every page is visible in the selected User Node
+conversation.
+
+The runtime forwards the command through Host with `requestedBy` set to the
+stable User Node id and derives expected page hashes from projected previews
+when the client does not supply them.

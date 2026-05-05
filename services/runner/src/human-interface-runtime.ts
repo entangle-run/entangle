@@ -24,6 +24,7 @@ import type {
   RuntimeSourceHistoryPublishResponse,
   RuntimeSourceHistoryReconcileResponse,
   RuntimeWikiPublishResponse,
+  RuntimeWikiPatchSetResponse,
   RuntimeWikiUpsertPageResponse,
   SourceChangeRefProjectionRecord,
   SourceHistoryPublicationTarget,
@@ -48,6 +49,7 @@ import {
   runtimeSourceHistoryPublishResponseSchema,
   runtimeSourceHistoryReconcileResponseSchema,
   runtimeWikiPublishResponseSchema,
+  runtimeWikiPatchSetResponseSchema,
   runtimeWikiUpsertPageResponseSchema,
   sourceHistoryPublicationTargetSchema,
   userNodeConversationResponseSchema,
@@ -221,6 +223,26 @@ type UserClientWikiPageUpsertRequest = {
 };
 
 type UserClientWikiPageUpsertResponse = RuntimeWikiUpsertPageResponse & {
+  source: "runtime";
+  userNodeId: string;
+  wikiRefs: WikiRefProjectionRecord[];
+};
+
+type UserClientWikiPatchSetPageRequest = {
+  content?: unknown;
+  expectedCurrentSha256?: unknown;
+  mode?: unknown;
+  path?: unknown;
+};
+
+type UserClientWikiPatchSetRequest = {
+  conversationId?: unknown;
+  nodeId?: unknown;
+  pages?: unknown;
+  reason?: unknown;
+};
+
+type UserClientWikiPatchSetResponse = RuntimeWikiPatchSetResponse & {
   source: "runtime";
   userNodeId: string;
   wikiRefs: WikiRefProjectionRecord[];
@@ -2234,6 +2256,83 @@ async function requestRuntimeWikiPageUpsert(input: {
         error instanceof Error
           ? error.message
           : "Host wiki page mutation request failed.",
+      statusCode: 502
+    };
+  }
+}
+
+async function requestRuntimeWikiPatchSet(input: {
+  hostApi?: RunnerJoinHostApi | undefined;
+  nodeId: string;
+  pages: Array<{
+    content: string;
+    expectedCurrentSha256?: string | undefined;
+    mode: "append" | "patch" | "replace";
+    path: string;
+  }>;
+  reason?: string | undefined;
+  userNodeId: string;
+  wikiRefs: WikiRefProjectionRecord[];
+}): Promise<{
+  detail?: UserClientWikiPatchSetResponse;
+  error?: string;
+  statusCode?: number;
+}> {
+  if (!input.hostApi) {
+    return {
+      error: "Host API is not configured for wiki patch-set mutation.",
+      statusCode: 409
+    };
+  }
+
+  try {
+    const response = await fetch(
+      new URL(
+        `/v1/runtimes/${encodeURIComponent(input.nodeId)}/wiki/pages/patch-set`,
+        input.hostApi.baseUrl
+      ),
+      {
+        body: JSON.stringify({
+          pages: input.pages.map((page) => ({
+            content: page.content,
+            ...(page.expectedCurrentSha256
+              ? { expectedCurrentSha256: page.expectedCurrentSha256 }
+              : {}),
+            mode: page.mode,
+            path: page.path
+          })),
+          ...(input.reason ? { reason: input.reason } : {}),
+          requestedBy: input.userNodeId
+        }),
+        headers: {
+          ...buildHostApiHeaders(input.hostApi),
+          "content-type": "application/json"
+        },
+        method: "POST"
+      }
+    );
+
+    if (!response.ok) {
+      return {
+        error: `Host wiki patch-set mutation request failed with HTTP ${response.status}.`,
+        statusCode: response.status
+      };
+    }
+
+    return {
+      detail: {
+        ...runtimeWikiPatchSetResponseSchema.parse(await response.json()),
+        source: "runtime",
+        userNodeId: input.userNodeId,
+        wikiRefs: input.wikiRefs
+      }
+    };
+  } catch (error) {
+    return {
+      error:
+        error instanceof Error
+          ? error.message
+          : "Host wiki patch-set mutation request failed.",
       statusCode: 502
     };
   }
@@ -4686,6 +4785,156 @@ export async function startHumanInterfaceRuntime(input: {
         if (mutation.error || !mutation.detail) {
           writeJson(response, mutation.statusCode ?? 502, {
             error: mutation.error ?? "Wiki page mutation request failed."
+          });
+          return;
+        }
+
+        writeJson(response, 200, mutation.detail);
+        return;
+      }
+
+      if (
+        request.method === "POST" &&
+        requestUrl.pathname === "/api/wiki/pages/patch-set"
+      ) {
+        let patchSetRequest: UserClientWikiPatchSetRequest;
+
+        try {
+          patchSetRequest =
+            (await readRequestJson(request)) as UserClientWikiPatchSetRequest;
+        } catch (error) {
+          writeJson(response, 400, {
+            error:
+              error instanceof Error
+                ? error.message
+                : "Wiki patch-set request is invalid."
+          });
+          return;
+        }
+
+        const conversationId =
+          typeof patchSetRequest.conversationId === "string"
+            ? patchSetRequest.conversationId.trim()
+            : "";
+        const nodeId =
+          typeof patchSetRequest.nodeId === "string"
+            ? patchSetRequest.nodeId.trim()
+            : "";
+        const reason =
+          typeof patchSetRequest.reason === "string" &&
+          patchSetRequest.reason.trim().length > 0
+            ? patchSetRequest.reason.trim()
+            : undefined;
+        const rawPages = Array.isArray(patchSetRequest.pages)
+          ? (patchSetRequest.pages as UserClientWikiPatchSetPageRequest[])
+          : [];
+
+        if (!nodeId || !conversationId) {
+          writeJson(response, 400, {
+            error: "Runtime node and conversation are required."
+          });
+          return;
+        }
+
+        if (rawPages.length < 1 || rawPages.length > 16) {
+          writeJson(response, 400, {
+            error: "Wiki patch-set must include between 1 and 16 pages."
+          });
+          return;
+        }
+
+        const pages: Array<{
+          content: string;
+          expectedCurrentSha256?: string;
+          mode: "append" | "patch" | "replace";
+          path: string;
+        }> = [];
+        const wikiRefs: WikiRefProjectionRecord[] = [];
+
+        for (const rawPage of rawPages) {
+          const pagePath =
+            typeof rawPage.path === "string" ? rawPage.path.trim() : "";
+          const content =
+            typeof rawPage.content === "string" ? rawPage.content : undefined;
+          const expectedCurrentSha256 =
+            typeof rawPage.expectedCurrentSha256 === "string" &&
+            rawPage.expectedCurrentSha256.trim().length > 0
+              ? rawPage.expectedCurrentSha256.trim().toLowerCase()
+              : undefined;
+          const mode =
+            rawPage.mode === undefined
+              ? "replace"
+              : rawPage.mode === "append" ||
+                  rawPage.mode === "patch" ||
+                  rawPage.mode === "replace"
+                ? rawPage.mode
+                : undefined;
+
+          if (content === undefined) {
+            writeJson(response, 400, {
+              error: "Wiki patch-set page content is required."
+            });
+            return;
+          }
+
+          if (!mode) {
+            writeJson(response, 400, {
+              error: "Wiki patch-set page mutation mode is invalid."
+            });
+            return;
+          }
+
+          if (
+            expectedCurrentSha256 &&
+            !/^[0-9a-f]{64}$/.test(expectedCurrentSha256)
+          ) {
+            writeJson(response, 400, {
+              error: "Expected current wiki page SHA-256 is invalid."
+            });
+            return;
+          }
+
+          const visibleWikiPage = await resolveUserClientVisibleWikiPage({
+            conversationId,
+            hostApi: input.hostApi,
+            nodeId,
+            path: pagePath,
+            userNodeId: input.context.binding.node.nodeId
+          });
+
+          if ("error" in visibleWikiPage) {
+            writeJson(response, visibleWikiPage.statusCode, {
+              error: visibleWikiPage.error
+            });
+            return;
+          }
+
+          const pageExpectedCurrentSha256 =
+            expectedCurrentSha256 ?? visibleWikiPage.expectedCurrentSha256;
+
+          pages.push({
+            content,
+            ...(pageExpectedCurrentSha256
+              ? { expectedCurrentSha256: pageExpectedCurrentSha256 }
+              : {}),
+            mode,
+            path: visibleWikiPage.path
+          });
+          wikiRefs.push(...visibleWikiPage.wikiRefs);
+        }
+
+        const mutation = await requestRuntimeWikiPatchSet({
+          hostApi: input.hostApi,
+          nodeId,
+          pages,
+          reason,
+          userNodeId: input.context.binding.node.nodeId,
+          wikiRefs
+        });
+
+        if (mutation.error || !mutation.detail) {
+          writeJson(response, mutation.statusCode ?? 502, {
+            error: mutation.error ?? "Wiki patch-set request failed."
           });
           return;
         }
