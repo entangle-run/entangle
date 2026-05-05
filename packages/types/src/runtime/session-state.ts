@@ -129,6 +129,7 @@ export const engineTurnRequestSummarySchema = z.object({
   inboundMessageContextIncluded: z.boolean().default(false),
   interactionPromptCharacterCount: z.number().int().nonnegative(),
   interactionPromptPartCount: z.number().int().nonnegative(),
+  memoryBriefContextIncluded: z.boolean().default(false),
   memoryRefCount: z.number().int().nonnegative(),
   peerRouteContextIncluded: z.boolean(),
   policyContextIncluded: z.boolean().default(false),

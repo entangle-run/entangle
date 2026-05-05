@@ -317,6 +317,7 @@ same-machine slice records.
 - [514-agent-engine-inbound-routing-context-slice.md](514-agent-engine-inbound-routing-context-slice.md)
 - [515-distributed-proof-cli-user-client-health-command-slice.md](515-distributed-proof-cli-user-client-health-command-slice.md)
 - [516-cli-user-client-health-timeout-slice.md](516-cli-user-client-health-timeout-slice.md)
+- [517-agent-engine-memory-brief-slice.md](517-agent-engine-memory-brief-slice.md)
 
 ## Audited Scope
 
@@ -1033,6 +1034,10 @@ Agent engine turn requests now also widen the bounded `Inbound controls`
 prompt with conversation id, turn id, parent message id, and from/to node ids,
 so the coding engine inside each node receives the message-routing context it
 needs while Entangle still owns routing, policy, signing, and side effects.
+Engine turn requests now also include a bounded `Memory brief:` prompt part
+when focused node-memory summaries exist, while preserving `memoryRefs` as the
+complete source pages. The runner records whether that memory brief was present
+in `engineRequestSummary` for trace and presentation surfaces.
 Host status now also exposes the active bootstrap operator security mode
 without exposing secrets: tokenless deployments report `none`, while
 token-protected deployments report normalized bootstrap operator attribution

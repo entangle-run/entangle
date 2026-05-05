@@ -3727,6 +3727,7 @@ describe("host event contracts", () => {
         inboundMessageContextIncluded: true,
         interactionPromptCharacterCount: 840,
         interactionPromptPartCount: 7,
+        memoryBriefContextIncluded: true,
         memoryRefCount: 6,
         peerRouteContextIncluded: true,
         policyContextIncluded: true,
@@ -3904,6 +3905,9 @@ describe("host event contracts", () => {
     expect(
       runnerTurnEvent.engineRequestSummary?.actionContractContextIncluded
     ).toBe(true);
+    expect(runnerTurnEvent.engineRequestSummary?.memoryBriefContextIncluded).toBe(
+      true
+    );
     expect(runnerTurnEvent.engineRequestSummary?.memoryRefCount).toBe(6);
     expect(runnerTurnEvent.memoryRepositorySyncOutcome?.status).toBe("committed");
     expect(runnerTurnEvent.sourceChangeSummary?.fileCount).toBe(1);

@@ -4,12 +4,13 @@ import { mkdir, readFile, writeFile } from "node:fs/promises";
 import type { AddressInfo } from "node:net";
 import path from "node:path";
 import type { AgentEngine } from "@entangle/agent-engine";
-import type {
-  ArtifactRef,
-  EffectiveRuntimeContext,
-  EntangleControlEvent,
-  EntangleObservationEventPayload,
-  RuntimeAssignmentRecord
+import {
+  effectiveRuntimeContextSchema,
+  type ArtifactRef,
+  type EffectiveRuntimeContext,
+  type EntangleControlEvent,
+  type EntangleObservationEventPayload,
+  type RuntimeAssignmentRecord
 } from "@entangle/types";
 import {
   buildAgentEngineTurnRequest,
@@ -700,6 +701,7 @@ describe("runner runtime context", () => {
       generatedAt: "2026-04-25T00:00:00.000Z",
       inboundMessageContextIncluded: false,
       interactionPromptPartCount: 9,
+      memoryBriefContextIncluded: false,
       peerRouteContextIncluded: false,
       policyContextIncluded: true,
       systemPromptPartCount: 4,
@@ -709,6 +711,45 @@ describe("runner runtime context", () => {
     expect(summary.interactionPromptCharacterCount).toBeGreaterThan(0);
     expect(summary.memoryRefCount).toBeGreaterThan(0);
     expect(summary.systemPromptCharacterCount).toBeGreaterThan(0);
+  });
+
+  it("includes a bounded focused memory brief in engine turn requests", async () => {
+    const fixture = await createRuntimeFixture();
+    const context = effectiveRuntimeContextSchema.parse(fixture.context);
+    const summariesRoot = path.join(
+      context.workspace.memoryRoot,
+      "wiki",
+      "summaries"
+    );
+    const nextActionsPath = path.join(summariesRoot, "next-actions.md");
+
+    await mkdir(summariesRoot, { recursive: true });
+    await writeFile(
+      nextActionsPath,
+      [
+        "# Next Actions Summary",
+        "",
+        "## Next Actions",
+        "",
+        "- Complete the federated runner handoff verification.",
+        ""
+      ].join("\n"),
+      "utf8"
+    );
+
+    const request = await buildAgentEngineTurnRequest(context);
+    const interactionPrompt = request.interactionPromptParts.join("\n");
+    const summary = summarizeAgentEngineTurnRequest(request, {
+      generatedAt: "2026-04-25T00:00:00.000Z"
+    });
+
+    expect(interactionPrompt).toContain("Memory brief:");
+    expect(interactionPrompt).toContain("Next actions");
+    expect(interactionPrompt).toContain(
+      "Complete the federated runner handoff verification."
+    );
+    expect(request.memoryRefs).toContain(nextActionsPath);
+    expect(summary.memoryBriefContextIncluded).toBe(true);
   });
 
   it("includes bounded peer route context in engine turn requests", async () => {

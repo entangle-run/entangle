@@ -1310,6 +1310,10 @@ Current status:
   message id, and from/to node ids in the bounded `Inbound controls` prompt,
   giving every per-node coding engine the routing context of the message it is
   serving without transferring authority away from Entangle;
+- agent engine turn requests now include a bounded `Memory brief:` prompt part
+  when focused node-memory summary pages exist, while keeping `memoryRefs` as
+  the complete page source and recording `memoryBriefContextIncluded` in the
+  engine request summary;
 - runtime approval records now carry optional signed-message lineage fields for
   request event id, request signer, response event id, response signer, and
   source message id, and the runner stamps those fields for engine gates,

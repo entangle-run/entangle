@@ -1197,6 +1197,9 @@ This repository currently contains:
   engine prompt now receives conversation id, turn id, parent message id, and
   from/to node ids in bounded inbound controls while Entangle keeps side-effect
   authority;
+- an agent-engine memory-brief refinement where every per-node coding engine
+  turn receives a bounded inline brief from focused node-memory summaries when
+  they exist, while `memoryRefs` remain the complete wiki source pages;
 - an owner-aware session-memory refinement where bounded synthesis prompts and
   the durable `working-context.md` page now carry session owner,
   originating-node, entrypoint-node, last-message, and active-route metadata so

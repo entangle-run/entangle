@@ -6081,3 +6081,14 @@ Added `references/516-cli-user-client-health-timeout-slice.md`. CLI
 Timeouts are serialized into each `clientHealth` summary just like missing
 URLs, HTTP failures, and connection failures, keeping the operator command
 responsive without mutating Host, runner, or User Node state.
+
+## [2026-05-05] runner | Added engine memory briefs
+
+Added `references/517-agent-engine-memory-brief-slice.md`. Agent-engine turn
+requests now include a bounded `Memory brief:` prompt part when focused
+node-memory summary pages exist.
+
+The brief covers selected summaries such as next actions, open questions,
+decisions, stable facts, and working context, while `memoryRefs` remain the
+complete source pages. Runner turn summaries now record
+`memoryBriefContextIncluded` for host-client and trace presentation.

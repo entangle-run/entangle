@@ -20,6 +20,37 @@ type RuntimeConfigDocument = {
   };
 };
 
+type MemoryBriefCandidate = {
+  label: string;
+  relativePath: string;
+};
+
+const maxMemoryBriefCharactersPerFile = 1200;
+const maxMemoryBriefCharactersTotal = 4200;
+const minMemoryBriefSectionCharacters = 160;
+const memoryBriefCandidates: MemoryBriefCandidate[] = [
+  {
+    label: "Next actions",
+    relativePath: "summaries/next-actions.md"
+  },
+  {
+    label: "Open questions",
+    relativePath: "summaries/open-questions.md"
+  },
+  {
+    label: "Decisions",
+    relativePath: "summaries/decisions.md"
+  },
+  {
+    label: "Stable facts",
+    relativePath: "summaries/stable-facts.md"
+  },
+  {
+    label: "Working context",
+    relativePath: "summaries/working-context.md"
+  }
+];
+
 async function pathExists(targetPath: string): Promise<boolean> {
   try {
     await stat(targetPath);
@@ -39,6 +70,65 @@ async function readTextFileIfPresent(filePath: string): Promise<string | undefin
   }
 
   return readFile(filePath, "utf8");
+}
+
+function truncateMemoryBriefContent(value: string, maxCharacters: number): string {
+  const normalized = value.trim().replace(/\n{3,}/g, "\n\n");
+
+  if (normalized.length <= maxCharacters) {
+    return normalized;
+  }
+
+  return `${normalized.slice(0, Math.max(0, maxCharacters - 15)).trimEnd()}\n[truncated]`;
+}
+
+async function collectMemoryBriefPromptPart(
+  context: EffectiveRuntimeContext
+): Promise<string | undefined> {
+  const wikiRoot = path.join(context.workspace.memoryRoot, "wiki");
+  const sections: string[] = [];
+  let remainingCharacters = maxMemoryBriefCharactersTotal;
+
+  for (const candidate of memoryBriefCandidates) {
+    if (remainingCharacters <= 0) {
+      break;
+    }
+
+    const content = await readTextFileIfPresent(
+      path.join(wikiRoot, candidate.relativePath)
+    );
+
+    if (!content?.trim()) {
+      continue;
+    }
+
+    const heading = `### ${candidate.label} (${candidate.relativePath})`;
+    const sectionBudget = Math.min(
+      maxMemoryBriefCharactersPerFile,
+      remainingCharacters
+    );
+    const contentBudget = sectionBudget - heading.length - 1;
+
+    if (contentBudget < minMemoryBriefSectionCharacters) {
+      break;
+    }
+
+    const boundedContent = truncateMemoryBriefContent(content, contentBudget);
+    const renderedSection = [heading, boundedContent].join("\n");
+
+    sections.push(renderedSection);
+    remainingCharacters -= renderedSection.length;
+  }
+
+  if (sections.length === 0) {
+    return undefined;
+  }
+
+  return [
+    "Memory brief:",
+    "Use this bounded brief as the current node memory baseline; consult memory refs for complete source pages.",
+    ...sections
+  ].join("\n\n");
 }
 
 async function readRuntimeConfig(
@@ -330,12 +420,19 @@ export async function buildAgentEngineTurnRequest(
     context.workspace.packageRoot,
     context.packageManifest?.entryPrompts.interaction ?? "prompts/interaction.md"
   );
-  const [systemPrompt, interactionPrompt, runtimeConfig, memoryRefs] =
+  const [
+    systemPrompt,
+    interactionPrompt,
+    runtimeConfig,
+    memoryRefs,
+    memoryBriefPromptPart
+  ] =
     await Promise.all([
       readTextFileIfPresent(systemPromptPath),
       readTextFileIfPresent(interactionPromptPath),
       readRuntimeConfig(context),
-      collectMemoryRefs(context)
+      collectMemoryRefs(context),
+      collectMemoryBriefPromptPart(context)
     ]);
   const peerRoutePromptPart = buildPeerRoutePromptPart(context);
 
@@ -364,6 +461,7 @@ export async function buildAgentEngineTurnRequest(
       buildAgentRuntimePromptPart(context),
       buildWorkspaceBoundaryPromptPart(context),
       buildPolicyPromptPart(context),
+      ...(memoryBriefPromptPart ? [memoryBriefPromptPart] : []),
       buildEntangleActionContractPromptPart(context),
       ...(peerRoutePromptPart ? [peerRoutePromptPart] : []),
       ...(input.inboundMessage
@@ -416,6 +514,9 @@ export function summarizeAgentEngineTurnRequest(
       request.interactionPromptParts
     ),
     interactionPromptPartCount: request.interactionPromptParts.length,
+    memoryBriefContextIncluded: request.interactionPromptParts.some((part) =>
+      part.startsWith("Memory brief:")
+    ),
     memoryRefCount: request.memoryRefs.length,
     peerRouteContextIncluded: request.interactionPromptParts.some((part) =>
       part.startsWith("Peer routes:")
