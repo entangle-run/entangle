@@ -319,6 +319,8 @@ The most accurate current description is:
   participant projection: conversations, open work, unread messages, unique
   pending approvals, pending source reviews, command receipt statuses,
   source-history/wiki refs, and reachable targets;
+- the Human Interface Runtime fallback HTML client renders the same Workload
+  categories from the participant-scoped state object;
 - the running User Client can now request runner-owned artifact restore for
   artifacts visible in the selected User Node conversation, and the
   process-runner smoke proves that path through a completed projected

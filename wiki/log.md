@@ -6134,3 +6134,13 @@ The panel summarizes conversations, open work, unread messages, unique pending
 approvals, pending source-change reviews, command receipt statuses,
 source-history/wiki refs, and reachable targets without adding a new authority
 or mutation path.
+
+## [2026-05-05] runner | Added fallback User Client workload summary
+
+Added `references/522-user-client-fallback-workload-summary-slice.md`. The
+Human Interface Runtime fallback HTML client now renders the same participant
+Workload categories as the React User Client from the same projected state.
+
+This keeps a running User Node's minimal browser client useful even when the
+dedicated React bundle is unavailable, without changing protocols, Host
+authority, or signed participant action routes.

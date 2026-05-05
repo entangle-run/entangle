@@ -2880,6 +2880,13 @@ describe("runner runtime context", () => {
       expect(pageBody).toContain(runnerPublicKey);
       expect(pageBody).toContain(`http://127.0.0.1:${hostAddress.port}`);
       expect(pageBody).toContain("ws://strfry:7777");
+      expect(pageBody).toContain("Workload");
+      expect(pageBody).toContain("1 conversations, 1 open");
+      expect(pageBody).toContain("0 unread messages");
+      expect(pageBody).toContain("1 source changes awaiting review");
+      expect(pageBody).toContain("0 received, 1 completed, 0 failed commands");
+      expect(pageBody).toContain("1 source histories, 2 wiki refs");
+      expect(pageBody).toContain("1 reachable targets");
       expect(pageBody).toContain("Previous user message.");
       expect(pageBody).toContain("delivery published 1/1 relays");
       expect(pageBody).toContain("delivery failed 0/1 relays");

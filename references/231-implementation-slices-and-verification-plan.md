@@ -1065,6 +1065,9 @@ summary over projected conversations, open conversations, unread messages,
 unique pending approvals, pending source-change reviews, participant command
 receipt statuses, visible source-history refs, wiki refs, and reachable
 targets.
+The Human Interface Runtime fallback HTML page now renders the same workload
+categories so minimal User Client deployments do not lose participant
+operational context when the React bundle is unavailable.
 The canonical surface and authority specs were repaired in
 [506-canonical-user-node-surface-spec-repair.md](506-canonical-user-node-surface-spec-repair.md)
 so they classify these shipped behaviors as current baseline rather than open
@@ -1476,6 +1479,8 @@ Current status:
   summary from projected conversations, unread counts, unique pending
   approvals, source-change reviews, command receipt statuses,
   source-history/wiki refs, and reachable targets;
+- the Human Interface Runtime fallback HTML client now renders the same
+  Workload categories from the same participant-scoped state object;
 - User Client wiki page cards can now load complete projected previews into
   the participant page-update form as replacement drafts, so a running User
   Node can review and edit visible wiki memory without copying content out of

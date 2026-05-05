@@ -162,6 +162,8 @@ The running React User Client also shows a compact participant Workload panel
 for conversations, open work, unread messages, unique pending approvals,
 pending source reviews, command receipt statuses, source-history/wiki refs,
 and reachable targets.
+The Human Interface Runtime fallback HTML client renders the same workload
+categories when the React bundle is not available.
 The smoke still runs without live model credentials. Live OpenCode
 behavior and real-provider credentials remain manual/operator validation, but
 the fake OpenCode path now proves same-session `--session` continuity through a

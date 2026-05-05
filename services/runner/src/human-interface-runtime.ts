@@ -115,6 +115,30 @@ type UserClientState = {
   wikiRefs: WikiRefProjectionRecord[];
 };
 
+type UserClientWorkloadSummary = {
+  commandReceipts: {
+    completed: number;
+    failed: number;
+    received: number;
+  };
+  conversationCount: number;
+  openConversationCount: number;
+  pendingApprovalCount: number;
+  pendingSourceChangeCount: number;
+  sourceHistoryRefCount: number;
+  targetCount: number;
+  unreadCount: number;
+  wikiRefCount: number;
+};
+
+const openConversationStatuses = new Set([
+  "acknowledged",
+  "awaiting_approval",
+  "blocked",
+  "opened",
+  "working"
+]);
+
 type UserClientArtifactPreviewResponse = {
   artifact?: ArtifactRef | undefined;
   artifactId: string;
@@ -3318,7 +3342,70 @@ function renderRuntimeCommandReceipts(
           </article>`
       )
       .join("")}
-  </div>`;
+    </div>`;
+}
+
+function summarizeUserClientWorkload(
+  state: UserClientState
+): UserClientWorkloadSummary {
+  const pendingApprovalIds = new Set(
+    state.conversations.flatMap((conversation) => conversation.pendingApprovalIds)
+  );
+  const commandReceipts = state.runtimeCommandReceipts.reduce<
+    UserClientWorkloadSummary["commandReceipts"]
+  >(
+    (counts, receipt) => ({
+      ...counts,
+      [receipt.receiptStatus]: counts[receipt.receiptStatus] + 1
+    }),
+    {
+      completed: 0,
+      failed: 0,
+      received: 0
+    }
+  );
+
+  return {
+    commandReceipts,
+    conversationCount: state.conversations.length,
+    openConversationCount: state.conversations.filter((conversation) =>
+      openConversationStatuses.has(conversation.status)
+    ).length,
+    pendingApprovalCount: pendingApprovalIds.size,
+    pendingSourceChangeCount: state.sourceChangeRefs.filter(
+      (ref) => ref.status === "pending_review"
+    ).length,
+    sourceHistoryRefCount: state.sourceHistoryRefs.length,
+    targetCount: state.targets.length,
+    unreadCount: state.conversations.reduce(
+      (total, conversation) => total + conversation.unreadCount,
+      0
+    ),
+    wikiRefCount: state.wikiRefs.length
+  };
+}
+
+function formatUserClientWorkloadLines(
+  summary: UserClientWorkloadSummary
+): string[] {
+  return [
+    `${summary.conversationCount} conversations, ${summary.openConversationCount} open`,
+    `${summary.unreadCount} unread messages`,
+    `${summary.pendingApprovalCount} pending approvals`,
+    `${summary.pendingSourceChangeCount} source changes awaiting review`,
+    `${summary.commandReceipts.received} received, ${summary.commandReceipts.completed} completed, ${summary.commandReceipts.failed} failed commands`,
+    `${summary.sourceHistoryRefCount} source histories, ${summary.wikiRefCount} wiki refs`,
+    `${summary.targetCount} reachable targets`
+  ];
+}
+
+function renderUserClientWorkloadSummary(state: UserClientState): string {
+  const summary = summarizeUserClientWorkload(state);
+  const workloadLines = formatUserClientWorkloadLines(summary)
+    .map((line) => `<li>${escapeHtml(line)}</li>`)
+    .join("");
+
+  return `<ul class="workload-list">${workloadLines}</ul>`;
 }
 
 function renderMessageDelivery(message: UserNodeMessageRecord): string {
@@ -3638,6 +3725,7 @@ async function renderHome(input: {
       .source-summary ul { margin: 0; padding-left: 18px; }
       .command-receipt-list { display: grid; gap: 8px; }
       .command-receipt { border: 1px solid var(--line); border-radius: 6px; display: grid; gap: 4px; padding: 8px; }
+      .workload-list { color: var(--muted); display: grid; font-size: 13px; gap: 6px; margin: 12px 0 0; padding-left: 18px; }
       .wiki-preview { background: #f4f6f8; border-radius: 6px; margin: 0; max-height: 220px; overflow: auto; padding: 8px; white-space: pre-wrap; word-break: break-word; }
       .detail-list { display: grid; gap: 10px; margin: 12px 0 0; }
       .detail-list div { display: grid; grid-template-columns: 120px 1fr; gap: 10px; }
@@ -3690,6 +3778,10 @@ async function renderHome(input: {
               <div><dt>Status</dt><dd>${escapeHtml(state.runtime.statusMessage ?? "none")}</dd></div>
               <div><dt>Targets</dt><dd>${escapeHtml(state.targets.map((target) => target.nodeId).join(", ") || "none")}</dd></div>
             </dl>
+          </section>
+          <section>
+            <h2>Workload</h2>
+            ${renderUserClientWorkloadSummary(state)}
           </section>
           <section>
             <h2>Command Receipts</h2>
