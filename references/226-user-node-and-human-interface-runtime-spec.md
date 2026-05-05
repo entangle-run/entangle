@@ -58,6 +58,11 @@ User nodes are now partially runtime-capable:
 - Participant wiki page mutation can now request patch mode with a single-page
   unified diff, still through the Human Interface Runtime and Host-signed
   runner control path.
+- The React User Client can load a complete projected wiki page preview into
+  the page update form as a replacement draft for visible `wiki_page`
+  approval resources. This keeps participant memory edits inside the running
+  User Client while preserving the existing Human Interface Runtime, Host
+  control, and runner-owned wiki mutation boundary.
 - The federated dev runner image now builds and bundles that dedicated app at
   `/app/user-client`, sets `ENTANGLE_USER_CLIENT_STATIC_DIR` by default, and
   the Docker launcher adapter can publish a host port plus
@@ -131,8 +136,9 @@ Still missing:
   preview, signed source-change review, approval response, artifact preview,
   artifact history/diff, artifact restore, artifact source-change proposal,
   source-history publication/reconcile, wiki publication, wiki page upsert,
-  stale-edit detection, patch mode, detailed participant command receipt
-  visibility, and read-only runtime status projection;
+  projected wiki page draft prefill, stale-edit detection, patch mode,
+  detailed participant command receipt visibility, and read-only runtime status
+  projection;
 - production-grade User Node key custody beyond the current Host-provisioned
   development key backend.
 

@@ -5992,3 +5992,15 @@ wiki hash transitions.
 
 This keeps participant command closure visible inside the running User Client
 without requiring raw projection JSON or Studio for basic receipt inspection.
+
+## [2026-05-05] user-client | Added wiki page draft prefill
+
+Added `references/509-user-client-wiki-draft-prefill-slice.md`. The React
+User Client now offers an `Edit Page` action on visible `wiki_page` cards when
+Host projection contains a complete wiki preview, loading that projected page
+content and normalized path into the participant update form as a replacement
+draft.
+
+The mutation path is unchanged: the browser still calls the local Human
+Interface Runtime API, Host signs the runner command, and the assigned runner
+validates and writes its own wiki state.

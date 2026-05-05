@@ -245,6 +245,9 @@ The most accurate current description is:
 - the process-runner smoke now proves that patch mode through the running
   User Client JSON API, including expected-base hash forwarding, completed
   command receipt projection, and projected patched wiki preview content;
+- the running User Client can now load a complete projected wiki preview into
+  its page-update form as a replacement draft, so participant wiki memory edits
+  start from visible Host projection without exposing runner-local paths;
 - joined runners now publish session/conversation observations for later
   lifecycle transitions after handoffs, coordination result/close, approval
   request/response, completion, cancellation, and failure paths;
@@ -1295,8 +1298,9 @@ The current implementation-truth audit now lives in
   source-history/wiki publication visibility checks plus explicit
   runner-owned artifact/source/wiki command completion receipts plus User
   Client and Studio wiki page upsert plus runner-enforced stale-edit detection
-  plus single-page wiki patch mode plus User Client source-history reconcile
-  plus approval-response turn correlation;
+  plus single-page wiki patch mode plus projected-preview draft prefill plus
+  User Client source-history reconcile plus approval-response turn
+  correlation;
   the next git gaps are richer collaborative wiki merge UI, repository
   lifecycle behavior, and explicit fallback or
   replication behavior,

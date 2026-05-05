@@ -325,6 +325,11 @@ textarea {
   width: auto;
 }
 
+.artifact-actions textarea {
+  flex: 1 1 100%;
+  min-height: 140px;
+}
+
 .inline-checkbox {
   display: inline-flex;
   align-items: center;

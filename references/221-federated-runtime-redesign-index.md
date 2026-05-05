@@ -306,6 +306,10 @@ same-machine slice records.
 - [503-user-client-runtime-status-projection-slice.md](503-user-client-runtime-status-projection-slice.md)
 - [504-user-node-client-workload-summary-slice.md](504-user-node-client-workload-summary-slice.md)
 - [505-studio-user-node-workload-summary-slice.md](505-studio-user-node-workload-summary-slice.md)
+- [506-canonical-user-node-surface-spec-repair.md](506-canonical-user-node-surface-spec-repair.md)
+- [507-user-node-runtime-reassignment-surface-slice.md](507-user-node-runtime-reassignment-surface-slice.md)
+- [508-user-client-command-receipt-detail-slice.md](508-user-client-command-receipt-detail-slice.md)
+- [509-user-client-wiki-draft-prefill-slice.md](509-user-client-wiki-draft-prefill-slice.md)
 
 ## Audited Scope
 
@@ -390,8 +394,9 @@ The repository is not fully federated:
   bundles the built app and the Docker launcher adapter can publish a
   browser-openable User Client port for User Node runtime contexts; the
   dedicated app now exposes JSON-backed artifact preview, source diff,
-  source-candidate review, wiki preview cards, and automatic thread read-state
-  convergence, but richer object-backend review remains incomplete;
+  source-candidate review, wiki preview cards, wiki page draft prefill from
+  complete projected previews, and automatic thread read-state convergence,
+  but richer object-backend review remains incomplete;
 - Host now supports an explicit `ENTANGLE_HOST_CORS_ORIGINS` allow-list so
   browser-based Studio development can call Host across ports while actual Host
   API requests still use operator bearer auth; the process-runner demo prints

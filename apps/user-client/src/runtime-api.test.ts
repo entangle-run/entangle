@@ -1,6 +1,10 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
-import type { UserNodeMessageRecord } from "@entangle/types";
+import type {
+  UserNodeMessageRecord,
+  WikiRefProjectionRecord
+} from "@entangle/types";
 import {
+  buildWikiPageDraftFromProjection,
   buildRuntimeApiUrl,
   chooseConversationId,
   fetchArtifactDiff,
@@ -147,6 +151,58 @@ describe("user client runtime API helpers", () => {
       "wiki previous eeeeeeeeeeee",
       "wiki next dddddddddddd"
     ]);
+  });
+
+  it("builds wiki page drafts only from complete projected previews", () => {
+    const baseRef = {
+      artifactId: "wiki-page-alpha",
+      artifactPreview: {
+        available: true,
+        bytesRead: 28,
+        content: "# Working Context\n\nCurrent.",
+        contentEncoding: "utf8",
+        contentType: "text/markdown",
+        truncated: false
+      },
+      artifactRef: {
+        artifactId: "wiki-page-alpha",
+        artifactKind: "wiki_page",
+        backend: "wiki",
+        contentSummary: "Working context",
+        locator: {
+          nodeId: "worker-it",
+          path: "/wiki/working-context.md"
+        },
+        preferred: true,
+        status: "materialized"
+      },
+      graphId: "graph-alpha",
+      hostAuthorityPubkey:
+        "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+      nodeId: "worker-it",
+      projection: {
+        source: "observation_event",
+        updatedAt: "2026-05-05T12:00:00.000Z"
+      },
+      runnerId: "runner-alpha",
+      runnerPubkey:
+        "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"
+    } satisfies WikiRefProjectionRecord;
+
+    expect(buildWikiPageDraftFromProjection(baseRef)).toEqual({
+      artifactId: "wiki-page-alpha",
+      content: "# Working Context\n\nCurrent.",
+      path: "wiki/working-context.md"
+    });
+    expect(
+      buildWikiPageDraftFromProjection({
+        ...baseRef,
+        artifactPreview: {
+          ...baseRef.artifactPreview,
+          truncated: true
+        }
+      })
+    ).toBeUndefined();
   });
 
   it("preserves turn correlation when publishing approval responses", async () => {

@@ -130,6 +130,10 @@ Recently added:
   transitions when the runner completes or rejects the mutation.
 - The same wiki page mutation surfaces can select patch mode, where the
   content field carries a single-page unified diff for runner-side application.
+- The React User Client now offers an `Edit Page` action on visible
+  `wiki_page` cards when Host projection contains a complete preview, loading
+  the projected content and normalized page path into the participant update
+  form as a replacement draft.
 - Host status now includes bounded federated control/observe transport health,
   CLI host-status summaries include it, and Studio's Host Status panel renders
   the same Host-owned read model.

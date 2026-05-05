@@ -719,6 +719,10 @@ This repository currently contains:
   expose expected, previous, and next page hashes for stale-edit audit. The
   same command now supports `mode: "patch"` for single-page unified diffs that
   the runner applies only when context/removal lines match current content.
+  The running User Client can also load a complete projected wiki preview into
+  the participant page-update form as an edit draft, keeping normal wiki memory
+  edits inside the node-local client rather than requiring manual copy/paste
+  from projection cards.
   Public deep runtime reads
   for accepted federated
   assignments now ignore Host-local runtime files and use projected
@@ -1486,9 +1490,10 @@ The highest-value remaining gaps are:
   runtime inspection surface;
 - deeper delegated-session runtime semantics beyond the current controlled
   autonomous handoff and runner-local active-conversation reconciliation path,
-  especially formal cross-runtime relation modeling, participant runtime
-  reassignment UX beyond read-only User Client runtime status, and automated
-  repair workflows beyond the first owner-aware memory projection;
+  especially formal cross-runtime relation modeling, richer participant-aware
+  reassignment workflows beyond the first CLI/Studio assignment entry points,
+  and automated repair workflows beyond the first owner-aware memory
+  projection;
 - advanced git widening beyond the current locator-specific handoff,
   runner-owned source-history publication, bounded artifact
   history/diff/preview inspection, and backend-cache history/diff for projected
@@ -1499,8 +1504,9 @@ The highest-value remaining gaps are:
   target-specific source-history/wiki publication visibility checks and
   explicit runner-owned artifact/source/wiki command completion receipts,
   first operator and participant-scoped runner-owned wiki page upsert support
-  with runner-enforced stale-edit detection and single-page patch mode, User
-  Client approval-response turn correlation, richer
+  with runner-enforced stale-edit detection, single-page patch mode, and
+  projected-preview draft prefill, User Client approval-response turn
+  correlation, richer
   collaborative wiki merge UI and repository lifecycle behavior beyond
   explicit target publication, and replicated fallback paths;
 - production identity and authorization beyond the bootstrap operator-token

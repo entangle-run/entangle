@@ -714,6 +714,32 @@ export function formatRuntimeCommandReceiptDetailLines(
   ].filter((line): line is string => Boolean(line));
 }
 
+export type WikiPageDraftFromProjection = {
+  artifactId: string;
+  content: string;
+  path: string;
+};
+
+export function buildWikiPageDraftFromProjection(
+  ref: WikiRefProjectionRecord
+): WikiPageDraftFromProjection | undefined {
+  const preview = ref.artifactPreview;
+  if (!preview?.available || preview.truncated) {
+    return undefined;
+  }
+
+  const path = ref.artifactRef.locator.path.trim().replace(/^\/+/u, "");
+  if (!path) {
+    return undefined;
+  }
+
+  return {
+    artifactId: ref.artifactId,
+    content: preview.content,
+    path
+  };
+}
+
 export function renderArtifactLocator(ref: ArtifactRef): string {
   switch (ref.backend) {
     case "git":

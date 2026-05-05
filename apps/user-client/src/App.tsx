@@ -13,6 +13,7 @@ import type {
   WikiRefProjectionRecord
 } from "@entangle/types";
 import {
+  buildWikiPageDraftFromProjection,
   chooseConversationId,
   fetchArtifactDiff,
   fetchArtifactHistory,
@@ -895,6 +896,7 @@ function WikiResourceCards({
     <div className="artifact-list">
       {refs.map((ref) => {
         const target = wikiPublicationTargetForRef({ ref, resource });
+        const draft = buildWikiPageDraftFromProjection(ref);
 
         return (
           <div className="artifact-card" key={ref.artifactId}>
@@ -906,6 +908,20 @@ function WikiResourceCards({
             <span>{renderArtifactLocator(ref.artifactRef)}</span>
             {ref.artifactPreview?.available ? (
               <pre className="preview-block">{ref.artifactPreview.content}</pre>
+            ) : null}
+            {canUpsertPage && draft ? (
+              <button
+                onClick={() => {
+                  setPageContent(draft.content);
+                  setPageExpectedSha256("");
+                  setPageMode("replace");
+                  setPagePath(draft.path);
+                  setStatus(`draft loaded ${draft.path}`);
+                }}
+                type="button"
+              >
+                Edit Page
+              </button>
             ) : null}
           </div>
         );

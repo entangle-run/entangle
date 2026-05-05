@@ -1451,6 +1451,10 @@ Current status:
 - User Client command receipt cards now expose bounded command closure evidence
   beyond command id/status, including wiki hash transitions and operation
   target ids;
+- User Client wiki page cards can now load complete projected previews into
+  the participant page-update form as replacement drafts, so a running User
+  Node can review and edit visible wiki memory without copying content out of
+  projection cards;
 - the remaining distributed proof hardening is infrastructure-backed
   orchestration that can provision multiple machines or VM/container boundaries
   around the verifier.
