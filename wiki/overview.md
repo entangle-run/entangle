@@ -431,6 +431,8 @@ Generated proof profiles and verifier runs can now also opt into
 `requireExternalUserClientUrls`, which rejects loopback or wildcard projected
 User Client URLs when a physical multi-machine proof needs to show that
 human-node clients are reachable beyond their own host.
+They can also opt into `requireExternalHostUrl`, which rejects loopback or
+wildcard Host API URLs for physical proof runs.
 When a proof profile carries explicit assignments, the verifier now uses those
 manifest assignment ids rather than deriving ids from runner ids.
 Generated proof profiles now also carry primary User Node conversation and

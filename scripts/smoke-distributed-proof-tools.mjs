@@ -356,6 +356,7 @@ try {
     "--check-relay-health",
     "--check-git-backend-health",
     "--check-published-git-ref",
+    "--require-external-host-url",
     "--require-external-user-client-urls",
     "--require-user-client-basic-auth",
     "--user-client-basic-auth-env-var",
@@ -380,6 +381,7 @@ try {
       '${ENTANGLE_PROOF_JUNIT_DIR:+--junit "$ENTANGLE_PROOF_JUNIT_DIR/topology.xml"}',
       '${ENTANGLE_PROOF_JUNIT_DIR:+--junit "$ENTANGLE_PROOF_JUNIT_DIR/artifacts.xml"}',
       "--check-relay-health",
+      "--require-external-host-url",
       "--require-external-user-client-urls",
       "--require-artifact-evidence",
       '"agentRunnerId":"proof-agent-runner"',
@@ -394,6 +396,7 @@ try {
       '"checkPublishedGitRef":true',
       '"checkUserClientHealth":true',
       '"gitServiceRefs":["gitea"]',
+      '"requireExternalHostUrl":true',
       '"requireExternalUserClientUrls":true',
       '"requireConversation":true',
       '"requirePublishedGitArtifact":true',
@@ -459,6 +462,7 @@ try {
         relayUrls: ["ws://relay.example:7777"],
         requireConversation: true,
         requireArtifactEvidence: true,
+        requireExternalHostUrl: true,
         requirePublishedGitArtifact: true,
         reviewerUserNodeId: "bob",
         reviewerUserRunnerId: "proof-reviewer-runner",
@@ -815,6 +819,30 @@ try {
     loopbackUserClientJson,
     "user client external url user"
   );
+
+  const loopbackHostJson = runFailureStep(
+    "proof verifier loopback-host self-test",
+    [
+      "scripts/federated-distributed-proof-verify.mjs",
+      "--self-test",
+      "--json",
+      "--require-external-host-url"
+    ],
+    {
+      mustContain: '"ok": false'
+    }
+  );
+  verifySelfTestFailureJson(loopbackHostJson, "host external url");
+
+  const externalHostJson = runStep("proof verifier external-host self-test", [
+    "scripts/federated-distributed-proof-verify.mjs",
+    "--self-test",
+    "--json",
+    "--host-url",
+    "http://host.example:7071",
+    "--require-external-host-url"
+  ]);
+  verifySelfTestJson(externalHostJson);
 
   const wrongRuntimeKindJson = runFailureStep("proof verifier wrong-runtime-kind self-test", [
     "scripts/federated-distributed-proof-verify.mjs",

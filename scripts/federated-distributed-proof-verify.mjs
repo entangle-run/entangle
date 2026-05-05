@@ -43,6 +43,9 @@ const checkUserClientHealth =
 const requireExternalUserClientUrls =
   hasFlag("--require-external-user-client-urls") ||
   readProofProfileBoolean("requireExternalUserClientUrls");
+const requireExternalHostUrl =
+  hasFlag("--require-external-host-url") ||
+  readProofProfileBoolean("requireExternalHostUrl");
 const requireConversation =
   hasFlag("--require-conversation") ||
   readProofProfileBoolean("requireConversation");
@@ -145,6 +148,7 @@ Options:
   --check-user-client-health      Fetch /health for projected User Client URLs. Defaults to profile checkUserClientHealth.
   --require-external-user-client-urls
                                   Reject loopback or wildcard User Client URLs. Defaults to profile requireExternalUserClientUrls.
+  --require-external-host-url     Reject loopback or wildcard Host API URLs. Defaults to profile requireExternalHostUrl.
   --require-conversation          Require a projected conversation from the primary User Node to the agent node. Defaults to profile requireConversation.
   --require-artifact-evidence     Require projected artifact/source/wiki evidence from the agent node.
   --require-published-git-artifact
@@ -1013,6 +1017,15 @@ async function evaluateSnapshot(snapshot) {
     typeof authorityPubkey === "string" && authorityPubkey.length > 0,
     authorityPubkey ? `authority=${authorityPubkey}` : "missing authority"
   );
+
+  if (requireExternalHostUrl) {
+    addCheck(
+      checks,
+      "host external url",
+      isExternalHttpUrl(hostUrl),
+      hostUrl
+    );
+  }
 
   if (checkRelayHealth) {
     if (relayUrls.length === 0) {

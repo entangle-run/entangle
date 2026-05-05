@@ -872,6 +872,7 @@ files are the active federated redesign pack.
 532. [531-user-client-wiki-conflict-receipts-slice.md](531-user-client-wiki-conflict-receipts-slice.md)
 533. [532-cli-wiki-conflict-receipts-slice.md](532-cli-wiki-conflict-receipts-slice.md)
 534. [533-human-runtime-wiki-conflict-receipts-slice.md](533-human-runtime-wiki-conflict-receipts-slice.md)
+535. [534-distributed-proof-external-host-url-slice.md](534-distributed-proof-external-host-url-slice.md)
 
 ## Role of this corpus
 

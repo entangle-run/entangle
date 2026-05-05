@@ -37,6 +37,7 @@ const checkPublishedGitRef = hasFlag("--check-published-git-ref");
 const requireExternalUserClientUrls = hasFlag(
   "--require-external-user-client-urls"
 );
+const requireExternalHostUrl = hasFlag("--require-external-host-url");
 const requireUserClientBasicAuth = hasFlag("--require-user-client-basic-auth");
 const userClientBasicAuthEnvVar =
   readFlagValue("--user-client-basic-auth-env-var") ??
@@ -144,6 +145,7 @@ Options:
   --check-published-git-ref         Include git ls-remote checks for post-work published git artifact refs.
   --require-external-user-client-urls
                                     Include verifier checks that reject loopback or wildcard User Client URLs.
+  --require-external-host-url       Include verifier checks that reject loopback or wildcard Host API URLs.
   --require-user-client-basic-auth  Add a required Human Interface Runtime Basic Auth env placeholder to generated User Node runner env files.
   --user-client-basic-auth-env-var <envVar>
                                     Source env var for generated User Client Basic Auth placeholders. Default: ENTANGLE_HUMAN_INTERFACE_BASIC_AUTH
@@ -578,6 +580,10 @@ function buildVerifierCommand(options = {}) {
     args.push("--require-external-user-client-urls");
   }
 
+  if (requireExternalHostUrl) {
+    args.push("--require-external-host-url");
+  }
+
   if (options.requireArtifactEvidence) {
     args.push("--require-artifact-evidence");
     args.push("--require-published-git-artifact");
@@ -636,6 +642,7 @@ function buildProofProfile(options = {}) {
     ...(checkGitBackendHealth ? { checkGitBackendHealth: true } : {}),
     ...(options.checkPublishedGitRef ? { checkPublishedGitRef: true } : {}),
     checkUserClientHealth: true,
+    ...(requireExternalHostUrl ? { requireExternalHostUrl: true } : {}),
     ...(requireExternalUserClientUrls
       ? { requireExternalUserClientUrls: true }
       : {}),

@@ -334,6 +334,7 @@ same-machine slice records.
 - [531-user-client-wiki-conflict-receipts-slice.md](531-user-client-wiki-conflict-receipts-slice.md)
 - [532-cli-wiki-conflict-receipts-slice.md](532-cli-wiki-conflict-receipts-slice.md)
 - [533-human-runtime-wiki-conflict-receipts-slice.md](533-human-runtime-wiki-conflict-receipts-slice.md)
+- [534-distributed-proof-external-host-url-slice.md](534-distributed-proof-external-host-url-slice.md)
 
 ## Audited Scope
 
@@ -1116,7 +1117,10 @@ published git artifact locators to prove the advertised branch contains the
 projected commit. Generated proof profiles and verifier commands can now also
 require projected User Client URLs to be non-loopback and non-wildcard, giving
 physical multi-machine proofs an explicit check that human-node clients are not
-advertised only as local-machine endpoints. Proof kits can now also generate
+advertised only as local-machine endpoints. Generated proof profiles and
+verifier commands can now also require the Host API URL to be non-loopback and
+non-wildcard, keeping physical proof runs from accepting a local-only Host
+endpoint. Proof kits can now also generate
 required User Client Basic Auth placeholders for User Node runner env files and
 fail fast in generated `start.sh` when those placeholders were not replaced,
 while leaving same-machine demos unchanged unless the operator opts in. CLI

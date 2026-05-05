@@ -1515,6 +1515,9 @@ Current status:
   projected User Client URLs to be non-loopback and non-wildcard, giving
   physical multi-machine proof runs an opt-in check that human-node clients are
   reachable beyond the node's own machine;
+- distributed proof profiles and generated verifier commands can now also
+  require the Host API URL to be non-loopback and non-wildcard, keeping
+  physical proof topology checks from silently accepting a local-only Host URL;
 - generated proof kits can now require User Client Basic Auth placeholders and
   fail-fast start checks for User Node runner machines, keeping credentials out
   of the kit command line while hardening physical proof endpoints;

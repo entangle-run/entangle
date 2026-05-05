@@ -45,6 +45,7 @@ export function normalizeDistributedProofProfile(value, options = {}) {
     "requireExternalUserClientUrls",
     sourceLabel
   );
+  copyOptionalBoolean(profile, value, "requireExternalHostUrl", sourceLabel);
   copyOptionalBoolean(profile, value, "requireConversation", sourceLabel);
   copyOptionalBoolean(profile, value, "requireArtifactEvidence", sourceLabel);
   copyOptionalBoolean(profile, value, "requirePublishedGitArtifact", sourceLabel);

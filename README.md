@@ -430,6 +430,8 @@ operator machine.
 Pass `--require-external-user-client-urls` when a physical multi-machine proof
 should reject projected User Client URLs on `localhost`, loopback, or wildcard
 addresses.
+Pass `--require-external-host-url` when that same proof should reject a Host
+API URL on `localhost`, loopback, or wildcard addresses.
 Pass `--require-user-client-basic-auth` when generated User Node runner
 directories should require `ENTANGLE_HUMAN_INTERFACE_BASIC_AUTH` before their
 User Clients start. Use `--user-client-basic-auth-env-var <envVar>` if the
@@ -453,7 +455,8 @@ runtime observations, expected runtime-kind capabilities, expected
 agent-engine capabilities, and distinct User Client URLs back to Host
 projection. With the external-URL requirement enabled, those User Client URLs
 must also be reachable as non-loopback HTTP endpoints from the operator
-machine.
+machine. With the external Host requirement enabled, the verifier also rejects
+a loopback or wildcard Host API URL before accepting the topology proof.
 
 After the runner directories are running and assignments have been offered, the
 operator machine can verify the proof through Host and User Client HTTP

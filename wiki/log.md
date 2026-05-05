@@ -1,5 +1,23 @@
 # Entangle Wiki Log
 
+## [2026-05-05] ops | Added external Host URL proof guard
+
+Added `references/534-distributed-proof-external-host-url-slice.md`.
+Distributed proof profiles, generated proof kits, and direct verifier runs can
+now opt into `requireExternalHostUrl`.
+
+The verifier emits a `host external url` check that rejects loopback or
+wildcard Host API URLs, keeping physical proof runs aligned with the existing
+external User Client URL guard.
+
+Targeted checks passed:
+
+- `node --check scripts/distributed-proof-profile.mjs`
+- `node --check scripts/federated-distributed-proof-kit.mjs`
+- `node --check scripts/federated-distributed-proof-verify.mjs`
+- `node --check scripts/smoke-distributed-proof-tools.mjs`
+- `pnpm ops:smoke-distributed-proof-tools`
+
 ## [2026-05-05] runner | Added fallback wiki conflict receipts
 
 Added `references/533-human-runtime-wiki-conflict-receipts-slice.md`.
