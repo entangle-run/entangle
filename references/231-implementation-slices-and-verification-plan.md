@@ -1474,6 +1474,9 @@ Current status:
 - the User Client now computes the SHA-256 of projected wiki page previews when
   loading page drafts, so participant wiki page updates carry stale-edit
   protection by default instead of relying on manual hash entry;
+- the User Client now renders a local line diff for replace/append wiki drafts
+  loaded from projected previews, improving participant review before the
+  runner-owned mutation request is sent;
 - focused-register lifecycle transition history now writes an indexed wiki
   summary page and future memory ref, so closures, completions, replacements,
   consolidations, and exact-overlap retirements are visible through the node

@@ -1332,7 +1332,7 @@ The current implementation-truth audit now lives in
   Client and Studio wiki page upsert plus runner-enforced stale-edit detection
   plus single-page wiki patch mode plus projected-preview draft prefill with
   automatic expected-hash population plus User Client source-history reconcile
-  plus approval-response turn
+  plus local wiki draft diff preview plus approval-response turn
   correlation;
   the next git gaps are richer collaborative wiki merge UI, repository
   lifecycle behavior, and explicit fallback or

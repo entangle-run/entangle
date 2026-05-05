@@ -1,5 +1,20 @@
 # Entangle Wiki Log
 
+## [2026-05-05] user-client | Added wiki draft diff previews
+
+Added `references/527-user-client-wiki-draft-diff-preview-slice.md`.
+The User Client now keeps the projected wiki base content when loading an edit
+draft and renders a local line diff for replace/append page updates.
+
+Patch mode still shows the supplied patch content directly, and stale-edit
+protection remains enforced by the runner through the expected-current hash.
+
+Targeted checks passed:
+
+- `pnpm --filter @entangle/user-client test -- src/runtime-api.test.ts`
+- `pnpm --filter @entangle/user-client typecheck`
+- `pnpm --filter @entangle/user-client lint`
+
 ## [2026-05-05] user-client | Added expected wiki draft hashes
 
 Added `references/526-user-client-wiki-draft-stale-hash-slice.md`.

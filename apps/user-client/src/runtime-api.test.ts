@@ -4,7 +4,9 @@ import type {
   WikiRefProjectionRecord
 } from "@entangle/types";
 import {
+  buildWikiPageChangePreview,
   buildWikiPageDraftFromProjection,
+  buildWikiPageNextContentPreview,
   buildRuntimeApiUrl,
   chooseConversationId,
   computeUtf8Sha256Hex,
@@ -325,6 +327,33 @@ describe("user client runtime API helpers", () => {
     await expect(computeUtf8Sha256Hex("Current.")).resolves.toBe(
       "9bc87a3384e31a6c677862caf16d000f2fbd80613d8a6b7b3c70c9909c448f8a"
     );
+  });
+
+  it("builds wiki page change previews from reviewed draft content", () => {
+    expect(
+      buildWikiPageNextContentPreview({
+        baseContent: "# Notes\n\nOld\n",
+        content: "# Notes\n\nNew",
+        mode: "replace"
+      })
+    ).toBe("# Notes\n\nNew\n");
+
+    expect(
+      buildWikiPageChangePreview({
+        currentContent: "# Notes\n\nOld\n",
+        nextContent: "# Notes\n\nNew\n"
+      })
+    ).toBe("--- current\n+++ draft\n # Notes\n \n-Old\n+New\n");
+  });
+
+  it("builds wiki append previews with runner-compatible spacing", () => {
+    expect(
+      buildWikiPageNextContentPreview({
+        baseContent: "# Notes\n\nOld\n",
+        content: "New",
+        mode: "append"
+      })
+    ).toBe("# Notes\n\nOld\n\nNew\n");
   });
 
   it("preserves turn correlation when publishing approval responses", async () => {

@@ -186,6 +186,105 @@ export async function computeUtf8Sha256Hex(content: string): Promise<string> {
     .join("");
 }
 
+function normalizeWikiContentForPreview(content: string): string {
+  const normalized = content.replace(/\r\n/g, "\n").trimEnd();
+
+  return normalized.length > 0 ? `${normalized}\n` : "";
+}
+
+function splitPreviewLines(content: string): string[] {
+  const normalized = normalizeWikiContentForPreview(content);
+
+  return normalized.length > 0 ? normalized.slice(0, -1).split("\n") : [];
+}
+
+export function buildWikiPageNextContentPreview(input: {
+  baseContent: string;
+  content: string;
+  mode: "append" | "patch" | "replace";
+}): string {
+  if (input.mode === "append") {
+    const parts = [
+      input.baseContent.trimEnd(),
+      input.content.trimEnd()
+    ].filter((part) => part.length > 0);
+
+    return parts.length > 0 ? `${parts.join("\n\n")}\n` : "";
+  }
+
+  if (input.mode === "patch") {
+    return input.content;
+  }
+
+  return normalizeWikiContentForPreview(input.content);
+}
+
+export function buildWikiPageChangePreview(input: {
+  currentContent: string;
+  nextContent: string;
+}): string {
+  const currentLines = splitPreviewLines(input.currentContent);
+  const nextLines = splitPreviewLines(input.nextContent);
+
+  if (
+    currentLines.length === nextLines.length &&
+    currentLines.every((line, index) => line === nextLines[index])
+  ) {
+    return "No changes.\n";
+  }
+
+  const lengths = Array.from({ length: currentLines.length + 1 }, () =>
+    Array(nextLines.length + 1).fill(0) as number[]
+  );
+
+  for (let currentIndex = currentLines.length - 1; currentIndex >= 0; currentIndex -= 1) {
+    for (let nextIndex = nextLines.length - 1; nextIndex >= 0; nextIndex -= 1) {
+      lengths[currentIndex]![nextIndex] =
+        currentLines[currentIndex] === nextLines[nextIndex]
+          ? lengths[currentIndex + 1]![nextIndex + 1]! + 1
+          : Math.max(
+              lengths[currentIndex + 1]![nextIndex]!,
+              lengths[currentIndex]![nextIndex + 1]!
+            );
+    }
+  }
+
+  const output = ["--- current", "+++ draft"];
+  let currentIndex = 0;
+  let nextIndex = 0;
+
+  while (currentIndex < currentLines.length || nextIndex < nextLines.length) {
+    if (
+      currentIndex < currentLines.length &&
+      nextIndex < nextLines.length &&
+      currentLines[currentIndex] === nextLines[nextIndex]
+    ) {
+      output.push(` ${currentLines[currentIndex]}`);
+      currentIndex += 1;
+      nextIndex += 1;
+      continue;
+    }
+
+    if (
+      nextIndex < nextLines.length &&
+      (currentIndex >= currentLines.length ||
+        lengths[currentIndex]![nextIndex + 1]! >
+          lengths[currentIndex + 1]![nextIndex]!)
+    ) {
+      output.push(`+${nextLines[nextIndex]}`);
+      nextIndex += 1;
+      continue;
+    }
+
+    if (currentIndex < currentLines.length) {
+      output.push(`-${currentLines[currentIndex]}`);
+      currentIndex += 1;
+    }
+  }
+
+  return `${output.join("\n")}\n`;
+}
+
 export function buildRuntimeApiUrl(pathname: string, baseUrl = ""): string {
   if (!baseUrl) {
     return pathname;

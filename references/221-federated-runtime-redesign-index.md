@@ -327,6 +327,7 @@ same-machine slice records.
 - [524-host-event-audit-bundle-offline-verify-slice.md](524-host-event-audit-bundle-offline-verify-slice.md)
 - [525-host-event-audit-bundle-signature-verify-slice.md](525-host-event-audit-bundle-signature-verify-slice.md)
 - [526-user-client-wiki-draft-stale-hash-slice.md](526-user-client-wiki-draft-stale-hash-slice.md)
+- [527-user-client-wiki-draft-diff-preview-slice.md](527-user-client-wiki-draft-diff-preview-slice.md)
 
 ## Audited Scope
 
@@ -1154,8 +1155,9 @@ metadata in both the model-guided memory prompt and deterministic
 working-context wiki page, giving delegated sessions a stronger owner-aware
 continuation basis. The User Client now computes the SHA-256 of projected wiki
 page previews when loading them into editable drafts, so participant page
-updates carry stale-edit protection by default. Focused-register lifecycle
-transition history now also has
+updates carry stale-edit protection by default; it also renders a local line
+diff for replace/append wiki drafts before sending the runner-owned mutation
+request. Focused-register lifecycle transition history now also has
 a runner-owned indexed wiki page at
 `wiki/summaries/focused-register-transition-history.md`, so closure,
 completion, replacement, consolidation, and exact-overlap retirements flow into

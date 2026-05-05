@@ -13,7 +13,9 @@ import type {
   WikiRefProjectionRecord
 } from "@entangle/types";
 import {
+  buildWikiPageChangePreview,
   buildWikiPageDraftFromProjection,
+  buildWikiPageNextContentPreview,
   chooseConversationId,
   computeUtf8Sha256Hex,
   fetchArtifactDiff,
@@ -813,6 +815,7 @@ function WikiResourceCards({
 }) {
   const [publishReason, setPublishReason] = useState("");
   const [pageContent, setPageContent] = useState("");
+  const [pageBaseContent, setPageBaseContent] = useState<string | undefined>();
   const [pageExpectedSha256, setPageExpectedSha256] = useState("");
   const [pageMode, setPageMode] =
     useState<"append" | "patch" | "replace">("replace");
@@ -837,6 +840,24 @@ function WikiResourceCards({
       refs,
       resource
     });
+  const pageChangePreview = useMemo(() => {
+    if (!canUpsertPage || pageBaseContent === undefined) {
+      return undefined;
+    }
+
+    if (pageMode === "patch") {
+      return pageContent.trim().length > 0 ? pageContent : undefined;
+    }
+
+    return buildWikiPageChangePreview({
+      currentContent: pageBaseContent,
+      nextContent: buildWikiPageNextContentPreview({
+        baseContent: pageBaseContent,
+        content: pageContent,
+        mode: pageMode
+      })
+    });
+  }, [canUpsertPage, pageBaseContent, pageContent, pageMode]);
 
   if (refs.length === 0 && !canUpsertPage) {
     return null;
@@ -916,6 +937,7 @@ function WikiResourceCards({
               <button
                 onClick={() => {
                   setPageContent(draft.content);
+                  setPageBaseContent(draft.content);
                   setPageMode("replace");
                   setPagePath(draft.path);
                   setStatus(`draft loaded ${draft.path}`);
@@ -1008,6 +1030,9 @@ function WikiResourceCards({
             <button onClick={() => void requestPageUpsert()} type="button">
               Update Page
             </button>
+            {pageChangePreview ? (
+              <pre className="preview-block">{pageChangePreview}</pre>
+            ) : null}
           </>
         ) : null}
         {status ? <span className="metadata">{status}</span> : null}
