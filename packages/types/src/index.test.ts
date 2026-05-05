@@ -33,6 +33,7 @@ import {
   hostAuthorityImportRequestSchema,
   hostAuthorityInspectionResponseSchema,
   hostErrorResponseSchema,
+  hostEventIntegrityResponseSchema,
   hostEventListQuerySchema,
   hostProjectionSnapshotSchema,
   hostEventRecordSchema,
@@ -3197,6 +3198,23 @@ describe("host event contracts", () => {
     ).toEqual({
       typePrefix: ["session."]
     });
+  });
+
+  it("accepts host event integrity responses", () => {
+    const result = hostEventIntegrityResponseSchema.parse({
+      checkedEventCount: 2,
+      genesisHash:
+        "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+      lastAuditRecordHash:
+        "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+      lastEventId: "evt-operator-request-002",
+      schemaVersion: "1",
+      status: "valid",
+      unverifiableEventCount: 0
+    });
+
+    expect(result.status).toBe("valid");
+    expect(result.checkedEventCount).toBe(2);
   });
 
   it("accepts a typed bootstrap operator request audit event", () => {

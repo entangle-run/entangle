@@ -42,6 +42,7 @@ import {
   hostAuthorityInspectionResponseSchema,
   identifierSchema,
   nostrEventIdSchema,
+  hostEventIntegrityResponseSchema,
   hostEventListQuerySchema,
   hostEventListResponseSchema,
   hostEventStreamQuerySchema,
@@ -174,6 +175,7 @@ import {
   listRuntimeSourceHistoryReplays,
   listRuntimeTurns,
   listHostEvents,
+  inspectHostEventIntegrity,
   getCatalogInspection,
   getGraphInspection,
   getGraphRevision,
@@ -1892,6 +1894,10 @@ export async function buildHostServer(options: HostServerOptions = {}) {
 
   server.get("/v1/catalog", async () =>
     catalogInspectionResponseSchema.parse(await getCatalogInspection())
+  );
+
+  server.get("/v1/events/integrity", async () =>
+    hostEventIntegrityResponseSchema.parse(await inspectHostEventIntegrity())
   );
 
   server.route({

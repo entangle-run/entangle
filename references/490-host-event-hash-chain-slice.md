@@ -94,7 +94,8 @@ continues the chain from that point.
 
 ## Open Questions
 
-- Should the next audit hardening slice expose a Host API that verifies the
-  full event chain and reports the first broken event?
+- `491-host-event-integrity-inspection-slice.md` adds a Host API and CLI
+  command that verifies the full event chain and reports the first broken or
+  unverifiable event.
 - Should production audit export be signed by Host Authority, an Operator
   Identity, or both?

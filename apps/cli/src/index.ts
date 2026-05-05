@@ -2212,6 +2212,14 @@ hostEventsCommand
   );
 
 hostEventsCommand
+  .command("integrity")
+  .description("Verify the Host event audit hash chain.")
+  .action(async (_options: unknown, command: Command) => {
+    const client = createCliHostClient(command);
+    printJson(await client.inspectHostEventIntegrity());
+  });
+
+hostEventsCommand
   .command("watch")
   .option("--replay <n>", "Replay the last N persisted events before streaming.", "20")
   .option("--category <category>", "Filter by host event category.")

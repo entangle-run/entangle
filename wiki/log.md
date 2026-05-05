@@ -5796,3 +5796,13 @@ local tamper-evidence chain across persisted Host event JSONL records.
 Host event appends are serialized so concurrent operator requests do not fork
 the chain, and Host event reads wait for pending appends before loading the
 trace. CLI runtime-trace summaries preserve the audit hashes when present.
+
+## [2026-05-05] cli | Added Host event integrity inspection
+
+Added `references/491-host-event-integrity-inspection-slice.md`. Host now
+exposes `GET /v1/events/integrity`, host-client parses the same typed
+response, and `entangle host events integrity` prints the Host-side event
+chain verification result.
+
+The integrity response distinguishes valid chains, broken chains, and older
+partially unverifiable traces whose records predate audit hash fields.

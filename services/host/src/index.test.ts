@@ -35,6 +35,7 @@ import {
   hostAuthorityImportResponseSchema,
   hostAuthorityInspectionResponseSchema,
   hostArtifactBackendCacheClearResponseSchema,
+  hostEventIntegrityResponseSchema,
   hostEventListResponseSchema,
   hostEventRecordSchema,
   hostErrorResponseSchema,
@@ -3535,6 +3536,22 @@ describe("buildHostServer", () => {
         firstDeniedEvent?.auditRecordHash
       );
       expect(secondDeniedEvent?.auditRecordHash).toMatch(/^[a-f0-9]{64}$/);
+
+      const integrityResponse = await server.inject({
+        headers: {
+          authorization: "Bearer host-secret"
+        },
+        method: "GET",
+        url: "/v1/events/integrity"
+      });
+      const integrity = hostEventIntegrityResponseSchema.parse(
+        integrityResponse.json()
+      );
+
+      expect(integrity.status).toBe("valid");
+      expect(integrity.checkedEventCount).toBeGreaterThanOrEqual(events.length);
+      expect(integrity.firstBrokenEvent).toBeUndefined();
+      expect(integrity.lastAuditRecordHash).toMatch(/^[a-f0-9]{64}$/);
 
       expect(events).toEqual(
         expect.arrayContaining([

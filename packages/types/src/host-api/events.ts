@@ -562,6 +562,31 @@ export const hostEventListResponseSchema = z.object({
   events: z.array(hostEventRecordSchema)
 });
 
+export const hostEventIntegrityIssueSchema = z.object({
+  actualHash: sha256DigestSchema.optional(),
+  eventId: identifierSchema,
+  eventType: nonEmptyStringSchema,
+  expectedHash: sha256DigestSchema.optional(),
+  reason: z.enum([
+    "missing_audit_hash",
+    "previous_hash_mismatch",
+    "record_hash_mismatch"
+  ]),
+  timestamp: nonEmptyStringSchema
+});
+
+export const hostEventIntegrityResponseSchema = z.object({
+  checkedEventCount: z.number().int().nonnegative(),
+  firstBrokenEvent: hostEventIntegrityIssueSchema.optional(),
+  firstUnverifiableEvent: hostEventIntegrityIssueSchema.optional(),
+  genesisHash: sha256DigestSchema,
+  lastAuditRecordHash: sha256DigestSchema.optional(),
+  lastEventId: identifierSchema.optional(),
+  schemaVersion: z.literal("1"),
+  status: z.enum(["valid", "unverifiable", "broken"]),
+  unverifiableEventCount: z.number().int().nonnegative()
+});
+
 export type CatalogUpdatedEvent = z.infer<typeof catalogUpdatedEventSchema>;
 export type PackageSourceAdmittedEvent = z.infer<
   typeof packageSourceAdmittedEventSchema
@@ -652,3 +677,9 @@ export type HostEventRecord = z.infer<typeof hostEventRecordSchema>;
 export type HostEventListQuery = z.infer<typeof hostEventListQuerySchema>;
 export type HostEventStreamQuery = z.infer<typeof hostEventStreamQuerySchema>;
 export type HostEventListResponse = z.infer<typeof hostEventListResponseSchema>;
+export type HostEventIntegrityIssue = z.infer<
+  typeof hostEventIntegrityIssueSchema
+>;
+export type HostEventIntegrityResponse = z.infer<
+  typeof hostEventIntegrityResponseSchema
+>;

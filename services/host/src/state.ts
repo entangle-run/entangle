@@ -62,7 +62,9 @@ import {
   type EffectiveNodeBinding,
   type HostEventListQuery,
   type HostEventListResponse,
+  type HostEventIntegrityResponse,
   type HostEventRecord,
+  hostEventIntegrityResponseSchema,
   hostAuthorityExportResponseSchema,
   type HostAuthorityExportResponse,
   hostAuthorityImportRequestSchema,
@@ -5124,18 +5126,9 @@ function hostEventMatchesListQuery(
   return true;
 }
 
-export async function listHostEvents(
-  queryOrLimit: HostEventListQuery | number = 100
-): Promise<HostEventListResponse> {
-  await hostEventAppendQueue;
-  await initializeHostState();
-  const query = normalizeHostEventListQuery(queryOrLimit);
-  const limit = query.limit ?? 100;
-
+async function readPersistedHostEvents(): Promise<HostEventRecord[]> {
   if (!(await pathExists(controlPlaneTraceRoot))) {
-    return hostEventListResponseSchema.parse({
-      events: []
-    });
+    return [];
   }
 
   const fileNames = (await readdir(controlPlaneTraceRoot))
@@ -5157,10 +5150,110 @@ export async function listHostEvents(
     events.push(...entries);
   }
 
+  return events;
+}
+
+export async function listHostEvents(
+  queryOrLimit: HostEventListQuery | number = 100
+): Promise<HostEventListResponse> {
+  await hostEventAppendQueue;
+  await initializeHostState();
+  const query = normalizeHostEventListQuery(queryOrLimit);
+  const limit = query.limit ?? 100;
+  const events = await readPersistedHostEvents();
+
   return hostEventListResponseSchema.parse({
     events: events
       .filter((event) => hostEventMatchesListQuery(event, query))
       .slice(-limit)
+  });
+}
+
+export async function inspectHostEventIntegrity(): Promise<HostEventIntegrityResponse> {
+  await hostEventAppendQueue;
+  await initializeHostState();
+
+  const events = await readPersistedHostEvents();
+  let expectedPreviousHash = hostEventAuditGenesisHash;
+  let lastAuditRecordHash: string | undefined;
+  let lastEventId: string | undefined;
+  let firstUnverifiableEvent:
+    | HostEventIntegrityResponse["firstUnverifiableEvent"]
+    | undefined;
+  let unverifiableEventCount = 0;
+
+  for (const event of events) {
+    const computedRecordHash = computeHostEventAuditHash(event);
+    lastEventId = event.eventId;
+
+    if (!event.auditPreviousEventHash || !event.auditRecordHash) {
+      unverifiableEventCount += 1;
+      firstUnverifiableEvent ??= {
+        eventId: event.eventId,
+        eventType: event.type,
+        reason: "missing_audit_hash",
+        timestamp: event.timestamp
+      };
+      expectedPreviousHash = computedRecordHash;
+      lastAuditRecordHash = computedRecordHash;
+      continue;
+    }
+
+    if (event.auditPreviousEventHash !== expectedPreviousHash) {
+      return hostEventIntegrityResponseSchema.parse({
+        checkedEventCount: events.length,
+        firstBrokenEvent: {
+          actualHash: event.auditPreviousEventHash,
+          eventId: event.eventId,
+          eventType: event.type,
+          expectedHash: expectedPreviousHash,
+          reason: "previous_hash_mismatch",
+          timestamp: event.timestamp
+        },
+        ...(firstUnverifiableEvent ? { firstUnverifiableEvent } : {}),
+        genesisHash: hostEventAuditGenesisHash,
+        ...(lastAuditRecordHash ? { lastAuditRecordHash } : {}),
+        ...(lastEventId ? { lastEventId } : {}),
+        schemaVersion: "1",
+        status: "broken",
+        unverifiableEventCount
+      });
+    }
+
+    if (event.auditRecordHash !== computedRecordHash) {
+      return hostEventIntegrityResponseSchema.parse({
+        checkedEventCount: events.length,
+        firstBrokenEvent: {
+          actualHash: event.auditRecordHash,
+          eventId: event.eventId,
+          eventType: event.type,
+          expectedHash: computedRecordHash,
+          reason: "record_hash_mismatch",
+          timestamp: event.timestamp
+        },
+        ...(firstUnverifiableEvent ? { firstUnverifiableEvent } : {}),
+        genesisHash: hostEventAuditGenesisHash,
+        ...(lastAuditRecordHash ? { lastAuditRecordHash } : {}),
+        ...(lastEventId ? { lastEventId } : {}),
+        schemaVersion: "1",
+        status: "broken",
+        unverifiableEventCount
+      });
+    }
+
+    expectedPreviousHash = event.auditRecordHash;
+    lastAuditRecordHash = event.auditRecordHash;
+  }
+
+  return hostEventIntegrityResponseSchema.parse({
+    checkedEventCount: events.length,
+    ...(firstUnverifiableEvent ? { firstUnverifiableEvent } : {}),
+    genesisHash: hostEventAuditGenesisHash,
+    ...(lastAuditRecordHash ? { lastAuditRecordHash } : {}),
+    ...(lastEventId ? { lastEventId } : {}),
+    schemaVersion: "1",
+    status: unverifiableEventCount > 0 ? "unverifiable" : "valid",
+    unverifiableEventCount
   });
 }
 

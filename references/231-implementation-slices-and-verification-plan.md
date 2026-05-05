@@ -1387,7 +1387,9 @@ Current status:
   unreadable or unsupported layouts blocked for manual inspection;
 - Host event records now include optional audit hash-chain fields, Host event
   appends are serialized to preserve chain order, and CLI runtime-trace
-  summaries expose the hashes when present;
+  summaries expose the hashes when present; Host, host-client, and CLI now
+  expose an event-integrity inspection surface that reports valid, broken, or
+  partially unverifiable event chains;
 - the remaining distributed proof hardening is infrastructure-backed
   orchestration that can provision multiple machines or VM/container boundaries
   around the verifier.

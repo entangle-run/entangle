@@ -750,6 +750,42 @@ describe("createHostClient", () => {
     ]);
   });
 
+  it("parses host event integrity responses from the host surface", async () => {
+    const requests: string[] = [];
+    const client = createHostClient({
+      baseUrl: "http://entangle-host.test",
+      fetchImpl: (url) => {
+        requests.push(url);
+        return Promise.resolve(
+          createMockResponse({
+            body: JSON.stringify({
+              checkedEventCount: 3,
+              genesisHash:
+                "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+              lastAuditRecordHash:
+                "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+              lastEventId: "evt-operator-request-003",
+              schemaVersion: "1",
+              status: "valid",
+              unverifiableEventCount: 0
+            }),
+            ok: true,
+            status: 200
+          })
+        );
+      }
+    });
+
+    await expect(client.inspectHostEventIntegrity()).resolves.toMatchObject({
+      checkedEventCount: 3,
+      status: "valid",
+      unverifiableEventCount: 0
+    });
+    expect(requests).toEqual([
+      "http://entangle-host.test/v1/events/integrity"
+    ]);
+  });
+
   it("calls Host Authority inspect, export, and import surfaces", async () => {
     const authority = {
       authorityId: "authority-main",

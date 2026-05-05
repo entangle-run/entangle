@@ -891,7 +891,8 @@ The repository now also contains the first real implementation baseline:
 - a first serious runtime-recovery inspection slice across the shared clients,
   where `packages/host-client` now owns reusable host-event filtering helpers,
   `entangle-cli` supports typed `host events list` and `host events watch`
-  flows with recovery-oriented filtering, and Studio consumes the live host
+  flows with recovery-oriented filtering plus `host events integrity` for
+  Host-side event hash-chain verification, and Studio consumes the live host
   event stream to inspect runtime recovery policy, controller state, recovery
   history, and live recovery events without introducing a client-owned
   recovery model, with shared recovery presentation helpers and compact
@@ -1280,9 +1281,9 @@ The current implementation-truth audit now lives in
 - deepen the bootstrap host operator-token boundary, multi-token request audit,
   status reporting, server-filterable event inspection, route-level bootstrap
   permissions, coarse read-only `viewer` enforcement, and Host event hash-chain
-  tamper evidence into real production identity, authorization, audit-chain
-  verification, and signed retention/export only through explicit contracts,
-  tests, policy decisions, enforced roles, and operator-visible attribution;
+  tamper evidence into real production identity, authorization, and signed
+  retention/export only through explicit contracts, tests, policy decisions,
+  enforced roles, and operator-visible attribution;
 - continue broadening normalized provider metadata and bounded failure
   reporting only where later provider adapters justify new canonical fields,
   and otherwise deepen model-guided memory maintenance on top of the now

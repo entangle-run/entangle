@@ -291,6 +291,7 @@ same-machine slice records.
 - [488-studio-user-client-boundary-audit.md](488-studio-user-client-boundary-audit.md)
 - [489-deployment-repair-missing-host-state-directories-slice.md](489-deployment-repair-missing-host-state-directories-slice.md)
 - [490-host-event-hash-chain-slice.md](490-host-event-hash-chain-slice.md)
+- [491-host-event-integrity-inspection-slice.md](491-host-event-integrity-inspection-slice.md)
 
 ## Audited Scope
 
@@ -1041,13 +1042,16 @@ existing deployments without mutating authoritative state files, while
 unreadable or unsupported state layouts remain blocked for manual inspection.
 New Host events now carry optional audit hash-chain fields, and Host serializes
 event appends so concurrent operator requests do not fork the local audit
-sequence. This is tamper evidence for the Host trace, not final production
-retention or durable operator identity.
+sequence. Host now also exposes `GET /v1/events/integrity`, host-client
+support, and `entangle host events integrity` to classify the persisted trace
+as valid, broken, or partially unverifiable because of older un-hashed records.
+This is tamper evidence for the Host trace, not final production retention or
+durable operator identity.
 The highest-value remaining implementation areas are richer
 model-guided memory maintenance, deeper delegated-session semantics beyond the
 current controlled handoff path, collaborative wiki merge UI and multi-page
 patch-set semantics on top of the participant-scoped page upsert command,
 repository lifecycle and replicated/fallback artifact behavior,
 infrastructure-backed multi-machine proof execution, non-disposable upgrade
-behavior, audit-chain verification/export, and deeper production
+behavior, signed audit export/retention, and deeper production
 identity/authorization beyond the scoped bootstrap-token boundary.

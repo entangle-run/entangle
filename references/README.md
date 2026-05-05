@@ -821,6 +821,7 @@ files are the active federated redesign pack.
 489. [488-studio-user-client-boundary-audit.md](488-studio-user-client-boundary-audit.md)
 490. [489-deployment-repair-missing-host-state-directories-slice.md](489-deployment-repair-missing-host-state-directories-slice.md)
 491. [490-host-event-hash-chain-slice.md](490-host-event-hash-chain-slice.md)
+492. [491-host-event-integrity-inspection-slice.md](491-host-event-integrity-inspection-slice.md)
 
 ## Role of this corpus
 
