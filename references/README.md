@@ -135,6 +135,10 @@ The same working context now carries bounded inbound-message provenance,
 including triggering A2A event id, signer, from/to node ids, response policy,
 and attached-artifact count, without copying peer transcripts into node
 memory.
+Agent engine turn prompts now also carry conversation id, turn id, optional
+parent message id, and from/to node ids inside the bounded inbound-control
+context, giving each coding engine message-routing context while Entangle keeps
+authority over routing and side effects.
 Runtime approval records now preserve optional signed-message lineage for
 request event id, request signer, response event id, response signer, and
 source message id, closing the first audit gap between signed User Node
@@ -848,6 +852,7 @@ files are the active federated redesign pack.
 512. [511-distributed-proof-user-client-basic-auth-slice.md](511-distributed-proof-user-client-basic-auth-slice.md)
 513. [512-cli-user-client-health-check-slice.md](512-cli-user-client-health-check-slice.md)
 514. [513-inbound-message-working-context-memory-slice.md](513-inbound-message-working-context-memory-slice.md)
+515. [514-agent-engine-inbound-routing-context-slice.md](514-agent-engine-inbound-routing-context-slice.md)
 
 ## Role of this corpus
 

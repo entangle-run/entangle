@@ -1306,6 +1306,10 @@ Current status:
   include a bounded inbound-message context section with triggering A2A event
   id, signer, from/to nodes, response policy, and attached-artifact count,
   preserving coordination provenance without copying peer transcripts;
+- agent engine turn requests now include conversation id, turn id, parent
+  message id, and from/to node ids in the bounded `Inbound controls` prompt,
+  giving every per-node coding engine the routing context of the message it is
+  serving without transferring authority away from Entangle;
 - runtime approval records now carry optional signed-message lineage fields for
   request event id, request signer, response event id, response signer, and
   source message id, and the runner stamps those fields for engine gates,

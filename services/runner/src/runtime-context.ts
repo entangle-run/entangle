@@ -257,6 +257,11 @@ function buildInboundControlPromptPart(
   return [
     "Inbound controls:",
     `- message type: ${message.messageType}`,
+    `- conversation id: ${message.conversationId}`,
+    `- turn id: ${message.turnId}`,
+    `- parent message id: ${message.parentMessageId ?? "none"}`,
+    `- from node: ${message.fromNodeId}`,
+    `- to node: ${message.toNodeId}`,
     `- response required: ${formatBoolean(message.responsePolicy.responseRequired)}`,
     `- close on result: ${formatBoolean(message.responsePolicy.closeOnResult)}`,
     `- max followups: ${message.responsePolicy.maxFollowups}`,

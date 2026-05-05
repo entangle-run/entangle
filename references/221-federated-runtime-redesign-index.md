@@ -314,6 +314,7 @@ same-machine slice records.
 - [511-distributed-proof-user-client-basic-auth-slice.md](511-distributed-proof-user-client-basic-auth-slice.md)
 - [512-cli-user-client-health-check-slice.md](512-cli-user-client-health-check-slice.md)
 - [513-inbound-message-working-context-memory-slice.md](513-inbound-message-working-context-memory-slice.md)
+- [514-agent-engine-inbound-routing-context-slice.md](514-agent-engine-inbound-routing-context-slice.md)
 
 ## Audited Scope
 
@@ -1026,6 +1027,10 @@ without copying peer transcripts. It now also carries a deterministic
 time, message type, from/to nodes, conversation, optional parent, signer,
 response policy, approval-before-action flag, and attached-artifact count,
 preserving bounded coordination provenance without copying peer transcripts.
+Agent engine turn requests now also widen the bounded `Inbound controls`
+prompt with conversation id, turn id, parent message id, and from/to node ids,
+so the coding engine inside each node receives the message-routing context it
+needs while Entangle still owns routing, policy, signing, and side effects.
 Host status now also exposes the active bootstrap operator security mode
 without exposing secrets: tokenless deployments report `none`, while
 token-protected deployments report normalized bootstrap operator attribution

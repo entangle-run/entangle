@@ -756,6 +756,11 @@ describe("runner runtime context", () => {
     });
 
     expect(interactionPrompt).toContain("Inbound controls:");
+    expect(interactionPrompt).toContain("conversation id: conv-alpha");
+    expect(interactionPrompt).toContain("turn id: turn-001");
+    expect(interactionPrompt).toContain("parent message id: none");
+    expect(interactionPrompt).toContain("from node: reviewer-it");
+    expect(interactionPrompt).toContain("to node: worker-it");
     expect(interactionPrompt).toContain("response required: yes");
     expect(interactionPrompt).toContain("approval required before action: no");
     expect(summary.inboundMessageContextIncluded).toBe(true);

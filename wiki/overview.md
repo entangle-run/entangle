@@ -808,6 +808,10 @@ The repository now also contains the first real implementation baseline:
   and durable `working-context.md` now record the triggering A2A event id,
   message type, from/to nodes, signer, response policy, and attached-artifact
   count without copying peer transcripts into node memory;
+- an agent-engine inbound-routing refinement where per-node coding engine
+  prompts now receive conversation id, turn id, parent message id, and from/to
+  node ids in bounded inbound controls while Entangle keeps authority over
+  routing and side effects;
 - an owner-aware session-memory refinement where the bounded synthesis prompt
   and durable `working-context.md` page now record session owner,
   originating-node, entrypoint-node, last-message, and active-route metadata so

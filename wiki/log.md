@@ -6048,3 +6048,14 @@ The block records the triggering A2A event id, received time, message type,
 from/to nodes, conversation, optional parent, turn id, signer, response policy,
 approval-before-action flag, and attached-artifact count without copying peer
 transcripts or artifact payloads into node memory.
+
+## [2026-05-05] runner | Added agent-engine inbound routing context
+
+Added `references/514-agent-engine-inbound-routing-context-slice.md`. Runner
+turn-request assembly now includes conversation id, turn id, parent message id,
+and from/to node ids in the bounded `Inbound controls` prompt sent to the
+per-node coding engine.
+
+The change gives OpenCode/custom engine adapters better message-routing
+context while preserving Entangle as the authority for routing, policy,
+signing, and side-effect execution.

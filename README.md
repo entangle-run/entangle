@@ -1187,6 +1187,10 @@ This repository currently contains:
   durable `working-context.md` page now carry the triggering A2A event id,
   message type, from/to nodes, signer, response policy, and attached-artifact
   count without copying peer transcripts into memory;
+- an agent-engine inbound-routing refinement where every per-node coding
+  engine prompt now receives conversation id, turn id, parent message id, and
+  from/to node ids in bounded inbound controls while Entangle keeps side-effect
+  authority;
 - an owner-aware session-memory refinement where bounded synthesis prompts and
   the durable `working-context.md` page now carry session owner,
   originating-node, entrypoint-node, last-message, and active-route metadata so
