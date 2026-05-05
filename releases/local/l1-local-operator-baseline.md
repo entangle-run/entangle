@@ -184,9 +184,10 @@ performs runner-local active-conversation reconciliation and the current smoke
 proves local two-node git-backed handoff. Cross-host, remote, global
 owner-level delegated-session synthesis is future work.
 
-The Local runtime profile still carries the legacy machine value
-`hackathon_local`. That is not a public product claim, but it should be retired
-before Federated Workbench or Local GA.
+Historical planning material before the federated pivot used an old runtime
+profile value. This release packet does not preserve that value as a supported
+operator contract; current runtime profile names are governed by the active
+contracts in `packages/types`.
 
 Studio currently builds as one production bundle that exceeds Vite's default
 500 kB chunk-size warning. This is not an L1 correctness failure, but it should
@@ -243,7 +244,7 @@ L1 must not be described as providing:
 
 ## Next Release
 
-The next Local release target is `L1.5 Local Operator Preview`.
+The next release target is `L1.5 Local Operator Preview`.
 
 That milestone should add canonical demo assets, a clearer documented happy
 path, troubleshooting for common local failures, improved first-run operator

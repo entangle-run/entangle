@@ -9,6 +9,7 @@ const roots = [
   "examples",
   "package.json",
   "packages",
+  "releases",
   "scripts",
   "services"
 ];

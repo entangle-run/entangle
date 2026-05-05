@@ -318,6 +318,7 @@ same-machine slice records.
 - [515-distributed-proof-cli-user-client-health-command-slice.md](515-distributed-proof-cli-user-client-health-command-slice.md)
 - [516-cli-user-client-health-timeout-slice.md](516-cli-user-client-health-timeout-slice.md)
 - [517-agent-engine-memory-brief-slice.md](517-agent-engine-memory-brief-slice.md)
+- [518-release-naming-guardrail-slice.md](518-release-naming-guardrail-slice.md)
 
 ## Audited Scope
 
@@ -1038,6 +1039,9 @@ Engine turn requests now also include a bounded `Memory brief:` prompt part
 when focused node-memory summaries exist, while preserving `memoryRefs` as the
 complete source pages. The runner records whether that memory brief was present
 in `engineRequestSummary` for trace and presentation surfaces.
+Release-control packets are now covered by the active product naming guardrail,
+and released packet text no longer preserves retired runtime-profile literals
+or obsolete readiness milestone wording as public claims.
 Host status now also exposes the active bootstrap operator security mode
 without exposing secrets: tokenless deployments report `none`, while
 token-protected deployments report normalized bootstrap operator attribution

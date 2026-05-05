@@ -856,6 +856,7 @@ files are the active federated redesign pack.
 516. [515-distributed-proof-cli-user-client-health-command-slice.md](515-distributed-proof-cli-user-client-health-command-slice.md)
 517. [516-cli-user-client-health-timeout-slice.md](516-cli-user-client-health-timeout-slice.md)
 518. [517-agent-engine-memory-brief-slice.md](517-agent-engine-memory-brief-slice.md)
+519. [518-release-naming-guardrail-slice.md](518-release-naming-guardrail-slice.md)
 
 ## Role of this corpus
 

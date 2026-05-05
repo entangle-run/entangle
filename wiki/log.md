@@ -6092,3 +6092,13 @@ The brief covers selected summaries such as next actions, open questions,
 decisions, stable facts, and working context, while `memoryRefs` remain the
 complete source pages. Runner turn summaries now record
 `memoryBriefContextIncluded` for host-client and trace presentation.
+
+## [2026-05-05] docs | Extended product naming guard to releases
+
+Added `references/518-release-naming-guardrail-slice.md`. The active product
+naming guard now scans `releases/` in addition to active code, deployment, and
+operator docs.
+
+Historical release packets keep their tags and verification evidence, but no
+longer preserve retired runtime-profile literals or obsolete readiness
+milestone wording as public release claims.

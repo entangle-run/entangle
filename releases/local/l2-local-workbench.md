@@ -57,7 +57,7 @@ Included:
 
 Excluded:
 
-- Local GA;
+- Entangle GA;
 - Cloud or Enterprise implementation;
 - production tenancy, authorization, compliance, remote federation, or managed
   service claims;
@@ -143,7 +143,7 @@ kept-running profile was torn down with volumes after verification.
 
 ## Known Limitations
 
-- This packet is not a Local GA release packet and must not be used as a
+- This packet is not an Entangle GA release packet and must not be used as a
   production readiness claim.
 - Session launch can wait by polling host session inspection, but it does not
   retry failed relay publication.
