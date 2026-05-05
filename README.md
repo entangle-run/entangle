@@ -471,6 +471,10 @@ post-work check. The post-work script uses
 `operator/proof-profile-post-work.json` and requires both projected work
 evidence and a published git artifact or source-history publication from the
 agent node.
+Generated `operator/commands.sh` also runs
+`user-nodes clients --summary --check-health` before publishing the scripted
+User Node task, so the operator sees User Client reachability from the operator
+machine during the manual proof flow.
 For real multi-machine network checks, add `--check-relay-health`; the verifier
 uses relay URLs from `--relay-url` or the generated proof profile.
 Add `--check-git-backend-health` to require the Host catalog's selected or

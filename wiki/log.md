@@ -6059,3 +6059,14 @@ per-node coding engine.
 The change gives OpenCode/custom engine adapters better message-routing
 context while preserving Entangle as the authority for routing, policy,
 signing, and side-effect execution.
+
+## [2026-05-05] ops | Added User Client health to proof commands
+
+Added
+`references/515-distributed-proof-cli-user-client-health-command-slice.md`.
+Generated distributed proof `operator/commands.sh` now runs
+`user-nodes clients --summary --check-health` before sending the scripted User
+Node task.
+
+Proof-kit dry-run output now prints the same operator health command, and
+`pnpm ops:smoke-distributed-proof-tools` covers its presence.

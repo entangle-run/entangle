@@ -1473,6 +1473,9 @@ Current status:
 - CLI user-node client summaries can now optionally check Host-projected User
   Client `/health` endpoints from the operator machine, preserving Host
   projection as the topology source while adding a concrete reachability check;
+- generated distributed proof operator commands now run
+  `user-nodes clients --summary --check-health` before the scripted User Node
+  task, keeping manual proof execution aligned with verifier health checks;
 - the remaining distributed proof hardening is infrastructure-backed
   orchestration that can provision multiple machines or VM/container boundaries
   around the verifier.

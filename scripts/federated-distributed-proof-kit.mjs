@@ -459,7 +459,7 @@ function buildOperatorCommandsScript() {
 
   lines.push(
     "run_cli assignments list --summary",
-    "run_cli user-nodes clients --summary",
+    "run_cli user-nodes clients --summary --check-health",
     `run_cli user-nodes message ${shellQuote(userNodeId)} ${shellQuote(agentNodeId)} ${shellQuote("Implement a small change and report what you changed.")} --message-type task.request --compact`,
     "run_cli host projection --summary",
     '"$SCRIPT_DIR/verify-topology.sh"',
@@ -828,6 +828,9 @@ async function writeKit() {
         `[dry-run] ${authEnvSummary}`
       );
     }
+    console.log(
+      "[dry-run] operator client health command: run_cli user-nodes clients --summary --check-health"
+    );
     console.log(`[dry-run] operator verifier command: ${buildVerifierCommand()}`);
     console.log(
       `[dry-run] operator artifact verifier command: ${buildVerifierCommand({

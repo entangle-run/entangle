@@ -395,6 +395,7 @@ try {
       '"requireExternalUserClientUrls":true',
       '"requireConversation":true',
       '"requirePublishedGitArtifact":true',
+      "run_cli user-nodes clients --summary --check-health",
       [
         "User Client Basic Auth required for human-interface runners via",
         "ENTANGLE_PROOF_USER_CLIENT_BASIC_AUTH"

@@ -315,6 +315,7 @@ same-machine slice records.
 - [512-cli-user-client-health-check-slice.md](512-cli-user-client-health-check-slice.md)
 - [513-inbound-message-working-context-memory-slice.md](513-inbound-message-working-context-memory-slice.md)
 - [514-agent-engine-inbound-routing-context-slice.md](514-agent-engine-inbound-routing-context-slice.md)
+- [515-distributed-proof-cli-user-client-health-command-slice.md](515-distributed-proof-cli-user-client-health-command-slice.md)
 
 ## Audited Scope
 
@@ -1089,7 +1090,10 @@ fail fast in generated `start.sh` when those placeholders were not replaced,
 while leaving same-machine demos unchanged unless the operator opts in. CLI
 operators can now also add `--check-health` to `entangle user-nodes clients`
 to probe Host-projected User Client `/health` endpoints from the operator
-machine without mutating Host or runner state. Host
+machine without mutating Host or runner state. Generated distributed proof
+operator commands now run that same CLI health probe before sending the
+scripted User Node task, and proof-kit dry-run output names the command so CI
+can keep it present. Host
 session cancellation no
 longer falls back to writing
 request records into runner runtime roots; it requires an accepted federated

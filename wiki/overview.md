@@ -450,6 +450,9 @@ publishing participant clients without at least runtime-local browser auth.
 CLI operators can now run `entangle user-nodes clients --check-health` to probe
 Host-projected User Client `/health` URLs from the operator machine and see
 successes or failures inline with the User Node client summary.
+Generated distributed proof operator commands now use that same CLI health
+probe before the scripted User Node task, keeping manual proof execution
+aligned with verifier health checks.
 Host runtime synchronization now also preserves observed User Node
 `human_interface` runtime projection records, so a runtime inspection refresh
 does not hide live User Client endpoints for active User Nodes.
