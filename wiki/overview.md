@@ -1256,10 +1256,14 @@ The repository now also contains the first real implementation baseline:
   semantics, and runner bootstrap behavior;
 - a verified `pnpm verify` path for the current workspace, with root
   `pnpm test` running each app, package, Runner, and Host suite through a
-  bounded root runner that invokes package-level test scripts, so every
-  workspace keeps its explicit Vitest pool and fixture boundaries; the previous
-  root aggregate Vitest process was removed after it reproduced a no-output
-  stall while the same package-level suites completed directly;
+  bounded root runner that invokes package-equivalent Vitest commands directly
+  in each workspace, with the Host suite split per test file to avoid a
+  multi-file startup stall while keeping the same fixture boundaries; child
+  processes use explicit suite and startup-output timeouts plus one
+  timeout-only retry because direct suites can pass while an individual Vitest
+  child stalls before startup; the previous root aggregate Vitest process was
+  removed after it reproduced a no-output stall while the same workspace suites
+  completed directly;
 - a successful live local relay smoke where a wrapped Entangle message produced
   persisted session, conversation, and turn records under the runner runtime
   root;

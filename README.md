@@ -325,10 +325,15 @@ pnpm test
 ```
 
 It runs the app, package, Runner, and Host suites through a bounded root runner
-that invokes each package-level `pnpm -C ... test` script. That keeps each
-workspace's explicit Vitest pool and fixture boundaries intact; the previous
-root aggregate Vitest process was removed after it reproduced a no-output stall
-while the same package-level suites completed directly.
+that invokes package-equivalent Vitest commands directly in each workspace. The
+Host suite is split per test file to avoid a multi-file startup stall while
+keeping the same fixture boundaries. Child processes are spawned sequentially
+with explicit suite and startup-output timeouts plus one timeout-only retry,
+because direct suite commands can pass while an individual Vitest child
+occasionally stalls before startup. The previous root aggregate Vitest process
+was removed after it
+reproduced a no-output stall while the same workspace suites completed
+directly.
 
 For manual API-backed testing, add `--keep-running`. The smoke keeps Host and
 all joined runner processes alive, keeps their temporary state roots, prints

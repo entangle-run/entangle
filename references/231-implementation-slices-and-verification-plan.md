@@ -6,10 +6,13 @@ The repo already follows a slice discipline: each implemented runtime
 capability has a reference record, tests, wiki log entry, and usually a
 coherent commit. The root `pnpm verify` gate runs lint, typecheck, and tests.
 Root `pnpm test` now runs every app, package, Runner, and Host suite through a
-bounded root runner that invokes package-level scripts with direct package
-working-directory execution. The earlier root aggregate Vitest process has
-been removed from active tooling because it reproduced a no-output stall while
-the same package-level suites completed directly.
+bounded root runner that invokes package-equivalent Vitest commands directly in
+each workspace. The Host suite is split per test file to avoid a multi-file
+startup stall while preserving the same service fixture boundaries. Workspace
+child processes use explicit suite and startup-output timeouts with one
+timeout-only retry for transient startup stalls. The earlier root aggregate
+Vitest process has been removed from active tooling because it reproduced a
+no-output stall.
 Same-machine deployment smokes cover Compose, diagnostics, reliability,
 disposable runtime, and preview demo.
 

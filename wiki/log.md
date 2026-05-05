@@ -26,12 +26,17 @@ Added `references/538-root-test-gate-package-level-slice.md`.
 the root aggregate Vitest segment.
 
 The root `pnpm test` and `pnpm test:coverage` commands now run every
-test-bearing workspace through a bounded runner that invokes package-level
-scripts with direct package working-directory execution. The User Client suite
-now uses the same single-fork stability profile as the service suites after its
-threads pool stalled inside the root sequence. Direct package-level test runs
-passed for the app/package suites that the aggregate process used to cover, and
-generated coverage directories are ignored.
+test-bearing workspace through a bounded runner that invokes Vitest directly in
+each workspace with package-equivalent arguments. The User Client suite now
+uses the same single-fork stability profile as the service suites after its
+threads pool stalled inside the root sequence, and the Host suite is split per
+test file after direct multi-file startup stalled. Direct package-level test
+runs passed for the app/package suites that the aggregate process used to
+cover; follow-up gates showed broad nested `pnpm` loops and individual spawned
+Vitest children can stall before Vitest starts, so the final runner avoids
+nested `pnpm`, uses async child processes, and retries timeout-only child
+startup failures once with a shorter first-output watchdog. Generated coverage
+directories are ignored.
 
 Targeted checks passed:
 

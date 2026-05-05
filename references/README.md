@@ -319,11 +319,14 @@ the real distributed proof. It also proves relay-health success and missing
 relay failure paths plus git-backend-health success, file-backed-git rejection,
 and missing-git-service rejection.
 The root `pnpm test` gate now runs every test-bearing workspace through a
-bounded runner that invokes package-level scripts, after the root aggregate
-Vitest process reproduced a no-output stall while the same package-level suites
-completed directly. The runner package script keeps `--pool=forks
---maxWorkers=1` after the previous threads setting reproduced a no-output hang
-while the single-fork command passed directly.
+bounded runner that invokes package-equivalent Vitest commands directly. The
+Host suite is split per test file to avoid a multi-file startup stall while
+preserving service fixture boundaries. Workspace child processes use explicit
+suite and startup-output timeouts with one timeout-only retry for transient
+startup stalls. This replaces the root aggregate Vitest process that reproduced
+a no-output stall. The runner package script keeps `--pool=forks --maxWorkers=1`
+after the previous threads setting reproduced a no-output hang while the
+single-fork command passed directly.
 Studio can now also trust or revoke projected runners from the Federation panel
 through the same Host runner registry boundary used by the CLI, and enriches
 those rows with full Host runner registry liveness, heartbeat, runtime-kind,
