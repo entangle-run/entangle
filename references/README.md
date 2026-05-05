@@ -906,6 +906,7 @@ files are the active federated redesign pack.
 545. [544-runtime-wiki-patch-set-slice.md](544-runtime-wiki-patch-set-slice.md)
 546. [545-user-client-wiki-patch-set-slice.md](545-user-client-wiki-patch-set-slice.md)
 547. [546-process-smoke-user-client-wiki-patch-set-slice.md](546-process-smoke-user-client-wiki-patch-set-slice.md)
+548. [547-user-client-wiki-patch-set-ui-slice.md](547-user-client-wiki-patch-set-ui-slice.md)
 
 ## Role of this corpus
 

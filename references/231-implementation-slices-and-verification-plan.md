@@ -639,6 +639,9 @@ Current status:
   the running Human Interface Runtime, Host signed control delivery, completed
   runner command receipt projection, and updated projected wiki preview
   content;
+- the React User Client now exposes the same participant patch-set request path
+  in the wiki resource panel through a queued page draft list and request
+  action;
 - model-guided runner memory synthesis now writes
   `summaries/coordination-map.md` as a focused graph-relation memory page,
   carrying local node relation, inbound message provenance, active peer

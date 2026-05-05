@@ -347,6 +347,7 @@ same-machine slice records.
 - [544-runtime-wiki-patch-set-slice.md](544-runtime-wiki-patch-set-slice.md)
 - [545-user-client-wiki-patch-set-slice.md](545-user-client-wiki-patch-set-slice.md)
 - [546-process-smoke-user-client-wiki-patch-set-slice.md](546-process-smoke-user-client-wiki-patch-set-slice.md)
+- [547-user-client-wiki-patch-set-ui-slice.md](547-user-client-wiki-patch-set-ui-slice.md)
 
 ## Audited Scope
 
@@ -1242,6 +1243,9 @@ The process-runner smoke now proves that participant path end to end by
 requesting a User Client wiki patch-set, observing the completed
 `runtime.wiki.patch_set` receipt, and checking the projected wiki preview
 content.
+The React User Client now also exposes that capability from the wiki resource
+panel with a small queued patch-set draft list, per-entry removal, and a
+request action over the same Human Interface Runtime boundary.
 The highest-value remaining implementation areas are richer model-guided
 memory maintenance, deeper delegated-session semantics beyond the current
 controlled handoff path and first owner-aware memory projection, participant

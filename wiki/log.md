@@ -6509,3 +6509,10 @@ Added `references/546-process-smoke-user-client-wiki-patch-set-slice.md`. The
 process-runner smoke now requests a wiki patch-set from the running User
 Client, waits for the completed `runtime.wiki.patch_set` receipt, and verifies
 the updated projected wiki preview content.
+
+## [2026-05-05] user-client | Added wiki patch-set browser UI
+
+Added `references/547-user-client-wiki-patch-set-ui-slice.md`. The React User
+Client wiki resource panel now lets a running User Node queue wiki page drafts
+as patch-set pages, remove queued entries, and request the runner-owned
+patch-set through the Human Interface Runtime.

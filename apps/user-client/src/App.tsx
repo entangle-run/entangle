@@ -35,6 +35,7 @@ import {
   markConversationRead,
   normalizeApiBaseUrl,
   proposeArtifactSourceChange,
+  patchWikiPages,
   publishApprovalResponse,
   publishSourceHistory,
   publishUserMessage,
@@ -168,6 +169,13 @@ function resolveWikiPagePath(input: {
 
   return pageRef ? normalizeWikiPagePath(pageRef.artifactRef.locator.path) : "";
 }
+
+type WikiPatchSetDraftPage = {
+  content: string;
+  expectedCurrentSha256?: string | undefined;
+  mode: "append" | "patch" | "replace";
+  path: string;
+};
 
 function formatGitRepositoryTargetSelector(
   target: GitRepositoryTargetSelector
@@ -822,6 +830,9 @@ function WikiResourceCards({
   const [pageMode, setPageMode] =
     useState<"append" | "patch" | "replace">("replace");
   const [pagePath, setPagePath] = useState("");
+  const [patchSetPages, setPatchSetPages] = useState<WikiPatchSetDraftPage[]>(
+    []
+  );
   const [retryFailedPublication, setRetryFailedPublication] = useState(false);
   const [status, setStatus] = useState<string | undefined>();
   const resource = message.approval?.resource;
@@ -914,6 +925,64 @@ function WikiResourceCards({
     } catch (error) {
       setStatus(
         error instanceof Error ? error.message : "Wiki page update failed."
+      );
+    }
+  }
+
+  function queuePatchSetPage(): void {
+    const normalizedPath = normalizeWikiPagePath(effectivePagePath);
+
+    if (!normalizedPath) {
+      setStatus("wiki patch-set page path is required");
+      return;
+    }
+
+    if (pageContent.length === 0) {
+      setStatus("wiki patch-set page content is required");
+      return;
+    }
+
+    const nextPage: WikiPatchSetDraftPage = {
+      content: pageContent,
+      ...(pageExpectedSha256.trim()
+        ? { expectedCurrentSha256: pageExpectedSha256.trim() }
+        : {}),
+      mode: pageMode,
+      path: normalizedPath
+    };
+
+    setPatchSetPages((current) => [
+      ...current.filter((page) => page.path !== normalizedPath),
+      nextPage
+    ]);
+    setStatus(`queued patch-set page ${normalizedPath}`);
+  }
+
+  async function requestPatchSet(): Promise<void> {
+    if (patchSetPages.length === 0) {
+      setStatus("wiki patch-set queue is empty");
+      return;
+    }
+
+    setStatus(`requesting wiki patch-set (${patchSetPages.length})`);
+
+    try {
+      const response = await patchWikiPages({
+        baseUrl,
+        conversationId: message.conversationId,
+        nodeId: message.fromNodeId,
+        pages: patchSetPages,
+        ...(publishReason.trim() ? { reason: publishReason.trim() } : {})
+      });
+
+      setStatus(
+        `wiki patch-set requested ${response.commandId} (${response.pageCount} pages)`
+      );
+      setPatchSetPages([]);
+      await onRefresh();
+    } catch (error) {
+      setStatus(
+        error instanceof Error ? error.message : "Wiki patch-set request failed."
       );
     }
   }
@@ -1032,6 +1101,43 @@ function WikiResourceCards({
             <button onClick={() => void requestPageUpsert()} type="button">
               Update Page
             </button>
+            <button onClick={queuePatchSetPage} type="button">
+              Queue Patch-Set Page
+            </button>
+            <button
+              disabled={patchSetPages.length === 0}
+              onClick={() => void requestPatchSet()}
+              type="button"
+            >
+              Request Patch Set ({patchSetPages.length})
+            </button>
+            {patchSetPages.length > 0 ? (
+              <div className="patch-set-list">
+                <strong>Queued patch-set pages</strong>
+                <ul className="compact-list">
+                  {patchSetPages.map((page) => (
+                    <li key={page.path}>
+                      <span>
+                        {page.path} · {page.mode}
+                        {page.expectedCurrentSha256
+                          ? ` · base ${page.expectedCurrentSha256.slice(0, 12)}`
+                          : ""}
+                      </span>
+                      <button
+                        onClick={() =>
+                          setPatchSetPages((current) =>
+                            current.filter((candidate) => candidate.path !== page.path)
+                          )
+                        }
+                        type="button"
+                      >
+                        Remove
+                      </button>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            ) : null}
             {pageChangePreview ? (
               <pre className="preview-block">{pageChangePreview}</pre>
             ) : null}

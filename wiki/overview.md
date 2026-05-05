@@ -262,6 +262,8 @@ The most accurate current description is:
 - the process-runner smoke now proves the running User Client patch-set path
   through Host signed control delivery, completed runner receipt projection,
   and updated projected wiki preview content;
+- the React User Client now exposes visible wiki patch-set requests from the
+  wiki resource panel through a queued page draft list and request action;
 - the process-runner smoke now proves that patch mode through the running
   User Client JSON API, including expected-base hash forwarding, completed
   command receipt projection, and projected patched wiki preview content;
@@ -1378,9 +1380,9 @@ The current implementation-truth audit now lives in
   plus bounded operator batch requests for multiple existing wiki page-upsert
   commands plus signed runner-owned multi-page wiki patch-set commands plus
   User Client participant JSON requests for visible wiki patch-sets with
-  process-smoke proof plus local wiki draft diff preview plus stale-edit
-  conflict receipt summaries in the browser, CLI, and fallback Human Interface
-  Runtime plus
+  process-smoke proof plus browser queue/request UI plus local wiki draft diff
+  preview plus stale-edit conflict receipt summaries in the browser, CLI, and
+  fallback Human Interface Runtime plus
   approval-response turn correlation;
   the next git gaps are richer collaborative wiki merge UI, repository
   lifecycle behavior, and explicit fallback or replication behavior,
