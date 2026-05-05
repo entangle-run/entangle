@@ -1,5 +1,6 @@
 import {
   catalogInspectionResponseSchema,
+  agentEngineProfileUpsertRequestSchema,
   edgeCreateRequestSchema,
   edgeDeletionResponseSchema,
   edgeListResponseSchema,
@@ -104,6 +105,7 @@ import {
   userNodeMessagePublishRequestSchema,
   userNodeMessagePublishResponseSchema,
   type CatalogInspectionResponse,
+  type AgentEngineProfileUpsertRequestInput,
   type EdgeCreateRequest,
   type EdgeDeletionResponse,
   type EdgeListResponse,
@@ -740,6 +742,30 @@ export function createHostClient(options: HostClientOptions) {
           },
           body: JSON.stringify(catalog)
         }),
+        catalogInspectionResponseSchema,
+        { acceptedErrorStatuses: [400] }
+      );
+    },
+
+    async upsertAgentEngineProfile(
+      profileId: string,
+      request: AgentEngineProfileUpsertRequestInput
+    ): Promise<CatalogInspectionResponse> {
+      const body = agentEngineProfileUpsertRequestSchema.parse(request);
+
+      return parseResponse(
+        await hostFetch(
+          `${baseUrl}/v1/catalog/agent-engine-profiles/${encodeURIComponent(
+            profileId
+          )}`,
+          {
+            method: "PUT",
+            headers: {
+              "content-type": "application/json"
+            },
+            body: JSON.stringify(body)
+          }
+        ),
         catalogInspectionResponseSchema,
         { acceptedErrorStatuses: [400] }
       );

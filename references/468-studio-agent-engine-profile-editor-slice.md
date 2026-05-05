@@ -15,7 +15,7 @@ Studio should support a focused profile editor in the graph admin surface:
 - set kind, executable, base URL, permission mode, state scope, default agent,
   and version note;
 - optionally set the profile as the catalog default;
-- submit the whole updated catalog through Host so Host remains authoritative;
+- submit a focused profile upsert through Host so Host remains authoritative;
 - keep profile editing separate from node-level assignment editing.
 
 ## Impacted Modules And Files
@@ -34,11 +34,11 @@ Studio should support a focused profile editor in the graph admin surface:
 ## Concrete Changes Required
 
 - Add Studio helper functions that turn editor drafts into schema-validated
-  deployment catalog mutations.
+  deployment catalog mutations and focused Host upsert requests.
 - Add tests for attached OpenCode profile creation, draft hydration, invalid
   profile rejection, and disabled-save state.
 - Add edit/new/save controls to the Agent Engine Profiles subpanel.
-- Apply profile updates through `client.applyCatalog` and render Host
+- Apply profile updates through `client.upsertAgentEngineProfile` and render Host
   validation feedback.
 
 ## Tests Required
@@ -49,20 +49,19 @@ Studio should support a focused profile editor in the graph admin surface:
 
 ## Migration And Compatibility
 
-No persisted state migration. The editor uses the existing Host catalog apply
-endpoint and the existing `DeploymentResourceCatalog` contract.
+No persisted state migration. The editor now uses Host's focused
+agent-engine profile upsert route; full catalog apply remains valid for
+whole-catalog workflows.
 
 ## Risks And Mitigations
 
 - Risk: Studio and CLI catalog mutation behavior drift.
-  Mitigation: both paths validate final catalogs with
-  `deploymentResourceCatalogSchema`; future cleanup can move shared profile
-  mutation helpers to a common package.
+  Mitigation: both paths now send the shared typed Host upsert request shape.
 - Risk: operators save an incomplete HTTP profile.
   Mitigation: Host/types validation rejects invalid profile combinations and
   Studio surfaces the validation report instead of mutating silently.
 
 ## Open Questions
 
-- A later slice should extract shared CLI/Studio profile mutation helpers into a
+- A later slice should extract shared CLI/Studio profile request helpers into a
   package-level module if profile editing grows beyond the current fields.

@@ -148,8 +148,11 @@ The most accurate current description is:
   default marker and compact kind, scope, permission, endpoint/executable,
   default-agent, and version details before node assignment editing;
 - the same Studio panel can now create or update catalog agent engine profiles
-  through Host catalog apply, including attached OpenCode base URLs and
-  default-profile selection;
+  through Host's focused profile upsert route, including attached OpenCode base
+  URLs and default-profile selection;
+- CLI uses the same focused Host profile upsert route for real
+  `host catalog agent-engine upsert` mutations, while dry-run prints the
+  request payload before mutation;
 - `pnpm ops:check-product-naming` now verifies active product surfaces do not
   reintroduce obsolete local product/profile labels;
 - accepted source-candidate reviews now also emit signed `source_history.ref`

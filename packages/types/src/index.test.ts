@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import {
   approvalTraceEventSchema,
   agentEngineProfileSchema,
+  agentEngineProfileUpsertRequestSchema,
   agentEngineTurnResultSchema,
   artifactRecordSchema,
   classifyRuntimeReconciliation,
@@ -4902,6 +4903,36 @@ describe("agent runtime contracts", () => {
     });
 
     expect(result.permissionMode).toBe("entangle_approval");
+  });
+
+  it("accepts atomic agent engine profile upsert requests", () => {
+    const result = agentEngineProfileUpsertRequestSchema.parse({
+      baseUrl: "http://127.0.0.1:18081",
+      displayName: "Attached OpenCode",
+      kind: "opencode_server",
+      permissionMode: "entangle_approval",
+      setDefault: true,
+      stateScope: "shared"
+    });
+
+    expect(result).toMatchObject({
+      baseUrl: "http://127.0.0.1:18081",
+      clearBaseUrl: false,
+      displayName: "Attached OpenCode",
+      kind: "opencode_server",
+      permissionMode: "entangle_approval",
+      setDefault: true,
+      stateScope: "shared"
+    });
+  });
+
+  it("rejects conflicting agent engine profile upsert fields", () => {
+    expect(
+      agentEngineProfileUpsertRequestSchema.safeParse({
+        baseUrl: "http://127.0.0.1:18081",
+        clearBaseUrl: true
+      }).success
+    ).toBe(false);
   });
 
   it("rejects process-backed agent engine profiles without an endpoint", () => {

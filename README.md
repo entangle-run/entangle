@@ -190,7 +190,8 @@ want to validate the attached-server route wiring without a live provider.
 This does not validate real OpenCode model behavior.
 
 With a Host running, the profile can be added to the active catalog without
-editing JSON:
+editing JSON. The command uses Host's focused agent-engine profile upsert route
+instead of applying a client-mutated full catalog document:
 
 ```bash
 pnpm --filter @entangle/cli dev host catalog agent-engine upsert opencode-attached \

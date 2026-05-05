@@ -4,6 +4,7 @@ import Fastify from "fastify";
 import websocket from "@fastify/websocket";
 import {
   catalogInspectionResponseSchema,
+  agentEngineProfileUpsertRequestSchema,
   edgeCreateRequestSchema,
   edgeDeletionResponseSchema,
   edgeListResponseSchema,
@@ -213,6 +214,7 @@ import {
   recordUserNodeInboundMessage,
   recordUserNodePublishedMessage,
   subscribeToHostEvents,
+  upsertAgentEngineProfile,
   upsertExternalPrincipal,
   validateCatalogCandidate,
   validateGraphCandidate
@@ -1971,6 +1973,30 @@ export async function buildHostServer(options: HostServerOptions = {}) {
 
   server.post("/v1/catalog/validate", (request) =>
     catalogInspectionResponseSchema.parse(validateCatalogCandidate(request.body))
+  );
+
+  server.put(
+    "/v1/catalog/agent-engine-profiles/:profileId",
+    async (request, reply) => {
+      const params = request.params as { profileId: string };
+      const profileId = identifierSchema.parse(params.profileId);
+      const mutation = parseRequestInput(
+        agentEngineProfileUpsertRequestSchema,
+        request.body ?? {},
+        {
+          detailsKey: "bodyIssues",
+          message:
+            "Request body did not match the expected agent engine profile upsert schema."
+        }
+      );
+      const inspection = await upsertAgentEngineProfile(profileId, mutation);
+
+      if (!inspection.validation.ok) {
+        reply.status(400);
+      }
+
+      return catalogInspectionResponseSchema.parse(inspection);
+    }
   );
 
   server.put("/v1/catalog", async (request, reply) => {

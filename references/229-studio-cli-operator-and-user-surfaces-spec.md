@@ -205,9 +205,12 @@ Node.
   the per-assignment lifecycle and receipt read model. CLI now exposes
   `host catalog agent-engine upsert` for Host-backed agent engine profile
   creation/update, including attached OpenCode profiles, permission mode, state
-  scope, default-profile selection, dry-run mutation payloads, and compact
-  summaries. The same command group also exposes focused `list` and `get`
-  inspection with deterministic ordering and default-aware summaries.
+  scope, default-profile selection, dry-run request payloads, and compact
+  summaries. Real profile saves now use Host's focused
+  `PUT /v1/catalog/agent-engine-profiles/:profileId` route instead of applying
+  a client-mutated full catalog document. The same command group also exposes
+  focused `list` and `get` inspection with deterministic ordering and
+  default-aware summaries.
 - Add runner join executable or CLI command surface for generating join config.
   Done: `entangle runners join-config` writes validated Host-derived JSON join
   configs, and `entangle-runner join --config` is advertised by the runner
@@ -222,8 +225,9 @@ Node.
   for the same assignment timeline model. Studio graph editing now also shows
   active catalog agent engine profiles with the current default marker and
   compact kind/scope/permission/endpoint detail before node assignment editing.
-  The same panel can now create or update profile records through Host catalog
-  apply while leaving node-level assignment as a separate explicit action.
+  The same panel can now create or update profile records through Host's
+  focused profile upsert route while leaving node-level assignment as a
+  separate explicit action.
 - Keep Studio browser access on Host API boundaries. Done for development:
   Host has configured CORS allow-list support, preflight requests are answered
   before operator auth, and the federated dev profile allows the default Studio

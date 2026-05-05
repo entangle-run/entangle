@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import type { DeploymentResourceCatalog } from "@entangle/types";
 import {
+  buildAgentEngineProfileUpsertRequest,
   buildAgentEngineProfileUpsertCatalog,
   projectAgentEngineProfileSummary,
   projectAgentEngineProfileUpsertSummary
@@ -39,6 +40,33 @@ function buildCatalog(): DeploymentResourceCatalog {
 }
 
 describe("catalog agent-engine command helpers", () => {
+  it("builds Host atomic upsert requests from CLI options", () => {
+    expect(
+      buildAgentEngineProfileUpsertRequest({
+        baseUrl: "http://127.0.0.1:18081",
+        defaultAgent: "general",
+        displayName: "OpenCode Attached",
+        permissionMode: "entangle_approval",
+        setDefault: true,
+        stateScope: "shared",
+        version: "fake-opencode-1.0.0"
+      })
+    ).toEqual({
+      baseUrl: "http://127.0.0.1:18081",
+      clearBaseUrl: false,
+      clearDefaultAgent: false,
+      clearExecutable: false,
+      clearPermissionMode: false,
+      clearVersion: false,
+      defaultAgent: "general",
+      displayName: "OpenCode Attached",
+      permissionMode: "entangle_approval",
+      setDefault: true,
+      stateScope: "shared",
+      version: "fake-opencode-1.0.0"
+    });
+  });
+
   it("adds an attached OpenCode profile and can make it default", () => {
     const result = buildAgentEngineProfileUpsertCatalog(
       buildCatalog(),

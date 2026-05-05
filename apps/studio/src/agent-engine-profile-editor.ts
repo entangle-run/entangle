@@ -1,7 +1,9 @@
 import {
   agentEnginePermissionModeSchema,
   agentEngineProfileKindSchema,
+  agentEngineProfileUpsertRequestSchema,
   deploymentResourceCatalogSchema,
+  type AgentEngineProfileUpsertRequest,
   type AgentEngineProfile,
   type DeploymentResourceCatalog
 } from "@entangle/types";
@@ -113,6 +115,35 @@ export function buildAgentEngineProfileCatalogMutation(
           }
         : {})
     }
+  });
+}
+
+export function buildAgentEngineProfileUpsertRequestFromDraft(
+  draft: AgentEngineProfileEditorDraft
+): AgentEngineProfileUpsertRequest {
+  return agentEngineProfileUpsertRequestSchema.parse({
+    clearBaseUrl: draft.baseUrl.trim() === "",
+    clearDefaultAgent: draft.defaultAgent.trim() === "",
+    clearExecutable: draft.executable.trim() === "",
+    clearPermissionMode: draft.permissionMode === "",
+    clearVersion: draft.version.trim() === "",
+    displayName: draft.displayName.trim() || draft.profileId.trim(),
+    kind: agentEngineProfileKindSchema.parse(draft.kind),
+    setDefault: draft.setDefault,
+    stateScope: draft.stateScope,
+    ...(draft.baseUrl.trim() ? { baseUrl: draft.baseUrl.trim() } : {}),
+    ...(draft.defaultAgent.trim()
+      ? { defaultAgent: draft.defaultAgent.trim() }
+      : {}),
+    ...(draft.executable.trim() ? { executable: draft.executable.trim() } : {}),
+    ...(draft.permissionMode
+      ? {
+          permissionMode: agentEnginePermissionModeSchema.parse(
+            draft.permissionMode
+          )
+        }
+      : {}),
+    ...(draft.version.trim() ? { version: draft.version.trim() } : {})
   });
 }
 

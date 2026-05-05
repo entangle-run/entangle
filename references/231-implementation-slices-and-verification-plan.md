@@ -273,7 +273,11 @@ Current status:
 - Studio now renders active catalog agent engine profiles in the graph editor
   with default marker and compact engine detail before node assignment editing.
 - Studio can now create or update active catalog agent engine profiles through
-  Host catalog apply while keeping node-level profile assignment explicit.
+  Host's focused profile upsert route while keeping node-level profile
+  assignment explicit.
+- Host now exposes a focused agent-engine profile upsert route, and CLI/Studio
+  use that route for real profile saves instead of submitting client-mutated
+  full catalog documents.
 - `pnpm ops:check-product-naming` now checks active product surfaces for old
   local product/profile labels.
 - Docker managed runners can now receive inline join config JSON and the
@@ -825,7 +829,7 @@ Implementation record:
 - [465-cli-agent-engine-profile-upsert-slice.md](465-cli-agent-engine-profile-upsert-slice.md)
   adds a Host-backed CLI catalog command for creating and updating typed agent
   engine profiles, including attached OpenCode profiles, permission mode,
-  state scope, default-profile selection, dry-run mutation payloads, and compact
+  state scope, default-profile selection, dry-run request payloads, and compact
   operator summaries.
 - [466-cli-agent-engine-profile-inspection-slice.md](466-cli-agent-engine-profile-inspection-slice.md)
   adds focused `list` and `get` commands for active catalog agent engine
@@ -835,8 +839,11 @@ Implementation record:
   profiles, including default marker and compact kind/scope/permission/endpoint
   detail.
 - [468-studio-agent-engine-profile-editor-slice.md](468-studio-agent-engine-profile-editor-slice.md)
-  adds Studio catalog profile editing through Host catalog apply, with typed
-  draft helpers and validation tests for attached OpenCode profiles.
+  adds Studio catalog profile editing through Host's focused upsert route, with
+  typed draft helpers and validation tests for attached OpenCode profiles.
+- [469-host-agent-engine-profile-upsert-api-slice.md](469-host-agent-engine-profile-upsert-api-slice.md)
+  adds Host-owned profile-level catalog mutation and moves CLI/Studio real
+  saves onto that focused route.
 
 Verification:
 

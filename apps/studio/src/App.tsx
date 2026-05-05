@@ -71,8 +71,8 @@ import {
   agentEnginePermissionModeOptions,
   agentEngineProfileKindOptions,
   agentEngineStateScopeOptions,
-  buildAgentEngineProfileCatalogMutation,
   buildAgentEngineProfileEditorDraft,
+  buildAgentEngineProfileUpsertRequestFromDraft,
   createEmptyAgentEngineProfileEditorDraft,
   isAgentEngineProfileDraftSaveDisabled,
   type AgentEngineProfileEditorDraft
@@ -2947,23 +2947,16 @@ export function App() {
   );
 
   const saveAgentEngineProfile = useCallback(async () => {
-    if (!catalogInspection?.catalog) {
-      setAgentEngineProfileMutationError(
-        "Cannot save an agent engine profile because the active catalog is unavailable."
-      );
-      return;
-    }
-
     try {
       setPendingAgentEngineProfileMutation(true);
       setAgentEngineProfileMutationError(null);
       setLastAgentEngineProfileMutationSummary(null);
 
-      const nextCatalog = buildAgentEngineProfileCatalogMutation(
-        catalogInspection.catalog,
-        agentEngineProfileDraft
+      const profileId = agentEngineProfileDraft.profileId.trim();
+      const response = await client.upsertAgentEngineProfile(
+        profileId,
+        buildAgentEngineProfileUpsertRequestFromDraft(agentEngineProfileDraft)
       );
-      const response = await client.applyCatalog(nextCatalog);
       const validationMessage = summarizeValidationReport(response.validation);
 
       if (validationMessage) {
@@ -2973,16 +2966,15 @@ export function App() {
       }
 
       const savedProfile = response.catalog?.agentEngineProfiles.find(
-        (profile) => profile.id === agentEngineProfileDraft.profileId.trim()
+        (profile) => profile.id === profileId
       );
 
       setCatalogInspection(response);
       setCatalogError(null);
       setAgentEngineProfileMutationError(null);
       setLastAgentEngineProfileMutationSummary(
-        `Saved ${agentEngineProfileDraft.profileId.trim()}${
-          response.catalog?.defaults.agentEngineProfileRef ===
-          agentEngineProfileDraft.profileId.trim()
+        `Saved ${profileId}${
+          response.catalog?.defaults.agentEngineProfileRef === profileId
             ? " as default"
             : ""
         }.`
@@ -3006,7 +2998,7 @@ export function App() {
     } finally {
       setPendingAgentEngineProfileMutation(false);
     }
-  }, [agentEngineProfileDraft, catalogInspection, client]);
+  }, [agentEngineProfileDraft, client]);
 
   const admitPackageSource = useCallback(async () => {
     try {

@@ -3,6 +3,7 @@ import type { DeploymentResourceCatalog } from "@entangle/types";
 import {
   buildAgentEngineProfileCatalogMutation,
   buildAgentEngineProfileEditorDraft,
+  buildAgentEngineProfileUpsertRequestFromDraft,
   createEmptyAgentEngineProfileEditorDraft,
   isAgentEngineProfileDraftSaveDisabled
 } from "./agent-engine-profile-editor.js";
@@ -40,6 +41,36 @@ function buildCatalog(): DeploymentResourceCatalog {
 }
 
 describe("agent engine profile editor helpers", () => {
+  it("builds a Host upsert request from a draft", () => {
+    expect(
+      buildAgentEngineProfileUpsertRequestFromDraft({
+        ...createEmptyAgentEngineProfileEditorDraft(),
+        baseUrl: "http://127.0.0.1:18081",
+        defaultAgent: "general",
+        displayName: "OpenCode Attached",
+        executable: "",
+        permissionMode: "entangle_approval",
+        profileId: "opencode-attached",
+        setDefault: true,
+        version: "fake-opencode-1.0.0"
+      })
+    ).toEqual({
+      baseUrl: "http://127.0.0.1:18081",
+      clearBaseUrl: false,
+      clearDefaultAgent: false,
+      clearExecutable: true,
+      clearPermissionMode: false,
+      clearVersion: false,
+      defaultAgent: "general",
+      displayName: "OpenCode Attached",
+      kind: "opencode_server",
+      permissionMode: "entangle_approval",
+      setDefault: true,
+      stateScope: "node",
+      version: "fake-opencode-1.0.0"
+    });
+  });
+
   it("builds a valid attached OpenCode catalog mutation", () => {
     const catalog = buildAgentEngineProfileCatalogMutation(buildCatalog(), {
       ...createEmptyAgentEngineProfileEditorDraft(),

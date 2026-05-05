@@ -23,6 +23,7 @@ import type { RuntimeBackend } from "./runtime-backend.js";
 import {
   approvalRecordSchema,
   artifactRecordSchema,
+  catalogInspectionResponseSchema,
   edgeDeletionResponseSchema,
   edgeListResponseSchema,
   edgeMutationResponseSchema,
@@ -1624,6 +1625,61 @@ describe("buildHostServer", () => {
         status: "cleared"
       });
       expect(await readdir(cacheRoot)).toEqual([]);
+    } finally {
+      await server.close();
+    }
+  });
+
+  it("upserts agent engine profiles through an atomic Host catalog route", async () => {
+    const server = await createTestServer();
+
+    try {
+      const response = await server.inject({
+        method: "PUT",
+        payload: {
+          baseUrl: "http://127.0.0.1:18081",
+          defaultAgent: "general",
+          displayName: "Attached OpenCode",
+          permissionMode: "entangle_approval",
+          setDefault: true,
+          version: "fake-opencode-1.0.0"
+        },
+        url: "/v1/catalog/agent-engine-profiles/opencode-attached"
+      });
+
+      expect(response.statusCode).toBe(200);
+      const inspection = catalogInspectionResponseSchema.parse(response.json());
+
+      expect(inspection.validation.ok).toBe(true);
+      expect(inspection.catalog?.defaults.agentEngineProfileRef).toBe(
+        "opencode-attached"
+      );
+      expect(inspection.catalog?.agentEngineProfiles).toContainEqual({
+        baseUrl: "http://127.0.0.1:18081",
+        defaultAgent: "general",
+        displayName: "Attached OpenCode",
+        id: "opencode-attached",
+        kind: "opencode_server",
+        permissionMode: "entangle_approval",
+        stateScope: "node",
+        version: "fake-opencode-1.0.0"
+      });
+
+      const invalidResponse = await server.inject({
+        method: "PUT",
+        payload: {
+          clearBaseUrl: true,
+          clearExecutable: true,
+          kind: "external_http"
+        },
+        url: "/v1/catalog/agent-engine-profiles/opencode-attached"
+      });
+
+      expect(invalidResponse.statusCode).toBe(400);
+      expect(
+        catalogInspectionResponseSchema.parse(invalidResponse.json()).validation
+          .ok
+      ).toBe(false);
     } finally {
       await server.close();
     }

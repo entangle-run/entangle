@@ -5576,3 +5576,13 @@ Added `references/468-studio-agent-engine-profile-editor-slice.md`. Studio can
 now create or update typed agent engine profiles through Host catalog apply,
 including attached OpenCode base URLs, executable, permission mode, state
 scope, default-agent/version notes, and catalog default selection.
+
+## [2026-05-05] host | Added focused agent engine profile upsert API
+
+Added `references/469-host-agent-engine-profile-upsert-api-slice.md`. Host now
+exposes `PUT /v1/catalog/agent-engine-profiles/:profileId` for focused
+agent-engine profile mutation.
+
+CLI and Studio use that Host-owned route for real profile saves, so operator
+profile editing no longer depends on applying a client-mutated full catalog
+document. Full catalog apply remains available for whole-catalog workflows.

@@ -197,6 +197,101 @@ describe("createHostClient", () => {
     ]);
   });
 
+  it("upserts agent engine profiles through the Host catalog boundary", async () => {
+    const requests: Array<{
+      body?: string;
+      headers?: Record<string, string>;
+      method?: string;
+      url: string;
+    }> = [];
+    const client = createHostClient({
+      authToken: "host-secret",
+      baseUrl: "http://entangle-host.test",
+      fetchImpl: (url, init) => {
+        requests.push({
+          body: init?.body,
+          headers: init?.headers,
+          method: init?.method,
+          url
+        });
+
+        return Promise.resolve(
+          createMockResponse({
+            body: JSON.stringify({
+              catalog: {
+                agentEngineProfiles: [
+                  {
+                    baseUrl: "http://127.0.0.1:18081",
+                    displayName: "Attached OpenCode",
+                    id: "opencode-attached",
+                    kind: "opencode_server",
+                    permissionMode: "entangle_approval",
+                    stateScope: "node"
+                  }
+                ],
+                catalogId: "default-catalog",
+                defaults: {
+                  agentEngineProfileRef: "opencode-attached",
+                  relayProfileRefs: []
+                },
+                gitServices: [],
+                modelEndpoints: [],
+                relays: [],
+                schemaVersion: "1"
+              },
+              validation: {
+                findings: [],
+                ok: true
+              }
+            }),
+            ok: true,
+            status: 200
+          })
+        );
+      }
+    });
+
+    await expect(
+      client.upsertAgentEngineProfile("opencode-attached", {
+        baseUrl: "http://127.0.0.1:18081",
+        displayName: "Attached OpenCode",
+        permissionMode: "entangle_approval",
+        setDefault: true
+      })
+    ).resolves.toMatchObject({
+      catalog: {
+        defaults: {
+          agentEngineProfileRef: "opencode-attached"
+        }
+      },
+      validation: {
+        ok: true
+      }
+    });
+    expect(requests).toEqual([
+      {
+        body: JSON.stringify({
+          baseUrl: "http://127.0.0.1:18081",
+          clearBaseUrl: false,
+          clearDefaultAgent: false,
+          clearExecutable: false,
+          clearPermissionMode: false,
+          clearVersion: false,
+          displayName: "Attached OpenCode",
+          permissionMode: "entangle_approval",
+          setDefault: true
+        }),
+        headers: {
+          authorization: "Bearer host-secret",
+          "content-type": "application/json"
+        },
+        method: "PUT",
+        url:
+          "http://entangle-host.test/v1/catalog/agent-engine-profiles/opencode-attached"
+      }
+    ]);
+  });
+
   it("requests runtime artifact restore through the Host boundary", async () => {
     const requests: Array<{
       body?: string;

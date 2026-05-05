@@ -22,7 +22,7 @@ engine profiles from CLI without hand-editing JSON:
   `--executable`;
 - configure `permissionMode`, `defaultAgent`, `stateScope`, and version notes;
 - optionally make the profile the catalog default;
-- inspect the proposed catalog mutation with `--dry-run`;
+- inspect the proposed Host upsert request with `--dry-run`;
 - print a compact profile/default summary for operator scripts.
 
 This keeps OpenCode behind the engine-adapter boundary. Entangle still owns the
@@ -51,6 +51,8 @@ projection model.
 - Add `entangle host catalog agent-engine upsert <profileId>` with options for
   kind, executable, base URL, default agent, permission mode, state scope,
   version, catalog default selection, dry-run, and compact summary output.
+- Real mutations now use Host's focused agent-engine profile upsert route
+  instead of applying a client-mutated full catalog document.
 - Document the no-credential fake OpenCode workflow using the CLI command, then
   node-level `host nodes agent-runtime` assignment.
 
@@ -66,9 +68,9 @@ projection model.
 
 ## Migration And Compatibility
 
-No persisted state migration is required. The command applies the same catalog
-contract already accepted by Host `PUT /v1/catalog`. Existing JSON catalog
-apply workflows remain valid.
+No persisted state migration is required. The command now uses Host's focused
+profile upsert route for real mutations. Existing JSON catalog apply workflows
+remain valid.
 
 ## Risks And Mitigations
 

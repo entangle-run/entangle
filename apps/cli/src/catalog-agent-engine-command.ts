@@ -1,7 +1,9 @@
 import {
   agentEnginePermissionModeSchema,
   agentEngineProfileKindSchema,
+  agentEngineProfileUpsertRequestSchema,
   deploymentResourceCatalogSchema,
+  type AgentEngineProfileUpsertRequest,
   type AgentEngineProfile,
   type DeploymentResourceCatalog
 } from "@entangle/types";
@@ -48,6 +50,67 @@ function parseAgentEngineStateScope(
   }
 
   throw new Error("Agent engine state scope must be 'node' or 'shared'.");
+}
+
+function assertAgentEngineUpsertOptionsAreNotConflicting(
+  options: CatalogAgentEngineUpsertOptions
+) {
+  if (options.executable && options.clearExecutable) {
+    throw new Error("Use either --executable or --clear-executable, not both.");
+  }
+
+  if (options.baseUrl && options.clearBaseUrl) {
+    throw new Error("Use either --base-url or --clear-base-url, not both.");
+  }
+
+  if (options.defaultAgent && options.clearDefaultAgent) {
+    throw new Error(
+      "Use either --default-agent or --clear-default-agent, not both."
+    );
+  }
+
+  if (options.permissionMode && options.clearPermissionMode) {
+    throw new Error(
+      "Use either --permission-mode or --clear-permission-mode, not both."
+    );
+  }
+
+  if (options.version && options.clearVersion) {
+    throw new Error("Use either --version or --clear-version, not both.");
+  }
+}
+
+export function buildAgentEngineProfileUpsertRequest(
+  options: CatalogAgentEngineUpsertOptions
+): AgentEngineProfileUpsertRequest {
+  assertAgentEngineUpsertOptionsAreNotConflicting(options);
+
+  return agentEngineProfileUpsertRequestSchema.parse({
+    ...(options.baseUrl ? { baseUrl: options.baseUrl } : {}),
+    ...(options.clearBaseUrl ? { clearBaseUrl: true } : {}),
+    ...(options.clearDefaultAgent ? { clearDefaultAgent: true } : {}),
+    ...(options.clearExecutable ? { clearExecutable: true } : {}),
+    ...(options.clearPermissionMode ? { clearPermissionMode: true } : {}),
+    ...(options.clearVersion ? { clearVersion: true } : {}),
+    ...(options.defaultAgent ? { defaultAgent: options.defaultAgent } : {}),
+    ...(options.displayName ? { displayName: options.displayName } : {}),
+    ...(options.executable ? { executable: options.executable } : {}),
+    ...(options.kind
+      ? { kind: agentEngineProfileKindSchema.parse(options.kind) }
+      : {}),
+    ...(options.permissionMode
+      ? {
+          permissionMode: agentEnginePermissionModeSchema.parse(
+            options.permissionMode
+          )
+        }
+      : {}),
+    ...(options.setDefault ? { setDefault: true } : {}),
+    ...(options.stateScope
+      ? { stateScope: parseAgentEngineStateScope(options.stateScope) }
+      : {}),
+    ...(options.version ? { version: options.version } : {})
+  });
 }
 
 export function projectAgentEngineProfileUpsertSummary(input: {
@@ -106,29 +169,7 @@ export function buildAgentEngineProfileUpsertCatalog(
   catalog: DeploymentResourceCatalog;
   profile: AgentEngineProfile;
 } {
-  if (options.executable && options.clearExecutable) {
-    throw new Error("Use either --executable or --clear-executable, not both.");
-  }
-
-  if (options.baseUrl && options.clearBaseUrl) {
-    throw new Error("Use either --base-url or --clear-base-url, not both.");
-  }
-
-  if (options.defaultAgent && options.clearDefaultAgent) {
-    throw new Error(
-      "Use either --default-agent or --clear-default-agent, not both."
-    );
-  }
-
-  if (options.permissionMode && options.clearPermissionMode) {
-    throw new Error(
-      "Use either --permission-mode or --clear-permission-mode, not both."
-    );
-  }
-
-  if (options.version && options.clearVersion) {
-    throw new Error("Use either --version or --clear-version, not both.");
-  }
+  assertAgentEngineUpsertOptionsAreNotConflicting(options);
 
   const parsedCatalog = deploymentResourceCatalogSchema.parse(catalog);
   const existingProfile = parsedCatalog.agentEngineProfiles.find(

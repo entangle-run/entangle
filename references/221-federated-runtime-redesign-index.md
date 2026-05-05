@@ -269,6 +269,7 @@ same-machine slice records.
 - [466-cli-agent-engine-profile-inspection-slice.md](466-cli-agent-engine-profile-inspection-slice.md)
 - [467-studio-agent-engine-profile-visibility-slice.md](467-studio-agent-engine-profile-visibility-slice.md)
 - [468-studio-agent-engine-profile-editor-slice.md](468-studio-agent-engine-profile-editor-slice.md)
+- [469-host-agent-engine-profile-upsert-api-slice.md](469-host-agent-engine-profile-upsert-api-slice.md)
 
 ## Audited Scope
 
@@ -411,9 +412,12 @@ The repository is not fully federated:
   with default marker, engine kind, state scope, permission mode, endpoint or
   executable, default agent, and version note before node assignment editing;
 - Studio can now create/update active catalog agent engine profiles through
-  Host catalog apply, including attached OpenCode base URLs, executable,
-  permission mode, state scope, default-agent/version notes, and default-profile
-  selection;
+  Host's focused profile upsert route, including attached OpenCode base URLs,
+  executable, permission mode, state scope, default-agent/version notes, and
+  default-profile selection;
+- Host now exposes `PUT /v1/catalog/agent-engine-profiles/:profileId` as the
+  focused agent-engine profile mutation path, and CLI/Studio use it for real
+  profile saves instead of applying a client-mutated full catalog document;
 - `pnpm ops:check-product-naming` now guards active product surfaces against
   obsolete local product/profile labels;
 - OpenCode-backed runner turns now probe `/global/health` before attaching to

@@ -4,10 +4,16 @@ import { graphSpecSchema } from "../graph/graph-spec.js";
 import { agentPackageManifestSchema } from "../package/package-manifest.js";
 import { packageSourceRecordSchema } from "../package/package-source.js";
 import {
+  agentEnginePermissionModeSchema,
+  agentEngineProfileKindSchema,
   deploymentResourceCatalogSchema
 } from "../resources/catalog.js";
 import { externalPrincipalRecordSchema } from "../resources/external-principal.js";
-import { identifierSchema, nonEmptyStringSchema } from "../common/primitives.js";
+import {
+  httpUrlSchema,
+  identifierSchema,
+  nonEmptyStringSchema
+} from "../common/primitives.js";
 
 export const packageSourceAdmissionRequestSchema = z.discriminatedUnion(
   "sourceKind",
@@ -29,6 +35,56 @@ export const catalogInspectionResponseSchema = z.object({
   catalog: deploymentResourceCatalogSchema.optional(),
   validation: validationReportSchema
 });
+
+export const agentEngineProfileUpsertRequestSchema = z
+  .object({
+    baseUrl: httpUrlSchema.optional(),
+    clearBaseUrl: z.boolean().default(false),
+    clearDefaultAgent: z.boolean().default(false),
+    clearExecutable: z.boolean().default(false),
+    clearPermissionMode: z.boolean().default(false),
+    clearVersion: z.boolean().default(false),
+    defaultAgent: identifierSchema.optional(),
+    displayName: nonEmptyStringSchema.optional(),
+    executable: nonEmptyStringSchema.optional(),
+    kind: agentEngineProfileKindSchema.optional(),
+    permissionMode: agentEnginePermissionModeSchema.optional(),
+    setDefault: z.boolean().default(false),
+    stateScope: z.enum(["node", "shared"]).optional(),
+    version: nonEmptyStringSchema.optional()
+  })
+  .superRefine((value, context) => {
+    const conflictingFields: Array<{
+      clearField:
+        | "clearBaseUrl"
+        | "clearDefaultAgent"
+        | "clearExecutable"
+        | "clearPermissionMode"
+        | "clearVersion";
+      setField:
+        | "baseUrl"
+        | "defaultAgent"
+        | "executable"
+        | "permissionMode"
+        | "version";
+    }> = [
+      { clearField: "clearBaseUrl", setField: "baseUrl" },
+      { clearField: "clearDefaultAgent", setField: "defaultAgent" },
+      { clearField: "clearExecutable", setField: "executable" },
+      { clearField: "clearPermissionMode", setField: "permissionMode" },
+      { clearField: "clearVersion", setField: "version" }
+    ];
+
+    for (const fields of conflictingFields) {
+      if (value[fields.clearField] && value[fields.setField]) {
+        context.addIssue({
+          code: z.ZodIssueCode.custom,
+          message: `Use either ${fields.setField} or ${fields.clearField}, not both.`,
+          path: [fields.clearField]
+        });
+      }
+    }
+  });
 
 export const packageSourceInspectionResponseSchema = z.object({
   packageSource: packageSourceRecordSchema,
@@ -114,6 +170,12 @@ export type ExternalPrincipalDeletionResponse = z.infer<
 >;
 export type CatalogInspectionResponse = z.infer<
   typeof catalogInspectionResponseSchema
+>;
+export type AgentEngineProfileUpsertRequest = z.infer<
+  typeof agentEngineProfileUpsertRequestSchema
+>;
+export type AgentEngineProfileUpsertRequestInput = z.input<
+  typeof agentEngineProfileUpsertRequestSchema
 >;
 export type PackageSourceInspectionResponse = z.infer<
   typeof packageSourceInspectionResponseSchema

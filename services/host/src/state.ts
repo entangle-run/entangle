@@ -80,6 +80,8 @@ import {
   agentPackageManifestSchema,
   buildValidationReport,
   type CatalogInspectionResponse,
+  type AgentEngineProfile,
+  type AgentEngineProfileUpsertRequest,
   type DeploymentResourceCatalog,
   deploymentResourceCatalogSchema,
   type EffectiveRuntimeContext,
@@ -6733,6 +6735,103 @@ export async function applyCatalog(
     catalogId: inspection.catalog.catalogId,
     category: "control_plane",
     message: `Applied catalog '${inspection.catalog.catalogId}'.`,
+    type: "catalog.updated",
+    updateKind: "apply"
+  } satisfies CatalogUpdatedEventInput);
+
+  return inspection;
+}
+
+export async function upsertAgentEngineProfile(
+  profileId: string,
+  request: AgentEngineProfileUpsertRequest
+): Promise<CatalogInspectionResponse> {
+  const catalog = await readCatalog();
+  const existingProfile = catalog.agentEngineProfiles.find(
+    (candidate) => candidate.id === profileId
+  );
+  const kind = request.kind ?? existingProfile?.kind ?? "opencode_server";
+  const profile: AgentEngineProfile = {
+    ...(existingProfile ?? {
+      displayName: request.displayName ?? profileId,
+      id: profileId,
+      kind,
+      stateScope: "node" as const
+    }),
+    ...(request.displayName ? { displayName: request.displayName } : {}),
+    id: profileId,
+    kind,
+    stateScope: request.stateScope ?? existingProfile?.stateScope ?? "node"
+  };
+
+  if (
+    !existingProfile &&
+    kind === "opencode_server" &&
+    !request.baseUrl &&
+    !request.clearExecutable
+  ) {
+    profile.executable = "opencode";
+  }
+
+  if (request.executable) {
+    profile.executable = request.executable;
+  } else if (request.clearExecutable) {
+    delete profile.executable;
+  }
+
+  if (request.baseUrl) {
+    profile.baseUrl = request.baseUrl;
+  } else if (request.clearBaseUrl) {
+    delete profile.baseUrl;
+  }
+
+  if (request.defaultAgent) {
+    profile.defaultAgent = request.defaultAgent;
+  } else if (request.clearDefaultAgent) {
+    delete profile.defaultAgent;
+  }
+
+  if (request.permissionMode) {
+    profile.permissionMode = request.permissionMode;
+  } else if (request.clearPermissionMode) {
+    delete profile.permissionMode;
+  }
+
+  if (request.version) {
+    profile.version = request.version;
+  } else if (request.clearVersion) {
+    delete profile.version;
+  }
+
+  const candidateCatalog = {
+    ...catalog,
+    agentEngineProfiles: [
+      ...catalog.agentEngineProfiles.filter(
+        (candidate) => candidate.id !== profileId
+      ),
+      profile
+    ].sort((left, right) => left.id.localeCompare(right.id)),
+    defaults: {
+      ...catalog.defaults,
+      ...(request.setDefault
+        ? {
+            agentEngineProfileRef: profileId
+          }
+        : {})
+    }
+  };
+  const inspection = validateCatalogCandidate(candidateCatalog);
+
+  if (!inspection.validation.ok || !inspection.catalog) {
+    return inspection;
+  }
+
+  await writeJsonFile(catalogPath, inspection.catalog);
+  await synchronizeCurrentGraphRuntimeState();
+  await appendHostEvent({
+    catalogId: inspection.catalog.catalogId,
+    category: "control_plane",
+    message: `Upserted agent engine profile '${profileId}' in catalog '${inspection.catalog.catalogId}'.`,
     type: "catalog.updated",
     updateKind: "apply"
   } satisfies CatalogUpdatedEventInput);

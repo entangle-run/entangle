@@ -129,7 +129,7 @@ import {
   type PackageInitCliOptions
 } from "./package-init-command.js";
 import {
-  buildAgentEngineProfileUpsertCatalog,
+  buildAgentEngineProfileUpsertRequest,
   projectAgentEngineProfileSummary,
   projectAgentEngineProfileUpsertSummary,
   sortAgentEngineProfilesForCli,
@@ -2412,11 +2412,11 @@ hostCatalogAgentEngineCommand
   .option("--set-default", "Set this profile as the catalog default agent engine.")
   .option(
     "--dry-run",
-    "Print the canonical catalog mutation without mutating the host."
+    "Print the canonical Host upsert request without mutating the host."
   )
   .option("--summary", "Print only the mutated profile and default ref.")
   .description(
-    "Create or update an agent engine profile and apply the catalog through entangle-host."
+    "Create or update an agent engine profile through entangle-host."
   )
   .action(
     async (
@@ -2428,23 +2428,13 @@ hostCatalogAgentEngineCommand
       command: Command
     ) => {
       const client = createCliHostClient(command);
-      const inspection = await client.getCatalog();
-
-      if (!inspection.catalog) {
-        throw new Error("Host catalog is unavailable or invalid.");
-      }
-
-      const upsert = buildAgentEngineProfileUpsertCatalog(
-        inspection.catalog,
-        profileId,
-        options
-      );
+      const request = buildAgentEngineProfileUpsertRequest(options);
 
       if (options.dryRun) {
         printJson(
           buildCliMutationDryRun({
             mutation: "host.catalog.agent_engine.upsert",
-            request: upsert.catalog,
+            request,
             target: {
               profileId
             }
@@ -2453,7 +2443,7 @@ hostCatalogAgentEngineCommand
         return;
       }
 
-      const response = await client.applyCatalog(upsert.catalog);
+      const response = await client.upsertAgentEngineProfile(profileId, request);
       const appliedProfile = response.catalog?.agentEngineProfiles.find(
         (profile) => profile.id === profileId
       );
