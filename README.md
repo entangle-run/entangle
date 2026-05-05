@@ -553,7 +553,9 @@ This repository currently contains:
   OpenCode. Shared catalog validation now requires `external_process` profiles
   to declare an executable. The runner also executes `external_http` profiles
   by POSTing the same turn payload to the configured endpoint and validating the
-  shared turn result response, with runner-owned source workspace change
+  shared turn result response. Unsupported native engine placeholders are not
+  exposed as active profile kinds until a runner adapter exists, with
+  runner-owned source workspace change
   harvesting now recording bounded changed-file and diff summaries on turns,
   host events, runtime inspection, CLI output, and Studio details, plus
   durable pending source-change candidate records with host, CLI, and Studio

@@ -7,7 +7,6 @@ const runtimeKinds = new Set([
 ]);
 const agentEngineKinds = new Set([
   "opencode_server",
-  "claude_agent_sdk",
   "external_process",
   "external_http"
 ]);

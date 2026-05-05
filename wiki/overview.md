@@ -167,6 +167,10 @@ The most accurate current description is:
 - joined agent runners can now execute `external_http` profiles through a
   minimal JSON HTTP adapter that POSTs the same turn payload to the configured
   endpoint and validates the shared turn result response;
+- active agent engine kinds now expose only runner-executable options:
+  `opencode_server`, `external_process`, and `external_http`; native Claude
+  support should be reintroduced only with a real runner adapter, while
+  Claude-based tools can be wrapped through the generic adapters today;
 - CLI uses the same focused Host profile upsert route for real
   `host catalog agent-engine upsert` mutations, while dry-run prints the
   request payload before mutation;

@@ -2392,7 +2392,7 @@ hostCatalogAgentEngineCommand
   .argument("<profileId>", "Agent engine profile id to create or update.")
   .option(
     "--kind <kind>",
-    "Engine kind: opencode_server, claude_agent_sdk, external_process, or external_http."
+    "Engine kind: opencode_server, external_process, or external_http."
   )
   .option("--display-name <name>", "Human-readable engine profile name.")
   .option("--executable <command>", "Process executable for process-backed engines.")

@@ -1076,7 +1076,6 @@ function buildDefaultCatalog(): DeploymentResourceCatalog {
     process.env.ENTANGLE_DEFAULT_AGENT_ENGINE_KIND?.trim();
   const agentEngineKind =
     requestedAgentEngineKind === "opencode_server" ||
-    requestedAgentEngineKind === "claude_agent_sdk" ||
     requestedAgentEngineKind === "external_process" ||
     (requestedAgentEngineKind === "external_http" && agentEngineBaseUrl)
       ? requestedAgentEngineKind

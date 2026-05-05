@@ -867,6 +867,10 @@ Implementation record:
   adds a minimal runner adapter for `external_http` profiles: the runner POSTs
   the shared turn request JSON to the configured endpoint and validates the
   shared turn result JSON response.
+- [478-active-agent-engine-kind-contract-slice.md](478-active-agent-engine-kind-contract-slice.md)
+  removes the non-executable `claude_agent_sdk` placeholder from active profile
+  kind validation, CLI help, Host default selection, and distributed proof
+  profiles until a native runner adapter exists.
 - [465-cli-agent-engine-profile-upsert-slice.md](465-cli-agent-engine-profile-upsert-slice.md)
   adds a Host-backed CLI catalog command for creating and updating typed agent
   engine profiles, including attached OpenCode profiles, permission mode,

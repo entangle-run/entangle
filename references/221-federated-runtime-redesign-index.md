@@ -278,6 +278,7 @@ same-machine slice records.
 - [475-distributed-proof-kit-fake-opencode-slice.md](475-distributed-proof-kit-fake-opencode-slice.md)
 - [476-external-process-agent-engine-adapter-slice.md](476-external-process-agent-engine-adapter-slice.md)
 - [477-external-http-agent-engine-adapter-slice.md](477-external-http-agent-engine-adapter-slice.md)
+- [478-active-agent-engine-kind-contract-slice.md](478-active-agent-engine-kind-contract-slice.md)
 
 ## Audited Scope
 
@@ -647,6 +648,8 @@ The repository is not fully federated:
   POSTing the shared turn request and bounded runtime metadata to the
   configured endpoint and validating a shared turn result JSON object from the
   response body;
+- the active agent engine kind contract now exposes only runner-executable
+  kinds: `opencode_server`, `external_process`, and `external_http`;
 - joined runners now publish session/conversation observations after outbound
   handoff writes, coordination close/result transitions, approval request and
   response transitions, session completion, and failure/cancellation paths, so

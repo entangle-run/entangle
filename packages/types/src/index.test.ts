@@ -4958,6 +4958,16 @@ describe("agent runtime contracts", () => {
     );
   });
 
+  it("rejects inactive agent engine kinds without runner adapters", () => {
+    expect(
+      agentEngineProfileSchema.safeParse({
+        id: "claude-agent-sdk",
+        displayName: "Claude Agent SDK",
+        kind: "claude_agent_sdk"
+      }).success
+    ).toBe(false);
+  });
+
   it("resolves node agent runtime from graph and catalog defaults", () => {
     const catalog = deploymentResourceCatalogSchema.parse({
       schemaVersion: "1",

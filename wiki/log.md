@@ -1,5 +1,15 @@
 # Entangle Wiki Log
 
+## [2026-05-05] contracts | Removed inactive Claude engine kind placeholder
+
+Added `references/478-active-agent-engine-kind-contract-slice.md`.
+The active agent engine kind contract now exposes only runner-executable kinds:
+`opencode_server`, `external_process`, and `external_http`. The unsupported
+`claude_agent_sdk` placeholder was removed from shared validation, CLI help,
+Host default selection, and distributed proof profile validation until a native
+runner adapter exists. Claude-based tools can still be integrated through the
+generic external-process or external-HTTP adapters.
+
 ## [2026-05-05] runner | Added external HTTP agent engine adapter
 
 Added `references/477-external-http-agent-engine-adapter-slice.md`.

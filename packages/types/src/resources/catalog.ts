@@ -119,7 +119,6 @@ export const modelEndpointProfileSchema = z.object({
 
 export const agentEngineProfileKindSchema = z.enum([
   "opencode_server",
-  "claude_agent_sdk",
   "external_process",
   "external_http"
 ]);

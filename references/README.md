@@ -188,7 +188,9 @@ turn contract without bypassing Entangle identity, policy, projection, or
 artifact handling. Shared catalog validation now requires those
 external-process profiles to declare an executable. The runner now also
 executes `external_http` profiles by POSTing the same shared turn payload to
-the configured endpoint and validating the shared turn result response.
+the configured endpoint and validating the shared turn result response. Active
+agent engine kind validation now exposes only runner-executable kinds:
+`opencode_server`, `external_process`, and `external_http`.
 `pnpm ops:check-product-naming` now guards active product surfaces against old
 local product/profile labels. Runner-owned source-history publication commands
 can now carry an approval id plus explicit git target selectors, allowing
@@ -785,6 +787,7 @@ files are the active federated redesign pack.
 476. [475-distributed-proof-kit-fake-opencode-slice.md](475-distributed-proof-kit-fake-opencode-slice.md)
 477. [476-external-process-agent-engine-adapter-slice.md](476-external-process-agent-engine-adapter-slice.md)
 478. [477-external-http-agent-engine-adapter-slice.md](477-external-http-agent-engine-adapter-slice.md)
+479. [478-active-agent-engine-kind-contract-slice.md](478-active-agent-engine-kind-contract-slice.md)
 
 ## Role of this corpus
 
