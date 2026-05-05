@@ -245,6 +245,11 @@ The most accurate current description is:
 - wiki page upsert now also accepts `mode: "patch"` for single-page unified
   diffs; the runner applies the patch only when context and removal lines match
   current runner-owned page content;
+- operators can now send bounded multi-page wiki maintenance manifests through
+  Host API, host-client, and CLI; Host emits one existing signed
+  `runtime.wiki.upsert_page` command per page to the accepted runner
+  assignment, so this is a non-atomic batch request rather than a new runner
+  transaction protocol;
 - the process-runner smoke now proves that patch mode through the running
   User Client JSON API, including expected-base hash forwarding, completed
   command receipt projection, and projected patched wiki preview content;
@@ -1352,11 +1357,12 @@ The current implementation-truth audit now lives in
   Client and Studio wiki page upsert plus runner-enforced stale-edit detection
   plus single-page wiki patch mode plus projected-preview draft prefill with
   automatic expected-hash population plus User Client source-history reconcile
-  plus local wiki draft diff preview plus stale-edit conflict receipt summaries
-  in the browser, CLI, and fallback Human Interface Runtime plus
+  plus bounded operator batch requests for multiple existing wiki page-upsert
+  commands plus local wiki draft diff preview plus stale-edit conflict receipt
+  summaries in the browser, CLI, and fallback Human Interface Runtime plus
   approval-response turn correlation;
-  the next git gaps are richer collaborative wiki merge UI, repository
-  lifecycle behavior, and explicit fallback or
+  the next git gaps are richer collaborative wiki merge UI, true atomic
+  multi-page patch-set semantics, repository lifecycle behavior, and explicit fallback or
   replication behavior,
   while the next deployment-grade gap is
   non-disposable profile upgrade behavior for older Gitea volumes;

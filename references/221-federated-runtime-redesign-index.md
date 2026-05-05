@@ -341,6 +341,7 @@ same-machine slice records.
 - [538-root-test-gate-package-level-slice.md](538-root-test-gate-package-level-slice.md)
 - [539-federated-dev-explicit-service-volumes-slice.md](539-federated-dev-explicit-service-volumes-slice.md)
 - [540-distributed-proof-runner-compose-slice.md](540-distributed-proof-runner-compose-slice.md)
+- [541-runtime-wiki-page-batch-request-slice.md](541-runtime-wiki-page-batch-request-slice.md)
 
 ## Audited Scope
 
@@ -1208,12 +1209,18 @@ assignment timeline while preserving Host as the only assignment authority.
 User Client command receipt cards now also expose bounded participant command
 closure details, including target ids and shortened wiki hash transitions, in
 both the bundled React app and fallback HTML.
+Operator wiki maintenance now has a bounded multi-page batch request surface:
+Host API, host-client, and CLI can accept one manifest and emit multiple
+existing signed `runtime.wiki.upsert_page` commands to the accepted runner
+assignment. This improves headless wiki repair and memory maintenance without
+claiming atomic patch-set semantics.
 The highest-value remaining implementation areas are richer model-guided
 memory maintenance, deeper delegated-session semantics beyond the current
 controlled handoff path and first owner-aware memory projection, participant
 runtime reassignment UX beyond the current read-only User Client runtime
-status projection, collaborative wiki merge UI and multi-page patch-set
-semantics on top of the participant-scoped page upsert command,
+status projection, collaborative wiki merge UI and true multi-page patch-set
+semantics on top of the participant-scoped page upsert command and new
+non-atomic operator batch surface,
 repository lifecycle and replicated/fallback artifact behavior,
 infrastructure-backed multi-machine proof execution, non-disposable upgrade
 behavior, external audit retention, and deeper production identity and

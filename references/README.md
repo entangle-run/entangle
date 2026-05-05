@@ -96,6 +96,11 @@ with `requestedBy` set to the User Node id.
 adds the matching Studio operator form over `host-client.upsertRuntimeWikiPage`,
 keeping admin page mutation on the same Host control boundary as CLI and User
 Client workflows.
+[541-runtime-wiki-page-batch-request-slice.md](541-runtime-wiki-page-batch-request-slice.md)
+adds a bounded Host API, host-client, and CLI batch request surface that emits
+multiple existing signed `runtime.wiki.upsert_page` commands from one
+operator manifest, improving headless multi-page wiki maintenance without
+claiming atomic patch-set semantics.
 Generated distributed proof profiles are now covered by a package-level
 contract and script-side validation, so malformed schema versions or
 assignment/runtime-kind mismatches fail before Host inspection.
@@ -890,6 +895,7 @@ files are the active federated redesign pack.
 539. [538-root-test-gate-package-level-slice.md](538-root-test-gate-package-level-slice.md)
 540. [539-federated-dev-explicit-service-volumes-slice.md](539-federated-dev-explicit-service-volumes-slice.md)
 541. [540-distributed-proof-runner-compose-slice.md](540-distributed-proof-runner-compose-slice.md)
+542. [541-runtime-wiki-page-batch-request-slice.md](541-runtime-wiki-page-batch-request-slice.md)
 
 ## Role of this corpus
 

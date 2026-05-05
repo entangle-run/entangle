@@ -620,6 +620,11 @@ Current status:
 - the process-runner smoke now proves the participant path for wiki page patch
   mode through the running User Client JSON API, runner-signed command receipt
   hashes, and projected patched `wiki.ref` preview content;
+- Host API, host-client, and CLI now expose a bounded operator batch request
+  for runner-owned wiki page mutations; the route publishes one existing
+  signed `runtime.wiki.upsert_page` command per page to the accepted runner
+  assignment, making headless multi-page memory/wiki maintenance practical
+  without adding a runner transaction protocol;
 - lifecycle start/stop/restart and session cancellation commands now also emit
   signed `runtime.command.receipt` observations, with session cancellation
   receipts carrying cancellation/session correlation ids;
@@ -627,10 +632,10 @@ Current status:
   assignment, node, runner, command type, status, requester, and limit filters;
 - Studio can inspect per-assignment timeline entries through the Host
   assignment timeline endpoint, keeping operator drilldown aligned with CLI;
-- richer collaborative wiki merge UI and multi-page patch-set behavior still
-  need protocol-backed replacement on top of the first participant-scoped wiki
-  page upsert command, runner-enforced stale-edit guard, and single-page patch
-  mode.
+- richer collaborative wiki merge UI and true atomic multi-page patch-set
+  behavior still need protocol-backed replacement on top of the
+  participant-scoped wiki page upsert command, runner-enforced stale-edit
+  guard, single-page patch mode, and non-atomic operator batch request surface.
 
 ### Slice 9: User Node Runtime
 

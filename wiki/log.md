@@ -6449,3 +6449,13 @@ against the active turn abort signal.
 If a session is cancelled while OpenCode is waiting for an Entangle approval
 decision, the adapter raises a typed cancelled engine error and does not send a
 stale permission reply back to OpenCode.
+
+## [2026-05-05] runtime | Added operator wiki page batch requests
+
+Added `references/541-runtime-wiki-page-batch-request-slice.md`. Host API,
+host-client, and CLI can now accept a bounded multi-page wiki mutation manifest
+and publish one existing signed `runtime.wiki.upsert_page` command per page to
+the accepted runner assignment.
+
+This improves headless multi-page memory/wiki maintenance while keeping true
+atomic patch-set semantics as explicit future work.

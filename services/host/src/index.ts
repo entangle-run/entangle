@@ -25,6 +25,7 @@ import {
   type ArtifactRef,
   type GitRepositoryTargetSelector,
   type RuntimeAssignmentRecord,
+  type RuntimeWikiUpsertPageResponse,
   type SourceHistoryPublicationTarget,
   type SessionCancellationMutationRequest,
   type SessionCancellationRequestRecord,
@@ -105,6 +106,8 @@ import {
   runtimeSourceHistoryReplayResponseSchema,
   runtimeWikiPublishRequestSchema,
   runtimeWikiPublishResponseSchema,
+  runtimeWikiUpsertPageBatchRequestSchema,
+  runtimeWikiUpsertPageBatchResponseSchema,
   runtimeWikiUpsertPageRequestSchema,
   runtimeWikiUpsertPageResponseSchema,
   runtimeTurnInspectionResponseSchema,
@@ -3003,6 +3006,103 @@ export async function buildHostServer(options: HostServerOptions = {}) {
         nodeId: params.nodeId,
         path: body.path,
         requestedAt: new Date().toISOString(),
+        status: "requested"
+      });
+    }
+  );
+
+  server.post(
+    "/v1/runtimes/:nodeId/wiki/pages/batch",
+    async (request, reply) => {
+      const params = request.params as { nodeId: string };
+      const body = parseRequestInput(
+        runtimeWikiUpsertPageBatchRequestSchema,
+        request.body ?? {},
+        {
+          detailsKey: "bodyIssues",
+          message:
+            "Request body did not match the expected wiki page batch schema."
+        }
+      );
+      const inspection = await getRuntimeInspection(params.nodeId);
+
+      if (!inspection) {
+        reply.status(404);
+        return hostErrorResponseSchema.parse({
+          code: "not_found",
+          message: `Runtime '${params.nodeId}' was not found in the active graph.`
+        });
+      }
+
+      const assignment = selectFederatedRuntimeControlAssignment({
+        assignments: (await listRuntimeAssignments()).assignments,
+        nodeId: params.nodeId
+      });
+
+      if (!assignment) {
+        throw new HostHttpError({
+          code: "conflict",
+          details: {
+            nodeId: params.nodeId
+          },
+          message:
+            `Wiki page batch mutation for runtime '${params.nodeId}' requires ` +
+            "an accepted federated runner assignment.",
+          statusCode: 409
+        });
+      }
+
+      const requestedAt = new Date().toISOString();
+      const pages: RuntimeWikiUpsertPageResponse[] = [];
+
+      for (const page of body.pages) {
+        const commandId = await publishRuntimeWikiUpsertPageCommandFromHost(
+          options,
+          {
+            assignment,
+            content: page.content,
+            ...(page.expectedCurrentSha256
+              ? { expectedCurrentSha256: page.expectedCurrentSha256 }
+              : {}),
+            mode: page.mode,
+            path: page.path,
+            ...(page.reason ? { reason: page.reason } : {}),
+            ...(page.requestedBy ? { requestedBy: page.requestedBy } : {})
+          }
+        );
+
+        if (!commandId) {
+          throw new HostHttpError({
+            code: "conflict",
+            details: {
+              nodeId: params.nodeId
+            },
+            message:
+              "Federated wiki page batch mutation requires an active Host control plane and relay configuration.",
+            statusCode: 409
+          });
+        }
+
+        pages.push({
+          assignmentId: assignment.assignmentId,
+          commandId,
+          ...(page.expectedCurrentSha256
+            ? { expectedCurrentSha256: page.expectedCurrentSha256 }
+            : {}),
+          mode: page.mode,
+          nodeId: params.nodeId,
+          path: page.path,
+          requestedAt,
+          status: "requested" as const
+        });
+      }
+
+      return runtimeWikiUpsertPageBatchResponseSchema.parse({
+        assignmentId: assignment.assignmentId,
+        nodeId: params.nodeId,
+        pageCount: pages.length,
+        pages,
+        requestedAt,
         status: "requested"
       });
     }

@@ -458,6 +458,19 @@ export const runtimeWikiUpsertPageResponseSchema = z.object({
   status: z.literal("requested")
 });
 
+export const runtimeWikiUpsertPageBatchRequestSchema = z.object({
+  pages: z.array(runtimeWikiUpsertPageRequestSchema).min(1).max(16)
+});
+
+export const runtimeWikiUpsertPageBatchResponseSchema = z.object({
+  assignmentId: identifierSchema,
+  nodeId: identifierSchema,
+  pageCount: z.number().int().min(1).max(16),
+  pages: z.array(runtimeWikiUpsertPageResponseSchema).min(1).max(16),
+  requestedAt: nonEmptyStringSchema,
+  status: z.literal("requested")
+});
+
 export const runtimeSourceHistoryReplayRequestSchema = z.object({
   approvalId: identifierSchema.optional(),
   reason: nonEmptyStringSchema.optional(),
@@ -651,6 +664,12 @@ export type RuntimeWikiUpsertPageRequest = z.input<
 >;
 export type RuntimeWikiUpsertPageResponse = z.infer<
   typeof runtimeWikiUpsertPageResponseSchema
+>;
+export type RuntimeWikiUpsertPageBatchRequest = z.input<
+  typeof runtimeWikiUpsertPageBatchRequestSchema
+>;
+export type RuntimeWikiUpsertPageBatchResponse = z.infer<
+  typeof runtimeWikiUpsertPageBatchResponseSchema
 >;
 export type RuntimeSourceHistoryReplayRequest = z.input<
   typeof runtimeSourceHistoryReplayRequestSchema

@@ -83,6 +83,7 @@ import {
   runtimeSourceHistoryReplayListResponseSchema,
   runtimeSourceHistoryReplayResponseSchema,
   runtimeWikiPublishResponseSchema,
+  runtimeWikiUpsertPageBatchResponseSchema,
   runtimeWikiUpsertPageResponseSchema,
   runtimeTurnInspectionResponseSchema,
   runtimeTurnListResponseSchema,
@@ -8786,6 +8787,82 @@ describe("buildHostServer", () => {
         relayUrls: ["ws://relay.example"],
         requestedBy: "operator-main"
       });
+
+      const wikiPageBatchUpsertResponse = await server.inject({
+        method: "POST",
+        payload: {
+          pages: [
+            {
+              content: "# Batch Note\n\nReplace this page.\n",
+              mode: "replace",
+              path: "operator/batch.md",
+              reason: "Operator requested wiki page batch update.",
+              requestedBy: "operator-main"
+            },
+            {
+              content: "\nAppend this note.\n",
+              expectedCurrentSha256:
+                "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+              mode: "append",
+              path: "operator/batch-follow-up.md",
+              reason: "Operator requested wiki page batch update.",
+              requestedBy: "operator-main"
+            }
+          ]
+        },
+        url: "/v1/runtimes/worker-it/wiki/pages/batch"
+      });
+
+      expect(wikiPageBatchUpsertResponse.statusCode).toBe(200);
+      expect(
+        runtimeWikiUpsertPageBatchResponseSchema.parse(
+          wikiPageBatchUpsertResponse.json()
+        )
+      ).toMatchObject({
+        assignmentId: "assignment-alpha",
+        nodeId: "worker-it",
+        pageCount: 2,
+        pages: [
+          {
+            assignmentId: "assignment-alpha",
+            mode: "replace",
+            nodeId: "worker-it",
+            path: "operator/batch.md",
+            status: "requested"
+          },
+          {
+            assignmentId: "assignment-alpha",
+            expectedCurrentSha256:
+              "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+            mode: "append",
+            nodeId: "worker-it",
+            path: "operator/batch-follow-up.md",
+            status: "requested"
+          }
+        ],
+        status: "requested"
+      });
+      expect(wikiPageUpsertRequests).toHaveLength(3);
+      expect(wikiPageUpsertRequests.slice(1)).toEqual([
+        expect.objectContaining({
+          content: "# Batch Note\n\nReplace this page.\n",
+          mode: "replace",
+          path: "operator/batch.md",
+          reason: "Operator requested wiki page batch update.",
+          relayUrls: ["ws://relay.example"],
+          requestedBy: "operator-main"
+        }),
+        expect.objectContaining({
+          content: "\nAppend this note.\n",
+          expectedCurrentSha256:
+            "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+          mode: "append",
+          path: "operator/batch-follow-up.md",
+          reason: "Operator requested wiki page batch update.",
+          relayUrls: ["ws://relay.example"],
+          requestedBy: "operator-main"
+        })
+      ]);
 
       const wikiPublishResponse = await server.inject({
         method: "POST",

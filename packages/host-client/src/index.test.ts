@@ -3751,6 +3751,115 @@ describe("createHostClient", () => {
     ]);
   });
 
+  it("posts runner-owned runtime wiki page batch upsert requests", async () => {
+    const requests: { body?: string; method?: string; url: string }[] = [];
+    const client = createHostClient({
+      baseUrl: "http://entangle-host.test",
+      fetchImpl: (url, init) => {
+        requests.push({
+          body: init?.body,
+          method: init?.method,
+          url
+        });
+
+        return Promise.resolve(
+          createMockResponse({
+            body: JSON.stringify({
+              assignmentId: "assignment-alpha",
+              nodeId: "worker-it",
+              pageCount: 2,
+              pages: [
+                {
+                  assignmentId: "assignment-alpha",
+                  commandId: "cmd-wiki-upsert-page-alpha",
+                  mode: "replace",
+                  nodeId: "worker-it",
+                  path: "operator/notes.md",
+                  requestedAt: "2026-04-24T10:10:00.000Z",
+                  status: "requested"
+                },
+                {
+                  assignmentId: "assignment-alpha",
+                  commandId: "cmd-wiki-upsert-page-beta",
+                  mode: "append",
+                  nodeId: "worker-it",
+                  path: "operator/follow-up.md",
+                  requestedAt: "2026-04-24T10:10:00.000Z",
+                  status: "requested"
+                }
+              ],
+              requestedAt: "2026-04-24T10:10:00.000Z",
+              status: "requested"
+            }),
+            ok: true,
+            status: 200
+          })
+        );
+      }
+    });
+
+    await expect(
+      client.upsertRuntimeWikiPages("worker-it", {
+        pages: [
+          {
+            content: "# Operator Note\n",
+            path: "operator/notes.md",
+            reason: "Replace an operator note.",
+            requestedBy: "operator-main"
+          },
+          {
+            content: "\nFollow up from the operator.\n",
+            mode: "append",
+            path: "operator/follow-up.md",
+            reason: "Append an operator note.",
+            requestedBy: "operator-main"
+          }
+        ]
+      })
+    ).resolves.toMatchObject({
+      assignmentId: "assignment-alpha",
+      nodeId: "worker-it",
+      pageCount: 2,
+      pages: [
+        {
+          commandId: "cmd-wiki-upsert-page-alpha",
+          mode: "replace",
+          path: "operator/notes.md"
+        },
+        {
+          commandId: "cmd-wiki-upsert-page-beta",
+          mode: "append",
+          path: "operator/follow-up.md"
+        }
+      ],
+      status: "requested"
+    });
+    expect(requests).toEqual([
+      {
+        body: JSON.stringify({
+          pages: [
+            {
+              content: "# Operator Note\n",
+              mode: "replace",
+              path: "operator/notes.md",
+              reason: "Replace an operator note.",
+              requestedBy: "operator-main"
+            },
+            {
+              content: "\nFollow up from the operator.\n",
+              mode: "append",
+              path: "operator/follow-up.md",
+              reason: "Append an operator note.",
+              requestedBy: "operator-main"
+            }
+          ]
+        }),
+        method: "POST",
+        url: "http://entangle-host.test/v1/runtimes/worker-it/wiki/pages/batch"
+      }
+    ]);
+  });
+
   it("parses runtime recovery policy mutation responses from the host surface", async () => {
     const client = createHostClient({
       baseUrl: "http://entangle-host.test",

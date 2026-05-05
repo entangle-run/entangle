@@ -775,6 +775,10 @@ This repository currently contains:
   expose expected, previous, and next page hashes for stale-edit audit. The
   same command now supports `mode: "patch"` for single-page unified diffs that
   the runner applies only when context/removal lines match current content.
+  Operators can also send bounded multi-page wiki maintenance manifests through
+  `entangle host runtimes wiki-upsert-pages <nodeId> --manifest <path>`; Host
+  emits one existing signed `runtime.wiki.upsert_page` command per page, so the
+  convenience path does not require a new runner transaction protocol.
   The running User Client can also load a complete projected wiki preview into
   the participant page-update form as an edit draft, keeping normal wiki memory
   edits inside the node-local client rather than requiring manual copy/paste
@@ -1578,11 +1582,12 @@ The highest-value remaining gaps are:
   explicit runner-owned artifact/source/wiki command completion receipts,
   first operator and participant-scoped runner-owned wiki page upsert support
   with runner-enforced stale-edit detection, single-page patch mode, and
-  projected-preview draft prefill with automatic expected-hash population, User
-  Client local wiki draft diff preview plus stale-edit conflict receipt
+  projected-preview draft prefill with automatic expected-hash population,
+  bounded operator batch requests for multiple existing page-upsert commands,
+  User Client local wiki draft diff preview plus stale-edit conflict receipt
   summaries in the browser, CLI, and fallback Human Interface Runtime,
-  approval-response turn correlation, richer collaborative wiki merge UI and
-  repository lifecycle behavior beyond
+  approval-response turn correlation, richer collaborative wiki merge UI, true
+  atomic multi-page patch-set semantics, and repository lifecycle behavior beyond
   explicit target publication, and replicated fallback paths;
 - production identity and authorization beyond the bootstrap operator-token
   boundary, multi-token attribution, visible status summary, route-level

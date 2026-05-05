@@ -94,6 +94,8 @@ import {
   runtimeTurnInspectionResponseSchema,
   runtimeTurnListResponseSchema,
   runtimeWikiPublishRequestSchema,
+  runtimeWikiUpsertPageBatchRequestSchema,
+  runtimeWikiUpsertPageBatchResponseSchema,
   sessionCancellationRequestRecordSchema,
   sessionCancellationResponseSchema,
   resolveEffectiveAgentRuntime,
@@ -2607,6 +2609,58 @@ describe("source change candidate host API contracts", () => {
         }
       }).target?.repositoryName
     ).toBe("wiki-public");
+    const wikiPageBatch = runtimeWikiUpsertPageBatchRequestSchema.parse({
+      pages: [
+        {
+          content: "# Operator Note\n",
+          path: "operator/notes.md",
+          reason: "Replace operator notes.",
+          requestedBy: "operator-alpha"
+        },
+        {
+          content: "\nFollow-up note.\n",
+          expectedCurrentSha256:
+            "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+          mode: "append",
+          path: "operator/follow-up.md"
+        }
+      ]
+    });
+    expect(wikiPageBatch.pages.map((page) => page.mode)).toEqual([
+      "replace",
+      "append"
+    ]);
+    expect(
+      runtimeWikiUpsertPageBatchResponseSchema.parse({
+        assignmentId: "assignment-alpha",
+        nodeId: "worker-it",
+        pageCount: 2,
+        pages: [
+          {
+            assignmentId: "assignment-alpha",
+            commandId: "cmd-wiki-upsert-page-alpha",
+            mode: "replace",
+            nodeId: "worker-it",
+            path: "operator/notes.md",
+            requestedAt: "2026-04-24T00:04:00.000Z",
+            status: "requested"
+          },
+          {
+            assignmentId: "assignment-alpha",
+            commandId: "cmd-wiki-upsert-page-beta",
+            expectedCurrentSha256:
+              "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+            mode: "append",
+            nodeId: "worker-it",
+            path: "operator/follow-up.md",
+            requestedAt: "2026-04-24T00:04:00.000Z",
+            status: "requested"
+          }
+        ],
+        requestedAt: "2026-04-24T00:04:00.000Z",
+        status: "requested"
+      }).pageCount
+    ).toBe(2);
     expect(
       runtimeSourceChangeCandidateInspectionResponseSchema.parse({
         candidate: {

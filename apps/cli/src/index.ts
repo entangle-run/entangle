@@ -182,6 +182,7 @@ import {
   projectRuntimeMemorySummary
 } from "./runtime-memory-command.js";
 import { projectRuntimeRecoverySummary } from "./runtime-recovery-output.js";
+import { parseRuntimeWikiUpsertPageBatchManifest } from "./runtime-wiki-command.js";
 import {
   filterRuntimeSourceChangeCandidatesForCli,
   projectRuntimeSourceChangeCandidateDiffSummary,
@@ -4317,6 +4318,32 @@ hostRuntimesCommand
         ...(options.requestedBy ? { requestedBy: options.requestedBy } : {})
       });
       printJson(await client.upsertRuntimeWikiPage(nodeId, request));
+    }
+  );
+
+hostRuntimesCommand
+  .command("wiki-upsert-pages")
+  .argument("<nodeId>", "Node identifier in the active graph.")
+  .requiredOption(
+    "--manifest <path>",
+    "Read a JSON manifest with { pages: [...] } wiki mutations."
+  )
+  .description(
+    "Ask the assigned runner to upsert multiple wiki pages through federated control."
+  )
+  .action(
+    async (
+      nodeId: string,
+      options: {
+        manifest: string;
+      },
+      command: Command
+    ) => {
+      const manifest = parseRuntimeWikiUpsertPageBatchManifest(
+        await readFile(resolveCliPath(options.manifest), "utf8")
+      );
+      const client = createCliHostClient(command);
+      printJson(await client.upsertRuntimeWikiPages(nodeId, manifest));
     }
   );
 
