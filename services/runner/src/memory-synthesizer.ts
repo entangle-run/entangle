@@ -20,6 +20,7 @@ import {
 } from "@entangle/types";
 import {
   appendSectionBullet,
+  resolveCoordinationMapSummaryPath,
   resolveDecisionsSummaryPath,
   resolveFocusedRegisterTransitionHistoryPath,
   resolveNextActionsSummaryPath,
@@ -64,6 +65,8 @@ const openQuestionsSummaryBullet =
 const decisionsSummaryBullet = "- [Decisions Summary](summaries/decisions.md)";
 const nextActionsSummaryBullet = "- [Next Actions Summary](summaries/next-actions.md)";
 const resolutionsSummaryBullet = "- [Resolutions Summary](summaries/resolutions.md)";
+const coordinationMapSummaryBullet =
+  "- [Coordination Map Summary](summaries/coordination-map.md)";
 const focusedRegisterTransitionHistoryBullet =
   "- [Focused Register Transition History](summaries/focused-register-transition-history.md)";
 
@@ -1394,6 +1397,7 @@ function parseWorkingContextSummaryInput(input: unknown):
         completedNextActions: string[];
         consolidatedNextActions: FocusedRegisterConsolidationRef[];
         consolidatedOpenQuestions: FocusedRegisterConsolidationRef[];
+        coordinationInsights: string[];
         decisions: string[];
         executionInsights: string[];
         focus: string;
@@ -1426,6 +1430,7 @@ function parseWorkingContextSummaryInput(input: unknown):
     "completedNextActions",
     "consolidatedNextActions",
     "consolidatedOpenQuestions",
+    "coordinationInsights",
     "decisions",
     "executionInsights",
     "focus",
@@ -1449,6 +1454,7 @@ function parseWorkingContextSummaryInput(input: unknown):
   const consolidatedOpenQuestions = coerceFocusedRegisterConsolidationRefArray(
     inputRecord.consolidatedOpenQuestions
   );
+  const coordinationInsights = coerceStringArray(inputRecord.coordinationInsights);
   const decisions = coerceStringArray(inputRecord.decisions);
   const executionInsights = coerceStringArray(inputRecord.executionInsights);
   const focus = coerceNonEmptyString(inputRecord.focus);
@@ -1484,6 +1490,12 @@ function parseWorkingContextSummaryInput(input: unknown):
 
   if (!decisions) {
     issues.push("The 'decisions' field must be an array of non-empty strings.");
+  }
+
+  if (!coordinationInsights) {
+    issues.push(
+      "The 'coordinationInsights' field must be an array of non-empty strings."
+    );
   }
 
   if (!closedOpenQuestions) {
@@ -1640,6 +1652,15 @@ function parseWorkingContextSummaryInput(input: unknown):
   }
 
   if (
+    coordinationInsights &&
+    coordinationInsights.length > maxWorkingContextListEntries
+  ) {
+    issues.push(
+      `The 'coordinationInsights' field may contain at most ${maxWorkingContextListEntries} entries.`
+    );
+  }
+
+  if (
     sessionInsights &&
     sessionInsights.length > maxWorkingContextListEntries
   ) {
@@ -1739,6 +1760,7 @@ function parseWorkingContextSummaryInput(input: unknown):
       completedNextActions: completedNextActions!,
       consolidatedNextActions: consolidatedNextActions!,
       consolidatedOpenQuestions: consolidatedOpenQuestions!,
+      coordinationInsights: coordinationInsights!,
       decisions: decisions!,
       executionInsights: executionInsights!,
       focus: focus!,
@@ -1833,6 +1855,14 @@ function buildWorkingContextSummaryToolDefinition(): EngineToolDefinition {
             },
             required: ["from", "to"],
             additionalProperties: false
+          },
+          type: "array"
+        },
+        coordinationInsights: {
+          description:
+            "A bounded list of durable coordination or graph-relation observations worth carrying forward, such as owner/origin implications, active peer routes, approval gates, or handoff obligations.",
+          items: {
+            type: "string"
           },
           type: "array"
         },
@@ -1947,6 +1977,7 @@ function buildWorkingContextSummaryToolDefinition(): EngineToolDefinition {
         "completedNextActions",
         "consolidatedOpenQuestions",
         "consolidatedNextActions",
+        "coordinationInsights",
         "decisions",
         "executionInsights",
         "summary",
@@ -1993,6 +2024,7 @@ export async function buildModelGuidedMemorySynthesisTurnRequest(
       "You do not write files directly. Use the provided tool exactly once to update the canonical focused memory-summary registers.",
       "Keep the summary concise, durable, and grounded in the current turn plus the injected memory references.",
       "Preserve only durable session or coordination observations that future turns should retain; do not restate transient workflow state verbatim.",
+      "Maintain a durable coordination map for graph-relation context: local ownership, origin, entrypoint, active peer routes, approval gates, and handoff obligations.",
       "Preserve only durable artifact-backed observations that future turns should retain; do not restate raw file contents.",
       "Use bounded source-change evidence to retain durable code-change context; do not copy raw diffs or full file previews into memory.",
       "Preserve only durable execution signals that matter beyond this single turn; do not copy transient logs verbatim.",
@@ -2232,6 +2264,7 @@ function renderHandoffContextLines(
 
 function buildWorkingContextSummaryContent(input: {
   artifactInsights: string[];
+  coordinationInsights: string[];
   consumedArtifactIds: string[];
   decisions: string[];
   envelope: RunnerInboundEnvelope;
@@ -2298,6 +2331,13 @@ function buildWorkingContextSummaryContent(input: {
       "- No durable session-state observations were synthesized."
     ),
     "",
+    "### Durable Coordination Insights",
+    "",
+    ...renderBulletList(
+      input.coordinationInsights,
+      "- No durable coordination-map observations were synthesized."
+    ),
+    "",
     "## Stable Facts",
     "",
     ...renderBulletList(input.stableFacts, "- No durable facts were synthesized."),
@@ -2357,6 +2397,79 @@ function buildWorkingContextSummaryContent(input: {
     ...renderBulletList(
       input.executionInsights,
       "- No durable execution signals were synthesized."
+    ),
+    ""
+  ].join("\n");
+}
+
+function buildCoordinationMapSummaryContent(input: {
+  context: EffectiveRuntimeContext;
+  coordinationInsights: string[];
+  envelope: RunnerInboundEnvelope;
+  recentWorkSummaryPath: string;
+  sessionId: string;
+  sessionSnapshot: RunnerSessionStateSnapshot | undefined;
+  taskPagePath: string;
+  turnRecord: RunnerTurnRecord | undefined;
+  turnId: string;
+  wikiRoot: string;
+  workingContextPagePath: string;
+}): string {
+  const taskPageRelativePath = toPosixRelativePath(input.wikiRoot, input.taskPagePath);
+  const recentWorkRelativePath = toPosixRelativePath(
+    input.wikiRoot,
+    input.recentWorkSummaryPath
+  );
+  const workingContextRelativePath = toPosixRelativePath(
+    input.wikiRoot,
+    input.workingContextPagePath
+  );
+  const localNode = input.context.binding.node;
+  const session = input.sessionSnapshot?.session;
+
+  return [
+    "# Coordination Map Summary",
+    "",
+    `- Updated at: \`${nowIsoString()}\``,
+    `- Graph: \`${input.context.binding.graphId}\``,
+    `- Local node: \`${localNode.nodeId}\` (${localNode.displayName})`,
+    `- Session: \`${input.sessionId}\``,
+    `- Turn: \`${input.turnId}\``,
+    `- Working context: [Working Context Summary](${workingContextRelativePath})`,
+    `- Task page: [Current Task Memory](${taskPageRelativePath})`,
+    `- Recent work: [Recent Work Summary](${recentWorkRelativePath})`,
+    "",
+    "## Node Relation",
+    "",
+    `- Owner node: \`${session?.ownerNodeId ?? "unknown"}\``,
+    `- Originating node: \`${session?.originatingNodeId ?? "unknown"}\``,
+    `- Entrypoint node: \`${session?.entrypointNodeId ?? "unknown"}\``,
+    `- Last session message type: \`${session?.lastMessageType ?? "unknown"}\``,
+    `- Current inbound from: \`${input.envelope.message.fromNodeId}\``,
+    `- Current inbound to: \`${input.envelope.message.toNodeId}\``,
+    `- Current conversation: \`${input.envelope.message.conversationId}\``,
+    "",
+    "## Inbound Message",
+    "",
+    ...renderInboundMessageContextLines(input.envelope),
+    "",
+    "## Conversation Routes",
+    "",
+    ...renderConversationContextLines(input.sessionSnapshot),
+    "",
+    "## Approval Gates",
+    "",
+    ...renderApprovalGateLines(input.sessionSnapshot),
+    "",
+    "## Handoff Obligations",
+    "",
+    ...renderHandoffContextLines(input.turnRecord),
+    "",
+    "## Durable Coordination Insights",
+    "",
+    ...renderBulletList(
+      input.coordinationInsights,
+      "- No durable coordination-map observations were synthesized."
     ),
     ""
   ].join("\n");
@@ -2685,6 +2798,7 @@ function createWorkingContextSummaryToolExecutor(input: {
   synthesis: RunnerMemorySynthesisInput;
   statePaths: ReturnType<typeof buildRunnerStatePaths>;
   writePathCapture: {
+    coordinationMapPagePath: string | undefined;
     decisionsPagePath: string | undefined;
     focusedRegisterTransitionHistoryPagePath: string | undefined;
     nextActionsPagePath: string | undefined;
@@ -2837,6 +2951,7 @@ function createWorkingContextSummaryToolExecutor(input: {
 
       const wikiRoot = path.join(input.synthesis.context.workspace.memoryRoot, "wiki");
       const workingContextPagePath = resolveWorkingContextSummaryPath(wikiRoot);
+      const coordinationMapPagePath = resolveCoordinationMapSummaryPath(wikiRoot);
       const decisionsPagePath = resolveDecisionsSummaryPath(wikiRoot);
       const stableFactsPagePath = resolveStableFactsSummaryPath(wikiRoot);
       const openQuestionsPagePath = resolveOpenQuestionsSummaryPath(wikiRoot);
@@ -2847,6 +2962,9 @@ function createWorkingContextSummaryToolExecutor(input: {
       const normalizedInput = {
         ...parsedInput.value,
         artifactInsights: normalizeListEntries(parsedInput.value.artifactInsights),
+        coordinationInsights: normalizeListEntries(
+          parsedInput.value.coordinationInsights
+        ),
         decisions: normalizeListEntries(parsedInput.value.decisions),
         executionInsights: normalizeListEntries(parsedInput.value.executionInsights),
         sessionInsights: normalizeListEntries(parsedInput.value.sessionInsights),
@@ -2885,6 +3003,7 @@ function createWorkingContextSummaryToolExecutor(input: {
       });
       const content = buildWorkingContextSummaryContent({
         artifactInsights: normalizedInput.artifactInsights,
+        coordinationInsights: normalizedInput.coordinationInsights,
         consumedArtifactIds: input.synthesis.consumedArtifactIds,
         decisions: normalizedInput.decisions,
         envelope: input.synthesis.envelope,
@@ -2904,6 +3023,19 @@ function createWorkingContextSummaryToolExecutor(input: {
         turnRecord: input.synthesis.turnRecord,
         turnId: input.synthesis.turnId,
         wikiRoot
+      });
+      const coordinationMapContent = buildCoordinationMapSummaryContent({
+        context: input.synthesis.context,
+        coordinationInsights: normalizedInput.coordinationInsights,
+        envelope: input.synthesis.envelope,
+        recentWorkSummaryPath: input.synthesis.recentWorkSummaryPath,
+        sessionId: input.synthesis.envelope.message.sessionId,
+        sessionSnapshot: input.sessionSnapshot,
+        taskPagePath: input.synthesis.taskPagePath,
+        turnRecord: input.synthesis.turnRecord,
+        turnId: input.synthesis.turnId,
+        wikiRoot,
+        workingContextPagePath
       });
       const decisionsContent = buildDecisionsSummaryContent({
         decisions: normalizedInput.decisions,
@@ -2962,6 +3094,7 @@ function createWorkingContextSummaryToolExecutor(input: {
 
       await Promise.all([
         writeTextFile(workingContextPagePath, `${content.trimEnd()}\n`),
+        writeTextFile(coordinationMapPagePath, `${coordinationMapContent.trimEnd()}\n`),
         writeTextFile(decisionsPagePath, `${decisionsContent.trimEnd()}\n`),
         writeTextFile(stableFactsPagePath, `${stableFactsContent.trimEnd()}\n`),
         writeTextFile(openQuestionsPagePath, `${openQuestionsContent.trimEnd()}\n`),
@@ -2973,6 +3106,7 @@ function createWorkingContextSummaryToolExecutor(input: {
         ),
         writeFocusedRegisterState(input.statePaths, nextFocusedRegisterState)
       ]);
+      input.writePathCapture.coordinationMapPagePath = coordinationMapPagePath;
       input.writePathCapture.decisionsPagePath = decisionsPagePath;
       input.writePathCapture.focusedRegisterTransitionHistoryPagePath =
         focusedRegisterTransitionHistoryPagePath;
@@ -3025,6 +3159,7 @@ async function ensureWorkingContextIndexed(
   const indexPath = path.join(wikiRoot, "index.md");
   const currentIndex = await readTextFileOrDefault(indexPath, "# Wiki Index\n");
   let nextIndex = appendSectionBullet(currentIndex, "Summaries", workingContextSummaryBullet);
+  nextIndex = appendSectionBullet(nextIndex, "Summaries", coordinationMapSummaryBullet);
   nextIndex = appendSectionBullet(nextIndex, "Summaries", decisionsSummaryBullet);
   nextIndex = appendSectionBullet(nextIndex, "Summaries", stableFactsSummaryBullet);
   nextIndex = appendSectionBullet(nextIndex, "Summaries", openQuestionsSummaryBullet);
@@ -3063,6 +3198,7 @@ export function createModelGuidedMemorySynthesizer(input: {
         })
       ]);
       const writePathCapture: {
+        coordinationMapPagePath: string | undefined;
         decisionsPagePath: string | undefined;
         focusedRegisterTransitionHistoryPagePath: string | undefined;
         nextActionsPagePath: string | undefined;
@@ -3071,6 +3207,7 @@ export function createModelGuidedMemorySynthesizer(input: {
         stableFactsPagePath: string | undefined;
         workingContextPagePath: string | undefined;
       } = {
+        coordinationMapPagePath: undefined,
         decisionsPagePath: undefined,
         focusedRegisterTransitionHistoryPagePath: undefined,
         nextActionsPagePath: undefined,
@@ -3113,6 +3250,11 @@ export function createModelGuidedMemorySynthesizer(input: {
             "Model-guided memory synthesis completed without updating the working-context summary."
           );
         }
+        if (!writePathCapture.coordinationMapPagePath) {
+          throw new Error(
+            "Model-guided memory synthesis completed without updating the coordination-map summary."
+          );
+        }
         if (!writePathCapture.stableFactsPagePath) {
           throw new Error(
             "Model-guided memory synthesis completed without updating the stable facts summary."
@@ -3146,6 +3288,7 @@ export function createModelGuidedMemorySynthesizer(input: {
 
         const updatedSummaryPagePaths = [
           writePathCapture.workingContextPagePath,
+          writePathCapture.coordinationMapPagePath,
           writePathCapture.decisionsPagePath,
           writePathCapture.stableFactsPagePath,
           writePathCapture.openQuestionsPagePath,

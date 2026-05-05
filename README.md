@@ -1234,6 +1234,11 @@ This repository currently contains:
 - an agent-engine memory-brief refinement where every per-node coding engine
   turn receives a bounded inline brief from focused node-memory summaries when
   they exist, while `memoryRefs` remain the complete wiki source pages;
+- a coordination-map memory refinement where successful model-guided synthesis
+  also writes `memory/wiki/summaries/coordination-map.md` with local node
+  relation, owner/origin/entrypoint, inbound message provenance, active peer
+  routes, approval gates, handoff obligations, and bounded durable
+  coordination insights for future node turns;
 - an owner-aware session-memory refinement where bounded synthesis prompts and
   the durable `working-context.md` page now carry session owner,
   originating-node, entrypoint-node, last-message, and active-route metadata so
@@ -1563,8 +1568,8 @@ The highest-value remaining gaps are:
 
 - richer model-guided memory maintenance on top of the now stronger
   session-aware, artifact-aware/artifact-carrying, engine-outcome-aware,
-  execution-insight-carrying, source-change-aware, and owner-aware bounded
-  runtime inspection surface;
+  execution-insight-carrying, source-change-aware, owner-aware, and
+  coordination-map-aware bounded runtime inspection surface;
 - deeper delegated-session runtime semantics beyond the current controlled
   autonomous handoff and runner-local active-conversation reconciliation path,
   especially formal cross-runtime relation modeling, richer participant-aware

@@ -850,6 +850,11 @@ The repository now also contains the first real implementation baseline:
   now receive a bounded inline brief from focused node-memory summaries when
   those pages exist, while complete wiki pages stay available through
   `memoryRefs`;
+- a coordination-map memory refinement where successful model-guided synthesis
+  now writes `memory/wiki/summaries/coordination-map.md` with local node
+  relation, owner/origin/entrypoint, inbound message provenance, active peer
+  routes, approval gates, handoff obligations, and bounded durable
+  coordination insights for future node turns;
 - an owner-aware session-memory refinement where the bounded synthesis prompt
   and durable `working-context.md` page now record session owner,
   originating-node, entrypoint-node, last-message, and active-route metadata so
@@ -1371,7 +1376,7 @@ The current implementation-truth audit now lives in
   autonomous `task.handoff` emission and runner-local active-conversation
   reconciliation plus host-derived conversation lifecycle diagnostics,
   consistency findings, read-only participant runtime status, and first
-  owner-aware memory projection are implemented;
+  owner-aware plus coordination-map memory projection are implemented;
 - deepen the bootstrap host operator-token boundary, multi-token request audit,
   status reporting, server-filterable event inspection, route-level bootstrap
   permissions, coarse read-only `viewer` enforcement, bootstrap token expiry,

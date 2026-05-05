@@ -357,6 +357,10 @@ describe("model-guided memory synthesis", () => {
                 completedNextActions: [previousNextAction],
                 consolidatedNextActions: [],
                 consolidatedOpenQuestions: [],
+                coordinationInsights: [
+                  "The reviewer conversation is the active coordination route for the next checkpoint.",
+                  "The pending approval must stay attached to the worker-owned recovery session."
+                ],
                 decisions: [
                   "Treat the inbound recovery notes as the canonical baseline for the next checkpoint review.",
                   "Carry the produced report forward as the current proposal for the next operator validation step."
@@ -581,6 +585,14 @@ describe("model-guided memory synthesis", () => {
             summaryPagePath.endsWith(path.join("summaries", "decisions.md"))
           )
         : undefined;
+    const coordinationMapPagePath =
+      synthesisResult.ok
+        ? synthesisResult.updatedSummaryPagePaths.find((summaryPagePath) =>
+            summaryPagePath.endsWith(
+              path.join("summaries", "coordination-map.md")
+            )
+          )
+        : undefined;
     const stableFactsPagePath =
       synthesisResult.ok
         ? synthesisResult.updatedSummaryPagePaths.find((summaryPagePath) =>
@@ -741,6 +753,10 @@ describe("model-guided memory synthesis", () => {
       throw new Error("Expected a decisions summary path.");
     }
 
+    if (!coordinationMapPagePath) {
+      throw new Error("Expected a coordination map summary path.");
+    }
+
     if (!openQuestionsPagePath) {
       throw new Error("Expected an open questions summary path.");
     }
@@ -759,6 +775,7 @@ describe("model-guided memory synthesis", () => {
 
     const [
       workingContextPage,
+      coordinationMapPage,
       decisionsPage,
       stableFactsPage,
       openQuestionsPage,
@@ -772,6 +789,7 @@ describe("model-guided memory synthesis", () => {
     ] =
       await Promise.all([
         readFile(workingContextPagePath, "utf8"),
+        readFile(coordinationMapPagePath, "utf8"),
         readFile(decisionsPagePath, "utf8"),
         readFile(stableFactsPagePath, "utf8"),
         readFile(openQuestionsPagePath, "utf8"),
@@ -827,6 +845,10 @@ describe("model-guided memory synthesis", () => {
     expect(workingContextPage).toContain("### Durable Session Insights");
     expect(workingContextPage).toContain(
       "The live conversation with the reviewer remains the coordination path for the next checkpoint."
+    );
+    expect(workingContextPage).toContain("### Durable Coordination Insights");
+    expect(workingContextPage).toContain(
+      "The reviewer conversation is the active coordination route for the next checkpoint."
     );
     expect(workingContextPage).toContain("### Consumed Artifacts");
     expect(workingContextPage).toContain("Consumed artifact: `artifact-input`");
@@ -915,6 +937,31 @@ describe("model-guided memory synthesis", () => {
     expect(transitionHistoryPage).toContain(
       "The current checkpoint review no longer needs extra operator-detail validation."
     );
+    expect(coordinationMapPage).toContain("# Coordination Map Summary");
+    expect(coordinationMapPage).toContain("- Graph: `graph-alpha`");
+    expect(coordinationMapPage).toContain(
+      "- Local node: `worker-it` (Worker IT)"
+    );
+    expect(coordinationMapPage).toContain("## Node Relation");
+    expect(coordinationMapPage).toContain("- Owner node: `worker-it`");
+    expect(coordinationMapPage).toContain("- Originating node: `lead-it`");
+    expect(coordinationMapPage).toContain("- Entrypoint node: `lead-it`");
+    expect(coordinationMapPage).toContain(
+      "- Current inbound from: `reviewer-it`"
+    );
+    expect(coordinationMapPage).toContain("## Conversation Routes");
+    expect(coordinationMapPage).toContain(
+      "`conv-alpha` peer=`reviewer-it` status=`working`"
+    );
+    expect(coordinationMapPage).toContain("## Approval Gates");
+    expect(coordinationMapPage).toContain("`approval-memory` status=`pending`");
+    expect(coordinationMapPage).toContain("## Handoff Obligations");
+    expect(coordinationMapPage).toContain(
+      `- Emitted handoff message ids: \`${handoffEventId}\``
+    );
+    expect(coordinationMapPage).toContain(
+      "The pending approval must stay attached to the worker-owned recovery session."
+    );
     expect(focusedRegisterState).toBeDefined();
     expect(
       focusedRegisterState?.registers.openQuestions.find(
@@ -976,6 +1023,9 @@ describe("model-guided memory synthesis", () => {
       "The previous draft action item to gather raw relay logs is complete."
     );
     expect(indexPage).toContain("[Working Context Summary](summaries/working-context.md)");
+    expect(indexPage).toContain(
+      "[Coordination Map Summary](summaries/coordination-map.md)"
+    );
     expect(indexPage).toContain("[Decisions Summary](summaries/decisions.md)");
     expect(indexPage).toContain("[Stable Facts Summary](summaries/stable-facts.md)");
     expect(indexPage).toContain(
@@ -988,6 +1038,7 @@ describe("model-guided memory synthesis", () => {
     );
     expect(logPage).toContain("memory synthesis | turn-memory-005");
     expect(followupTurnRequest.memoryRefs).toContain(workingContextPagePath);
+    expect(followupTurnRequest.memoryRefs).toContain(coordinationMapPagePath);
     expect(followupTurnRequest.memoryRefs).toContain(decisionsPagePath);
     expect(followupTurnRequest.memoryRefs).toContain(stableFactsPagePath);
     expect(followupTurnRequest.memoryRefs).toContain(openQuestionsPagePath);
@@ -1111,6 +1162,7 @@ describe("model-guided memory synthesis", () => {
                 completedNextActions: [],
                 consolidatedNextActions: [],
                 consolidatedOpenQuestions: [],
+                coordinationInsights: [],
                 decisions: [],
                 executionInsights: [],
                 focus: "Keep the relay operator follow-up active.",
@@ -1248,6 +1300,7 @@ describe("model-guided memory synthesis", () => {
                 completedNextActions: [],
                 consolidatedNextActions: [],
                 consolidatedOpenQuestions: [],
+                coordinationInsights: [],
                 decisions: [],
                 executionInsights: [],
                 focus: "Review a mismatched closure reference.",
@@ -1402,6 +1455,7 @@ describe("model-guided memory synthesis", () => {
                 completedNextActions: [],
                 consolidatedNextActions: [],
                 consolidatedOpenQuestions: [],
+                coordinationInsights: [],
                 decisions: [],
                 executionInsights: [],
                 focus: "Review stale baseline retirement discipline.",
@@ -1561,6 +1615,7 @@ describe("model-guided memory synthesis", () => {
                 completedNextActions: [],
                 consolidatedNextActions: [],
                 consolidatedOpenQuestions: [],
+                coordinationInsights: [],
                 decisions: [],
                 executionInsights: [],
                 focus: "Narrow the stale operator-facing review question.",
@@ -1743,6 +1798,7 @@ describe("model-guided memory synthesis", () => {
                 completedNextActions: [],
                 consolidatedNextActions: [],
                 consolidatedOpenQuestions: [],
+                coordinationInsights: [],
                 decisions: [],
                 executionInsights: [],
                 focus: "Reject an invalid stale-question replacement.",
@@ -1921,6 +1977,7 @@ describe("model-guided memory synthesis", () => {
                     to: consolidatedOpenQuestion
                   }
                 ],
+                coordinationInsights: [],
                 decisions: [],
                 executionInsights: [],
                 focus: "Consolidate overlapping stale relay-review questions.",
@@ -2120,6 +2177,7 @@ describe("model-guided memory synthesis", () => {
                     to: consolidatedOpenQuestion
                   }
                 ],
+                coordinationInsights: [],
                 decisions: [],
                 executionInsights: [],
                 focus: "Reject an invalid stale-question consolidation.",

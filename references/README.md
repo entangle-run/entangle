@@ -101,6 +101,11 @@ adds a bounded Host API, host-client, and CLI batch request surface that emits
 multiple existing signed `runtime.wiki.upsert_page` commands from one
 operator manifest, improving headless multi-page wiki maintenance without
 claiming atomic patch-set semantics.
+[542-coordination-map-memory-slice.md](542-coordination-map-memory-slice.md)
+adds a runner-owned `summaries/coordination-map.md` memory page to each
+successful model-guided synthesis pass, carrying node relation, inbound
+message, conversation route, approval, handoff, and durable coordination
+insight context into future node turns.
 Generated distributed proof profiles are now covered by a package-level
 contract and script-side validation, so malformed schema versions or
 assignment/runtime-kind mismatches fail before Host inspection.
@@ -896,6 +901,7 @@ files are the active federated redesign pack.
 540. [539-federated-dev-explicit-service-volumes-slice.md](539-federated-dev-explicit-service-volumes-slice.md)
 541. [540-distributed-proof-runner-compose-slice.md](540-distributed-proof-runner-compose-slice.md)
 542. [541-runtime-wiki-page-batch-request-slice.md](541-runtime-wiki-page-batch-request-slice.md)
+543. [542-coordination-map-memory-slice.md](542-coordination-map-memory-slice.md)
 
 ## Role of this corpus
 

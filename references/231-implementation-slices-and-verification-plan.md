@@ -625,6 +625,12 @@ Current status:
   signed `runtime.wiki.upsert_page` command per page to the accepted runner
   assignment, making headless multi-page memory/wiki maintenance practical
   without adding a runner transaction protocol;
+- model-guided runner memory synthesis now writes
+  `summaries/coordination-map.md` as a focused graph-relation memory page,
+  carrying local node relation, inbound message provenance, active peer
+  routes, approval gates, handoff obligations, and durable coordination
+  insights into future node turns through memory refs and the bounded memory
+  brief;
 - lifecycle start/stop/restart and session cancellation commands now also emit
   signed `runtime.command.receipt` observations, with session cancellation
   receipts carrying cancellation/session correlation ids;

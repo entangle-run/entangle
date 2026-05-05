@@ -342,6 +342,7 @@ same-machine slice records.
 - [539-federated-dev-explicit-service-volumes-slice.md](539-federated-dev-explicit-service-volumes-slice.md)
 - [540-distributed-proof-runner-compose-slice.md](540-distributed-proof-runner-compose-slice.md)
 - [541-runtime-wiki-page-batch-request-slice.md](541-runtime-wiki-page-batch-request-slice.md)
+- [542-coordination-map-memory-slice.md](542-coordination-map-memory-slice.md)
 
 ## Audited Scope
 
@@ -1214,6 +1215,11 @@ Host API, host-client, and CLI can accept one manifest and emit multiple
 existing signed `runtime.wiki.upsert_page` commands to the accepted runner
 assignment. This improves headless wiki repair and memory maintenance without
 claiming atomic patch-set semantics.
+Each successful model-guided runner memory synthesis now also writes a
+`summaries/coordination-map.md` page that carries local node relation,
+session owner/origin/entrypoint, inbound message provenance, active peer
+routes, approval gates, handoff obligations, and bounded durable coordination
+insights into future node turns.
 The highest-value remaining implementation areas are richer model-guided
 memory maintenance, deeper delegated-session semantics beyond the current
 controlled handoff path and first owner-aware memory projection, participant

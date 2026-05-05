@@ -6459,3 +6459,15 @@ the accepted runner assignment.
 
 This improves headless multi-page memory/wiki maintenance while keeping true
 atomic patch-set semantics as explicit future work.
+
+## [2026-05-05] runner | Added coordination-map memory
+
+Added `references/542-coordination-map-memory-slice.md`. Successful
+model-guided runner memory synthesis now writes
+`memory/wiki/summaries/coordination-map.md`, indexes it, includes it in future
+memory refs and memory briefs, and records local node relation, session
+owner/origin/entrypoint, inbound message provenance, active peer routes,
+approval gates, handoff obligations, and bounded coordination insights.
+
+This gives each coding-agent node a clearer durable view of its graph position
+without moving routing or assignment authority into memory.

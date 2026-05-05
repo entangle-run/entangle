@@ -34,6 +34,10 @@ const memoryBriefCandidates: MemoryBriefCandidate[] = [
     relativePath: "summaries/next-actions.md"
   },
   {
+    label: "Coordination map",
+    relativePath: "summaries/coordination-map.md"
+  },
+  {
     label: "Open questions",
     relativePath: "summaries/open-questions.md"
   },
@@ -157,6 +161,7 @@ export async function collectMemoryRefs(
   const candidatePaths = [
     path.join(context.workspace.memoryRoot, "schema", "AGENTS.md"),
     path.join(context.workspace.memoryRoot, "wiki", "summaries", "working-context.md"),
+    path.join(context.workspace.memoryRoot, "wiki", "summaries", "coordination-map.md"),
     path.join(context.workspace.memoryRoot, "wiki", "summaries", "stable-facts.md"),
     path.join(context.workspace.memoryRoot, "wiki", "summaries", "open-questions.md"),
     path.join(context.workspace.memoryRoot, "wiki", "summaries", "decisions.md"),

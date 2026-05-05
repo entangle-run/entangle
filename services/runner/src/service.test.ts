@@ -4128,6 +4128,12 @@ describe("RunnerService", () => {
                 runtimeContext.workspace.memoryRoot,
                 "wiki",
                 "summaries",
+                "coordination-map.md"
+              ),
+              path.join(
+                runtimeContext.workspace.memoryRoot,
+                "wiki",
+                "summaries",
                 "decisions.md"
               ),
               path.join(
@@ -4213,6 +4219,12 @@ describe("RunnerService", () => {
         "wiki",
         "summaries",
         "working-context.md"
+      ),
+      path.join(
+        runtimeContext.workspace.memoryRoot,
+        "wiki",
+        "summaries",
+        "coordination-map.md"
       ),
       path.join(
         runtimeContext.workspace.memoryRoot,
