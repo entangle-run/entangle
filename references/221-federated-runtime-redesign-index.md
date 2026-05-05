@@ -288,6 +288,7 @@ same-machine slice records.
 - [485-user-client-approval-turn-correlation-slice.md](485-user-client-approval-turn-correlation-slice.md)
 - [486-host-test-pool-stability-slice.md](486-host-test-pool-stability-slice.md)
 - [487-session-cancellation-federated-only-slice.md](487-session-cancellation-federated-only-slice.md)
+- [488-studio-user-client-boundary-audit.md](488-studio-user-client-boundary-audit.md)
 
 ## Audited Scope
 
@@ -1029,7 +1030,10 @@ also optionally run `git ls-remote` from the operator machine against projected
 published git artifact locators to prove the advertised branch contains the
 projected commit. Host session cancellation no longer falls back to writing
 request records into runner runtime roots; it requires an accepted federated
-assignment and active control-plane publication. The highest-value remaining
+assignment and active control-plane publication. The current Studio/User Client
+boundary is now documented explicitly: Studio is the operator/admin console,
+while participant chat, task launch, approvals, and review actions live in the
+running User Client or CLI User Node surfaces. The highest-value remaining
 implementation areas are richer
 model-guided memory maintenance, deeper delegated-session semantics beyond the
 current controlled handoff path, collaborative wiki merge UI and multi-page

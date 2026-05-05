@@ -818,6 +818,7 @@ files are the active federated redesign pack.
 486. [485-user-client-approval-turn-correlation-slice.md](485-user-client-approval-turn-correlation-slice.md)
 487. [486-host-test-pool-stability-slice.md](486-host-test-pool-stability-slice.md)
 488. [487-session-cancellation-federated-only-slice.md](487-session-cancellation-federated-only-slice.md)
+489. [488-studio-user-client-boundary-audit.md](488-studio-user-client-boundary-audit.md)
 
 ## Role of this corpus
 

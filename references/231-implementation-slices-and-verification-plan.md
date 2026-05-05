@@ -908,6 +908,10 @@ Implementation record:
   removes the Host runtime-root session cancellation fallback; cancellation now
   requires an accepted federated assignment and active control-plane
   publication.
+- [488-studio-user-client-boundary-audit.md](488-studio-user-client-boundary-audit.md)
+  realigns the current-state audit with the implemented product boundary:
+  Studio is the operator/admin console, while participant chat and review live
+  in the running User Client or CLI User Node surfaces.
 - [465-cli-agent-engine-profile-upsert-slice.md](465-cli-agent-engine-profile-upsert-slice.md)
   adds a Host-backed CLI catalog command for creating and updating typed agent
   engine profiles, including attached OpenCode profiles, permission mode,
@@ -1376,6 +1380,8 @@ Current status:
 - Host session cancellation no longer writes request records into runner
   runtime roots as a fallback; it now requires accepted federated assignment
   control and active relay publication;
+- the Studio/User Client boundary is now documented as operator/admin Studio
+  plus participant User Client and headless CLI, matching the current code;
 - the remaining distributed proof hardening is infrastructure-backed
   orchestration that can provision multiple machines or VM/container boundaries
   around the verifier.

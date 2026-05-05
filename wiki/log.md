@@ -5765,3 +5765,12 @@ when no accepted federated assignment is available.
 Session cancellation now requires an accepted federated assignment and active
 control-plane publication. Runners still persist node-local cancellation state
 after they receive the signed `runtime.session.cancel` command.
+
+## [2026-05-05] documentation | Realigned Studio and User Client boundary
+
+Added `references/488-studio-user-client-boundary-audit.md`. The current-state
+audit no longer says Studio needs full participant chat composition.
+
+The documented boundary now matches the implementation: Studio is the
+operator/admin console, while participant chat, task launch, approval, and
+review behavior belongs to the running User Client or CLI User Node surfaces.

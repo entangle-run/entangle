@@ -105,8 +105,9 @@ memory, projected wiki refs, source changes, approvals, recovery, sessions, and
 same-machine reliability commands. They now expose Host Authority status,
 runner registry, assignments, stable User Node identities, projection-backed
 inbox listing, and signed User Node reply/approval message publication. Studio
-still needs full chat composition and replacement of older approval/session
-controls.
+is now intentionally the operator/admin surface; participant chat,
+task launch, approval responses, and review actions belong to the running User
+Client or CLI User Node surfaces.
 
 `deploy/federated-dev` is intentionally a same-machine deployment adapter:
 
@@ -182,10 +183,12 @@ runtime model:
 - Expand observation ingestion and projection store to replace runtime-root
   file reads.
 - Replace Host file reads of `runtimeRoot` with projection reads.
-- Build the Human Interface Runtime/User Interaction Gateway beyond the current
-  stable User Node identity and signed message publisher.
-- Convert remaining approval/session controls to signed User Node A2A.
-- Complete Studio and CLI chat, approvals, and transport-health surfaces.
+- Continue hardening the Human Interface Runtime/User Client boundary for
+  richer participant review flows and production key custody.
+- Keep approval and participant review behavior on signed User Node A2A or
+  Host-signed runner control paths, not direct Host filesystem mutation.
+- Keep Studio operator/admin focused while CLI keeps headless User Node
+  message, inbox, approval, and review commands aligned with the User Client.
 - Keep public product framing as Entangle with same-machine deployment treated
   as one topology.
 
@@ -229,6 +232,4 @@ assignment, projection, and user-node terms.
 ## Open Questions
 
 - Which key storage backends should be first beyond local file/env secrets?
-- Should browser Studio ever hold User Node private keys, or should it always
-  call a local User Interaction Gateway?
 - What remote runner installer format is preferred after the first join config?
