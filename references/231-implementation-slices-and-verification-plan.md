@@ -901,6 +901,9 @@ Implementation record:
 - [485-user-client-approval-turn-correlation-slice.md](485-user-client-approval-turn-correlation-slice.md)
   preserves the inbound approval request turn id when the User Client publishes
   a signed approval response.
+- [486-host-test-pool-stability-slice.md](486-host-test-pool-stability-slice.md)
+  moves Host package tests to a serial forked Vitest pool so `pnpm verify`
+  remains deterministic.
 - [465-cli-agent-engine-profile-upsert-slice.md](465-cli-agent-engine-profile-upsert-slice.md)
   adds a Host-backed CLI catalog command for creating and updating typed agent
   engine profiles, including attached OpenCode profiles, permission mode,
@@ -1364,6 +1367,8 @@ Current status:
   generic runner join behavior;
 - runner process startup now requires explicit `join`, join-config env, or an
   explicit runtime-context path instead of guessing a default injected context;
+- Host package tests now run in a serial forked Vitest pool, matching the
+  stability posture already used by runner tests;
 - the remaining distributed proof hardening is infrastructure-backed
   orchestration that can provision multiple machines or VM/container boundaries
   around the verifier.

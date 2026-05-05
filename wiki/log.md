@@ -1,5 +1,12 @@
 # Entangle Wiki Log
 
+## [2026-05-05] verification | Stabilized Host test pool
+
+Added `references/486-host-test-pool-stability-slice.md`. Host package tests
+now use Vitest forks with one worker and an explicit timeout, matching the
+runner test stability posture after the thread pool stopped producing output
+during root verification while the forked run passed.
+
 ## [2026-05-05] user-client | Preserved approval turn correlation
 
 Added `references/485-user-client-approval-turn-correlation-slice.md`. The

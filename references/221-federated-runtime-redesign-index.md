@@ -286,6 +286,7 @@ same-machine slice records.
 - [483-docker-runner-join-default-slice.md](483-docker-runner-join-default-slice.md)
 - [484-runner-startup-explicit-mode-slice.md](484-runner-startup-explicit-mode-slice.md)
 - [485-user-client-approval-turn-correlation-slice.md](485-user-client-approval-turn-correlation-slice.md)
+- [486-host-test-pool-stability-slice.md](486-host-test-pool-stability-slice.md)
 
 ## Audited Scope
 
@@ -768,6 +769,8 @@ for delegated sessions without copying transcripts.
     open gap.
     Host TypeScript smoke scripts are now part of the `@entangle/host` lint
     gate, and the process-runner smoke passes type-aware ESLint coverage.
+    Host package tests now use Vitest's fork pool with one worker so the root
+    verification gate does not hang in the thread pool.
     `@entangle/agent-engine` now also exercises the OpenAI-compatible HTTP
     provider boundary through a deterministic local API fixture; live provider
     credentials remain manual/operator validation.
