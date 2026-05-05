@@ -333,6 +333,7 @@ same-machine slice records.
 - [530-bootstrap-operator-token-expiry-slice.md](530-bootstrap-operator-token-expiry-slice.md)
 - [531-user-client-wiki-conflict-receipts-slice.md](531-user-client-wiki-conflict-receipts-slice.md)
 - [532-cli-wiki-conflict-receipts-slice.md](532-cli-wiki-conflict-receipts-slice.md)
+- [533-human-runtime-wiki-conflict-receipts-slice.md](533-human-runtime-wiki-conflict-receipts-slice.md)
 
 ## Audited Scope
 
@@ -1173,8 +1174,10 @@ request. Failed stale-edit wiki page receipts now render as explicit User
 Client conflict blocks over the projected expected/current page hashes instead
 of only generic command receipt lines, and CLI summary output now includes the
 same structured `wikiConflict` object on both global projection and User Node
-command receipt summaries. Focused-register lifecycle transition history now
-also has a runner-owned indexed wiki page at
+command receipt summaries. The Human Interface Runtime fallback HTML client
+now renders the same conflict block inside participant command receipt cards.
+Focused-register lifecycle transition history now also has a runner-owned
+indexed wiki page at
 `wiki/summaries/focused-register-transition-history.md`, so closure,
 completion, replacement, consolidation, and exact-overlap retirements flow into
 future memory refs and projected wiki evidence instead of remaining only in

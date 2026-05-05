@@ -1,5 +1,20 @@
 # Entangle Wiki Log
 
+## [2026-05-05] runner | Added fallback wiki conflict receipts
+
+Added `references/533-human-runtime-wiki-conflict-receipts-slice.md`.
+The Human Interface Runtime fallback HTML client now renders a dedicated wiki
+conflict block for failed stale-edit `runtime.wiki.upsert_page` receipts.
+
+The same participant command receipt evidence is now legible in the React User
+Client, CLI summaries, and the fallback node-local client.
+
+Targeted checks passed:
+
+- `pnpm --filter @entangle/runner test -- src/index.test.ts`
+- `pnpm --filter @entangle/runner typecheck`
+- `pnpm --filter @entangle/runner lint`
+
 ## [2026-05-05] cli | Added wiki conflict receipt summaries
 
 Added `references/532-cli-wiki-conflict-receipts-slice.md`.

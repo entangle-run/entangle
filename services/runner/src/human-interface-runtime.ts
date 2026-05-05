@@ -3321,6 +3321,52 @@ function formatRuntimeCommandReceiptDetailLines(
   ].filter((line): line is string => Boolean(line));
 }
 
+type RuntimeCommandReceiptWikiConflictSummary = {
+  commandId: string;
+  currentShort: string;
+  expectedShort: string;
+  path: string;
+};
+
+function buildRuntimeCommandReceiptWikiConflictSummary(
+  receipt: RuntimeCommandReceiptProjectionRecord
+): RuntimeCommandReceiptWikiConflictSummary | undefined {
+  if (
+    receipt.commandEventType !== "runtime.wiki.upsert_page" ||
+    receipt.receiptStatus !== "failed" ||
+    !receipt.wikiPageExpectedSha256 ||
+    !receipt.wikiPagePreviousSha256 ||
+    receipt.wikiPageExpectedSha256 === receipt.wikiPagePreviousSha256
+  ) {
+    return undefined;
+  }
+
+  return {
+    commandId: receipt.commandId,
+    currentShort: shortCommandReceiptHash(receipt.wikiPagePreviousSha256),
+    expectedShort: shortCommandReceiptHash(receipt.wikiPageExpectedSha256),
+    path: receipt.wikiPagePath ?? receipt.targetPath ?? "unknown"
+  };
+}
+
+function renderRuntimeCommandReceiptWikiConflict(
+  receipt: RuntimeCommandReceiptProjectionRecord
+): string {
+  const conflict = buildRuntimeCommandReceiptWikiConflictSummary(receipt);
+
+  if (!conflict) {
+    return "";
+  }
+
+  return `<div class="command-receipt-conflict">
+      <strong>Wiki conflict</strong>
+      <span>page ${escapeHtml(conflict.path)}</span>
+      <span>expected ${escapeHtml(conflict.expectedShort)}</span>
+      <span>current ${escapeHtml(conflict.currentShort)}</span>
+      <span>command ${escapeHtml(conflict.commandId)}</span>
+    </div>`;
+}
+
 function renderRuntimeCommandReceipts(
   receipts: RuntimeCommandReceiptProjectionRecord[]
 ): string {
@@ -3339,6 +3385,7 @@ function renderRuntimeCommandReceipts(
             ${formatRuntimeCommandReceiptDetailLines(receipt)
               .map((line) => `<div class="message-meta">${escapeHtml(line)}</div>`)
               .join("")}
+            ${renderRuntimeCommandReceiptWikiConflict(receipt)}
           </article>`
       )
       .join("")}
@@ -3725,6 +3772,7 @@ async function renderHome(input: {
       .source-summary ul { margin: 0; padding-left: 18px; }
       .command-receipt-list { display: grid; gap: 8px; }
       .command-receipt { border: 1px solid var(--line); border-radius: 6px; display: grid; gap: 4px; padding: 8px; }
+      .command-receipt-conflict { background: #fff5f2; border-left: 3px solid var(--danger); color: var(--danger); display: grid; font-size: 12px; gap: 3px; margin-top: 4px; padding: 7px 9px; overflow-wrap: anywhere; }
       .workload-list { color: var(--muted); display: grid; font-size: 13px; gap: 6px; margin: 12px 0 0; padding-left: 18px; }
       .wiki-preview { background: #f4f6f8; border-radius: 6px; margin: 0; max-height: 220px; overflow: auto; padding: 8px; white-space: pre-wrap; word-break: break-word; }
       .detail-list { display: grid; gap: 10px; margin: 12px 0 0; }

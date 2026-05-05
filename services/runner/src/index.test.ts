@@ -1464,6 +1464,30 @@ describe("runner runtime context", () => {
                   wikiPagePath: "wiki/summaries/working-context.md",
                   wikiPagePreviousSha256:
                     "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"
+                },
+                {
+                  assignmentId: "assignment-alpha",
+                  commandEventType: "runtime.wiki.upsert_page",
+                  commandId: "cmd-user-wiki-conflict-alpha",
+                  graphId: "graph-alpha",
+                  hostAuthorityPubkey: hostPublicKey,
+                  nodeId: "worker-it",
+                  observedAt: "2026-04-26T12:04:30.000Z",
+                  projection: {
+                    source: "observation_event",
+                    updatedAt: "2026-04-26T12:04:30.000Z"
+                  },
+                  receiptMessage: "Wiki page changed before the update.",
+                  receiptStatus: "failed",
+                  requestedBy: "user-main",
+                  runnerId: "runner-alpha",
+                  runnerPubkey: remotePublicKey,
+                  targetPath: "wiki/summaries/working-context.md",
+                  wikiPageExpectedSha256:
+                    "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+                  wikiPagePath: "wiki/summaries/working-context.md",
+                  wikiPagePreviousSha256:
+                    "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"
                 }
               ],
               userNodeId: "user-main"
@@ -2177,6 +2201,16 @@ describe("runner runtime context", () => {
             wikiPagePath: "wiki/summaries/working-context.md",
             wikiPagePreviousSha256:
               "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"
+          },
+          {
+            commandId: "cmd-user-wiki-conflict-alpha",
+            receiptStatus: "failed",
+            requestedBy: "user-main",
+            wikiPageExpectedSha256:
+              "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+            wikiPagePath: "wiki/summaries/working-context.md",
+            wikiPagePreviousSha256:
+              "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"
           }
         ],
         targets: [
@@ -2884,7 +2918,7 @@ describe("runner runtime context", () => {
       expect(pageBody).toContain("1 conversations, 1 open");
       expect(pageBody).toContain("0 unread messages");
       expect(pageBody).toContain("1 source changes awaiting review");
-      expect(pageBody).toContain("0 received, 1 completed, 0 failed commands");
+      expect(pageBody).toContain("0 received, 1 completed, 1 failed commands");
       expect(pageBody).toContain("1 source histories, 2 wiki refs");
       expect(pageBody).toContain("1 reachable targets");
       expect(pageBody).toContain("Previous user message.");
@@ -2934,6 +2968,10 @@ describe("runner runtime context", () => {
       expect(pageBody).toContain("Approve");
       expect(pageBody).toContain("wiki previous bbbbbbbbbbbb");
       expect(pageBody).toContain("wiki next cccccccccccc");
+      expect(pageBody).toContain("Wiki conflict");
+      expect(pageBody).toContain("expected aaaaaaaaaaaa");
+      expect(pageBody).toContain("current bbbbbbbbbbbb");
+      expect(pageBody).toContain("command cmd-user-wiki-conflict-alpha");
 
       const jsonReadResponse = await fetch(
         new URL("/api/conversations/conversation-alpha/read", handle.clientUrl),

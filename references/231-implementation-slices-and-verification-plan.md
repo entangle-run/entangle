@@ -1486,6 +1486,8 @@ Current status:
   conflict summaries using the projected expected/current hashes;
 - CLI summary output now includes the same structured `wikiConflict` object
   for global projection and User Node command receipt summaries;
+- the Human Interface Runtime fallback HTML client now renders the same wiki
+  conflict block inside participant command receipt cards;
 - focused-register lifecycle transition history now writes an indexed wiki
   summary page and future memory ref, so closures, completions, replacements,
   consolidations, and exact-overlap retirements are visible through the node
