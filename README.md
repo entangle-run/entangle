@@ -1056,7 +1056,8 @@ This repository currently contains:
   Host secret state, `externalVolumeCount` summary output, and restore-time
   state-layout compatibility checks; the federated dev Compose profile now
   gives those service volumes stable explicit names and doctor warns when older
-  Compose-prefixed service volumes are present;
+  Compose-prefixed service volumes are present, while repair reports those
+  previous service volumes as manual migration actions;
 - a first conservative same-machine repair command through `entangle deployment repair`,
   defaulting to dry-run previews and applying only safe host-state
   initialization, missing layout-marker, or missing standard host-state
@@ -1510,7 +1511,8 @@ This repository currently contains:
   `.entangle/host` backup and validated restore path without bundling local
   secrets, while `entangle deployment repair` provides a dry-run-first conservative
   repair surface for safe host-state initialization, missing layout-marker
-  recovery, and missing standard host-state directory recovery;
+  recovery, missing standard host-state directory recovery, and manual
+  previous service-volume migration planning;
 - the next bounded Studio completion slice where the operator can now select
   one runtime-scoped session summary and inspect host-backed per-node session
   detail without widening the host API or inventing client-owned session

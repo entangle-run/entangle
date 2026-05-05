@@ -1217,7 +1217,8 @@ The repository now also contains the first real implementation baseline:
   volumes for Gitea, strfry, and Host secret state, with
   `externalVolumeCount` in backup summaries; the federated dev Compose
   profile now gives those service volumes stable explicit names, and doctor
-  warns when older Compose-prefixed service volumes are present;
+  warns when older Compose-prefixed service volumes are present; repair now
+  surfaces those previous service volumes as manual migration actions;
 - an active same-machine profile smoke through `pnpm ops:smoke-federated-dev`, covering
   running Compose services, the local runner image, host status/events, Studio
   HTTP, Gitea HTTP reachability, and the local `strfry` Nostr WebSocket

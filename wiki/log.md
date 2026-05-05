@@ -6471,3 +6471,13 @@ approval gates, handoff obligations, and bounded coordination insights.
 
 This gives each coding-agent node a clearer durable view of its graph position
 without moving routing or assignment authority into memory.
+
+## [2026-05-05] deploy | Added manual previous service-volume repair actions
+
+Added `references/543-deployment-repair-previous-service-volume-slice.md`.
+`entangle deployment repair` now converts doctor evidence about previous
+Compose-prefixed Gitea or strfry service volumes into explicit manual repair
+actions.
+
+The command still applies only safe Host-state repairs with `--apply-safe`;
+service-owned data migration remains a visible manual operator step.

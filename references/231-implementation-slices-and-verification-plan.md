@@ -1474,7 +1474,9 @@ Current status:
 - the federated dev Compose profile now gives Gitea and strfry state volumes
   stable explicit names matching backup inventory, preflight checks enforce
   those names statically, and doctor warns when older Compose-prefixed service
-  volumes are present;
+  volumes are present; `entangle deployment repair` now turns those warnings
+  into manual repair actions so operators see the required service-data
+  migration in dry-run and `--apply-safe` reports without automatic mutation;
 - Host event records now include optional audit hash-chain fields, Host event
   appends are serialized to preserve chain order, and CLI runtime-trace
   summaries expose the hashes when present; Host, host-client, and CLI now

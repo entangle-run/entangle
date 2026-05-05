@@ -343,6 +343,7 @@ same-machine slice records.
 - [540-distributed-proof-runner-compose-slice.md](540-distributed-proof-runner-compose-slice.md)
 - [541-runtime-wiki-page-batch-request-slice.md](541-runtime-wiki-page-batch-request-slice.md)
 - [542-coordination-map-memory-slice.md](542-coordination-map-memory-slice.md)
+- [543-deployment-repair-previous-service-volume-slice.md](543-deployment-repair-previous-service-volume-slice.md)
 
 ## Audited Scope
 
@@ -1220,6 +1221,10 @@ Each successful model-guided runner memory synthesis now also writes a
 session owner/origin/entrypoint, inbound message provenance, active peer
 routes, approval gates, handoff obligations, and bounded durable coordination
 insights into future node turns.
+Deployment repair now also converts doctor evidence about previous
+Compose-prefixed Gitea or strfry service volumes into explicit manual repair
+actions. This keeps service-owned data migration visible in the operator repair
+plan without letting `--apply-safe` copy or mutate service data.
 The highest-value remaining implementation areas are richer model-guided
 memory maintenance, deeper delegated-session semantics beyond the current
 controlled handoff path and first owner-aware memory projection, participant

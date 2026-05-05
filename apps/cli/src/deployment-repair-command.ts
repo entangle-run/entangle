@@ -60,6 +60,22 @@ const hostStateSkeletonDirectories = [
   "workspaces",
   "cache"
 ];
+const previousServiceVolumeMigrations = [
+  {
+    actionId: "migrate_previous_gitea_data_volume",
+    expectedVolume: "gitea-data",
+    previousVolume: "compose_gitea-data",
+    serviceSummary: "Gitea data volume",
+    summary: "Migrate previous Gitea data volume"
+  },
+  {
+    actionId: "migrate_previous_strfry_data_volume",
+    expectedVolume: "strfry-data",
+    previousVolume: "compose_strfry-data",
+    serviceSummary: "strfry data volume",
+    summary: "Migrate previous strfry data volume"
+  }
+] as const;
 
 function repairTimestampPathSegment(timestamp: string): string {
   return timestamp.replace(/[^0-9A-Za-z-]+/gu, "-");
@@ -138,10 +154,46 @@ function inspectStateLayout(repositoryRoot: string): {
   };
 }
 
+function buildPreviousServiceVolumeActions(
+  doctor: DeploymentDoctorReport
+): DeploymentRepairAction[] {
+  return previousServiceVolumeMigrations.flatMap((migration) => {
+    const previousVolumeFound = doctor.checks.some(
+      (check) =>
+        check.category === "state" &&
+        check.status === "warn" &&
+        check.summary === migration.serviceSummary &&
+        check.detail.includes(migration.previousVolume) &&
+        check.detail.includes(migration.expectedVolume)
+    );
+
+    if (!previousVolumeFound) {
+      return [];
+    }
+
+    return [
+      {
+        actionId: migration.actionId,
+        category: "state",
+        detail:
+          `Previous service volume ${migration.previousVolume} exists while stable volume ` +
+          `${migration.expectedVolume} is missing. Back up the service, copy data into ` +
+          `${migration.expectedVolume}, then rerun deployment doctor before treating this ` +
+          "profile as non-disposable.",
+        risk: "manual" as const,
+        status: "manual" as const,
+        summary: migration.summary
+      }
+    ];
+  });
+}
+
 function buildRepairActions(input: {
+  doctor: DeploymentDoctorReport;
   repositoryRoot: string;
 }): DeploymentRepairAction[] {
   const actions: DeploymentRepairAction[] = [];
+  const serviceVolumeActions = buildPreviousServiceVolumeActions(input.doctor);
   const hostStatePath = path.join(input.repositoryRoot, hostStateRelativePath);
   const hostStateExists = existsSync(hostStatePath);
   const layout = inspectStateLayout(input.repositoryRoot);
@@ -156,7 +208,7 @@ function buildRepairActions(input: {
       status: "pending",
       summary: "Initialize Entangle host state skeleton"
     });
-    return actions;
+    return [...actions, ...serviceVolumeActions];
   }
 
   if (layout.status === "missing") {
@@ -180,7 +232,7 @@ function buildRepairActions(input: {
       status: "blocked",
       summary: "Inspect unreadable Entangle state layout"
     });
-    return actions;
+    return [...actions, ...serviceVolumeActions];
   }
 
   if (
@@ -197,7 +249,7 @@ function buildRepairActions(input: {
       status: "blocked",
       summary: "Resolve unsupported Entangle state layout"
     });
-    return actions;
+    return [...actions, ...serviceVolumeActions];
   }
 
   const missingSkeletonDirectories = hostStateSkeletonDirectories.filter(
@@ -217,7 +269,7 @@ function buildRepairActions(input: {
     });
   }
 
-  return actions;
+  return [...actions, ...serviceVolumeActions];
 }
 
 async function applySafeRepairActions(input: {
@@ -370,6 +422,7 @@ export async function buildDeploymentRepairReport(
   const generatedAt = (deps.now ?? (() => new Date()))().toISOString();
   const doctor = await buildDeploymentDoctorReport(options, deps);
   const plannedActions = buildRepairActions({
+    doctor,
     repositoryRoot: options.repositoryRoot
   });
   const actions = options.applySafe

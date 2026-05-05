@@ -29,6 +29,28 @@ async function readJson(filePath: string): Promise<unknown> {
   return JSON.parse(await readFile(filePath, "utf8")) as unknown;
 }
 
+async function writeCurrentHostState(repositoryRoot: string): Promise<void> {
+  for (const directory of [
+    "desired",
+    "observed",
+    "traces",
+    "imports",
+    "workspaces",
+    "cache"
+  ]) {
+    await mkdir(path.join(repositoryRoot, ".entangle/host", directory), {
+      recursive: true
+    });
+  }
+  await writeJson(path.join(repositoryRoot, ".entangle/host/state-layout.json"), {
+    createdAt: "2026-04-26T00:00:00.000Z",
+    layoutVersion: 1,
+    product: "entangle",
+    schemaVersion: "1",
+    updatedAt: "2026-04-26T00:00:00.000Z"
+  });
+}
+
 function createRepairDeps(): DeploymentDoctorDeps {
   return {
     commandRunner: (command) => ({
@@ -217,5 +239,116 @@ describe("deployment repair command helpers", () => {
       actionId: "resolve_unsupported_state_layout",
       status: "blocked"
     });
+  });
+
+  it("reports manual previous service-volume migration actions from doctor evidence", async () => {
+    const repositoryRoot = await createTempRoot("entangle-repair-service-volume-");
+    await writeCurrentHostState(repositoryRoot);
+
+    const report = await buildDeploymentRepairReport(
+      {
+        repositoryRoot,
+        skipLive: true
+      },
+      {
+        ...createRepairDeps(),
+        commandRunner: (command, args) => {
+          if (
+            command === "docker" &&
+            args[0] === "volume" &&
+            args[1] === "inspect"
+          ) {
+            return {
+              status:
+                args[2] === "compose_gitea-data" ||
+                args[2] === "strfry-data" ||
+                args[2] === "entangle-secret-state"
+                  ? 0
+                  : 1,
+              stdout: "",
+              stderr: args[2] === "gitea-data" ? "not found\n" : ""
+            };
+          }
+
+          return {
+            status: 0,
+            stdout: `${command} ok\n`,
+            stderr: ""
+          };
+        }
+      }
+    );
+
+    expect(report).toMatchObject({
+      status: "manual",
+      summary: {
+        manual: 1,
+        pending: 0
+      }
+    });
+    expect(report.actions).toEqual([
+      expect.objectContaining({
+        actionId: "migrate_previous_gitea_data_volume",
+        risk: "manual",
+        status: "manual"
+      })
+    ]);
+    expect(formatDeploymentRepairText(report)).toContain(
+      "MANUAL state:Migrate previous Gitea data volume"
+    );
+  });
+
+  it("does not apply manual previous service-volume actions with apply-safe", async () => {
+    const repositoryRoot = await createTempRoot("entangle-repair-service-manual-");
+    await writeCurrentHostState(repositoryRoot);
+
+    const report = await buildDeploymentRepairReport(
+      {
+        applySafe: true,
+        repositoryRoot,
+        skipLive: true
+      },
+      {
+        ...createRepairDeps(),
+        commandRunner: (command, args) => {
+          if (
+            command === "docker" &&
+            args[0] === "volume" &&
+            args[1] === "inspect"
+          ) {
+            return {
+              status:
+                args[2] === "compose_strfry-data" ||
+                args[2] === "gitea-data" ||
+                args[2] === "entangle-secret-state"
+                  ? 0
+                  : 1,
+              stdout: "",
+              stderr: args[2] === "strfry-data" ? "not found\n" : ""
+            };
+          }
+
+          return {
+            status: 0,
+            stdout: `${command} ok\n`,
+            stderr: ""
+          };
+        }
+      }
+    );
+
+    expect(report).toMatchObject({
+      applied: true,
+      status: "manual",
+      summary: {
+        applied: 0,
+        manual: 1
+      }
+    });
+    expect(report.actions[0]).toMatchObject({
+      actionId: "migrate_previous_strfry_data_volume",
+      status: "manual"
+    });
+    expect(report.repairRecordPath).toBeUndefined();
   });
 });
