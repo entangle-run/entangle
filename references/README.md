@@ -862,6 +862,7 @@ files are the active federated redesign pack.
 522. [521-user-client-workload-summary-slice.md](521-user-client-workload-summary-slice.md)
 523. [522-user-client-fallback-workload-summary-slice.md](522-user-client-fallback-workload-summary-slice.md)
 524. [523-opencode-permission-cancellation-slice.md](523-opencode-permission-cancellation-slice.md)
+525. [524-host-event-audit-bundle-offline-verify-slice.md](524-host-event-audit-bundle-offline-verify-slice.md)
 
 ## Role of this corpus
 

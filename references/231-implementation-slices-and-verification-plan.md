@@ -1463,7 +1463,9 @@ Current status:
   operators to pass `--no-audit-bundle` when a smaller live diagnostics bundle
   is required; `entangle host events audit-bundle` can now also write the full
   signed bundle with `--output <file>` while printing a compact hash/provenance
-  summary;
+  summary, and `entangle host events audit-bundle-verify <file>` can now verify
+  saved bundle files offline by recomputing event count, canonical event JSONL
+  hash, signed integrity report content/hash consistency, and outer bundle hash;
 - runner-owned session memory now carries owner, originating-node,
   entrypoint-node, last-message, and active-route metadata in both the bounded
   synthesis prompt and deterministic working-context wiki page, giving

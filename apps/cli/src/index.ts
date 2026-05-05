@@ -54,7 +54,10 @@ import {
   getGraphTemplate,
   listGraphTemplates
 } from "./graph-template-command.js";
-import { projectHostEventAuditBundleSummary } from "./host-event-audit-output.js";
+import {
+  projectHostEventAuditBundleSummary,
+  verifyHostEventAuditBundle
+} from "./host-event-audit-output.js";
 import { buildHostEventFilter } from "./host-event-inspection.js";
 import { projectHostStatusSummary } from "./host-status-output.js";
 import {
@@ -2441,6 +2444,21 @@ hostEventsCommand
       );
     }
   );
+
+hostEventsCommand
+  .command("audit-bundle-verify <file>")
+  .description("Verify a saved Host event audit bundle hash envelope.")
+  .action(async (file: string) => {
+    const verification = verifyHostEventAuditBundle(
+      await readJsonDocument(resolveCliPath(file))
+    );
+
+    printJson({ auditBundleVerification: verification });
+
+    if (verification.status !== "verified") {
+      process.exitCode = 1;
+    }
+  });
 
 hostEventsCommand
   .command("watch")

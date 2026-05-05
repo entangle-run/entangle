@@ -1,5 +1,21 @@
 # Entangle Wiki Log
 
+## [2026-05-05] cli | Added offline Host event audit bundle verification
+
+Added `references/524-host-event-audit-bundle-offline-verify-slice.md`.
+`entangle host events audit-bundle-verify <file>` now validates saved Host event
+audit bundle hash envelopes without contacting Host.
+
+The verifier recomputes event count, canonical event JSONL hash, signed
+integrity report content/hash consistency, and outer bundle hash so externally
+retained audit bundles can be checked before support handoff or archival.
+
+Targeted checks passed:
+
+- `pnpm --filter @entangle/cli test -- src/host-event-audit-output.test.ts`
+- `pnpm --filter @entangle/cli typecheck`
+- `pnpm --filter @entangle/cli lint`
+
 ## [2026-05-05] cli | Added Host audit-bundle file export
 
 Added `references/499-host-event-audit-bundle-cli-retention-slice.md`.

@@ -324,6 +324,7 @@ same-machine slice records.
 - [521-user-client-workload-summary-slice.md](521-user-client-workload-summary-slice.md)
 - [522-user-client-fallback-workload-summary-slice.md](522-user-client-fallback-workload-summary-slice.md)
 - [523-opencode-permission-cancellation-slice.md](523-opencode-permission-cancellation-slice.md)
+- [524-host-event-audit-bundle-offline-verify-slice.md](524-host-event-audit-bundle-offline-verify-slice.md)
 
 ## Audited Scope
 
@@ -1139,7 +1140,11 @@ collection failure non-fatal, and operators can pass `--no-audit-bundle` when a
 smaller live support bundle is required. The dedicated CLI audit-bundle command
 now also supports `--output <file>` and `--summary`, giving operators a
 repeatable external-retention handoff for the full signed bundle while keeping
-terminal output compact. Runner-owned session memory now also
+terminal output compact. The CLI can also verify a saved audit bundle offline
+with `entangle host events audit-bundle-verify <file>` by recomputing event
+count, canonical event JSONL hash, signed report content/hash consistency, and
+outer bundle hash before support handoff or archival. Runner-owned session
+memory now also
 carries owner, originating-node, entrypoint-node, last-message, and active-route
 metadata in both the model-guided memory prompt and deterministic
 working-context wiki page, giving delegated sessions a stronger owner-aware

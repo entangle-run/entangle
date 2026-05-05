@@ -1335,7 +1335,9 @@ This repository currently contains:
   Host Authority-signed integrity report, `host events audit-bundle` exports
   typed events plus bundle hashes and the signed integrity report, with
   `--output <file>` for explicit retention handoff and `--summary` for bounded
-  terminal output, and Studio consumes the live host event stream to inspect
+  terminal output, saved audit bundles can be checked offline with
+  `host events audit-bundle-verify <file>`, and Studio consumes the live host
+  event stream to inspect
   runtime recovery policy,
   controller state, recovery history, and live recovery events without
   introducing a client-owned recovery model, with
