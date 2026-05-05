@@ -822,6 +822,7 @@ files are the active federated redesign pack.
 490. [489-deployment-repair-missing-host-state-directories-slice.md](489-deployment-repair-missing-host-state-directories-slice.md)
 491. [490-host-event-hash-chain-slice.md](490-host-event-hash-chain-slice.md)
 492. [491-host-event-integrity-inspection-slice.md](491-host-event-integrity-inspection-slice.md)
+493. [492-studio-host-event-integrity-slice.md](492-studio-host-event-integrity-slice.md)
 
 ## Role of this corpus
 

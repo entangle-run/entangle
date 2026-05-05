@@ -292,6 +292,7 @@ same-machine slice records.
 - [489-deployment-repair-missing-host-state-directories-slice.md](489-deployment-repair-missing-host-state-directories-slice.md)
 - [490-host-event-hash-chain-slice.md](490-host-event-hash-chain-slice.md)
 - [491-host-event-integrity-inspection-slice.md](491-host-event-integrity-inspection-slice.md)
+- [492-studio-host-event-integrity-slice.md](492-studio-host-event-integrity-slice.md)
 
 ## Audited Scope
 
@@ -1045,6 +1046,8 @@ event appends so concurrent operator requests do not fork the local audit
 sequence. Host now also exposes `GET /v1/events/integrity`, host-client
 support, and `entangle host events integrity` to classify the persisted trace
 as valid, broken, or partially unverifiable because of older un-hashed records.
+Studio's Host Status panel now renders the same Host-owned event-integrity
+summary for operator visibility.
 This is tamper evidence for the Host trace, not final production retention or
 durable operator identity.
 The highest-value remaining implementation areas are richer

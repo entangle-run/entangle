@@ -40,6 +40,7 @@ import type {
   GraphRevisionMetadata,
   GraphSpec,
   HostEventRecord,
+  HostEventIntegrityResponse,
   HostProjectionSnapshot,
   SessionInspectionResponse,
   HostSessionSummary,
@@ -90,6 +91,7 @@ import {
   sortGraphEdges,
   type EdgeEditorDraft
 } from "./graph-edge-mutation.js";
+import { formatHostEventIntegritySummary } from "./host-event-integrity.js";
 import {
   countValidationFindings,
   formatValidationFindingLine,
@@ -507,6 +509,8 @@ export function App() {
     [authToken, baseUrl]
   );
   const [status, setStatus] = useState<HostStatusResponse | null>(null);
+  const [eventIntegrity, setEventIntegrity] =
+    useState<HostEventIntegrityResponse | null>(null);
   const [projectionSnapshot, setProjectionSnapshot] =
     useState<HostProjectionSnapshot | null>(null);
   const [projectionError, setProjectionError] = useState<string | null>(null);
@@ -805,7 +809,8 @@ export function App() {
       externalPrincipalResult,
       runnerRegistryResult,
       projectionResult,
-      userNodeResult
+      userNodeResult,
+      eventIntegrityResult
     ] =
       await Promise.allSettled([
         client.getHostStatus(),
@@ -817,7 +822,8 @@ export function App() {
         client.listExternalPrincipals(),
         client.listRunners(),
         client.getProjection(),
-        client.listUserNodes()
+        client.listUserNodes(),
+        client.inspectHostEventIntegrity()
       ]);
 
     if (
@@ -846,6 +852,11 @@ export function App() {
       setStatus(statusResult.value);
       setGraphInspection(graphResult.value);
       setRuntimes(runtimeListResult.value.runtimes);
+      setEventIntegrity(
+        eventIntegrityResult.status === "fulfilled"
+          ? eventIntegrityResult.value
+          : null
+      );
       setError(null);
 
       if (catalogResult.status === "fulfilled") {
@@ -5382,6 +5393,14 @@ export function App() {
             <div>
               <dt>Security</dt>
               <dd>{status ? formatHostSecuritySummary(status) : "not loaded"}</dd>
+            </div>
+            <div>
+              <dt>Event integrity</dt>
+              <dd>
+                {eventIntegrity
+                  ? formatHostEventIntegritySummary(eventIntegrity)
+                  : "not loaded"}
+              </dd>
             </div>
             <div>
               <dt>Transport</dt>

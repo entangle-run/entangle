@@ -1258,7 +1258,8 @@ This repository currently contains:
   where `packages/host-client` now owns reusable host-event filtering helpers,
   `entangle-cli` supports `host events list` plus `host events watch` with
   recovery-oriented filtering plus `host events integrity` for Host-side event
-  hash-chain verification, and Studio consumes the live host event stream to
+  hash-chain verification, Studio renders the same Host-owned integrity
+  summary in Host Status, and Studio consumes the live host event stream to
   inspect runtime recovery policy, controller state, recovery history, and live
   recovery events without introducing a client-owned recovery model, with
   shared recovery presentation helpers and compact

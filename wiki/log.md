@@ -5806,3 +5806,12 @@ chain verification result.
 
 The integrity response distinguishes valid chains, broken chains, and older
 partially unverifiable traces whose records predate audit hash fields.
+
+## [2026-05-05] studio | Surfaced Host event integrity
+
+Added `references/492-studio-host-event-integrity-slice.md`. Studio now loads
+the Host-owned event-integrity response during overview refresh and renders it
+in the Host Status panel.
+
+The browser does not recompute the chain; it formats the Host API result so
+Studio and CLI remain aligned on audit posture.

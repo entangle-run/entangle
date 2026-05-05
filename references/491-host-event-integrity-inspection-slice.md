@@ -86,5 +86,5 @@ continue from pre-hash event traces while still exposing the trust gap.
 
 - Should the next slice add signed Host Authority export of an integrity
   report and event bundle?
-- Should Studio surface event integrity in Host Status, or is CLI/API enough
-  until production retention exists?
+- `492-studio-host-event-integrity-slice.md` adds the Host Status panel
+  surface for the same Host-owned event-integrity response.
