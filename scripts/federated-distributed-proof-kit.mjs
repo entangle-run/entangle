@@ -42,6 +42,11 @@ const proofAgentEngineKinds =
   requestedAgentEngineKinds.length > 0
     ? requestedAgentEngineKinds
     : ["opencode_server"];
+const fakeOpenCodeServerUrl = readFlagValue("--fake-opencode-server-url");
+const fakeOpenCodeProfileId =
+  readFlagValue("--fake-opencode-profile") ?? "distributed-fake-opencode";
+const fakeOpenCodeUsername = readFlagValue("--fake-opencode-username");
+const fakeOpenCodePassword = readFlagValue("--fake-opencode-password");
 const agentRunnerId = readFlagValue("--agent-runner") ?? "distributed-agent-runner";
 const userRunnerId = readFlagValue("--user-runner") ?? "distributed-user-runner";
 const reviewerUserRunnerId =
@@ -107,6 +112,10 @@ Options:
   --heartbeat-interval-ms <ms>      Runner heartbeat interval in generated configs. Default: 1000
   --runner-secret-env-var <envVar>  Env var runners will read for their Nostr secret. Default: ENTANGLE_RUNNER_NOSTR_SECRET_KEY
   --agent-engine-kind <kind>         Agent runner engine kind. May be repeated or comma-separated. Default: opencode_server
+  --fake-opencode-server-url <url>  Configure operator commands for a deterministic attached fake OpenCode server.
+  --fake-opencode-profile <id>      Agent engine profile id for the fake OpenCode server. Default: distributed-fake-opencode
+  --fake-opencode-username <user>   Optional Basic auth username for the fake OpenCode server.
+  --fake-opencode-password <pass>   Optional Basic auth password for the fake OpenCode server.
   --agent-runner <id>               Agent runner id. Default: distributed-agent-runner
   --user-runner <id>                Primary User Node runner id. Default: distributed-user-runner
   --reviewer-user-runner <id>       Reviewer User Node runner id. Default: distributed-reviewer-user-runner
@@ -258,11 +267,29 @@ function buildRunnerEnvContent(profile, runnerSecret) {
   const hostTokenLine = hostTokenEnvVar
     ? [`export ${hostTokenEnvVar}=${shellQuote(hostTokenValue)}`]
     : ["# Host token env omitted because --no-host-token-env-var was used or no Host token was available."];
+  const fakeOpenCodeLines =
+    fakeOpenCodeServerUrl && profile.id === agentRunnerId
+      ? [
+          "",
+          "# Optional attached fake OpenCode credentials for this proof.",
+          ...(fakeOpenCodeUsername
+            ? [`export OPENCODE_SERVER_USERNAME=${shellQuote(fakeOpenCodeUsername)}`]
+            : [
+                "# OPENCODE_SERVER_USERNAME omitted; fake OpenCode server is expected to allow unauthenticated requests."
+              ]),
+          ...(fakeOpenCodePassword
+            ? [`export OPENCODE_SERVER_PASSWORD=${shellQuote(fakeOpenCodePassword)}`]
+            : [
+                "# OPENCODE_SERVER_PASSWORD omitted; fake OpenCode server is expected to allow unauthenticated requests."
+              ])
+        ]
+      : [];
 
   return [
     `# Entangle distributed proof runner env for ${profile.id}.`,
     `export ${runnerSecretEnvVar}=${shellQuote(runnerSecret)}`,
     ...hostTokenLine,
+    ...fakeOpenCodeLines,
     ""
   ].join("\n");
 }
@@ -334,6 +361,7 @@ function buildOperatorCommandsScript() {
     '  pnpm --filter @entangle/cli dev "$@"',
     "}",
     "",
+    ...buildFakeOpenCodeOperatorCommands(),
     "run_cli runners list --summary"
   ];
 
@@ -359,6 +387,37 @@ function buildOperatorCommandsScript() {
   );
 
   return `${lines.join("\n")}\n`;
+}
+
+function buildFakeOpenCodeOperatorCommands() {
+  if (!fakeOpenCodeServerUrl) {
+    return [];
+  }
+
+  return [
+    [
+      "run_cli host catalog agent-engine upsert",
+      shellQuote(fakeOpenCodeProfileId),
+      "--kind opencode_server",
+      "--display-name",
+      shellQuote("Distributed Fake OpenCode"),
+      "--base-url",
+      shellQuote(fakeOpenCodeServerUrl),
+      "--permission-mode entangle_approval",
+      "--state-scope node",
+      "--set-default",
+      "--summary"
+    ].join(" "),
+    [
+      "run_cli host nodes agent-runtime",
+      shellQuote(agentNodeId),
+      "--mode coding_agent",
+      "--engine-profile-ref",
+      shellQuote(fakeOpenCodeProfileId),
+      "--summary"
+    ].join(" "),
+    ""
+  ];
 }
 
 function buildVerifierCommand(options = {}) {
@@ -480,6 +539,8 @@ Git service refs: ${gitServiceRefs.length > 0 ? gitServiceRefs.join(", ") : "Hos
 | --- | --- | --- | --- | --- |
 ${runnerRows}
 
+${buildFakeOpenCodeReadmeSection()}
+
 ## Machine Steps
 
 1. Keep Host running on the Host machine with a graph containing the node ids in
@@ -522,11 +583,58 @@ the Host machine, the proof has failed.
 `;
 }
 
+function buildFakeOpenCodeReadmeSection() {
+  if (!fakeOpenCodeServerUrl) {
+    return "";
+  }
+
+  const authFlags =
+    fakeOpenCodeUsername && fakeOpenCodePassword
+      ? ` --username ${shellQuote(fakeOpenCodeUsername)} --password ${shellQuote(fakeOpenCodePassword)}`
+      : "";
+
+  return `## Attached Fake OpenCode Path
+
+This kit was generated with an attached fake OpenCode server profile:
+
+- profile id: \`${fakeOpenCodeProfileId}\`
+- base URL: \`${fakeOpenCodeServerUrl}\`
+
+Start the deterministic fake server somewhere reachable from the agent runner.
+For a server on the same machine as the agent runner:
+
+\`\`\`bash
+pnpm ops:fake-opencode-server -- --host 127.0.0.1 --port 18081${authFlags}
+\`\`\`
+
+\`operator/commands.sh\` upserts that profile through Host and binds
+\`${agentNodeId}\` to it before runner assignment. The agent runner env file
+contains the optional \`OPENCODE_SERVER_USERNAME\` and
+\`OPENCODE_SERVER_PASSWORD\` values when they were supplied while generating
+the kit.
+`;
+}
+
 async function writeKit() {
   if (dryRun) {
     console.log(`[dry-run] output: ${outputDir}`);
     for (const profile of runnerProfiles) {
       run(`Generate ${profile.id} join config`, "pnpm", buildRunnerJoinConfigArgs(profile));
+    }
+    if (fakeOpenCodeServerUrl) {
+      console.log(
+        `[dry-run] fake OpenCode profile: ${fakeOpenCodeProfileId} -> ${fakeOpenCodeServerUrl}`
+      );
+      console.log(
+        `[dry-run] fake OpenCode operator setup: ${
+          buildFakeOpenCodeOperatorCommands().filter(Boolean).join(" && ")
+        }`
+      );
+      console.log(
+        `[dry-run] fake OpenCode runner env: ${
+          fakeOpenCodeUsername ? "OPENCODE_SERVER_USERNAME" : "no username"
+        }, ${fakeOpenCodePassword ? "OPENCODE_SERVER_PASSWORD" : "no password"}`
+      );
     }
     console.log(`[dry-run] operator verifier command: ${buildVerifierCommand()}`);
     console.log(
@@ -611,6 +719,21 @@ try {
   if (checkRelayHealth && relayUrls.length === 0) {
     throw new Error(
       "--check-relay-health requires at least one explicit --relay-url so the generated proof profile can be verified from another machine."
+    );
+  }
+
+  if (fakeOpenCodeServerUrl && !proofAgentEngineKinds.includes("opencode_server")) {
+    throw new Error(
+      "--fake-opencode-server-url requires the agent runner to advertise opencode_server."
+    );
+  }
+
+  if (
+    (fakeOpenCodeUsername && !fakeOpenCodePassword) ||
+    (!fakeOpenCodeUsername && fakeOpenCodePassword)
+  ) {
+    throw new Error(
+      "--fake-opencode-username and --fake-opencode-password must be supplied together."
     );
   }
 

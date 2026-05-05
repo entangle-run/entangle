@@ -101,6 +101,8 @@ contract and script-side validation, so malformed schema versions or
 assignment/runtime-kind mismatches fail before Host inspection.
 The proof kit can also generate relay-health verifier commands and profile
 settings when explicit relay URLs are supplied.
+It can also prepare a deterministic attached fake OpenCode profile and
+agent-node binding for no-credential distributed checks.
 Generated proof kits now include repeatable topology and post-work
 artifact-evidence verifier scripts.
 Studio's Host Status panel renders the same path-free cache summary
@@ -261,7 +263,9 @@ default `running` runtime observations, and distinct multi-user User Client
 URLs without reading Host or runner files; custom proof profiles can override
 runner ids, graph node ids, and the expected agent engine kind in both the
 verifier and generated proof kit through a proof profile manifest while
-OpenCode remains the default, and operators can optionally require projected
+OpenCode remains the default; generated proof kits can also prepare a fake
+attached OpenCode profile and runner env for no-credential distributed checks,
+and operators can optionally require projected
 artifact/source/wiki evidence from the agent node after work is produced or
 relay WebSocket health for configured proof relays. The verifier can also
 optionally check the Host catalog's selected git services for distributed-proof
@@ -771,6 +775,7 @@ files are the active federated redesign pack.
 473. [472-process-smoke-user-client-source-history-reconcile-slice.md](472-process-smoke-user-client-source-history-reconcile-slice.md)
 474. [473-fake-opencode-demo-command-slice.md](473-fake-opencode-demo-command-slice.md)
 475. [474-federated-pivot-remaining-gap-audit.md](474-federated-pivot-remaining-gap-audit.md)
+476. [475-distributed-proof-kit-fake-opencode-slice.md](475-distributed-proof-kit-fake-opencode-slice.md)
 
 ## Role of this corpus
 

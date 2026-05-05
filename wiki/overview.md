@@ -346,6 +346,10 @@ agent-engine capability with `--agent-engine-kind <kind>`, and writes a
 matching verifier command into the operator script. Custom runner ids and graph
 node ids are also carried into `operator/proof-profile.json`, which the
 generated verifier command reads.
+With `--fake-opencode-server-url <url>`, the same kit now prepares Host
+operator commands that upsert a deterministic attached fake OpenCode profile,
+bind the agent node to it, and write optional runner Basic-auth env for
+no-credential distributed checks.
 That profile is now a typed package contract and a script-validated ops
 contract, so malformed schema versions or assignment/runtime-kind mismatches
 fail before Host inspection.

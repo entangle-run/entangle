@@ -1,5 +1,14 @@
 # Entangle Wiki Log
 
+## [2026-05-05] tooling | Added fake OpenCode distributed proof kit support
+
+Added `references/475-distributed-proof-kit-fake-opencode-slice.md`.
+`pnpm ops:distributed-proof-kit` now accepts `--fake-opencode-server-url` and
+optional fake-server Basic-auth settings, generates operator commands that
+upsert an attached `opencode_server` profile with Entangle approval mode, binds
+the agent node to that profile, and writes the optional credentials into the
+agent runner env for no-credential distributed checks.
+
 ## [2026-05-05] documentation | Repaired stale remaining-gap summary
 
 Added `references/474-federated-pivot-remaining-gap-audit.md`. The federated

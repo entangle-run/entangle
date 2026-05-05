@@ -335,6 +335,12 @@ it, and the verifier rejects malformed or internally inconsistent profiles
 before inspecting Host state. Generated profiles also carry the primary User
 Node conversation and User Client health requirements, so direct `--profile`
 verification stays aligned with the generated operator scripts.
+For no-credential distributed checks against the attached OpenCode route, pass
+`--fake-opencode-server-url <url>`. The generated operator script upserts an
+`opencode_server` profile with `permissionMode: "entangle_approval"`, binds the
+agent node to that profile, and the generated agent-runner env can carry the
+optional fake-server Basic-auth variables. Start `pnpm ops:fake-opencode-server`
+on a machine reachable from the agent runner before sending work.
 Pass `--check-relay-health` with at least one `--relay-url` when the generated
 operator command should also probe relay WebSocket reachability from the
 operator machine.

@@ -1052,6 +1052,7 @@ Implementation records:
 - [427-distributed-proof-profile-manifest-slice.md](427-distributed-proof-profile-manifest-slice.md)
 - [428-distributed-proof-artifact-evidence-verifier-slice.md](428-distributed-proof-artifact-evidence-verifier-slice.md)
 - [429-distributed-proof-relay-health-verifier-slice.md](429-distributed-proof-relay-health-verifier-slice.md)
+- [475-distributed-proof-kit-fake-opencode-slice.md](475-distributed-proof-kit-fake-opencode-slice.md)
 - [455-user-client-wiki-page-patch-process-smoke-slice.md](455-user-client-wiki-page-patch-process-smoke-slice.md)
 
 Current status:
@@ -1265,7 +1266,11 @@ Current status:
   defaults the agent runner to `opencode_server`, accepts
   `--agent-engine-kind <kind>` for custom proof profiles, and writes an
   `operator/proof-profile.json` manifest plus an operator verifier command that
-  reads the same runner ids, graph node ids, and expected engine kind;
+  reads the same runner ids, graph node ids, and expected engine kind; generated
+  kits can also prepare a deterministic attached fake OpenCode profile with
+  `--fake-opencode-server-url <url>`, Host catalog upsert/node-binding operator
+  commands, and optional runner Basic-auth env for no-credential distributed
+  checks;
 - `pnpm ops:distributed-proof-verify` now checks an already-running
   distributed proof through Host HTTP APIs and optional User Client health
   endpoints, covering Host Authority, runner trust/liveness, assignment

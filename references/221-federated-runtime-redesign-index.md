@@ -275,6 +275,7 @@ same-machine slice records.
 - [472-process-smoke-user-client-source-history-reconcile-slice.md](472-process-smoke-user-client-source-history-reconcile-slice.md)
 - [473-fake-opencode-demo-command-slice.md](473-fake-opencode-demo-command-slice.md)
 - [474-federated-pivot-remaining-gap-audit.md](474-federated-pivot-remaining-gap-audit.md)
+- [475-distributed-proof-kit-fake-opencode-slice.md](475-distributed-proof-kit-fake-opencode-slice.md)
 
 ## Audited Scope
 
@@ -956,7 +957,11 @@ observations, duplicate User Client URLs, and wrong runner runtime-kind
 or agent-engine capabilities. The proof kit and verifier can now be
 parameterized with the same runner ids, graph node ids, and expected agent
 engine kind through a generated proof profile manifest, while keeping OpenCode
-as the default, and can optionally require projected artifact/source/wiki
+as the default. Generated proof kits can also configure a deterministic
+attached fake OpenCode profile and agent-node binding for no-credential
+distributed checks, while still requiring the agent runner to advertise
+`opencode_server`. The verifier can optionally require projected
+artifact/source/wiki
 evidence from the agent node after work is produced or relay WebSocket
 reachability for configured proof relays. The verifier can also optionally
 check Host catalog git services for distributed-proof suitability by rejecting

@@ -207,6 +207,53 @@ try {
     mustContain: "'external_process'"
   });
 
+  runStep("proof kit fake-opencode dry-run", [
+    "scripts/federated-distributed-proof-kit.mjs",
+    "--dry-run",
+    "--output",
+    "/tmp/entangle-distributed-proof-ci-fake-opencode",
+    "--host-url",
+    "http://host.example:7071",
+    "--relay-url",
+    "ws://relay.example:7777",
+    "--fake-opencode-server-url",
+    "http://127.0.0.1:18081",
+    "--fake-opencode-username",
+    "entangle",
+    "--fake-opencode-password",
+    "server-secret"
+  ], {
+    mustContain: [
+      "fake OpenCode profile: distributed-fake-opencode -> http://127.0.0.1:18081",
+      "host catalog agent-engine upsert 'distributed-fake-opencode'",
+      "host nodes agent-runtime 'builder'",
+      "OPENCODE_SERVER_USERNAME",
+      "OPENCODE_SERVER_PASSWORD"
+    ]
+  });
+
+  runFailureStep(
+    "proof kit fake-opencode wrong engine dry-run",
+    [
+      "scripts/federated-distributed-proof-kit.mjs",
+      "--dry-run",
+      "--output",
+      "/tmp/entangle-distributed-proof-ci-fake-opencode-wrong-engine",
+      "--host-url",
+      "http://host.example:7071",
+      "--relay-url",
+      "ws://relay.example:7777",
+      "--agent-engine-kind",
+      "external_process",
+      "--fake-opencode-server-url",
+      "http://127.0.0.1:18081"
+    ],
+    {
+      mustContain:
+        "--fake-opencode-server-url requires the agent runner to advertise opencode_server"
+    }
+  );
+
   runStep("proof kit custom-profile verifier dry-run", [
     "scripts/federated-distributed-proof-kit.mjs",
     "--dry-run",
