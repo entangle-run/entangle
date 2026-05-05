@@ -841,6 +841,7 @@ files are the active federated redesign pack.
 509. [508-user-client-command-receipt-detail-slice.md](508-user-client-command-receipt-detail-slice.md)
 510. [509-user-client-wiki-draft-prefill-slice.md](509-user-client-wiki-draft-prefill-slice.md)
 511. [510-distributed-proof-external-user-client-url-slice.md](510-distributed-proof-external-user-client-url-slice.md)
+512. [511-distributed-proof-user-client-basic-auth-slice.md](511-distributed-proof-user-client-basic-auth-slice.md)
 
 ## Role of this corpus
 

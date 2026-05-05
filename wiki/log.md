@@ -6015,3 +6015,15 @@ verifier runs can now opt into `requireExternalUserClientUrls` /
 When enabled, the verifier rejects projected User Client URLs on localhost,
 loopback, or wildcard addresses. Same-machine proofs remain supported by
 leaving the option disabled.
+
+## [2026-05-05] ops | Added User Client Basic Auth proof-kit placeholders
+
+Added `references/511-distributed-proof-user-client-basic-auth-slice.md`.
+Generated distributed proof kits can now opt into
+`--require-user-client-basic-auth` and can choose the source placeholder env
+var with `--user-client-basic-auth-env-var`.
+
+When enabled, User Node runner env files include a required
+`ENTANGLE_HUMAN_INTERFACE_BASIC_AUTH` placeholder and generated `start.sh`
+scripts fail fast until the operator supplies `username:password`. The proof
+tool smoke now covers the dry-run summary and invalid env-var rejection path.

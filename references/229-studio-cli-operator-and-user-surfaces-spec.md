@@ -30,7 +30,8 @@ Missing surfaces:
   CLI operator command and Studio prepare/timeline controls;
 - richer participant-side review flows beyond the current scoped artifact,
   source-change, wiki, command-receipt, workload, and runtime-status surfaces;
-- production authentication/key-custody flows for User Client access;
+- production authentication/key-custody flows for User Client access beyond
+  runtime-local Basic Auth and proof-kit placeholders;
 
 Recently added:
 
@@ -73,6 +74,9 @@ Recently added:
   target, conversation, session, parent message, turn, and scoped approval
   context. Host now exposes direct recorded message lookup so this does not
   require scanning every conversation.
+- Distributed proof kits can now opt into required User Client Basic Auth for
+  User Node runner machines, writing env placeholders and generated start
+  checks instead of putting cleartext credentials on the kit command line.
 - Studio User Node overview summaries now combine identity, runtime state,
   runner placement, User Client URL, conversation counts, active counts,
   pending approval counts, unread counts, local read markers, and

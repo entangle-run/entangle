@@ -37,6 +37,11 @@ const checkPublishedGitRef = hasFlag("--check-published-git-ref");
 const requireExternalUserClientUrls = hasFlag(
   "--require-external-user-client-urls"
 );
+const requireUserClientBasicAuth = hasFlag("--require-user-client-basic-auth");
+const userClientBasicAuthEnvVar =
+  readFlagValue("--user-client-basic-auth-env-var") ??
+  "ENTANGLE_HUMAN_INTERFACE_BASIC_AUTH";
+const userClientBasicAuthPlaceholder = "REPLACE_WITH_USERNAME_PASSWORD";
 const heartbeatIntervalMs = readFlagValue("--heartbeat-interval-ms") ?? "1000";
 const requestedAgentEngineKinds = splitRepeatedValues(
   readFlagValues("--agent-engine-kind")
@@ -73,6 +78,13 @@ const reviewerUserRunnerId =
 const agentNodeId = readFlagValue("--agent-node") ?? "builder";
 const userNodeId = readFlagValue("--user-node") ?? "user";
 const reviewerUserNodeId = readFlagValue("--reviewer-user-node") ?? "reviewer";
+
+if (requireUserClientBasicAuth) {
+  validateEnvVarName(
+    userClientBasicAuthEnvVar,
+    "--user-client-basic-auth-env-var"
+  );
+}
 
 const runnerProfiles = [
   {
@@ -130,6 +142,9 @@ Options:
   --check-published-git-ref         Include git ls-remote checks for post-work published git artifact refs.
   --require-external-user-client-urls
                                     Include verifier checks that reject loopback or wildcard User Client URLs.
+  --require-user-client-basic-auth  Add a required Human Interface Runtime Basic Auth env placeholder to generated User Node runner env files.
+  --user-client-basic-auth-env-var <envVar>
+                                    Source env var for generated User Client Basic Auth placeholders. Default: ENTANGLE_HUMAN_INTERFACE_BASIC_AUTH
   --heartbeat-interval-ms <ms>      Runner heartbeat interval in generated configs. Default: 1000
   --runner-secret-env-var <envVar>  Env var runners will read for their Nostr secret. Default: ENTANGLE_RUNNER_NOSTR_SECRET_KEY
   --agent-engine-kind <kind>         Agent runner engine kind. May be repeated or comma-separated. Default: opencode_server
@@ -205,6 +220,12 @@ function shellQuote(value) {
 
 function randomSecretHex() {
   return randomBytes(32).toString("hex");
+}
+
+function validateEnvVarName(value, label) {
+  if (!/^[A-Za-z_][A-Za-z0-9_]*$/u.test(value)) {
+    throw new Error(`${label} must be a valid shell environment variable name.`);
+  }
 }
 
 function buildCliEnv() {
@@ -309,13 +330,46 @@ function buildRunnerEnvContent(profile, runnerSecret) {
               ])
         ]
       : [];
+  const userClientBasicAuthEnvLine =
+    `export ENTANGLE_HUMAN_INTERFACE_BASIC_AUTH="\${${userClientBasicAuthEnvVar}:-` +
+    `${userClientBasicAuthPlaceholder}}"`;
+  const userClientBasicAuthLines =
+    requireUserClientBasicAuth && profile.runtimeKinds.includes("human_interface")
+      ? [
+          "",
+          "# Required Basic Auth for this Human Interface Runtime User Client.",
+          userClientBasicAuthEnvLine
+        ]
+      : [];
 
   return [
     `# Entangle distributed proof runner env for ${profile.id}.`,
     `export ${runnerSecretEnvVar}=${shellQuote(runnerSecret)}`,
     ...hostTokenLine,
     ...fakeOpenCodeLines,
+    ...userClientBasicAuthLines,
     ""
+  ].join("\n");
+}
+
+function buildUserClientBasicAuthStartCheck(profile) {
+  if (
+    !requireUserClientBasicAuth ||
+    !profile.runtimeKinds.includes("human_interface")
+  ) {
+    return "";
+  }
+
+  const message = [
+    `Set ${userClientBasicAuthEnvVar} in $SCRIPT_DIR/runner.env`,
+    "or the environment before starting this User Client runner."
+  ].join(" ");
+
+  return [
+    `if [ "\${ENTANGLE_HUMAN_INTERFACE_BASIC_AUTH:-}" = "${userClientBasicAuthPlaceholder}" ]; then`,
+    `  echo ${shellQuote(message)} >&2`,
+    "  exit 1",
+    "fi"
   ].join("\n");
 }
 
@@ -335,6 +389,7 @@ ${hostTokenEnvVar ? `if [ "\${${hostTokenEnvVar}:-}" = "REPLACE_WITH_HOST_TOKEN"
   echo "Set ${hostTokenEnvVar} in $SCRIPT_DIR/runner.env or the environment before starting this runner." >&2
   exit 1
 fi` : "# Host bearer-token env is not configured for this no-auth proof kit."}
+${buildUserClientBasicAuthStartCheck(profile)}
 
 export ENTANGLE_RUNNER_STATE_ROOT="\${ENTANGLE_RUNNER_STATE_ROOT:-$SCRIPT_DIR/state}"
 
@@ -636,6 +691,9 @@ ${buildCustomAgentEngineReadmeSection()}
 3. On each runner machine, set \`ENTANGLE_REPO_ROOT\` to that machine's Entangle
    checkout, edit \`runner.env\` if the Host token is not written, then run
    \`./start.sh\` from that runner directory.
+   If the kit was generated with \`--require-user-client-basic-auth\`, set
+   \`${userClientBasicAuthEnvVar}\` to \`username:password\` for each User Node
+   runner before starting it.
 4. After the runners publish \`runner.hello\`, run
    \`operator/commands.sh\` from the Host/operator machine to trust runners,
    offer assignments, list User Client URLs, send a signed User Node task, and
@@ -655,6 +713,8 @@ ${buildCustomAgentEngineReadmeSection()}
 - \`user-runner/runner-join.json\`: primary User Node Human Interface Runtime join config.
 - \`reviewer-user-runner/runner-join.json\`: reviewer User Node Human Interface Runtime join config.
 - \`*/runner.env\`: runner-local Nostr secret and Host token placeholder or value.
+  User Node runner env files also contain a User Client Basic Auth placeholder
+  when the kit is generated with \`--require-user-client-basic-auth\`.
 - \`*/start.sh\`: runner-machine start command.
 - \`operator/operator.env\`: Host URL and Host token placeholder or value.
 - \`operator/proof-profile.json\`: machine-readable runner, node, engine, relay, optional git-service, conversation, and User Client health profile for topology verification.
@@ -758,6 +818,14 @@ async function writeKit() {
         `[dry-run] custom agent engine operator setup: ${
           buildCustomAgentEngineOperatorCommands().filter(Boolean).join(" && ")
         }`
+      );
+    }
+    if (requireUserClientBasicAuth) {
+      const authEnvSummary =
+        "User Client Basic Auth required for human-interface runners via " +
+        userClientBasicAuthEnvVar;
+      console.log(
+        `[dry-run] ${authEnvSummary}`
       );
     }
     console.log(`[dry-run] operator verifier command: ${buildVerifierCommand()}`);

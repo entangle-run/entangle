@@ -357,6 +357,9 @@ try {
     "--check-git-backend-health",
     "--check-published-git-ref",
     "--require-external-user-client-urls",
+    "--require-user-client-basic-auth",
+    "--user-client-basic-auth-env-var",
+    "ENTANGLE_PROOF_USER_CLIENT_BASIC_AUTH",
     "--agent-runner",
     "proof-agent-runner",
     "--user-runner",
@@ -391,9 +394,32 @@ try {
       '"gitServiceRefs":["gitea"]',
       '"requireExternalUserClientUrls":true',
       '"requireConversation":true',
-      '"requirePublishedGitArtifact":true'
+      '"requirePublishedGitArtifact":true',
+      [
+        "User Client Basic Auth required for human-interface runners via",
+        "ENTANGLE_PROOF_USER_CLIENT_BASIC_AUTH"
+      ].join(" ")
     ]
   });
+
+  runFailureStep(
+    "proof kit invalid user-client auth env var dry-run",
+    [
+      "scripts/federated-distributed-proof-kit.mjs",
+      "--dry-run",
+      "--output",
+      "/tmp/entangle-distributed-proof-ci-invalid-user-client-auth-env",
+      "--host-url",
+      "http://host.example:7071",
+      "--require-user-client-basic-auth",
+      "--user-client-basic-auth-env-var",
+      "INVALID-NAME"
+    ],
+    {
+      mustContain:
+        "--user-client-basic-auth-env-var must be a valid shell environment variable name"
+    }
+  );
 
   runFailureStep(
     "proof kit relay-health without relay dry-run",

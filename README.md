@@ -422,6 +422,12 @@ operator machine.
 Pass `--require-external-user-client-urls` when a physical multi-machine proof
 should reject projected User Client URLs on `localhost`, loopback, or wildcard
 addresses.
+Pass `--require-user-client-basic-auth` when generated User Node runner
+directories should require `ENTANGLE_HUMAN_INTERFACE_BASIC_AUTH` before their
+User Clients start. Use `--user-client-basic-auth-env-var <envVar>` if the
+operator machines should source the placeholder from a different environment
+variable. Generated `start.sh` scripts fail fast until the placeholder is
+replaced with `username:password`.
 Copy runner directories to machines with Entangle checkouts; the proof is valid
 only when the runners do not rely on Host filesystem access and report running
 runtime observations, expected runtime-kind capabilities, expected
@@ -476,7 +482,8 @@ or agent-engine capabilities fail the multi-user proof, that malformed proof
 profiles fail before Host inspection, and that missing artifact evidence,
 missing relay URLs, file-backed git services, or missing git service refs fail
 when explicitly required. It also checks loopback User Client URL rejection
-when physical proof mode requests external URLs, custom assignment ids from
+when physical proof mode requests external URLs, generated User Client Basic
+Auth placeholders for User Node runner machines, custom assignment ids from
 proof profiles, and the generated post-work artifact verifier command. It does
 not replace the real distributed proof above.
 
