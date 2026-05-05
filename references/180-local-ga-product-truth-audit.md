@@ -13,7 +13,7 @@ as implemented Local capabilities.
 ## Purpose
 
 This audit is the product-truth baseline for carrying Entangle from the
-R1/L1 local operator release toward Local GA.
+R1/L1 local operator release toward Entangle GA.
 
 It maps the repository's actual implemented state against the requested Local
 milestone sequence, the canonical L-series roadmap, and the active R1/L1
@@ -55,7 +55,7 @@ as follows:
 | GA Entangle GA | L5 | Complete local/developer product. |
 
 Cloud and Enterprise remain future product lines and are not active
-implementation tracks before Local GA.
+implementation tracks before Entangle GA.
 
 ## Current Implementation Truth
 
@@ -155,7 +155,7 @@ local runtime baseline:
   materialized git artifacts, exposed through the host API, shared host
   client, CLI, and Studio.
 - the active Local runtime profile now uses the stable machine value `local`
-  instead of the legacy `hackathon_local` value.
+  instead of the legacy retired pre-federated profile value.
 
 ## Durable Fix From This Audit
 
@@ -188,8 +188,8 @@ known Vite chunk-size warning for the current bundle.
 | Host control plane | Local persistent state, resource mutation, runtime lifecycle, events, recovery, session and runtime inspection, including effective agent-runtime status summaries, workspace-health summaries, latest source-change summaries, source-change candidate list/detail APIs, bounded candidate diff APIs, bounded candidate file-preview APIs, audited source-change candidate review mutation APIs, local source-history apply/list/detail APIs, source-history publish APIs that create git commit artifact records with explicit retry, wiki repository publication APIs that create `knowledge_summary` git artifact records from clean wiki HEADs, git target selection, non-primary `gitea_api` publication target provisioning, operation/resource-scoped node-policy approval gates, and host-scoped runtime approval decision mutation. | `DELETE /v1/runtimes/{nodeId}` remains absent from the broader spec. Fallback/replication publication behavior remains absent. | Production RBAC/ABAC and multi-tenant auth. |
 | Runner | Long-lived service, Nostr intake, scoped approval handling, handoff, artifacts, memory around an injected engine boundary, first OpenCode process lifecycle checks with version probing, bounded timeout handling, and external cancellation via host-written runtime requests, runner polling, engine abort signals, and cancelled turn/session evidence, first generic permission-block observation for OpenCode one-shot auto-rejections, bounded structural engine-request summaries, explicit policy/workspace/action prompt context, OpenCode `entangle-actions` parsing into validated handoff and approval-request directives, `policy_denied` classification for unauthorized or unroutable handoff directives with bounded engine evidence preserved, runner-owned approval-gate materialization from engine directives, runner-owned source workspace change harvesting after engine turns, pending source-change candidate creation, and post-turn local git snapshots of `memory/wiki` into the node `wiki-repository`. | OpenCode-backed coding-agent execution quality, engine lifecycle bridging, live policy/approval mapping and post-approval resumption, wiki repository restore/promotion, and cross-host/global session semantics remain future work. | Legacy one-turn model inference as a node runtime, remote federation, and production scheduler. |
 | Artifact flow | Git-backed local materialization, publication, retrieval, downstream handoff proof, host-owned bounded text preview for local materialized report artifacts, source-change evidence on turns, pending source-change candidate records, bounded candidate diff inspection, bounded listed-file preview, candidate review state, local source-history commits, source commit artifact records from published source-history entries, wiki repository `knowledge_summary` artifact records from published clean wiki HEADs, direct source-history replay with replay-attempt history, bounded git artifact history/diff inspection, safe git artifact restore into explicit artifact workspace restore directories, restore-attempt history inspection, and approval-gated source-workspace promotion from successful restores with promotion-attempt history inspection. | Rich artifact kinds, wiki restore/promotion, richer source-history merge/reconcile behavior, richer restore/promotion audit UX, and fallback replication are later work. | Object-storage artifact service before Cloud. |
-| Studio | Host-backed graph, graph revision diff, active-graph validation, runtime, runtime agent profile/session/workspace-health/source-change status, pending approval blockers, latest produced artifact ids, source-change candidate inspection with bounded diff, listed-file preview, review actions, source-history apply/list/detail/publish/replay with approval evidence where available, recovery, trace, session launch, session inspection, turn inspection with bounded engine-request summaries, approval inspection plus pending approval approve/reject actions, artifact preview/history/diff/restore, restore-attempt history, approval-gated artifact promotion controls and promotion-history inspection, runtime memory preview plus wiki repository publication controls/history, package-source, principal, node, edge, and graph-backed agent-runtime configuration views. | First-run demo UX, imported-candidate graph validation, richer source and wiki publication history views, graph bundle ergonomics, and richer engine-state panels. | SaaS/workspace admin UI before Local GA. |
-| CLI | Offline validation, package init and inspect, graph diff, graph template export, host graph import/export, host inspection, graph/resources/runtimes/sessions/artifacts/approvals/turns/source-candidates/source-history/events/memory, runtime agent profile/session/workspace-health/source-change status, pending approval blockers, latest produced artifact/requested approval ids, turn inspection with bounded engine-request summaries, source-candidate diff/listed-file inspection, review mutation, approval decision mutation, graph-backed node agent-runtime configuration, approval-linked source-history application, retryable target-aware publication, source-history replay and replay-history inspection, wiki repository publication/list commands, local session launch with optional wait polling, first `local doctor` diagnostics including runtime wiki repository health and runner-image OpenCode availability, redacted `local diagnostics` JSON support bundle, versioned `local backup`, validated `local restore`, dry-run-first `local repair`, artifact session filtering, preview, history, diff, restore, restore-history inspection, promotion, and promotion-history inspection, memory page preview, mutation dry runs, and root-relative path handling under `pnpm --filter @entangle/cli dev`. | Relay-publish retry, graph bundle export ergonomics, package import/export depth, richer policy configuration commands, host-level repair depth, and live backup/restore/repair smokes. | Production cloud automation auth before Local GA. |
+| Studio | Host-backed graph, graph revision diff, active-graph validation, runtime, runtime agent profile/session/workspace-health/source-change status, pending approval blockers, latest produced artifact ids, source-change candidate inspection with bounded diff, listed-file preview, review actions, source-history apply/list/detail/publish/replay with approval evidence where available, recovery, trace, session launch, session inspection, turn inspection with bounded engine-request summaries, approval inspection plus pending approval approve/reject actions, artifact preview/history/diff/restore, restore-attempt history, approval-gated artifact promotion controls and promotion-history inspection, runtime memory preview plus wiki repository publication controls/history, package-source, principal, node, edge, and graph-backed agent-runtime configuration views. | First-run demo UX, imported-candidate graph validation, richer source and wiki publication history views, graph bundle ergonomics, and richer engine-state panels. | SaaS/workspace admin UI before Entangle GA. |
+| CLI | Offline validation, package init and inspect, graph diff, graph template export, host graph import/export, host inspection, graph/resources/runtimes/sessions/artifacts/approvals/turns/source-candidates/source-history/events/memory, runtime agent profile/session/workspace-health/source-change status, pending approval blockers, latest produced artifact/requested approval ids, turn inspection with bounded engine-request summaries, source-candidate diff/listed-file inspection, review mutation, approval decision mutation, graph-backed node agent-runtime configuration, approval-linked source-history application, retryable target-aware publication, source-history replay and replay-history inspection, wiki repository publication/list commands, local session launch with optional wait polling, first `local doctor` diagnostics including runtime wiki repository health and runner-image OpenCode availability, redacted `local diagnostics` JSON support bundle, versioned `local backup`, validated `local restore`, dry-run-first `local repair`, artifact session filtering, preview, history, diff, restore, restore-history inspection, promotion, and promotion-history inspection, memory page preview, mutation dry runs, and root-relative path handling under `pnpm --filter @entangle/cli dev`. | Relay-publish retry, graph bundle export ergonomics, package import/export depth, richer policy configuration commands, host-level repair depth, and live backup/restore/repair smokes. | Production cloud automation auth before Entangle GA. |
 | Deployment | Federated dev Compose profile with Studio, host, strfry, Gitea, dynamic runner image, pinned OpenCode in the runner image, preflight, active/runtime/disposable smokes, diagnostics smoke, and non-destructive reliability smoke. | Non-disposable upgrade handling and destructive restore rehearsal. | Cloud or Enterprise deployment profiles. |
 | QA | `pnpm verify`, lint/typecheck/test, build, CI, local preflight, active and disposable smokes. | Clean-clone/RC rehearsal still required before tags. | Hiding or bypassing failing tests. |
 
@@ -236,8 +236,8 @@ failure.
 
 ## Known Limitations
 
-- Historical release packets still mention the former `hackathon_local` machine
-  value as historical evidence. Active schemas, scaffolds, examples, tests, and
+- Historical release packets still mention the former retired pre-federated
+  profile machine value as historical evidence. Active schemas, scaffolds, examples, tests, and
   smoke scripts now use the stable `local` runtime profile.
 - Studio's production bundle still exceeds Vite's default 500 kB chunk warning.
 - Local has reset-by-volume-teardown, a first read-only doctor diagnostic,
@@ -301,7 +301,7 @@ lives in
    - Add conservative repair.
    - Add backup/restore and state-version checks.
    - Add logs collection and repeated-use validation.
-3. Cut L5 Local GA.
+3. Cut L5 Entangle GA.
    - Run clean-state validation.
    - Align docs, README, release notes, roadmap, and website claims.
    - Make limitations explicit.

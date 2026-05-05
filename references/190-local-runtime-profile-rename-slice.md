@@ -9,7 +9,7 @@ documentation part of A2.
 
 Implemented:
 
-- renamed the active runtime profile machine value from `hackathon_local` to
+- renamed the active runtime profile machine value from the retired pre-federated profile literal to
   `local`;
 - updated the runtime profile schema and graph defaults;
 - updated package scaffolding so new packages emit `runtimeProfile: "federated"`;
@@ -22,7 +22,7 @@ Implemented:
 
 Not changed:
 
-- historical release packets that mention `hackathon_local` as the machine
+- historical release packets that mention the retired pre-federated profile literal as the machine
   value used at the time of earlier releases;
 - historical hackathon specification documents;
 - Cloud or Enterprise scope.
@@ -35,14 +35,14 @@ Rationale:
 
 - it matches the active product line, Entangle;
 - it does not imply GA status;
-- it remains durable after Local GA, avoiding a second rename from
+- it remains durable after Entangle GA, avoiding a second rename from
   `local_operator` to `local`;
 - it removes obsolete hackathon wording from active contracts.
 
 ## Constraints Applied
 
 - Historical records remain historical.
-- Current product surfaces must not emit `hackathon_local`.
+- Current product surfaces must not emit the retired pre-federated profile literal.
 - The change stays inside the graph/runtime profile contract and does not
   widen Cloud, Enterprise, or agent-engine scope.
 - Focused tests must cover the touched schema, validator, host-client, CLI,

@@ -58,7 +58,8 @@ Completed for this slice:
 
 - `pnpm ops:check-product-naming`
 - `git diff --check`
-- `rg -n "Entangle Local|entangle-local|hackathon_local|Local GA" releases README.md apps deploy examples package.json packages scripts services`: no hits.
+- targeted release and active-surface search for forbidden product naming
+  markers: no hits.
 
 ## Open Questions
 

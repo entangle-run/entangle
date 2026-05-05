@@ -6,9 +6,9 @@ Date: 2026-04-25.
 
 This document is the implementation plan for completing Entangle.
 
-For this plan, the project is Entangle. Historical names such as
-`hackathon_local` are treated as legacy implementation detail that must be
-retired before the Local GA release. Cloud and Enterprise are explicitly out of
+For this plan, the project is Entangle. Retired pre-federated profile
+literals are treated as legacy implementation detail that must be retired
+before the Entangle GA release. Cloud and Enterprise are explicitly out of
 scope until Entangle reaches GA.
 
 ## Current Baseline
@@ -132,7 +132,7 @@ the following baseline has been refreshed in the current working session:
   and `wiki/log.md` are read.
 - `AGENTS.md` is read for repository-local working rules.
 - The current task's relevant reference files are read, including this plan,
-  the Local GA product truth audit, repository audit rules, quality gates, and
+  the Entangle GA product truth audit, repository audit rules, quality gates, and
   quality engineering baseline when the task changes process or release
   readiness.
 - The local reference corpus under
@@ -150,7 +150,7 @@ The deep audit performed before workstream A1 confirmed:
 - the worktree was clean before the audit update started;
 - the current product state is L2 complete, L3 in progress, L4 and L5 not
   complete;
-- `hackathon_local` remained active machine state in schemas, examples,
+- the retired pre-federated profile literal remained active machine state in schemas, examples,
   fixtures, and tests before A1 and was therefore a required cleanup target,
   not only a documentation issue;
 - OpenCode is the only default wired coding-agent runtime, with a first safe
@@ -168,10 +168,10 @@ These constraints are mandatory for every task below.
 ### Product Scope
 
 - The active product is Entangle.
-- Do not start Cloud or Enterprise product work before Local GA.
-- Do not use Local GA language until L3, L4, release hardening, and claim audit
+- Do not start Cloud or Enterprise product work before Entangle GA.
+- Do not use Entangle GA language until L3, L4, release hardening, and claim audit
   gates pass.
-- Retire legacy public naming such as `hackathon_local` before GA.
+- Retire legacy public runtime-profile literals before GA.
 
 ### Architecture
 
@@ -322,7 +322,7 @@ Before closing L3, L4, or L5:
 
 - compare implemented behavior against every acceptance criterion in this plan;
 - compare current state against `references/180-local-ga-product-truth-audit.md`;
-- verify no stale Local GA, Cloud, Enterprise, or legacy hackathon claims are
+- verify no stale Entangle GA, Cloud, Enterprise, or legacy hackathon claims are
   present in current product surfaces;
 - verify release packets contain command evidence and known limitations;
 - verify failures are blockers, not silently documented exceptions.
@@ -346,7 +346,8 @@ on top of it.
 
 Tasks:
 
-- Replace public `hackathon_local` schema value with `local`.
+- Replace the public retired pre-federated runtime-profile schema value with
+  `local`.
 - Use `local` as the canonical machine value for Entangle because it is
   product-stable and does not imply GA status.
 - Add compatibility parsing only if needed for old fixtures or release assets.
@@ -361,8 +362,8 @@ Constraints:
 
 Acceptance:
 
-- New scaffolds emit `local` and no longer emit `hackathon_local`.
-- Active examples use `local` and no longer use `hackathon_local`.
+- New scaffolds emit `local` and no longer emit the retired pre-federated profile literal.
+- Active examples use `local` and no longer use the retired pre-federated profile literal.
 - Validator accepts the new Federated dev profile.
 - Tests and smokes use the new Federated dev profile.
 
@@ -378,7 +379,7 @@ Tasks:
 Constraints:
 
 - Do not rewrite historical decision records as if the history did not happen.
-- Do not claim Local GA before the gate passes.
+- Do not claim Entangle GA before the gate passes.
 
 Acceptance:
 
@@ -1185,7 +1186,7 @@ Tasks:
 - Audit README, wiki, release notes, examples, website claims, and package
   metadata.
 - Remove or qualify stale Local claims.
-- Ensure `hackathon_local` is gone from current product surfaces.
+- Ensure the retired pre-federated profile literal is gone from current product surfaces.
 - Ensure Cloud and Enterprise are not implied as implemented.
 
 Constraints:

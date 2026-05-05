@@ -233,7 +233,7 @@ If yes, update this roadmap or add a decision record before continuing.
 | Local | L2 | Federated Workbench | Productized local package, graph, session, and artifact workflows. |
 | Local | L3 | Agentic Node Runtime | Per-node coding-agent runtime selection, OpenCode integration path, policy bridge, git/wiki workspaces, and observability. |
 | Local | L4 | Local Reliability | Doctor, repair, backup, import/export, upgrade, and diagnostics. |
-| Local | L5 | Local GA | Complete local/developer product. |
+| Local | L5 | Entangle GA | Complete local/developer product. |
 | Cloud | C0 | Cloud Start Gate | Confirm Local is complete and production work may begin. |
 | Cloud | C1 | Cloud Foundation | PostgreSQL, identity, tenancy, auth, audit, API discipline. |
 | Cloud | C2 | Governed Execution MVP | Production-style session launch, sandbox, artifact service, approvals. |
@@ -544,7 +544,7 @@ Required capabilities:
 - clear non-goals versus Cloud and Enterprise;
 - regression smoke suite for Local.
 
-Local GA exit criteria:
+Entangle GA exit criteria:
 
 - a technical user can use Entangle without reading source code;
 - the product can survive repeated local use and upgrades;
@@ -562,7 +562,7 @@ product and begin managed production work.
 
 Checks:
 
-- Local GA exit criteria are met;
+- Entangle GA exit criteria are met;
 - Entangle state and production state boundaries are documented;
 - reusable contracts are stable enough to carry forward;
 - product positioning distinguishes Local from Cloud.
@@ -866,7 +866,7 @@ Evolution:
 - strongest feasible smoke passes or is explicitly deferred;
 - release note does not overclaim production readiness.
 
-### Gate L5: Local GA
+### Gate L5: Entangle GA
 
 - local install path is documented and repeatable;
 - demo assets work on a fresh machine;
@@ -909,7 +909,7 @@ Evolution:
 ## Immediate Plan
 
 L1, L1.5, and L2 release closure are complete. The current target is L3
-Agentic Node Runtime, not Local GA.
+Agentic Node Runtime, not Entangle GA.
 
 L1.5 shipped:
 
@@ -932,7 +932,7 @@ Remaining implementation sequence:
    - Add conservative repair.
    - Add backup/restore and state-version checks.
    - Add logs collection and repeated-use validation.
-3. Cut L5 Local GA.
+3. Cut L5 Entangle GA.
    - Run clean-state validation.
    - Align docs, README, release notes, roadmap, and website claims.
    - Make limitations explicit.
@@ -956,7 +956,7 @@ Assuming disciplined sequencing:
 | Local | L2 federated workbench | May 2026 |
 | Local | L3 agentic node runtime | May to June 2026 |
 | Local | L4 local reliability | June 2026 |
-| Local | L5 Local GA | June to July 2026 |
+| Local | L5 Entangle GA | June to July 2026 |
 | Cloud | C1 cloud foundation | June to July 2026 |
 | Cloud | C2 governed execution MVP | July to August 2026 |
 | Cloud | C3 private beta | September 2026 |
@@ -966,7 +966,7 @@ Assuming disciplined sequencing:
 
 This forecast must be revised after each gate using repository evidence.
 
-## Explicit Non-Goals Before Local GA
+## Explicit Non-Goals Before Entangle GA
 
 - No Cloud implementation track.
 - No PostgreSQL migration as active product work.
@@ -986,7 +986,7 @@ Preparatory design notes are allowed only if they do not delay Local.
 2. Production leakage:
    Cloud abstractions must not make Local harder to complete.
 3. Persistence migration:
-   production PostgreSQL work will be large and must wait for Local GA.
+   production PostgreSQL work will be large and must wait for Entangle GA.
 4. Identity and authorization:
    bootstrap token semantics must not be mistaken for production identity.
 5. Sandbox execution:

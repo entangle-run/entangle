@@ -1255,7 +1255,7 @@ Updated `references/189-entangle-completion-plan.md` so the plan now
 requires a deep initial audit before execution and a mandatory entry, drift,
 design, implementation, closure, milestone-exit, and blocker audit loop for
 every task from A1 through D5. The update records the current audit baseline:
-L2 complete, L3 in progress, L4/L5 incomplete, `hackathon_local` still active
+L2 complete, L3 in progress, L4/L5 incomplete, the retired pre-federated profile literal still active
 as machine state, OpenCode wired only as the first safe adapter, and the local
 reference corpus materialized at the manifest commits.
 
@@ -1263,7 +1263,7 @@ reference corpus materialized at the manifest commits.
 
 Added `references/189-entangle-completion-plan.md` as the detailed
 completion plan for Entangle from the current post-L2/L3-in-progress
-state through L3 Agentic Node Runtime, L4 Local Reliability, and L5 Local GA.
+state through L3 Agentic Node Runtime, L4 Local Reliability, and L5 Entangle GA.
 The plan records mandatory professional constraints, task breakdowns,
 subtasks, acceptance criteria, and the required execution order.
 
@@ -1306,7 +1306,7 @@ presentation helpers, CLI commands under `entangle host runtimes memory`, and
 a Studio Runtime Memory panel for focused registers, task pages, supporting
 wiki pages, and selected-page preview.
 
-The release remains Local-only and does not claim Local GA, Cloud,
+The release remains Local-only and does not claim Entangle GA, Cloud,
 Enterprise, reliability tooling, autonomous coding runtime, memory-as-repo, or
 artifact history/diff. Those are deferred for roadmap review.
 
@@ -1451,7 +1451,7 @@ inspection evidence, and a release packet under
 The preview command was verified from reset Entangle state and proved the Local
 host, runner lifecycle, local relay, model-stub execution, Gitea/git-backed
 artifact publication, downstream artifact retrieval, Studio HTTP load, and CLI
-inspection path. The release remains Local-only and does not claim Local GA,
+inspection path. The release remains Local-only and does not claim Entangle GA,
 Cloud, Enterprise, or production readiness.
 
 ## [2026-04-25] implementation | Started L1.5 Local Operator Preview
@@ -1463,7 +1463,7 @@ near-one-command demo and reset paths for the L1.5 release packet.
 
 The preview path reuses the same host, runner, local relay, model-stub, and
 Gitea/git-backed artifact flow as the runtime smoke. It remains an Entangle
-Local preview path, not Local GA and not a Cloud or Enterprise implementation.
+Local preview path, not Entangle GA and not a Cloud or Enterprise implementation.
 
 ## [2026-04-25] release | Closed R1/L1 Local Operator Baseline
 
@@ -1473,18 +1473,18 @@ release packet under `releases/local/l1-local-operator-baseline.md`.
 The release note records the exact Local claim: a local graph-native operator
 runtime with host, runner, local relay, Gitea/git-backed artifact handoff,
 Studio, CLI, preflight, active smoke, disposable smoke, and disposable runtime
-smoke. It explicitly excludes Local GA, Cloud, Enterprise, production
+smoke. It explicitly excludes Entangle GA, Cloud, Enterprise, production
 persistence, production auth, production sandboxing, compliance, backup/restore,
 and upgrade guarantees.
 
 The roadmap and release ledger now treat L1 closure as complete and move the
 next active Local target to L1.5 Local Operator Preview.
 
-## [2026-04-25] audit | Added Local GA product truth baseline
+## [2026-04-25] audit | Added Entangle GA product truth baseline
 
 Added `references/180-local-ga-product-truth-audit.md` as the current
 milestone truth table and execution baseline for taking Entangle from
-R1/L1 release closure through Local GA.
+R1/L1 release closure through Entangle GA.
 
 The audit confirmed that the current repository is functionally ready to close
 R1/L1 after final release notes and tag evidence, while R1.1/L1.5, R1.2/L2,
@@ -3156,7 +3156,7 @@ stable production core as Entangle Enterprise.
 
 The Local product line now has its own incremental release train from L1 local
 operator baseline through L1.5 local operator preview, L2 federated workbench, L3
-local reliability, and L4 Local GA. The R1 ledger now points to L1.5 as
+local reliability, and L4 Entangle GA. The R1 ledger now points to L1.5 as
 the next release instead of production foundation, preventing later-product
 infrastructure from displacing completion of the first final product.
 
@@ -6102,3 +6102,13 @@ operator docs.
 Historical release packets keep their tags and verification evidence, but no
 longer preserve retired runtime-profile literals or obsolete readiness
 milestone wording as public release claims.
+
+## [2026-05-05] docs | Extended product naming guard to references and wiki
+
+Added `references/519-reference-wiki-naming-guardrail-slice.md`. The active
+product naming guard now scans `references/` and `wiki/` in addition to code,
+deployment, operator, release, and package metadata surfaces.
+
+Historical design and session notes now describe retired public labels without
+preserving their exact strings, keeping the canonical corpus aligned with
+Entangle as the product identity.

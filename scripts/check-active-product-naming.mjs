@@ -9,9 +9,11 @@ const roots = [
   "examples",
   "package.json",
   "packages",
+  "references",
   "releases",
   "scripts",
-  "services"
+  "services",
+  "wiki"
 ];
 
 const ignoredDirectoryNames = new Set([

@@ -74,13 +74,13 @@ on the final product sequence.
 Fix: the canonical current-state docs now sequence:
 
 1. finish Entangle through its incremental Local releases;
-2. start Entangle Cloud only after Local GA;
+2. start Entangle Cloud only after Entangle GA;
 3. start Entangle Enterprise only after the Cloud production core is stable
    enough to package for customer-operated environments.
 
 ### 4. Code readiness
 
-Severity: low for starting the roadmap, medium before Local GA.
+Severity: low for starting the roadmap, medium before Entangle GA.
 
 The codebase already has the package boundaries and local runtime surface
 needed to start L1 release closure:
@@ -98,7 +98,7 @@ trees. The repository currently has 53 source test files under `apps`,
 `packages`, and `services`.
 
 One code naming issue was intentionally deferred at the time of this audit: the
-machine contract still exposed `hackathon_local` as the only runtime profile.
+machine contract still exposed the retired pre-federated profile literal as the only runtime profile.
 That was not a current product-name claim, but it needed retirement before the
 productized Federated dev profile could be considered clean. The active runtime profile
 was later renamed to `local` in the Entangle completion workstream.

@@ -26,7 +26,8 @@ deployment changes.
 - Did not split the monorepo into multiple repositories.
 - Did not move `apps/`, `services/`, or `packages/`.
 - Did not create active Cloud or Enterprise deployment profiles.
-- Did not rename the machine `hackathon_local` runtime profile in this slice.
+- Did not rename the retired pre-federated runtime-profile machine value in
+  this slice.
 
 ## Rationale
 
