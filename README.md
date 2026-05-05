@@ -1392,8 +1392,9 @@ This repository currently contains:
   `entangle deployment diagnostics` writes a redacted JSON support bundle
   containing doctor output, bounded Compose status/logs, runner-image
   inspection, live host state, and bounded runtime evidence for
-  turns, engine failures, permission decisions, approval blockers, and artifact
-  counts when available, and `entangle deployment backup` / `entangle deployment restore`
+  turns, engine failures, permission decisions, approval blockers, artifact
+  counts, and Host event audit-bundle evidence when available, and
+  `entangle deployment backup` / `entangle deployment restore`
   now provide the first versioned
   `.entangle/host` backup and validated restore path without bundling local
   secrets, while `entangle deployment repair` provides a dry-run-first conservative

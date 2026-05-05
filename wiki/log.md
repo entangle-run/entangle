@@ -1,5 +1,15 @@
 # Entangle Wiki Log
 
+## [2026-05-05] cli | Added audit bundle evidence to deployment diagnostics
+
+Added `references/496-deployment-diagnostics-audit-bundle-slice.md`.
+`entangle deployment diagnostics` now embeds the Host event audit bundle when
+the connected Host supports it.
+
+Collection remains non-fatal: unsupported or failing audit-bundle export is
+recorded under `host.errors` without suppressing the rest of the support
+bundle.
+
 ## [2026-05-05] host | Added Host event audit bundle export
 
 Added `references/495-host-event-audit-bundle-slice.md`. Host now exposes

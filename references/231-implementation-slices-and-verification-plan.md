@@ -1394,7 +1394,8 @@ Current status:
   Authority-signed integrity report for compact audit provenance; Host,
   host-client, and CLI now also export a typed event audit bundle containing
   typed events, a canonical event JSONL hash, the signed integrity report, and
-  a bundle hash;
+  a bundle hash, and deployment diagnostics now embeds that audit bundle when
+  available while preserving non-fatal support-bundle collection;
 - runner-owned session memory now carries owner, originating-node,
   entrypoint-node, last-message, and active-route metadata in both the bounded
   synthesis prompt and deterministic working-context wiki page, giving

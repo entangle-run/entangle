@@ -221,6 +221,43 @@ function createDeps(): DeploymentDiagnosticsBundleDeps {
           events: []
         });
       },
+      exportHostEventAuditBundle() {
+        return Promise.resolve({
+          bundleHash:
+            "ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff",
+          bundleKind: "host_event_audit_bundle",
+          eventCount: 0,
+          events: [],
+          eventsJsonlSha256:
+            "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          generatedAt: "2026-04-26T00:00:00.000Z",
+          schemaVersion: "1",
+          signedIntegrityReport: {
+            generatedAt: "2026-04-26T00:00:00.000Z",
+            hostAuthorityPubkey: "a".repeat(64),
+            integrity: {
+              checkedEventCount: 0,
+              genesisHash: "b".repeat(64),
+              schemaVersion: "1",
+              status: "valid",
+              unverifiableEventCount: 0
+            },
+            reportHash: "c".repeat(64),
+            reportKind: "host_event_integrity",
+            schemaVersion: "1",
+            signedContent: "{\"reportKind\":\"host_event_integrity\"}",
+            signedEvent: {
+              createdAt: "2026-04-26T00:00:00.000Z",
+              createdAtUnix: 1777161600,
+              eventId: "d".repeat(64),
+              kind: 30078,
+              signature: "e".repeat(128),
+              signerPubkey: "a".repeat(64),
+              tags: [["report", "host_event_integrity"]]
+            }
+          }
+        });
+      },
       listRuntimes() {
         return Promise.resolve({
           runtimes: [
@@ -313,6 +350,13 @@ describe("deployment diagnostics bundle helpers", () => {
       producedArtifactIds: ["artifact-alpha"],
       requestedApprovalIds: ["approval-alpha"],
       turnId: "turn-alpha"
+    });
+    expect(bundle.host?.auditBundle).toMatchObject({
+      bundleKind: "host_event_audit_bundle",
+      eventCount: 0,
+      signedIntegrityReport: {
+        reportKind: "host_event_integrity"
+      }
     });
     expect(JSON.stringify(bundle)).toContain("<redacted>");
     expect(JSON.stringify(bundle)).not.toContain("plain-secret");

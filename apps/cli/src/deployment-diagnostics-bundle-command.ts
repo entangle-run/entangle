@@ -1,6 +1,7 @@
 import { spawnSync, type SpawnSyncReturns } from "node:child_process";
 import type {
   ExternalPrincipalListResponse,
+  HostEventAuditBundleResponse,
   HostEventListResponse,
   HostStatusResponse,
   RuntimeApprovalListResponse,
@@ -29,6 +30,7 @@ interface DeploymentDiagnosticsHostClient {
   listRuntimeArtifacts(nodeId: string): Promise<RuntimeArtifactListResponse>;
   listRuntimeTurns(nodeId: string): Promise<RuntimeTurnListResponse>;
   listExternalPrincipals(): Promise<ExternalPrincipalListResponse>;
+  exportHostEventAuditBundle(): Promise<HostEventAuditBundleResponse>;
   listHostEvents(limit?: number): Promise<HostEventListResponse>;
   listRuntimes(): Promise<RuntimeListResponse>;
 }
@@ -58,6 +60,7 @@ export interface DeploymentDiagnosticsBundle {
   doctor: DeploymentDoctorReport;
   generatedAt: string;
   host?: {
+    auditBundle?: HostEventAuditBundleResponse | undefined;
     errors: string[];
     events?: HostEventListResponse | undefined;
     externalPrincipals?: ExternalPrincipalListResponse | undefined;
@@ -221,6 +224,16 @@ async function collectHostDiagnostics(input: {
   } catch (error) {
     errors.push(
       `events: ${error instanceof Error ? error.message : "request failed"}`
+    );
+  }
+
+  try {
+    host.auditBundle = await input.hostClient.exportHostEventAuditBundle();
+  } catch (error) {
+    errors.push(
+      `event audit bundle: ${
+        error instanceof Error ? error.message : "request failed"
+      }`
     );
   }
 

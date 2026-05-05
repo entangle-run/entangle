@@ -93,6 +93,8 @@ JSONL payload and the standard SHA-256 empty-string digest.
 
 ## Open Questions
 
+- `496-deployment-diagnostics-audit-bundle-slice.md` now embeds the typed
+  audit bundle in deployment diagnostics when Host supports the route.
 - Should bundles later be written to git/object storage automatically after
   significant operator or runtime events?
 - Should production bundles include Operator Identity co-signatures once

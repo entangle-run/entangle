@@ -826,6 +826,7 @@ files are the active federated redesign pack.
 494. [493-signed-host-event-integrity-report-slice.md](493-signed-host-event-integrity-report-slice.md)
 495. [494-owner-aware-session-memory-slice.md](494-owner-aware-session-memory-slice.md)
 496. [495-host-event-audit-bundle-slice.md](495-host-event-audit-bundle-slice.md)
+497. [496-deployment-diagnostics-audit-bundle-slice.md](496-deployment-diagnostics-audit-bundle-slice.md)
 
 ## Role of this corpus
 
