@@ -21,6 +21,7 @@ import {
 import {
   appendSectionBullet,
   resolveDecisionsSummaryPath,
+  resolveFocusedRegisterTransitionHistoryPath,
   resolveNextActionsSummaryPath,
   readTextFileOrDefault,
   resolveOpenQuestionsSummaryPath,
@@ -63,6 +64,8 @@ const openQuestionsSummaryBullet =
 const decisionsSummaryBullet = "- [Decisions Summary](summaries/decisions.md)";
 const nextActionsSummaryBullet = "- [Next Actions Summary](summaries/next-actions.md)";
 const resolutionsSummaryBullet = "- [Resolutions Summary](summaries/resolutions.md)";
+const focusedRegisterTransitionHistoryBullet =
+  "- [Focused Register Transition History](summaries/focused-register-transition-history.md)";
 
 export type RunnerMemorySynthesisInput = {
   artifactInputs: EngineArtifactInput[];
@@ -2524,6 +2527,89 @@ function buildResolutionsSummaryContent(input: {
   ].join("\n");
 }
 
+function formatFocusedRegisterTransitionKind(
+  kind: FocusedRegisterTransitionState["kind"]
+): string {
+  return kind.replace(/_/g, " ");
+}
+
+function renderFocusedRegisterTransitionTextList(
+  entries: string[],
+  fallback: string
+): string[] {
+  return entries.length > 0
+    ? entries.map((entry) => `  - ${entry}`)
+    : [`  - ${fallback}`];
+}
+
+function renderFocusedRegisterTransitionLines(
+  transition: FocusedRegisterTransitionState
+): string[] {
+  return [
+    `### ${transition.observedAt} | ${formatFocusedRegisterTransitionKind(
+      transition.kind
+    )}`,
+    "",
+    `- Register: \`${transition.register}\``,
+    `- Turn: \`${transition.turnId}\``,
+    "- Sources:",
+    ...renderFocusedRegisterTransitionTextList(
+      transition.sourceTexts,
+      "No source text recorded."
+    ),
+    "- Targets:",
+    ...renderFocusedRegisterTransitionTextList(
+      transition.targetTexts,
+      "No target text recorded."
+    ),
+    "- Resolutions:",
+    ...renderFocusedRegisterTransitionTextList(
+      transition.resolutionTexts,
+      "No resolution text recorded."
+    ),
+    ""
+  ];
+}
+
+function buildFocusedRegisterTransitionHistoryContent(input: {
+  focusedRegisterState: FocusedRegisterState;
+  recentWorkSummaryPath: string;
+  taskPagePath: string;
+  wikiRoot: string;
+  workingContextPagePath: string;
+}): string {
+  const transitionLines =
+    input.focusedRegisterState.transitionHistory.length > 0
+      ? input.focusedRegisterState.transitionHistory
+          .slice()
+          .reverse()
+          .flatMap(renderFocusedRegisterTransitionLines)
+      : ["- No focused-register lifecycle transitions have been recorded.", ""];
+
+  return [
+    "# Focused Register Transition History",
+    "",
+    `Updated from [${input.focusedRegisterState.updatedTurnId}](${toPosixRelativePath(
+      input.wikiRoot,
+      input.taskPagePath
+    )}).`,
+    "",
+    `Last updated: ${input.focusedRegisterState.updatedAt}`,
+    "",
+    `See [Working Context Summary](${toPosixRelativePath(
+      input.wikiRoot,
+      input.workingContextPagePath
+    )}) and [Recent Work Summary](${toPosixRelativePath(
+      input.wikiRoot,
+      input.recentWorkSummaryPath
+    )}).`,
+    "",
+    "## Recent Transitions",
+    "",
+    ...transitionLines
+  ].join("\n");
+}
+
 function buildMemorySynthesisLogEntry(input: {
   errorMessage?: string;
   updatedSummaryRelativePaths?: string[];
@@ -2560,6 +2646,7 @@ function createWorkingContextSummaryToolExecutor(input: {
   statePaths: ReturnType<typeof buildRunnerStatePaths>;
   writePathCapture: {
     decisionsPagePath: string | undefined;
+    focusedRegisterTransitionHistoryPagePath: string | undefined;
     nextActionsPagePath: string | undefined;
     openQuestionsPagePath: string | undefined;
     resolutionsPagePath: string | undefined;
@@ -2715,6 +2802,8 @@ function createWorkingContextSummaryToolExecutor(input: {
       const openQuestionsPagePath = resolveOpenQuestionsSummaryPath(wikiRoot);
       const nextActionsPagePath = resolveNextActionsSummaryPath(wikiRoot);
       const resolutionsPagePath = resolveResolutionsSummaryPath(wikiRoot);
+      const focusedRegisterTransitionHistoryPagePath =
+        resolveFocusedRegisterTransitionHistoryPath(wikiRoot);
       const normalizedInput = {
         ...parsedInput.value,
         artifactInsights: normalizeListEntries(parsedInput.value.artifactInsights),
@@ -2821,6 +2910,14 @@ function createWorkingContextSummaryToolExecutor(input: {
         wikiRoot,
         workingContextPagePath
       });
+      const focusedRegisterTransitionHistoryContent =
+        buildFocusedRegisterTransitionHistoryContent({
+          focusedRegisterState: nextFocusedRegisterState,
+          recentWorkSummaryPath: input.synthesis.recentWorkSummaryPath,
+          taskPagePath: input.synthesis.taskPagePath,
+          wikiRoot,
+          workingContextPagePath
+        });
 
       await Promise.all([
         writeTextFile(workingContextPagePath, `${content.trimEnd()}\n`),
@@ -2829,9 +2926,15 @@ function createWorkingContextSummaryToolExecutor(input: {
         writeTextFile(openQuestionsPagePath, `${openQuestionsContent.trimEnd()}\n`),
         writeTextFile(nextActionsPagePath, `${nextActionsContent.trimEnd()}\n`),
         writeTextFile(resolutionsPagePath, `${resolutionsContent.trimEnd()}\n`),
+        writeTextFile(
+          focusedRegisterTransitionHistoryPagePath,
+          `${focusedRegisterTransitionHistoryContent.trimEnd()}\n`
+        ),
         writeFocusedRegisterState(input.statePaths, nextFocusedRegisterState)
       ]);
       input.writePathCapture.decisionsPagePath = decisionsPagePath;
+      input.writePathCapture.focusedRegisterTransitionHistoryPagePath =
+        focusedRegisterTransitionHistoryPagePath;
       input.writePathCapture.nextActionsPagePath = nextActionsPagePath;
       input.writePathCapture.openQuestionsPagePath = openQuestionsPagePath;
       input.writePathCapture.resolutionsPagePath = resolutionsPagePath;
@@ -2886,6 +2989,11 @@ async function ensureWorkingContextIndexed(
   nextIndex = appendSectionBullet(nextIndex, "Summaries", openQuestionsSummaryBullet);
   nextIndex = appendSectionBullet(nextIndex, "Summaries", nextActionsSummaryBullet);
   nextIndex = appendSectionBullet(nextIndex, "Summaries", resolutionsSummaryBullet);
+  nextIndex = appendSectionBullet(
+    nextIndex,
+    "Summaries",
+    focusedRegisterTransitionHistoryBullet
+  );
 
   await writeTextFile(indexPath, nextIndex);
 }
@@ -2915,6 +3023,7 @@ export function createModelGuidedMemorySynthesizer(input: {
       ]);
       const writePathCapture: {
         decisionsPagePath: string | undefined;
+        focusedRegisterTransitionHistoryPagePath: string | undefined;
         nextActionsPagePath: string | undefined;
         openQuestionsPagePath: string | undefined;
         resolutionsPagePath: string | undefined;
@@ -2922,6 +3031,7 @@ export function createModelGuidedMemorySynthesizer(input: {
         workingContextPagePath: string | undefined;
       } = {
         decisionsPagePath: undefined,
+        focusedRegisterTransitionHistoryPagePath: undefined,
         nextActionsPagePath: undefined,
         openQuestionsPagePath: undefined,
         resolutionsPagePath: undefined,
@@ -2987,6 +3097,11 @@ export function createModelGuidedMemorySynthesizer(input: {
             "Model-guided memory synthesis completed without updating the resolutions summary."
           );
         }
+        if (!writePathCapture.focusedRegisterTransitionHistoryPagePath) {
+          throw new Error(
+            "Model-guided memory synthesis completed without updating the focused-register transition history summary."
+          );
+        }
 
         const updatedSummaryPagePaths = [
           writePathCapture.workingContextPagePath,
@@ -2994,7 +3109,8 @@ export function createModelGuidedMemorySynthesizer(input: {
           writePathCapture.stableFactsPagePath,
           writePathCapture.openQuestionsPagePath,
           writePathCapture.nextActionsPagePath,
-          writePathCapture.resolutionsPagePath
+          writePathCapture.resolutionsPagePath,
+          writePathCapture.focusedRegisterTransitionHistoryPagePath
         ];
 
         await Promise.all([

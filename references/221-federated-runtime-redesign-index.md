@@ -298,6 +298,7 @@ same-machine slice records.
 - [495-host-event-audit-bundle-slice.md](495-host-event-audit-bundle-slice.md)
 - [496-deployment-diagnostics-audit-bundle-slice.md](496-deployment-diagnostics-audit-bundle-slice.md)
 - [497-deployment-diagnostics-audit-bundle-skip-slice.md](497-deployment-diagnostics-audit-bundle-skip-slice.md)
+- [498-focused-register-transition-history-wiki-slice.md](498-focused-register-transition-history-wiki-slice.md)
 
 ## Audited Scope
 
@@ -1066,7 +1067,12 @@ smaller live support bundle is required. Runner-owned session memory now also
 carries owner, originating-node, entrypoint-node, last-message, and active-route
 metadata in both the model-guided memory prompt and deterministic
 working-context wiki page, giving delegated sessions a stronger owner-aware
-continuation basis.
+continuation basis. Focused-register lifecycle transition history now also has
+a runner-owned indexed wiki page at
+`wiki/summaries/focused-register-transition-history.md`, so closure,
+completion, replacement, consolidation, and exact-overlap retirements flow into
+future memory refs and projected wiki evidence instead of remaining only in
+runtime-local carry state.
 The highest-value remaining implementation areas are richer
 model-guided memory maintenance, deeper delegated-session semantics beyond the
 current controlled handoff path and first owner-aware memory projection,

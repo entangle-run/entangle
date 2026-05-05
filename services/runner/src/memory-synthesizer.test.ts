@@ -605,6 +605,17 @@ describe("model-guided memory synthesis", () => {
             summaryPagePath.endsWith(path.join("summaries", "resolutions.md"))
           )
         : undefined;
+    const transitionHistoryPagePath =
+      synthesisResult.ok
+        ? synthesisResult.updatedSummaryPagePaths.find((summaryPagePath) =>
+            summaryPagePath.endsWith(
+              path.join(
+                "summaries",
+                "focused-register-transition-history.md"
+              )
+            )
+          )
+        : undefined;
 
     expect(capturedRequest?.toolChoice).toEqual({
       type: "tool",
@@ -733,6 +744,10 @@ describe("model-guided memory synthesis", () => {
       throw new Error("Expected a resolutions summary path.");
     }
 
+    if (!transitionHistoryPagePath) {
+      throw new Error("Expected a focused-register transition history path.");
+    }
+
     const [
       workingContextPage,
       decisionsPage,
@@ -740,6 +755,7 @@ describe("model-guided memory synthesis", () => {
       openQuestionsPage,
       nextActionsPage,
       resolutionsPage,
+      transitionHistoryPage,
       focusedRegisterState,
       indexPage,
       logPage,
@@ -752,6 +768,7 @@ describe("model-guided memory synthesis", () => {
         readFile(openQuestionsPagePath, "utf8"),
         readFile(nextActionsPagePath, "utf8"),
         readFile(resolutionsPagePath, "utf8"),
+        readFile(transitionHistoryPagePath, "utf8"),
         readFocusedRegisterState(statePaths),
         readFile(memoryUpdate.indexPath, "utf8"),
         readFile(memoryUpdate.logPath, "utf8"),
@@ -868,6 +885,17 @@ describe("model-guided memory synthesis", () => {
     expect(resolutionsPage).toContain(
       "The previous draft action item to gather raw relay logs is complete."
     );
+    expect(transitionHistoryPage).toContain(
+      "# Focused Register Transition History"
+    );
+    expect(transitionHistoryPage).toContain("## Recent Transitions");
+    expect(transitionHistoryPage).toContain("closed");
+    expect(transitionHistoryPage).toContain("completed");
+    expect(transitionHistoryPage).toContain(previousOpenQuestion);
+    expect(transitionHistoryPage).toContain(previousNextAction);
+    expect(transitionHistoryPage).toContain(
+      "The current checkpoint review no longer needs extra operator-detail validation."
+    );
     expect(focusedRegisterState).toBeDefined();
     expect(
       focusedRegisterState?.registers.openQuestions.find(
@@ -936,6 +964,9 @@ describe("model-guided memory synthesis", () => {
     );
     expect(indexPage).toContain("[Next Actions Summary](summaries/next-actions.md)");
     expect(indexPage).toContain("[Resolutions Summary](summaries/resolutions.md)");
+    expect(indexPage).toContain(
+      "[Focused Register Transition History](summaries/focused-register-transition-history.md)"
+    );
     expect(logPage).toContain("memory synthesis | turn-memory-005");
     expect(followupTurnRequest.memoryRefs).toContain(workingContextPagePath);
     expect(followupTurnRequest.memoryRefs).toContain(decisionsPagePath);
@@ -943,6 +974,7 @@ describe("model-guided memory synthesis", () => {
     expect(followupTurnRequest.memoryRefs).toContain(openQuestionsPagePath);
     expect(followupTurnRequest.memoryRefs).toContain(nextActionsPagePath);
     expect(followupTurnRequest.memoryRefs).toContain(resolutionsPagePath);
+    expect(followupTurnRequest.memoryRefs).toContain(transitionHistoryPagePath);
   });
 
   it("increments carry counts when focused register entries remain active", async () => {

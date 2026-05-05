@@ -832,7 +832,10 @@ The repository now also contains the first real implementation baseline:
 - a focused-register transition-history refinement where the runner now
   persists bounded runtime-local lifecycle audit entries for closure,
   completion, replacement, consolidation, and exact resolution-overlap
-  retirements while keeping the wiki pages clean and human-readable;
+  retirements while keeping the core wiki pages clean and human-readable, and
+  now also writes an indexed
+  `summaries/focused-register-transition-history.md` page so future turns and
+  projected wiki evidence can inspect that lifecycle audit;
 - a first bounded engine-turn observability slice where the internal tool loop
   now records structured tool requests plus bounded tool-execution outcomes,
   and normalized engine outcome now persists through runner-turn state into

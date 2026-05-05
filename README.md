@@ -1193,7 +1193,10 @@ This repository currently contains:
 - a focused-register transition-history refinement where the runner now
   persists a bounded runtime-local audit trail of closed, completed, replaced,
   consolidated, and exact resolution-overlap lifecycle transitions without
-  adding noisy bookkeeping metadata to the human-facing wiki pages;
+  adding noisy bookkeeping metadata to the core human-facing wiki pages, and
+  now also writes an indexed
+  `summaries/focused-register-transition-history.md` page so future turns and
+  projected wiki evidence can inspect that lifecycle audit;
 - a first bounded engine-turn observability slice where the internal tool loop
   now records structured tool requests plus bounded tool-execution outcomes,
   and normalized engine outcome now persists through runner-turn state into

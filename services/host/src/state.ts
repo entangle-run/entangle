@@ -481,6 +481,7 @@ const focusedMemoryRegisterPaths = new Set([
   "wiki/summaries/open-questions.md",
   "wiki/summaries/next-actions.md",
   "wiki/summaries/resolutions.md",
+  "wiki/summaries/focused-register-transition-history.md",
   "wiki/summaries/recent-work.md"
 ]);
 const packageStoreMetadataFileName = ".package-store.json";

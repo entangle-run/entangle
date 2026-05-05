@@ -29,6 +29,8 @@ export const openQuestionsSummaryRelativePath = "summaries/open-questions.md";
 export const decisionsSummaryRelativePath = "summaries/decisions.md";
 export const nextActionsSummaryRelativePath = "summaries/next-actions.md";
 export const resolutionsSummaryRelativePath = "summaries/resolutions.md";
+export const focusedRegisterTransitionHistoryRelativePath =
+  "summaries/focused-register-transition-history.md";
 const maxRecentSummaryEntries = 5;
 
 function buildTaskPageRelativePath(input: {
@@ -173,6 +175,12 @@ export function resolveNextActionsSummaryPath(wikiRoot: string): string {
 
 export function resolveResolutionsSummaryPath(wikiRoot: string): string {
   return path.join(wikiRoot, resolutionsSummaryRelativePath);
+}
+
+export function resolveFocusedRegisterTransitionHistoryPath(
+  wikiRoot: string
+): string {
+  return path.join(wikiRoot, focusedRegisterTransitionHistoryRelativePath);
 }
 
 function buildTaskPageTitle(input: {

@@ -828,6 +828,7 @@ files are the active federated redesign pack.
 496. [495-host-event-audit-bundle-slice.md](495-host-event-audit-bundle-slice.md)
 497. [496-deployment-diagnostics-audit-bundle-slice.md](496-deployment-diagnostics-audit-bundle-slice.md)
 498. [497-deployment-diagnostics-audit-bundle-skip-slice.md](497-deployment-diagnostics-audit-bundle-skip-slice.md)
+499. [498-focused-register-transition-history-wiki-slice.md](498-focused-register-transition-history-wiki-slice.md)
 
 ## Role of this corpus
 

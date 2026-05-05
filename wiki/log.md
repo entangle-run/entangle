@@ -1,5 +1,22 @@
 # Entangle Wiki Log
 
+## [2026-05-05] runner | Added focused-register transition history wiki page
+
+Added `references/498-focused-register-transition-history-wiki-slice.md`.
+Successful model-guided memory synthesis now writes and indexes
+`wiki/summaries/focused-register-transition-history.md`, includes it in future
+memory refs, and lets Host classify projected copies with the other focused
+register pages.
+
+Targeted checks passed:
+
+- `pnpm --filter @entangle/runner test -- src/memory-synthesizer.test.ts`
+- `pnpm --filter @entangle/runner typecheck`
+- `pnpm --filter @entangle/runner lint`
+- `pnpm --filter @entangle/host typecheck`
+- `pnpm --filter @entangle/host lint`
+- `pnpm --filter @entangle/host test -- src/index.test.ts`
+
 ## [2026-05-05] cli | Added diagnostics audit-bundle skip flag
 
 Added `references/497-deployment-diagnostics-audit-bundle-skip-slice.md`.

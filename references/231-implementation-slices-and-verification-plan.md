@@ -1402,6 +1402,10 @@ Current status:
   entrypoint-node, last-message, and active-route metadata in both the bounded
   synthesis prompt and deterministic working-context wiki page, giving
   delegated sessions owner-aware continuation context;
+- focused-register lifecycle transition history now writes an indexed wiki
+  summary page and future memory ref, so closures, completions, replacements,
+  consolidations, and exact-overlap retirements are visible through the node
+  memory substrate without adding a Host filesystem read path;
 - the remaining distributed proof hardening is infrastructure-backed
   orchestration that can provision multiple machines or VM/container boundaries
   around the verifier.
