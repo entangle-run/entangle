@@ -95,7 +95,8 @@ Required before project completion:
 - durable operator principal storage/import/export;
 - cryptographic operator request signing or session issuance;
 - policy-backed permission binding beyond process configuration;
-- tamper-evident audit retention/export.
+- audit-chain verification plus signed retention/export beyond the
+  `490-host-event-hash-chain-slice.md` local tamper-evidence baseline.
 
 ## Migration And Compatibility Notes
 

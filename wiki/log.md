@@ -5786,3 +5786,13 @@ safe `create_missing_host_state_directories` action.
 `--apply-safe` recreates only the known Host-owned directories and records the
 repair trace. Unreadable, unsupported future, or unsupported legacy state
 layouts still block repair before any directory mutation is attempted.
+
+## [2026-05-05] host | Added Host event hash-chain fields
+
+Added `references/490-host-event-hash-chain-slice.md`. Newly appended Host
+events now carry `auditPreviousEventHash` and `auditRecordHash`, creating a
+local tamper-evidence chain across persisted Host event JSONL records.
+
+Host event appends are serialized so concurrent operator requests do not fork
+the chain, and Host event reads wait for pending appends before loading the
+trace. CLI runtime-trace summaries preserve the audit hashes when present.

@@ -3485,6 +3485,16 @@ describe("buildHostServer", () => {
 
       expect(unauthorizedResponse.statusCode).toBe(401);
 
+      const secondUnauthorizedResponse = await server.inject({
+        method: "PUT",
+        payload: buildGitPrincipalRecord({
+          principalId: "worker-it-git-audit-denied"
+        }),
+        url: "/v1/external-principals/worker-it-git-audit-denied"
+      });
+
+      expect(secondUnauthorizedResponse.statusCode).toBe(401);
+
       const authorizedResponse = await server.inject({
         headers: {
           authorization: "Bearer host-secret"
@@ -3501,9 +3511,30 @@ describe("buildHostServer", () => {
           authorization: "Bearer host-secret"
         },
         method: "GET",
-        url: "/v1/events?limit=20"
+        url: "/v1/events?limit=20&category=security"
       });
       const events = hostEventListResponseSchema.parse(eventsResponse.json()).events;
+      const firstDeniedEvent = events.find(
+        (event) =>
+          event.type === "host.operator_request.completed" &&
+          event.path === "/v1/external-principals/worker-it-git-audit" &&
+          event.statusCode === 401
+      );
+      const secondDeniedEvent = events.find(
+        (event) =>
+          event.type === "host.operator_request.completed" &&
+          event.path === "/v1/external-principals/worker-it-git-audit-denied" &&
+          event.statusCode === 401
+      );
+
+      expect(firstDeniedEvent?.auditPreviousEventHash).toMatch(
+        /^[a-f0-9]{64}$/
+      );
+      expect(firstDeniedEvent?.auditRecordHash).toMatch(/^[a-f0-9]{64}$/);
+      expect(secondDeniedEvent?.auditPreviousEventHash).toBe(
+        firstDeniedEvent?.auditRecordHash
+      );
+      expect(secondDeniedEvent?.auditRecordHash).toMatch(/^[a-f0-9]{64}$/);
 
       expect(events).toEqual(
         expect.arrayContaining([

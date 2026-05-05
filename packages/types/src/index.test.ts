@@ -3201,6 +3201,10 @@ describe("host event contracts", () => {
 
   it("accepts a typed bootstrap operator request audit event", () => {
     const result = hostEventRecordSchema.parse({
+      auditPreviousEventHash:
+        "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+      auditRecordHash:
+        "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
       authMode: "bootstrap_operator_token",
       category: "security",
       eventId: "host-operator-request-001",
@@ -3223,6 +3227,12 @@ describe("host event contracts", () => {
     expect(result.operatorId).toBe("ops-lead");
     expect(result.operatorPermissions).toEqual(["host.admin"]);
     expect(result.operatorRole).toBe("admin");
+    expect(result.auditPreviousEventHash).toBe(
+      "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+    );
+    expect(result.auditRecordHash).toBe(
+      "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"
+    );
   });
 
   it("accepts a typed runtime observed-state event", () => {

@@ -56,6 +56,8 @@ import {
 } from "../federation/authority.js";
 
 const hostEventBaseSchema = z.object({
+  auditPreviousEventHash: sha256DigestSchema.optional(),
+  auditRecordHash: sha256DigestSchema.optional(),
   eventId: identifierSchema,
   message: nonEmptyStringSchema,
   schemaVersion: z.literal("1"),

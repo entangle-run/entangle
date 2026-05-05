@@ -1470,9 +1470,9 @@ The highest-value remaining gaps are:
 - production identity and authorization beyond the bootstrap operator-token
   boundary, multi-token attribution, visible status summary, route-level
   bootstrap permissions, and coarse read-only `viewer` enforcement, including
-  durable principals, policy-backed permission sources, and stronger
-  retention/export/tamper-evidence than the current server-filterable bootstrap
-  request trace;
+  durable principals, policy-backed permission sources, audit-chain
+  verification, and stronger signed retention/export beyond the current
+  hash-chained Host event trace;
 - stronger end-to-end deployment and integration hardening beyond the current
   disposable same-machine profile, especially infrastructure-backed
   multi-machine proof execution and non-disposable upgrade/repair behavior.

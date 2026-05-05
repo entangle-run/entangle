@@ -290,6 +290,7 @@ same-machine slice records.
 - [487-session-cancellation-federated-only-slice.md](487-session-cancellation-federated-only-slice.md)
 - [488-studio-user-client-boundary-audit.md](488-studio-user-client-boundary-audit.md)
 - [489-deployment-repair-missing-host-state-directories-slice.md](489-deployment-repair-missing-host-state-directories-slice.md)
+- [490-host-event-hash-chain-slice.md](490-host-event-hash-chain-slice.md)
 
 ## Audited Scope
 
@@ -1038,11 +1039,15 @@ running User Client or CLI User Node surfaces. Deployment repair can now safely
 restore missing standard `.entangle/host` state directories for compatible
 existing deployments without mutating authoritative state files, while
 unreadable or unsupported state layouts remain blocked for manual inspection.
+New Host events now carry optional audit hash-chain fields, and Host serializes
+event appends so concurrent operator requests do not fork the local audit
+sequence. This is tamper evidence for the Host trace, not final production
+retention or durable operator identity.
 The highest-value remaining implementation areas are richer
 model-guided memory maintenance, deeper delegated-session semantics beyond the
 current controlled handoff path, collaborative wiki merge UI and multi-page
 patch-set semantics on top of the participant-scoped page upsert command,
 repository lifecycle and replicated/fallback artifact behavior,
 infrastructure-backed multi-machine proof execution, non-disposable upgrade
-behavior, and deeper production identity/authorization beyond the scoped
-bootstrap-token boundary.
+behavior, audit-chain verification/export, and deeper production
+identity/authorization beyond the scoped bootstrap-token boundary.

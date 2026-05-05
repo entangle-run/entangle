@@ -5,6 +5,10 @@ import { projectRuntimeTraceSummary } from "./runtime-trace-output.js";
 describe("projectRuntimeTraceSummary", () => {
   it("projects bootstrap operator request audit events into structured summaries", () => {
     const event: HostEventRecord = {
+      auditPreviousEventHash:
+        "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+      auditRecordHash:
+        "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
       authMode: "bootstrap_operator_token",
       category: "security",
       eventId: "evt-operator-request",
@@ -21,6 +25,10 @@ describe("projectRuntimeTraceSummary", () => {
     };
 
     expect(projectRuntimeTraceSummary(event)).toEqual({
+      auditPreviousEventHash:
+        "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+      auditRecordHash:
+        "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
       detailLines: [
         "Operator: audit-viewer (viewer)",
         "Method: PUT",

@@ -1385,6 +1385,9 @@ Current status:
 - `entangle deployment repair` now recreates missing standard `.entangle/host`
   skeleton directories for compatible existing deployments while leaving
   unreadable or unsupported layouts blocked for manual inspection;
+- Host event records now include optional audit hash-chain fields, Host event
+  appends are serialized to preserve chain order, and CLI runtime-trace
+  summaries expose the hashes when present;
 - the remaining distributed proof hardening is infrastructure-backed
   orchestration that can provision multiple machines or VM/container boundaries
   around the verifier.

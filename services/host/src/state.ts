@@ -4854,21 +4854,97 @@ function emitHostEvent(event: HostEventRecord): void {
   }
 }
 
-async function appendHostEvent(
+let hostEventAppendQueue: Promise<unknown> = Promise.resolve();
+
+const hostEventAuditGenesisHash = createHash("sha256")
+  .update("entangle.host.events.v1.genesis", "utf8")
+  .digest("hex");
+
+function canonicalizeForHash(input: unknown): unknown {
+  if (Array.isArray(input)) {
+    return input.map(canonicalizeForHash);
+  }
+
+  if (!input || typeof input !== "object") {
+    return input;
+  }
+
+  return Object.fromEntries(
+    Object.entries(input as Record<string, unknown>)
+      .filter(([, value]) => value !== undefined)
+      .sort(([left], [right]) => left.localeCompare(right))
+      .map(([key, value]) => [key, canonicalizeForHash(value)])
+  );
+}
+
+function computeHostEventAuditHash(event: HostEventRecord): string {
+  const hashableEvent = { ...(event as Record<string, unknown>) };
+  delete hashableEvent.auditRecordHash;
+  return createHash("sha256")
+    .update(JSON.stringify(canonicalizeForHash(hashableEvent)), "utf8")
+    .digest("hex");
+}
+
+async function readLatestHostEventAuditHash(): Promise<string> {
+  if (!(await pathExists(controlPlaneTraceRoot))) {
+    return hostEventAuditGenesisHash;
+  }
+
+  const fileNames = (await readdir(controlPlaneTraceRoot))
+    .filter((fileName) => fileName.endsWith(".jsonl"))
+    .sort()
+    .reverse();
+
+  for (const fileName of fileNames) {
+    const fileContent = await readFile(
+      path.join(controlPlaneTraceRoot, fileName),
+      "utf8"
+    );
+    const lines = fileContent
+      .split("\n")
+      .map((line) => line.trim())
+      .filter((line) => line.length > 0)
+      .reverse();
+
+    for (const line of lines) {
+      const event = parsePersistedHostEvent(JSON.parse(line) as unknown);
+      return event.auditRecordHash ?? computeHostEventAuditHash(event);
+    }
+  }
+
+  return hostEventAuditGenesisHash;
+}
+
+async function appendHostEventNow(
   event: Record<string, unknown>
 ): Promise<HostEventRecord> {
   await ensureDirectory(controlPlaneTraceRoot);
   const logPath = path.join(controlPlaneTraceRoot, `${dateStamp()}.jsonl`);
-  const record = hostEventRecordSchema.parse({
+  const baseRecord = hostEventRecordSchema.parse({
     ...event,
+    auditPreviousEventHash: await readLatestHostEventAuditHash(),
     eventId: sanitizeIdentifier(`evt-${randomUUID()}`),
     schemaVersion: "1",
     timestamp: nowIsoString()
+  });
+  const record = hostEventRecordSchema.parse({
+    ...baseRecord,
+    auditRecordHash: computeHostEventAuditHash(baseRecord)
   });
   const encoded = `${JSON.stringify(record)}\n`;
   await writeFile(logPath, encoded, { encoding: "utf8", flag: "a" });
   emitHostEvent(record);
   return record;
+}
+
+async function appendHostEvent(
+  event: Record<string, unknown>
+): Promise<HostEventRecord> {
+  const appendOperation = hostEventAppendQueue.then(() =>
+    appendHostEventNow(event)
+  );
+  hostEventAppendQueue = appendOperation.catch(() => undefined);
+  return appendOperation;
 }
 
 export async function recordHostOperatorRequestCompleted(
@@ -5051,6 +5127,7 @@ function hostEventMatchesListQuery(
 export async function listHostEvents(
   queryOrLimit: HostEventListQuery | number = 100
 ): Promise<HostEventListResponse> {
+  await hostEventAppendQueue;
   await initializeHostState();
   const query = normalizeHostEventListQuery(queryOrLimit);
   const limit = query.limit ?? 100;
