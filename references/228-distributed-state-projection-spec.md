@@ -52,9 +52,11 @@ OpenCode-adapter task turn from a real joined runner process. Joined runners
 now also publish session/conversation observations for later lifecycle
 transitions including
 handoffs, coordination result/close, approval request/response, completion,
-cancellation, and failure paths. Host session cancellation now prefers a signed
-`runtime.session.cancel` control command to accepted runner assignments before
-falling back to local compatibility. Explicit source-history publication and
+cancellation, and failure paths. Host session cancellation now uses a signed
+`runtime.session.cancel` control command to accepted runner assignments and no
+longer falls back to writing local runtime cancellation records when no
+federated assignment/control path is available. Explicit source-history
+publication and
 failed-publication retry now use a signed `runtime.source_history.publish`
 control command to accepted runner assignments; Host then relies on assignment
 receipts plus `artifact.ref` and `source_history.ref` observations for outcome

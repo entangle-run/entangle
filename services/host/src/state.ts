@@ -215,7 +215,6 @@ import {
   type WikiRefProjectionRecord,
   secretRefSchema,
   sessionCancellationRequestRecordSchema,
-  sessionCancellationResponseSchema,
   sessionCancellationMutationRequestSchema,
   sessionInspectionResponseSchema,
   sessionListResponseSchema,
@@ -322,7 +321,6 @@ import {
   type HostSessionSummary,
   type SessionInspectionResponse,
   type SessionCancellationMutationRequest,
-  type SessionCancellationResponse,
   type SessionCancellationRequestRecord,
   type SessionListResponse,
   type SessionRecord,
@@ -11339,55 +11337,6 @@ async function listRuntimeSessionRecords(
   );
 }
 
-function runtimeSessionCancellationRequestsRoot(runtimeRoot: string): string {
-  return path.join(runtimeRoot, "session-cancellations");
-}
-
-function runtimeSessionCancellationRequestRecordPath(
-  runtimeRoot: string,
-  cancellationId: string
-): string {
-  return path.join(
-    runtimeSessionCancellationRequestsRoot(runtimeRoot),
-    `${cancellationId}.json`
-  );
-}
-
-async function writeRuntimeSessionCancellationRequestRecord(
-  runtimeRoot: string,
-  record: SessionCancellationRequestRecord
-): Promise<void> {
-  await writeJsonFile(
-    runtimeSessionCancellationRequestRecordPath(
-      runtimeRoot,
-      record.cancellationId
-    ),
-    sessionCancellationRequestRecordSchema.parse(record)
-  );
-}
-
-async function listRuntimeSessionCancellationRequestRecords(
-  runtimeRoot: string
-): Promise<SessionCancellationRequestRecord[]> {
-  const cancellationsRoot = runtimeSessionCancellationRequestsRoot(runtimeRoot);
-
-  if (!(await pathExists(cancellationsRoot))) {
-    return [];
-  }
-
-  const fileNames = (await readdir(cancellationsRoot))
-    .filter((fileName) => fileName.endsWith(".json"))
-    .sort();
-
-  return Promise.all(
-    fileNames.map(async (fileName) =>
-      sessionCancellationRequestRecordSchema.parse(
-        await readJsonFile(path.join(cancellationsRoot, fileName))
-      )
-    )
-  );
-}
-
 async function listRuntimeConversationRecords(
   runtimeRoot: string
 ): Promise<ConversationRecord[]> {
@@ -13135,75 +13084,6 @@ export async function recordFederatedSessionCancellationRequest(
   const parsed = sessionCancellationRequestRecordSchema.parse(record);
   await appendSessionCancellationRequestedEvent(parsed);
   return parsed;
-}
-
-async function requestRuntimeSessionCancellation(input: {
-  nodeId: string;
-  request: SessionCancellationMutationRequest;
-  sessionId: string;
-}): Promise<SessionCancellationRequestRecord | null> {
-  const context = await getRuntimeContext(input.nodeId);
-
-  if (!context) {
-    return null;
-  }
-
-  const existingRequests = await listRuntimeSessionCancellationRequestRecords(
-    context.workspace.runtimeRoot
-  );
-  const existingOpenRequest = existingRequests.find(
-    (request) =>
-      request.sessionId === input.sessionId &&
-      request.nodeId === input.nodeId &&
-      request.status === "requested"
-  );
-
-  if (existingOpenRequest) {
-    return existingOpenRequest;
-  }
-
-  const request = sessionCancellationMutationRequestSchema.parse(input.request);
-  const record = sessionCancellationRequestRecordSchema.parse({
-    cancellationId: buildSessionCancellationId({
-      request,
-      sessionId: input.sessionId
-    }),
-    graphId: context.binding.graphId,
-    nodeId: input.nodeId,
-    ...(request.reason ? { reason: request.reason } : {}),
-    requestedAt: nowIsoString(),
-    ...(request.requestedBy ? { requestedBy: request.requestedBy } : {}),
-    sessionId: input.sessionId,
-    status: "requested"
-  });
-
-  await writeRuntimeSessionCancellationRequestRecord(
-    context.workspace.runtimeRoot,
-    record
-  );
-  await appendSessionCancellationRequestedEvent(record);
-
-  return record;
-}
-
-export async function requestRuntimeBoundSessionCancellation(input: {
-  nodeId: string;
-  request: SessionCancellationMutationRequest;
-  sessionId: string;
-}): Promise<SessionCancellationResponse | null> {
-  const cancellation = await requestRuntimeSessionCancellation(input);
-
-  if (!cancellation) {
-    return null;
-  }
-
-  const inspection = await getSessionInspection(input.sessionId);
-
-  return sessionCancellationResponseSchema.parse({
-    cancellations: [cancellation],
-    ...(inspection ? { inspection } : {}),
-    sessionId: input.sessionId
-  });
 }
 
 async function applyValidatedGraphDocument(graph: GraphSpec): Promise<{

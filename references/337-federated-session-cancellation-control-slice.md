@@ -20,8 +20,9 @@ delivers it to the running node runtime; RunnerService persists the request in
 runner-owned state, aborts active turns when needed, and emits the existing
 session/turn observations.
 
-The legacy Host-write path remains only as fallback when no accepted federated
-assignment/control transport is available.
+This slice originally left the Host-write path as temporary fallback. That
+fallback is now removed by
+[487-session-cancellation-federated-only-slice.md](487-session-cancellation-federated-only-slice.md).
 
 ## Impacted Modules/Files
 
@@ -48,8 +49,10 @@ assignment/control transport is available.
 - Add a signed `runtime.session.cancel` control payload carrying the concrete
   cancellation request record.
 - Add Host control-plane publishing for session cancellation commands.
-- Make Host cancellation routes prefer accepted federated assignments and
-  publish over the control fabric before falling back to local compatibility.
+- Make Host cancellation routes use accepted federated assignments and publish
+  over the control fabric; the temporary local compatibility fallback from this
+  historical slice was later removed by
+  [487-session-cancellation-federated-only-slice.md](487-session-cancellation-federated-only-slice.md).
 - Let the generic runner forward cancellation commands into the running
   assignment runtime.
 - Let `RunnerService` accept a cancellation request directly, persist it under

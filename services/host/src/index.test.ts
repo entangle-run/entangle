@@ -7619,7 +7619,7 @@ describe("buildHostServer", () => {
     }
   });
 
-  it("records external session cancellation requests for runtime runners", async () => {
+  it("rejects session cancellation without an accepted federated assignment", async () => {
     const server = await createTestServer({ includeModelEndpoint: true });
     const packageDirectory = await createAdmittedPackageDirectory(
       createdDirectories[0]!
@@ -7673,39 +7673,25 @@ describe("buildHostServer", () => {
         url: "/v1/sessions/session-cancel-alpha/cancel"
       });
 
-      expect(cancelResponse.statusCode).toBe(200);
-      expect(
-        sessionCancellationResponseSchema.parse(cancelResponse.json())
-      ).toMatchObject({
-        cancellations: [
-          {
-            cancellationId: "cancel-alpha",
-            graphId: "team-alpha",
-            nodeId: "worker-it",
-            reason: "Operator stopped the run.",
-            requestedBy: "operator-main",
-            sessionId: "session-cancel-alpha",
-            status: "requested"
-          }
-        ],
-        sessionId: "session-cancel-alpha"
+      expect(cancelResponse.statusCode).toBe(409);
+      expect(hostErrorResponseSchema.parse(cancelResponse.json())).toMatchObject({
+        code: "conflict",
+        details: {
+          nodeId: "worker-it",
+          sessionId: "session-cancel-alpha"
+        },
+        message:
+          "Session cancellation for runtime 'worker-it' requires an accepted federated runner assignment."
       });
-      const cancellationRecord = JSON.parse(
-        await readFile(
+      await expect(
+        stat(
           path.join(
             runtimeContext.workspace.runtimeRoot,
             "session-cancellations",
             "cancel-alpha.json"
-          ),
-          "utf8"
+          )
         )
-      ) as unknown;
-      expect(cancellationRecord).toMatchObject({
-        cancellationId: "cancel-alpha",
-        nodeId: "worker-it",
-        sessionId: "session-cancel-alpha",
-        status: "requested"
-      });
+      ).rejects.toThrow();
 
       const runtimeBoundCancelResponse = await server.inject({
         method: "POST",
@@ -7716,21 +7702,17 @@ describe("buildHostServer", () => {
         url: "/v1/runtimes/worker-it/sessions/session-before-intake/cancel"
       });
 
-      expect(runtimeBoundCancelResponse.statusCode).toBe(200);
+      expect(runtimeBoundCancelResponse.statusCode).toBe(409);
       expect(
-        sessionCancellationResponseSchema.parse(
-          runtimeBoundCancelResponse.json()
-        )
+        hostErrorResponseSchema.parse(runtimeBoundCancelResponse.json())
       ).toMatchObject({
-        cancellations: [
-          {
-            cancellationId: "cancel-before-intake",
-            nodeId: "worker-it",
-            sessionId: "session-before-intake",
-            status: "requested"
-          }
-        ],
-        sessionId: "session-before-intake"
+        code: "conflict",
+        details: {
+          nodeId: "worker-it",
+          sessionId: "session-before-intake"
+        },
+        message:
+          "Session cancellation for runtime 'worker-it' requires an accepted federated runner assignment."
       });
     } finally {
       await server.close();
@@ -7869,6 +7851,102 @@ describe("buildHostServer", () => {
           status: "requested"
         },
         relayUrls: ["ws://relay.example"]
+      });
+    } finally {
+      await server.close();
+    }
+  });
+
+  it("rejects session cancellation for accepted assignments without control transport", async () => {
+    const server = await createTestServer({ includeModelEndpoint: true });
+
+    try {
+      const [
+        {
+          recordRunnerHello,
+          recordRuntimeAssignmentAccepted
+        }
+      ] = await Promise.all([import("./state.js")]);
+      const packageDirectory = await createAdmittedPackageDirectory(
+        createdDirectories[0]!
+      );
+      const packageSourceId = await admitPackageSource(server, packageDirectory);
+      await applySingleWorkerGraph({
+        packageSourceId,
+        server
+      });
+
+      const hostAuthorityPubkey = hostAuthorityInspectionResponseSchema.parse(
+        (
+          await server.inject({
+            method: "GET",
+            url: "/v1/authority"
+          })
+        ).json()
+      ).authority.publicKey;
+      const runnerPubkey =
+        "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc";
+
+      await recordRunnerHello({
+        capabilities: {
+          agentEngineKinds: ["opencode_server"],
+          runtimeKinds: ["agent_runner"]
+        },
+        eventType: "runner.hello",
+        hostAuthorityPubkey,
+        issuedAt: new Date().toISOString(),
+        nonce: "nonce-alpha",
+        protocol: "entangle.observe.v1",
+        runnerId: "runner-alpha",
+        runnerPubkey
+      });
+      await server.inject({
+        method: "POST",
+        url: "/v1/runners/runner-alpha/trust"
+      });
+
+      const offer = runtimeAssignmentOfferResponseSchema.parse(
+        (
+          await server.inject({
+            method: "POST",
+            payload: {
+              assignmentId: "assignment-alpha",
+              nodeId: "worker-it",
+              runnerId: "runner-alpha"
+            },
+            url: "/v1/assignments"
+          })
+        ).json()
+      ).assignment;
+      await recordRuntimeAssignmentAccepted({
+        acceptedAt: new Date().toISOString(),
+        assignmentId: offer.assignmentId,
+        eventType: "assignment.accepted",
+        hostAuthorityPubkey,
+        ...(offer.lease ? { lease: offer.lease } : {}),
+        protocol: "entangle.observe.v1",
+        runnerId: "runner-alpha",
+        runnerPubkey
+      });
+
+      const cancelResponse = await server.inject({
+        method: "POST",
+        payload: {
+          cancellationId: "cancel-federated-alpha",
+          reason: "Operator stopped federated work."
+        },
+        url: "/v1/runtimes/worker-it/sessions/session-federated-alpha/cancel"
+      });
+
+      expect(cancelResponse.statusCode).toBe(409);
+      expect(hostErrorResponseSchema.parse(cancelResponse.json())).toMatchObject({
+        code: "conflict",
+        details: {
+          nodeId: "worker-it",
+          sessionId: "session-federated-alpha"
+        },
+        message:
+          "Federated session cancellation requires an active Host control plane and relay configuration."
       });
     } finally {
       await server.close();

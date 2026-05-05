@@ -15,7 +15,9 @@ The repo still has local deployment assumptions in implementation:
   containers; runner process startup now fails fast unless `join`, join-config
   env, or an explicit runtime-context path is provided;
 - Host file reads from runner `runtimeRoot`;
-- Host approval and cancellation writes into runner runtime state;
+- direct Host approval writes have been removed from active approval surfaces,
+  and Host session cancellation no longer falls back to writing runner runtime
+  state when no accepted federated assignment/control path exists;
 - local deployment CLI backup/restore/repair/doctor;
 - local smokes based on Compose service reachability and Docker runner image.
 
@@ -68,8 +70,9 @@ deployment adapter while keeping distributed semantics independent.
   - debug-only local context path.
 - Keep `contextPath` and `runtimeRoot` out of canonical Host API responses.
 - Replace Host local file observation with ProjectionStore.
-- Change direct Host writes for approval/cancellation to signed control/user
-  events.
+- Keep direct Host writes for approval/cancellation out of canonical behavior:
+  approval responses are signed User Node A2A messages, and session
+  cancellation is a signed Host control command to an accepted assignment.
 - Keep same-machine Docker/process launchers as deployment adapters only.
 - Add distributed smoke scripts that can run with separate Host and runner
   roots even when processes are on the same workstation.
@@ -103,7 +106,11 @@ Classified results:
   - runtime state contracts exposing `runtimeContextPath`;
   - Host state code reading `context.workspace.runtimeRoot` for canonical
     projection;
-  - Host approval decisions writing local approval records directly;
+  - Host approval decisions writing local approval records directly: fixed by
+    [323-direct-host-approval-review-api-removal-slice.md](323-direct-host-approval-review-api-removal-slice.md).
+  - Host session cancellation writing local runtime cancellation records when
+    no accepted assignment/control path exists: fixed by
+    [487-session-cancellation-federated-only-slice.md](487-session-cancellation-federated-only-slice.md).
   - runner bootstrap requiring `effective-runtime-context.json` for canonical
     startup: fixed for process startup by
     [484-runner-startup-explicit-mode-slice.md](484-runner-startup-explicit-mode-slice.md).

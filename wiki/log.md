@@ -5755,3 +5755,13 @@ This closes the policy-permissive participant reconcile smoke gap. Approved
 source-history replay with `applyRequiresApproval: true` remains a separate
 end-to-end scenario; lower-level runner and Human Interface Runtime tests still
 cover forwarded `approvalId` handling.
+
+## [2026-05-05] host | Removed direct session cancellation fallback
+
+Added `references/487-session-cancellation-federated-only-slice.md`. Host no
+longer writes `session-cancellations/*.json` records into runner runtime roots
+when no accepted federated assignment is available.
+
+Session cancellation now requires an accepted federated assignment and active
+control-plane publication. Runners still persist node-local cancellation state
+after they receive the signed `runtime.session.cancel` command.

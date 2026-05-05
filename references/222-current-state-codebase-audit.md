@@ -60,8 +60,10 @@ or stable User Node identity.
   projected artifact records with explicit unavailable reasons when no
   backend-resolved checkout exists; runtime memory list/page reads can now fall
   back to observed `wiki.ref` projection records with bounded previews;
-- it records approval decisions by directly writing approval JSON under the
-  target runtime root.
+- approval decisions now flow through signed User Node messages, and Host
+  session cancellation no longer writes request records into runner runtime
+  roots; cancellation requires an accepted federated assignment and active
+  control-plane publication.
 
 `services/host/src/session-launch.ts` now publishes launch `task.request`
 events signed by stable User Node identity material. Host still owns the local
@@ -89,7 +91,8 @@ instead of guessing an injected same-machine context:
   off runner filesystem reads, and later
   session/conversation lifecycle transitions now publish observations as well;
 - runner state is file-backed under `runtimeRoot`;
-- cancellation is polled from Host-written local files;
+- cancellation is stored and polled as runner-local state after the runner
+  receives a signed `runtime.session.cancel` control command;
 - OpenCode is invoked by a safe one-shot process adapter, and the process-runner
   smoke now exercises that adapter with a deterministic runner-local fake
   executable so projected turn/approval/session reads are covered without live

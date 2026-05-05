@@ -203,7 +203,6 @@ import {
   replaceManagedNode,
   offerRuntimeAssignment,
   recordFederatedSessionCancellationRequest,
-  requestRuntimeBoundSessionCancellation,
   revokeRunnerRegistration,
   revokeRuntimeAssignment,
   setRuntimeDesiredState,
@@ -1125,29 +1124,50 @@ async function requestRuntimeSessionCancellationFromHost(
     nodeId: input.nodeId
   });
 
-  if (assignment) {
-    const cancellation = buildFederatedSessionCancellationRequestRecord({
-      assignment,
-      request: input.request,
-      sessionId: input.sessionId
-    });
-    const published = await publishRuntimeSessionCancelCommandFromHost(options, {
-      assignment,
-      cancellation
-    });
+  if (!assignment) {
+    const inspection = await getRuntimeInspection(input.nodeId);
 
-    if (published) {
-      return recordFederatedSessionCancellationRequest(cancellation);
+    if (!inspection) {
+      return null;
     }
+
+    throw new HostHttpError({
+      code: "conflict",
+      details: {
+        nodeId: input.nodeId,
+        sessionId: input.sessionId
+      },
+      message:
+        `Session cancellation for runtime '${input.nodeId}' requires ` +
+        "an accepted federated runner assignment.",
+      statusCode: 409
+    });
   }
 
-  const fallback = await requestRuntimeBoundSessionCancellation({
-    nodeId: input.nodeId,
+  const cancellation = buildFederatedSessionCancellationRequestRecord({
+    assignment,
     request: input.request,
     sessionId: input.sessionId
   });
+  const published = await publishRuntimeSessionCancelCommandFromHost(options, {
+    assignment,
+    cancellation
+  });
 
-  return fallback?.cancellations[0] ?? null;
+  if (!published) {
+    throw new HostHttpError({
+      code: "conflict",
+      details: {
+        nodeId: input.nodeId,
+        sessionId: input.sessionId
+      },
+      message:
+        "Federated session cancellation requires an active Host control plane and relay configuration.",
+      statusCode: 409
+    });
+  }
+
+  return recordFederatedSessionCancellationRequest(cancellation);
 }
 
 async function requestSessionCancellationFromHost(

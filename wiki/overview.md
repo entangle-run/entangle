@@ -665,9 +665,9 @@ The repository now also contains the first real implementation baseline:
   `waiting_approval`/`awaiting_approval` without granting the engine the
   gated side effect, with external session cancellation now delivered as a
   Host-signed `runtime.session.cancel` control command for accepted federated
-  runner assignments and only falling back to local compatibility when no
-  joined assignment/control path is available, observed by node runners while
-  idle or mid-turn, and translated into engine abort signals for OpenCode-backed
+  runner assignments and rejected when no accepted federated assignment/control
+  path is available, observed by node runners while idle or mid-turn, and
+  translated into engine abort signals for OpenCode-backed
   turns, and with generic runtime inspection now surfacing pending
   approval blockers plus the latest produced artifact and requested approval
   ids through the shared host/CLI/Studio boundary, and with runner-served User

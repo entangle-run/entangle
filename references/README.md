@@ -817,6 +817,7 @@ files are the active federated redesign pack.
 485. [484-runner-startup-explicit-mode-slice.md](484-runner-startup-explicit-mode-slice.md)
 486. [485-user-client-approval-turn-correlation-slice.md](485-user-client-approval-turn-correlation-slice.md)
 487. [486-host-test-pool-stability-slice.md](486-host-test-pool-stability-slice.md)
+488. [487-session-cancellation-federated-only-slice.md](487-session-cancellation-federated-only-slice.md)
 
 ## Role of this corpus
 

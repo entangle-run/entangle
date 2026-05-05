@@ -287,6 +287,7 @@ same-machine slice records.
 - [484-runner-startup-explicit-mode-slice.md](484-runner-startup-explicit-mode-slice.md)
 - [485-user-client-approval-turn-correlation-slice.md](485-user-client-approval-turn-correlation-slice.md)
 - [486-host-test-pool-stability-slice.md](486-host-test-pool-stability-slice.md)
+- [487-session-cancellation-federated-only-slice.md](487-session-cancellation-federated-only-slice.md)
 
 ## Audited Scope
 
@@ -1026,7 +1027,10 @@ source-history publication from the agent node, tightening the proof that
 runner-owned work handoff reached a git-backed substrate. The verifier can now
 also optionally run `git ls-remote` from the operator machine against projected
 published git artifact locators to prove the advertised branch contains the
-projected commit. The highest-value remaining implementation areas are richer
+projected commit. Host session cancellation no longer falls back to writing
+request records into runner runtime roots; it requires an accepted federated
+assignment and active control-plane publication. The highest-value remaining
+implementation areas are richer
 model-guided memory maintenance, deeper delegated-session semantics beyond the
 current controlled handoff path, collaborative wiki merge UI and multi-page
 patch-set semantics on top of the participant-scoped page upsert command,

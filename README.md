@@ -727,8 +727,8 @@ This repository currently contains:
   `waiting_approval`/`awaiting_approval` without granting the engine the
   gated side effect, with external session cancellation now delivered as a
   Host-signed `runtime.session.cancel` control command to accepted federated
-  runner assignments when available, falling back to local compatibility only
-  for non-joined runtimes, exposed through host-client and CLI `sessions cancel`
+  runner assignments and rejected when no accepted federated assignment/control
+  path is available, exposed through host-client and CLI `sessions cancel`
   surfaces plus Studio selected-session controls, applied by the long-lived
   runner while idle or mid-turn, translated into engine `AbortSignal`
   cancellation for OpenCode processes, and recorded as cancelled session/turn

@@ -904,6 +904,10 @@ Implementation record:
 - [486-host-test-pool-stability-slice.md](486-host-test-pool-stability-slice.md)
   moves Host package tests to a serial forked Vitest pool so `pnpm verify`
   remains deterministic.
+- [487-session-cancellation-federated-only-slice.md](487-session-cancellation-federated-only-slice.md)
+  removes the Host runtime-root session cancellation fallback; cancellation now
+  requires an accepted federated assignment and active control-plane
+  publication.
 - [465-cli-agent-engine-profile-upsert-slice.md](465-cli-agent-engine-profile-upsert-slice.md)
   adds a Host-backed CLI catalog command for creating and updating typed agent
   engine profiles, including attached OpenCode profiles, permission mode,
@@ -1369,6 +1373,9 @@ Current status:
   explicit runtime-context path instead of guessing a default injected context;
 - Host package tests now run in a serial forked Vitest pool, matching the
   stability posture already used by runner tests;
+- Host session cancellation no longer writes request records into runner
+  runtime roots as a fallback; it now requires accepted federated assignment
+  control and active relay publication;
 - the remaining distributed proof hardening is infrastructure-backed
   orchestration that can provision multiple machines or VM/container boundaries
   around the verifier.
