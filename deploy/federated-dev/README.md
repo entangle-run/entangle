@@ -105,7 +105,9 @@ The bundle contains `.entangle/host`, including runtime state, workspaces, git
 artifact repositories, and node wiki repositories, plus a snapshot of selected
 federated dev profile config files. It explicitly excludes `.entangle-secrets`
 and external service state such as Docker volumes, Gitea internals, and relay
-data.
+data. The manifest also records the known excluded external volumes:
+`gitea:gitea-data->/data`, `strfry:strfry-data->/app/strfry-db`, and
+`host:entangle-secret-state->/entangle-secrets`.
 
 Validate a restore without changing Entangle state:
 

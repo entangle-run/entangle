@@ -1454,6 +1454,9 @@ Current status:
 - `entangle deployment repair` now recreates missing standard `.entangle/host`
   skeleton directories for compatible existing deployments while leaving
   unreadable or unsupported layouts blocked for manual inspection;
+- deployment backup manifests now include a machine-readable inventory of
+  known excluded external service volumes for Gitea, strfry, and Host secret
+  state, and restore warnings print that inventory for non-disposable planning;
 - Host event records now include optional audit hash-chain fields, Host event
   appends are serialized to preserve chain order, and CLI runtime-trace
   summaries expose the hashes when present; Host, host-client, and CLI now

@@ -1040,7 +1040,8 @@ This repository currently contains:
 - first same-machine backup/restore commands through `entangle deployment backup` and
   `entangle deployment restore`, using a versioned directory bundle for
   `.entangle/host`, selected same-machine profile config snapshots, explicit secret
-  exclusion, and restore-time state-layout compatibility checks;
+  exclusion, machine-readable external volume inventory for Gitea, strfry, and
+  Host secret state, and restore-time state-layout compatibility checks;
 - a first conservative same-machine repair command through `entangle deployment repair`,
   defaulting to dry-run previews and applying only safe host-state
   initialization, missing layout-marker, or missing standard host-state

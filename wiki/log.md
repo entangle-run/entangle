@@ -1,5 +1,20 @@
 # Entangle Wiki Log
 
+## [2026-05-05] cli | Added backup external volume inventory
+
+Added `references/535-deployment-backup-external-volume-inventory-slice.md`.
+Deployment backup manifests now record the known excluded federated-dev
+external volumes for Gitea, strfry, and Host secret state.
+
+Restore warnings print that inventory, making non-disposable service state
+visible without pretending the backup command restores external service data.
+
+Targeted checks passed:
+
+- `pnpm --filter @entangle/cli test -- src/deployment-backup-command.test.ts`
+- `pnpm --filter @entangle/cli typecheck`
+- `pnpm --filter @entangle/cli lint`
+
 ## [2026-05-05] ops | Added external Host URL proof guard
 
 Added `references/534-distributed-proof-external-host-url-slice.md`.

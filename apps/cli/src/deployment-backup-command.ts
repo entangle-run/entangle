@@ -49,6 +49,11 @@ export interface DeploymentBackupManifest {
   createdAt: string;
   exclusions: {
     externalState: string[];
+    externalVolumes: Array<{
+      mountPath: string;
+      service: string;
+      volume: string;
+    }>;
     paths: string[];
     secretsIncluded: false;
   };
@@ -103,6 +108,23 @@ const backupStatePath = "state/host";
 const backupConfigPath = "config";
 const hostStateRelativePath = ".entangle/host";
 const secretsPath = ".entangle-secrets";
+const excludedExternalVolumes = [
+  {
+    mountPath: "/data",
+    service: "gitea",
+    volume: "gitea-data"
+  },
+  {
+    mountPath: "/app/strfry-db",
+    service: "strfry",
+    volume: "strfry-data"
+  },
+  {
+    mountPath: "/entangle-secrets",
+    service: "host",
+    volume: "entangle-secret-state"
+  }
+] as const;
 
 const deploymentBackupConfigPaths = [
   "package.json",
@@ -396,6 +418,20 @@ function validateBackupManifest(rawManifest: unknown): DeploymentBackupManifest 
   return manifest as DeploymentBackupManifest;
 }
 
+function formatExternalVolumeWarning(
+  volumes: DeploymentBackupManifest["exclusions"]["externalVolumes"] | undefined
+): string {
+  if (!Array.isArray(volumes) || volumes.length === 0) {
+    return "No external service volume inventory was recorded in this backup manifest.";
+  }
+
+  const volumeList = volumes
+    .map((volume) => `${volume.service}:${volume.volume}->${volume.mountPath}`)
+    .join(", ");
+
+  return `External service volumes are not restored by this command: ${volumeList}.`;
+}
+
 function assertRestorableLayout(
   layout: DeploymentBackupManifest["state"]["layout"]
 ): void {
@@ -458,6 +494,7 @@ export async function createDeploymentBackup(
         "Gitea service data outside .entangle/host",
         "strfry relay data outside .entangle/host"
       ],
+      externalVolumes: [...excludedExternalVolumes],
       paths: [secretsPath],
       secretsIncluded: false
     },
@@ -503,7 +540,8 @@ export async function restoreDeploymentBackup(
   const layout = await inspectStateLayout(stateBundlePath);
   const warnings = [
     "Entangle secrets are not included in Entangle deployment profile backups; restore or recreate .entangle-secrets separately if needed.",
-    "External service state such as Docker volumes, Gitea internals, and relay data is not restored by this command."
+    "External service state such as container volumes, Gitea internals, and relay data is not restored by this command.",
+    formatExternalVolumeWarning(manifest.exclusions.externalVolumes)
   ];
 
   assertRestorableLayout(layout);

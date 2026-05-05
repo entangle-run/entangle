@@ -122,6 +122,23 @@ describe("deployment backup command helpers", () => {
     );
     expect(await readJson(path.join(outputPath, "manifest.json"))).toMatchObject({
       exclusions: {
+        externalVolumes: [
+          {
+            mountPath: "/data",
+            service: "gitea",
+            volume: "gitea-data"
+          },
+          {
+            mountPath: "/app/strfry-db",
+            service: "strfry",
+            volume: "strfry-data"
+          },
+          {
+            mountPath: "/entangle-secrets",
+            service: "host",
+            volume: "entangle-secret-state"
+          }
+        ],
         paths: [".entangle-secrets"],
         secretsIncluded: false
       },
@@ -159,6 +176,9 @@ describe("deployment backup command helpers", () => {
       restored: false,
       stateLayoutStatus: "current"
     });
+    expect(dryRun.warnings).toEqual(
+      expect.arrayContaining([expect.stringContaining("gitea:gitea-data->/data")])
+    );
     expect(
       await pathExists(path.join(targetRepositoryRoot, ".entangle/host/state-layout.json"))
     ).toBe(false);

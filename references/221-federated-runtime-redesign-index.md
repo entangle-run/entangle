@@ -335,6 +335,7 @@ same-machine slice records.
 - [532-cli-wiki-conflict-receipts-slice.md](532-cli-wiki-conflict-receipts-slice.md)
 - [533-human-runtime-wiki-conflict-receipts-slice.md](533-human-runtime-wiki-conflict-receipts-slice.md)
 - [534-distributed-proof-external-host-url-slice.md](534-distributed-proof-external-host-url-slice.md)
+- [535-deployment-backup-external-volume-inventory-slice.md](535-deployment-backup-external-volume-inventory-slice.md)
 
 ## Audited Scope
 
@@ -1141,6 +1142,10 @@ running User Client or CLI User Node surfaces. Deployment repair can now safely
 restore missing standard `.entangle/host` state directories for compatible
 existing deployments without mutating authoritative state files, while
 unreadable or unsupported state layouts remain blocked for manual inspection.
+Deployment backup manifests now also carry a machine-readable inventory of
+known excluded external service volumes for Gitea, strfry, and Host secret
+state, and restore warnings print that inventory so non-disposable service
+state is explicit.
 New Host events now carry optional audit hash-chain fields, and Host serializes
 event appends so concurrent operator requests do not fork the local audit
 sequence. Host now also exposes `GET /v1/events/integrity`, host-client

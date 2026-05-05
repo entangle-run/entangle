@@ -1202,7 +1202,8 @@ The repository now also contains the first real implementation baseline:
   path without bundling Entangle secrets, and `entangle deployment repair` provides a
   dry-run-first conservative repair surface for safe host-state initialization
   missing layout-marker recovery, and missing standard host-state directory
-  recovery;
+  recovery; backup manifests now also record known excluded external service
+  volumes for Gitea, strfry, and Host secret state;
 - an active same-machine profile smoke through `pnpm ops:smoke-federated-dev`, covering
   running Compose services, the local runner image, host status/events, Studio
   HTTP, Gitea HTTP reachability, and the local `strfry` Nostr WebSocket
