@@ -470,6 +470,8 @@ proof profiles can pass `--agent-engine-kind <kind>` when the agent runner is
 intentionally configured for another engine adapter.
 When a proof profile includes explicit `assignments`, the verifier uses those
 manifest assignment ids instead of deriving `assignment-${runnerId}`.
+Pass `--junit <file>` to write the same check set as a JUnit XML report for CI
+or support retention.
 After the agent has produced projected work evidence, rerun the verifier with
 `--require-artifact-evidence --require-published-git-artifact` to require at
 least one projected work ref plus published git artifact/source-history
@@ -502,7 +504,8 @@ pnpm ops:smoke-distributed-proof-tools
 That smoke checks proof-kit syntax/help/dry-run paths and verifier self-test
 JSON, including the default failure path for non-running runtime observations.
 It also checks that duplicated User Client URLs and wrong runner runtime-kind
-or agent-engine capabilities fail the multi-user proof, that malformed proof
+or agent-engine capabilities fail the multi-user proof, that verifier JUnit
+output is written, that malformed proof
 profiles fail before Host inspection, and that missing artifact evidence,
 missing relay URLs, file-backed git services, or missing git service refs fail
 when explicitly required. It also checks loopback User Client URL rejection

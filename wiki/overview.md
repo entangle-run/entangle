@@ -452,7 +452,8 @@ success/failure paths, published-git-artifact success/failure paths,
 published-git-ref success/failure paths, loopback User Client URL rejection,
 custom proof-profile assignment ids, and relay-health
 success/failure paths plus git-backend-health success/failure paths before a
-real distributed proof is attempted.
+real distributed proof is attempted. The verifier can also write JUnit XML with
+one testcase per check for CI retention.
 Generated proof kits can also require User Client Basic Auth placeholders and
 start-script checks for User Node runner machines, so physical proofs can avoid
 publishing participant clients without at least runtime-local browser auth.

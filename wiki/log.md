@@ -1,5 +1,21 @@
 # Entangle Wiki Log
 
+## [2026-05-05] ops | Added distributed proof JUnit output
+
+Added `references/528-distributed-proof-verifier-junit-slice.md`.
+`pnpm ops:distributed-proof-verify` now accepts `--junit <file>` and writes one
+JUnit testcase per distributed proof check.
+
+The proof-tool smoke now exercises that report path with the embedded verifier
+self-test, so CI can retain machine-readable proof evidence without parsing
+terminal output.
+
+Targeted checks passed:
+
+- `node --check scripts/federated-distributed-proof-verify.mjs`
+- `node --check scripts/smoke-distributed-proof-tools.mjs`
+- `pnpm ops:smoke-distributed-proof-tools`
+
 ## [2026-05-05] user-client | Added wiki draft diff previews
 
 Added `references/527-user-client-wiki-draft-diff-preview-slice.md`.

@@ -1411,7 +1411,9 @@ Current status:
   self-test JSON, including stopped-runtime rejection and the explicit
   diagnostic override plus duplicate User Client URL and wrong-runtime-kind
   or agent-engine rejection, making the distributed proof tooling CI-checkable
-  before the real multi-machine proof is attempted; the same smoke also proves
+  before the real multi-machine proof is attempted; the verifier can now write
+  a JUnit XML report with one testcase per check for CI retention, and the same
+  smoke proves that report path; the same smoke also proves
   a non-default expected agent engine can pass when the registry fixture
   advertises it and that the proof kit can generate a matching custom-engine
   runner profile plus a matching custom verifier profile, and that the verifier

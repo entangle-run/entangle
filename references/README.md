@@ -866,6 +866,7 @@ files are the active federated redesign pack.
 526. [525-host-event-audit-bundle-signature-verify-slice.md](525-host-event-audit-bundle-signature-verify-slice.md)
 527. [526-user-client-wiki-draft-stale-hash-slice.md](526-user-client-wiki-draft-stale-hash-slice.md)
 528. [527-user-client-wiki-draft-diff-preview-slice.md](527-user-client-wiki-draft-diff-preview-slice.md)
+529. [528-distributed-proof-verifier-junit-slice.md](528-distributed-proof-verifier-junit-slice.md)
 
 ## Role of this corpus
 

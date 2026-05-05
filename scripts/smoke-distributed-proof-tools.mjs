@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 import { spawnSync } from "node:child_process";
-import { mkdtempSync, rmSync, writeFileSync } from "node:fs";
+import { mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
@@ -737,6 +737,25 @@ try {
     "--check-user-client-health"
   ]);
   verifySelfTestJson(selfTestJson);
+
+  const junitTempDir = mkdtempSync(path.join(tmpdir(), "entangle-proof-junit-"));
+  const junitPath = path.join(junitTempDir, "proof.xml");
+  runStep("proof verifier junit self-test", [
+    "scripts/federated-distributed-proof-verify.mjs",
+    "--self-test",
+    "--require-conversation",
+    "--check-user-client-health",
+    "--junit",
+    junitPath
+  ]);
+  const junitContent = readFileSync(junitPath, "utf8");
+  if (
+    !junitContent.includes('<testsuite name="entangle-distributed-proof"') ||
+    !junitContent.includes('<testcase classname="entangle.distributedProof"')
+  ) {
+    throw new Error("Verifier JUnit self-test did not write the expected XML report.");
+  }
+  rmSync(junitTempDir, { force: true, recursive: true });
 
   const stoppedRuntimeJson = runFailureStep("proof verifier stopped-runtime self-test", [
     "scripts/federated-distributed-proof-verify.mjs",

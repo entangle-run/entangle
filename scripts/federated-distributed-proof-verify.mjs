@@ -1,7 +1,8 @@
 #!/usr/bin/env node
 
 import { spawnSync } from "node:child_process";
-import { readFileSync } from "node:fs";
+import { mkdirSync, readFileSync, writeFileSync } from "node:fs";
+import path from "node:path";
 import { setTimeout as delay } from "node:timers/promises";
 import { normalizeDistributedProofProfile } from "./distributed-proof-profile.mjs";
 
@@ -11,6 +12,7 @@ const proofProfilePath = readFlagValue("--profile");
 const proofProfile = help ? undefined : readProofProfile(proofProfilePath);
 const selfTest = hasFlag("--self-test");
 const jsonOutput = hasFlag("--json");
+const junitPath = readFlagValue("--junit");
 const hostUrl = trimTrailingSlash(
   readFlagValue("--host-url") ??
     readProofProfileString("hostUrl") ??
@@ -155,6 +157,7 @@ Options:
   --user-node <nodeId>            Primary User Node id. Default: user
   --reviewer-user-node <nodeId>   Reviewer User Node id. Default: reviewer
   --json                          Print machine-readable result.
+  --junit <file>                  Write a JUnit XML report for CI systems.
   --self-test                     Verify the verifier against an embedded passing fixture.
   --self-test-runtime-state <s>    Runtime observedState to use in the self-test fixture. Default: running
   --self-test-shared-user-client-url
@@ -326,6 +329,63 @@ function addCheck(checks, name, ok, detail) {
     name,
     ok
   });
+}
+
+function escapeXml(value) {
+  return String(value)
+    .replaceAll("&", "&amp;")
+    .replaceAll("<", "&lt;")
+    .replaceAll(">", "&gt;")
+    .replaceAll('"', "&quot;")
+    .replaceAll("'", "&apos;");
+}
+
+function buildJUnitReport(input) {
+  if (input.error) {
+    const message = input.error instanceof Error ? input.error.message : String(input.error);
+
+    return [
+      '<?xml version="1.0" encoding="UTF-8"?>',
+      '<testsuite name="entangle-distributed-proof" tests="1" failures="0" errors="1">',
+      `  <testcase classname="entangle.distributedProof" name="verifier error">`,
+      `    <error message="${escapeXml(message)}">${escapeXml(message)}</error>`,
+      "  </testcase>",
+      "</testsuite>",
+      ""
+    ].join("\n");
+  }
+
+  const checks = input.result.checks;
+  const failures = checks.filter((check) => !check.ok);
+
+  return [
+    '<?xml version="1.0" encoding="UTF-8"?>',
+    `<testsuite name="entangle-distributed-proof" tests="${checks.length}" failures="${failures.length}" errors="0">`,
+    ...checks.flatMap((check) => [
+      `  <testcase classname="entangle.distributedProof" name="${escapeXml(check.name)}">`,
+      ...(check.ok
+        ? []
+        : [
+            `    <failure message="${escapeXml(check.detail)}">${escapeXml(check.detail)}</failure>`
+          ]),
+      "  </testcase>"
+    ]),
+    "</testsuite>",
+    ""
+  ].join("\n");
+}
+
+function writeJUnitReport(input) {
+  if (!junitPath) {
+    return;
+  }
+
+  const directory = path.dirname(junitPath);
+  if (directory && directory !== ".") {
+    mkdirSync(directory, { recursive: true });
+  }
+
+  writeFileSync(junitPath, buildJUnitReport(input), "utf8");
 }
 
 async function fetchJson(path) {
@@ -1339,9 +1399,11 @@ if (help) {
 
 try {
   const result = await verifyUntilReady();
+  writeJUnitReport({ result });
   printResult(result);
   process.exit(result.ok ? 0 : 1);
 } catch (error) {
+  writeJUnitReport({ error });
   if (jsonOutput) {
     console.log(
       JSON.stringify(
