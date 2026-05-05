@@ -38,6 +38,9 @@ const checkPublishedGitRefHealth =
 const checkUserClientHealth =
   hasFlag("--check-user-client-health") ||
   readProofProfileBoolean("checkUserClientHealth");
+const requireExternalUserClientUrls =
+  hasFlag("--require-external-user-client-urls") ||
+  readProofProfileBoolean("requireExternalUserClientUrls");
 const requireConversation =
   hasFlag("--require-conversation") ||
   readProofProfileBoolean("requireConversation");
@@ -138,6 +141,8 @@ Options:
   --check-git-backend-health      Check expected Host catalog git services and their public base URLs, and reject file-backed git remotes for distributed proof.
   --check-published-git-ref       Run git ls-remote against projected published git artifact refs from the agent node.
   --check-user-client-health      Fetch /health for projected User Client URLs. Defaults to profile checkUserClientHealth.
+  --require-external-user-client-urls
+                                  Reject loopback or wildcard User Client URLs. Defaults to profile requireExternalUserClientUrls.
   --require-conversation          Require a projected conversation from the primary User Node to the agent node. Defaults to profile requireConversation.
   --require-artifact-evidence     Require projected artifact/source/wiki evidence from the agent node.
   --require-published-git-artifact
@@ -620,6 +625,27 @@ function findDuplicateValues(values) {
   }
 
   return [...duplicates].sort();
+}
+
+function isExternalHttpUrl(value) {
+  let parsed;
+
+  try {
+    parsed = new URL(value);
+  } catch {
+    return false;
+  }
+
+  const hostname = parsed.hostname.toLowerCase();
+
+  return (
+    (parsed.protocol === "http:" || parsed.protocol === "https:") &&
+    hostname !== "localhost" &&
+    hostname !== "0.0.0.0" &&
+    hostname !== "::" &&
+    hostname !== "::1" &&
+    !hostname.startsWith("127.")
+  );
 }
 
 function countNodeProjectionRecords(snapshot, key, nodeId) {
@@ -1118,6 +1144,15 @@ async function evaluateSnapshot(snapshot) {
 
       if (typeof clientUrl === "string" && clientUrl.length > 0) {
         userClientUrls.push(clientUrl);
+      }
+
+      if (requireExternalUserClientUrls) {
+        addCheck(
+          checks,
+          `user client external url ${profile.nodeId}`,
+          typeof clientUrl === "string" && isExternalHttpUrl(clientUrl),
+          clientUrl ?? "missing clientUrl"
+        );
       }
 
       if (checkUserClientHealth && typeof clientUrl === "string") {

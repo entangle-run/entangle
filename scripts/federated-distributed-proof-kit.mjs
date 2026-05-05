@@ -34,6 +34,9 @@ const gitServiceRefs = splitRepeatedValues(readFlagValues("--git-service-ref"));
 const checkRelayHealth = hasFlag("--check-relay-health");
 const checkGitBackendHealth = hasFlag("--check-git-backend-health");
 const checkPublishedGitRef = hasFlag("--check-published-git-ref");
+const requireExternalUserClientUrls = hasFlag(
+  "--require-external-user-client-urls"
+);
 const heartbeatIntervalMs = readFlagValue("--heartbeat-interval-ms") ?? "1000";
 const requestedAgentEngineKinds = splitRepeatedValues(
   readFlagValues("--agent-engine-kind")
@@ -125,6 +128,8 @@ Options:
   --git-service-ref <id>            Git service ref expected by the distributed proof. May be repeated or comma-separated.
   --check-git-backend-health        Include git backend health checks in the generated verifier command and proof profile.
   --check-published-git-ref         Include git ls-remote checks for post-work published git artifact refs.
+  --require-external-user-client-urls
+                                    Include verifier checks that reject loopback or wildcard User Client URLs.
   --heartbeat-interval-ms <ms>      Runner heartbeat interval in generated configs. Default: 1000
   --runner-secret-env-var <envVar>  Env var runners will read for their Nostr secret. Default: ENTANGLE_RUNNER_NOSTR_SECRET_KEY
   --agent-engine-kind <kind>         Agent runner engine kind. May be repeated or comma-separated. Default: opencode_server
@@ -510,6 +515,10 @@ function buildVerifierCommand(options = {}) {
     args.push("--check-relay-health");
   }
 
+  if (requireExternalUserClientUrls) {
+    args.push("--require-external-user-client-urls");
+  }
+
   if (options.requireArtifactEvidence) {
     args.push("--require-artifact-evidence");
     args.push("--require-published-git-artifact");
@@ -568,6 +577,9 @@ function buildProofProfile(options = {}) {
     ...(checkGitBackendHealth ? { checkGitBackendHealth: true } : {}),
     ...(options.checkPublishedGitRef ? { checkPublishedGitRef: true } : {}),
     checkUserClientHealth: true,
+    ...(requireExternalUserClientUrls
+      ? { requireExternalUserClientUrls: true }
+      : {}),
     ...(gitServiceRefs.length > 0 ? { gitServiceRefs } : {}),
     hostUrl,
     relayUrls,

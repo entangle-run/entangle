@@ -419,11 +419,16 @@ from the agent runner and pass its `/turn` URL.
 Pass `--check-relay-health` with at least one `--relay-url` when the generated
 operator command should also probe relay WebSocket reachability from the
 operator machine.
+Pass `--require-external-user-client-urls` when a physical multi-machine proof
+should reject projected User Client URLs on `localhost`, loopback, or wildcard
+addresses.
 Copy runner directories to machines with Entangle checkouts; the proof is valid
 only when the runners do not rely on Host filesystem access and report running
 runtime observations, expected runtime-kind capabilities, expected
 agent-engine capabilities, and distinct User Client URLs back to Host
-projection.
+projection. With the external-URL requirement enabled, those User Client URLs
+must also be reachable as non-loopback HTTP endpoints from the operator
+machine.
 
 After the runner directories are running and assignments have been offered, the
 operator machine can verify the proof through Host and User Client HTTP
@@ -470,9 +475,10 @@ It also checks that duplicated User Client URLs and wrong runner runtime-kind
 or agent-engine capabilities fail the multi-user proof, that malformed proof
 profiles fail before Host inspection, and that missing artifact evidence,
 missing relay URLs, file-backed git services, or missing git service refs fail
-when explicitly required. It also checks custom assignment ids from proof
-profiles and the generated post-work artifact verifier command. It does not
-replace the real distributed proof above.
+when explicitly required. It also checks loopback User Client URL rejection
+when physical proof mode requests external URLs, custom assignment ids from
+proof profiles, and the generated post-work artifact verifier command. It does
+not replace the real distributed proof above.
 
 Managed Docker runners in the federated dev profile use the same join path.
 The Host passes inline join config JSON to the runner container and the runner

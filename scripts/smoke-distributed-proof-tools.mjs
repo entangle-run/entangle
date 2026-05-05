@@ -356,6 +356,7 @@ try {
     "--check-relay-health",
     "--check-git-backend-health",
     "--check-published-git-ref",
+    "--require-external-user-client-urls",
     "--agent-runner",
     "proof-agent-runner",
     "--user-runner",
@@ -374,6 +375,7 @@ try {
     mustContain: [
       '--profile "$SCRIPT_DIR/proof-profile.json"',
       "--check-relay-health",
+      "--require-external-user-client-urls",
       "--require-artifact-evidence",
       '"agentRunnerId":"proof-agent-runner"',
       '"userRunnerId":"proof-user-runner"',
@@ -387,6 +389,7 @@ try {
       '"checkPublishedGitRef":true',
       '"checkUserClientHealth":true',
       '"gitServiceRefs":["gitea"]',
+      '"requireExternalUserClientUrls":true',
       '"requireConversation":true',
       '"requirePublishedGitArtifact":true'
     ]
@@ -747,6 +750,23 @@ try {
     mustContain: '"ok": false'
   });
   verifySelfTestFailureJson(sharedUserClientJson, "user client urls distinct");
+
+  const loopbackUserClientJson = runFailureStep(
+    "proof verifier loopback-user-client self-test",
+    [
+      "scripts/federated-distributed-proof-verify.mjs",
+      "--self-test",
+      "--json",
+      "--require-external-user-client-urls"
+    ],
+    {
+      mustContain: '"ok": false'
+    }
+  );
+  verifySelfTestFailureJson(
+    loopbackUserClientJson,
+    "user client external url user"
+  );
 
   const wrongRuntimeKindJson = runFailureStep("proof verifier wrong-runtime-kind self-test", [
     "scripts/federated-distributed-proof-verify.mjs",

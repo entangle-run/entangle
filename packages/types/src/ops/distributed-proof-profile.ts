@@ -1,5 +1,9 @@
 import { z } from "zod";
-import { identifierSchema, httpUrlSchema, websocketUrlSchema } from "../common/primitives.js";
+import {
+  identifierSchema,
+  httpUrlSchema,
+  websocketUrlSchema
+} from "../common/primitives.js";
 import { runtimeNodeKindSchema } from "../federation/runner.js";
 import { agentEngineProfileKindSchema } from "../resources/catalog.js";
 
@@ -26,6 +30,7 @@ export const distributedProofProfileSchema = z
     relayUrls: z.array(websocketUrlSchema).default([]),
     requireConversation: z.boolean().optional(),
     requireArtifactEvidence: z.boolean().optional(),
+    requireExternalUserClientUrls: z.boolean().optional(),
     requirePublishedGitArtifact: z.boolean().optional(),
     reviewerUserNodeId: identifierSchema.default("reviewer"),
     reviewerUserRunnerId: identifierSchema.default(

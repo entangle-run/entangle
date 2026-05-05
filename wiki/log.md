@@ -6004,3 +6004,14 @@ draft.
 The mutation path is unchanged: the browser still calls the local Human
 Interface Runtime API, Host signs the runner command, and the assigned runner
 validates and writes its own wiki state.
+
+## [2026-05-05] ops | Added external User Client URL proof check
+
+Added `references/510-distributed-proof-external-user-client-url-slice.md`.
+Distributed proof profiles, generated proof-kit verifier commands, and direct
+verifier runs can now opt into `requireExternalUserClientUrls` /
+`--require-external-user-client-urls`.
+
+When enabled, the verifier rejects projected User Client URLs on localhost,
+loopback, or wildcard addresses. Same-machine proofs remain supported by
+leaving the option disabled.

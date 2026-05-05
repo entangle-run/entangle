@@ -410,6 +410,10 @@ capabilities, assignments, projection, default `running` runtime observations,
 distinct multi-user User Client URLs, and optional conversation evidence
 without reading Host or runner files; custom proof profiles can override the
 expected agent engine kind while OpenCode remains the default.
+Generated proof profiles and verifier runs can now also opt into
+`requireExternalUserClientUrls`, which rejects loopback or wildcard projected
+User Client URLs when a physical multi-machine proof needs to show that
+human-node clients are reachable beyond their own host.
 When a proof profile carries explicit assignments, the verifier now uses those
 manifest assignment ids rather than deriving ids from runner ids.
 Generated proof profiles now also carry primary User Node conversation and
@@ -436,8 +440,8 @@ plus proof-kit and verifier non-default expected-agent-engine/profile manifest
 paths, invalid proof-profile failure paths, proof-kit relay-health generation
 paths, generated post-work artifact-verifier paths, required-artifact-evidence
 success/failure paths, published-git-artifact success/failure paths,
-published-git-ref success/failure paths, custom
-proof-profile assignment ids, and relay-health
+published-git-ref success/failure paths, loopback User Client URL rejection,
+custom proof-profile assignment ids, and relay-health
 success/failure paths plus git-backend-health success/failure paths before a
 real distributed proof is attempted.
 Host runtime synchronization now also preserves observed User Node

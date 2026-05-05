@@ -24,7 +24,8 @@ groups projected runner receipts under assignment rows.
 
 Missing surfaces:
 
-- deeper per-relay transport diagnostics;
+- independent per-relay transport telemetry beyond the current derived
+  per-relay Host status rows;
 - richer participant-aware runtime reassignment workflows beyond the current
   CLI operator command and Studio prepare/timeline controls;
 - richer participant-side review flows beyond the current scoped artifact,
@@ -134,6 +135,10 @@ Recently added:
   `wiki_page` cards when Host projection contains a complete preview, loading
   the projected content and normalized page path into the participant update
   form as a replacement draft.
+- Distributed proof profiles, generated verifier scripts, and direct verifier
+  runs can now opt into `requireExternalUserClientUrls`, which rejects
+  loopback or wildcard projected User Client URLs for physical multi-machine
+  proof runs.
 - Host status now includes bounded federated control/observe transport health,
   CLI host-status summaries include it, and Studio's Host Status panel renders
   the same Host-owned read model.

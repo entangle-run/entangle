@@ -1455,6 +1455,10 @@ Current status:
   the participant page-update form as replacement drafts, so a running User
   Node can review and edit visible wiki memory without copying content out of
   projection cards;
+- distributed proof profiles and generated verifier commands can now require
+  projected User Client URLs to be non-loopback and non-wildcard, giving
+  physical multi-machine proof runs an opt-in check that human-node clients are
+  reachable beyond the node's own machine;
 - the remaining distributed proof hardening is infrastructure-backed
   orchestration that can provision multiple machines or VM/container boundaries
   around the verifier.

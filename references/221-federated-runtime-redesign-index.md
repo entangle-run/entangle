@@ -310,6 +310,7 @@ same-machine slice records.
 - [507-user-node-runtime-reassignment-surface-slice.md](507-user-node-runtime-reassignment-surface-slice.md)
 - [508-user-client-command-receipt-detail-slice.md](508-user-client-command-receipt-detail-slice.md)
 - [509-user-client-wiki-draft-prefill-slice.md](509-user-client-wiki-draft-prefill-slice.md)
+- [510-distributed-proof-external-user-client-url-slice.md](510-distributed-proof-external-user-client-url-slice.md)
 
 ## Audited Scope
 
@@ -1067,7 +1068,11 @@ source-history publication from the agent node, tightening the proof that
 runner-owned work handoff reached a git-backed substrate. The verifier can now
 also optionally run `git ls-remote` from the operator machine against projected
 published git artifact locators to prove the advertised branch contains the
-projected commit. Host session cancellation no longer falls back to writing
+projected commit. Generated proof profiles and verifier commands can now also
+require projected User Client URLs to be non-loopback and non-wildcard, giving
+physical multi-machine proofs an explicit check that human-node clients are not
+advertised only as local-machine endpoints. Host session cancellation no
+longer falls back to writing
 request records into runner runtime roots; it requires an accepted federated
 assignment and active control-plane publication. The current Studio/User Client
 boundary is now documented explicitly: Studio is the operator/admin console,
