@@ -63,8 +63,10 @@ import {
   type HostEventListQuery,
   type HostEventListResponse,
   type HostEventIntegrityResponse,
+  type HostEventIntegritySignedReportResponse,
   type HostEventRecord,
   hostEventIntegrityResponseSchema,
+  hostEventIntegritySignedReportResponseSchema,
   hostAuthorityExportResponseSchema,
   type HostAuthorityExportResponse,
   hostAuthorityImportRequestSchema,
@@ -5254,6 +5256,57 @@ export async function inspectHostEventIntegrity(): Promise<HostEventIntegrityRes
     schemaVersion: "1",
     status: unverifiableEventCount > 0 ? "unverifiable" : "valid",
     unverifiableEventCount
+  });
+}
+
+export async function exportSignedHostEventIntegrityReport(): Promise<HostEventIntegritySignedReportResponse> {
+  const { authority, secretKey } = await readAvailableHostAuthoritySecret();
+  const integrity = await inspectHostEventIntegrity();
+  const generatedAt = nowIsoString();
+  const reportPayload = {
+    generatedAt,
+    hostAuthorityPubkey: authority.publicKey,
+    integrity,
+    reportKind: "host_event_integrity",
+    schemaVersion: "1"
+  };
+  const signedContent = JSON.stringify(canonicalizeForHash(reportPayload));
+  const reportHash = createHash("sha256")
+    .update(signedContent, "utf8")
+    .digest("hex");
+  const signedAt = nowIsoString();
+  const createdAtUnix = Math.floor(new Date(signedAt).getTime() / 1000);
+  const tags = [
+    ["report", "host_event_integrity"],
+    ["report_hash", reportHash]
+  ];
+  const signedEvent = finalizeEvent(
+    {
+      content: signedContent,
+      created_at: createdAtUnix,
+      kind: entangleNostrRumorKind,
+      tags
+    },
+    parseNostrSecretKeyBytes(secretKey)
+  );
+
+  return hostEventIntegritySignedReportResponseSchema.parse({
+    generatedAt,
+    hostAuthorityPubkey: authority.publicKey,
+    integrity,
+    reportHash,
+    reportKind: "host_event_integrity",
+    schemaVersion: "1",
+    signedContent,
+    signedEvent: {
+      createdAt: signedAt,
+      createdAtUnix,
+      eventId: signedEvent.id,
+      kind: signedEvent.kind,
+      signature: signedEvent.sig,
+      signerPubkey: signedEvent.pubkey,
+      tags: signedEvent.tags
+    }
   });
 }
 

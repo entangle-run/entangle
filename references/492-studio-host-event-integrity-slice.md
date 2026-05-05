@@ -58,5 +58,6 @@ route remains the source of truth when available.
 
 ## Open Questions
 
-Signed audit export and external retention remain separate production
-hardening work.
+`493-signed-host-event-integrity-report-slice.md` adds compact signed report
+export. Full event-bundle export and external retention remain separate
+production hardening work.

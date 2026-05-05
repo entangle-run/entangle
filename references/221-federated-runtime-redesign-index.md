@@ -293,6 +293,7 @@ same-machine slice records.
 - [490-host-event-hash-chain-slice.md](490-host-event-hash-chain-slice.md)
 - [491-host-event-integrity-inspection-slice.md](491-host-event-integrity-inspection-slice.md)
 - [492-studio-host-event-integrity-slice.md](492-studio-host-event-integrity-slice.md)
+- [493-signed-host-event-integrity-report-slice.md](493-signed-host-event-integrity-report-slice.md)
 
 ## Audited Scope
 
@@ -1047,14 +1048,16 @@ sequence. Host now also exposes `GET /v1/events/integrity`, host-client
 support, and `entangle host events integrity` to classify the persisted trace
 as valid, broken, or partially unverifiable because of older un-hashed records.
 Studio's Host Status panel now renders the same Host-owned event-integrity
-summary for operator visibility.
-This is tamper evidence for the Host trace, not final production retention or
-durable operator identity.
+summary for operator visibility. Host can also export the same integrity result
+as a Host Authority-signed report through `GET /v1/events/integrity/signed`
+and `entangle host events integrity --signed`. This is tamper evidence and
+signed provenance for the Host trace, not final production retention or durable
+operator identity.
 The highest-value remaining implementation areas are richer
 model-guided memory maintenance, deeper delegated-session semantics beyond the
 current controlled handoff path, collaborative wiki merge UI and multi-page
 patch-set semantics on top of the participant-scoped page upsert command,
 repository lifecycle and replicated/fallback artifact behavior,
 infrastructure-backed multi-machine proof execution, non-disposable upgrade
-behavior, signed audit export/retention, and deeper production
+behavior, full audit bundle export/retention, and deeper production
 identity/authorization beyond the scoped bootstrap-token boundary.

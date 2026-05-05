@@ -5815,3 +5815,13 @@ in the Host Status panel.
 
 The browser does not recompute the chain; it formats the Host API result so
 Studio and CLI remain aligned on audit posture.
+
+## [2026-05-05] host | Added signed Host event integrity reports
+
+Added `references/493-signed-host-event-integrity-report-slice.md`. Host now
+exports compact Host Authority-signed event integrity reports through
+`GET /v1/events/integrity/signed`.
+
+host-client exposes the same route, and `entangle host events integrity
+--signed` prints the signed report with exact signed content, report hash, and
+Nostr signature metadata.

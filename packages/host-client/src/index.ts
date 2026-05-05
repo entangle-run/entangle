@@ -28,6 +28,7 @@ import {
   hostArtifactBackendCacheClearRequestSchema,
   hostArtifactBackendCacheClearResponseSchema,
   hostEventIntegrityResponseSchema,
+  hostEventIntegritySignedReportResponseSchema,
   hostEventListResponseSchema,
   hostEventRecordSchema,
   hostProjectionSnapshotSchema,
@@ -134,6 +135,7 @@ import {
   type HostArtifactBackendCacheClearRequest,
   type HostArtifactBackendCacheClearResponse,
   type HostEventIntegrityResponse,
+  type HostEventIntegritySignedReportResponse,
   type HostEventListQuery,
   type HostEventListResponse,
   type HostEventRecord,
@@ -719,6 +721,13 @@ export function createHostClient(options: HostClientOptions) {
       return parseResponse(
         await hostFetch(`${baseUrl}/v1/events/integrity`),
         hostEventIntegrityResponseSchema
+      );
+    },
+
+    async exportSignedHostEventIntegrityReport(): Promise<HostEventIntegritySignedReportResponse> {
+      return parseResponse(
+        await hostFetch(`${baseUrl}/v1/events/integrity/signed`),
+        hostEventIntegritySignedReportResponseSchema
       );
     },
 

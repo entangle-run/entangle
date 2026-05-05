@@ -1390,7 +1390,8 @@ Current status:
   summaries expose the hashes when present; Host, host-client, and CLI now
   expose an event-integrity inspection surface that reports valid, broken, or
   partially unverifiable event chains, and Studio renders the same Host-owned
-  event-integrity summary in Host Status;
+  event-integrity summary in Host Status; Host and CLI can also export a Host
+  Authority-signed integrity report for compact audit provenance;
 - the remaining distributed proof hardening is infrastructure-backed
   orchestration that can provision multiple machines or VM/container boundaries
   around the verifier.

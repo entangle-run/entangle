@@ -36,6 +36,7 @@ import {
   hostAuthorityInspectionResponseSchema,
   hostArtifactBackendCacheClearResponseSchema,
   hostEventIntegrityResponseSchema,
+  hostEventIntegritySignedReportResponseSchema,
   hostEventListResponseSchema,
   hostEventRecordSchema,
   hostErrorResponseSchema,
@@ -3552,6 +3553,31 @@ describe("buildHostServer", () => {
       expect(integrity.checkedEventCount).toBeGreaterThanOrEqual(events.length);
       expect(integrity.firstBrokenEvent).toBeUndefined();
       expect(integrity.lastAuditRecordHash).toMatch(/^[a-f0-9]{64}$/);
+
+      const signedReportResponse = await server.inject({
+        headers: {
+          authorization: "Bearer host-secret"
+        },
+        method: "GET",
+        url: "/v1/events/integrity/signed"
+      });
+      const signedReport = hostEventIntegritySignedReportResponseSchema.parse(
+        signedReportResponse.json()
+      );
+
+      expect(
+        createHash("sha256")
+          .update(signedReport.signedContent, "utf8")
+          .digest("hex")
+      ).toBe(signedReport.reportHash);
+      expect(signedReport.integrity.status).toBe("valid");
+      expect(signedReport.signedEvent.signerPubkey).toBe(
+        signedReport.hostAuthorityPubkey
+      );
+      expect(signedReport.signedEvent.tags).toContainEqual([
+        "report_hash",
+        signedReport.reportHash
+      ]);
 
       expect(events).toEqual(
         expect.arrayContaining([

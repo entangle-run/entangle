@@ -2213,10 +2213,15 @@ hostEventsCommand
 
 hostEventsCommand
   .command("integrity")
+  .option("--signed", "Print a Host Authority-signed integrity report.")
   .description("Verify the Host event audit hash chain.")
-  .action(async (_options: unknown, command: Command) => {
+  .action(async (options: { signed?: boolean }, command: Command) => {
     const client = createCliHostClient(command);
-    printJson(await client.inspectHostEventIntegrity());
+    printJson(
+      options.signed
+        ? await client.exportSignedHostEventIntegrityReport()
+        : await client.inspectHostEventIntegrity()
+    );
   });
 
 hostEventsCommand

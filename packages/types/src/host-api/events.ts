@@ -587,6 +587,27 @@ export const hostEventIntegrityResponseSchema = z.object({
   unverifiableEventCount: z.number().int().nonnegative()
 });
 
+export const hostEventIntegritySignedEventSchema = z.object({
+  createdAt: nonEmptyStringSchema,
+  createdAtUnix: z.number().int().nonnegative(),
+  eventId: nostrEventIdSchema,
+  kind: z.number().int().nonnegative(),
+  signature: nonEmptyStringSchema,
+  signerPubkey: nostrPublicKeySchema,
+  tags: z.array(z.array(nonEmptyStringSchema))
+});
+
+export const hostEventIntegritySignedReportResponseSchema = z.object({
+  generatedAt: nonEmptyStringSchema,
+  hostAuthorityPubkey: nostrPublicKeySchema,
+  integrity: hostEventIntegrityResponseSchema,
+  reportHash: sha256DigestSchema,
+  reportKind: z.literal("host_event_integrity"),
+  schemaVersion: z.literal("1"),
+  signedContent: nonEmptyStringSchema,
+  signedEvent: hostEventIntegritySignedEventSchema
+});
+
 export type CatalogUpdatedEvent = z.infer<typeof catalogUpdatedEventSchema>;
 export type PackageSourceAdmittedEvent = z.infer<
   typeof packageSourceAdmittedEventSchema
@@ -682,4 +703,10 @@ export type HostEventIntegrityIssue = z.infer<
 >;
 export type HostEventIntegrityResponse = z.infer<
   typeof hostEventIntegrityResponseSchema
+>;
+export type HostEventIntegritySignedEvent = z.infer<
+  typeof hostEventIntegritySignedEventSchema
+>;
+export type HostEventIntegritySignedReportResponse = z.infer<
+  typeof hostEventIntegritySignedReportResponseSchema
 >;

@@ -823,6 +823,7 @@ files are the active federated redesign pack.
 491. [490-host-event-hash-chain-slice.md](490-host-event-hash-chain-slice.md)
 492. [491-host-event-integrity-inspection-slice.md](491-host-event-integrity-inspection-slice.md)
 493. [492-studio-host-event-integrity-slice.md](492-studio-host-event-integrity-slice.md)
+494. [493-signed-host-event-integrity-report-slice.md](493-signed-host-event-integrity-report-slice.md)
 
 ## Role of this corpus
 

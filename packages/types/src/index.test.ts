@@ -34,6 +34,7 @@ import {
   hostAuthorityInspectionResponseSchema,
   hostErrorResponseSchema,
   hostEventIntegrityResponseSchema,
+  hostEventIntegritySignedReportResponseSchema,
   hostEventListQuerySchema,
   hostProjectionSnapshotSchema,
   hostEventRecordSchema,
@@ -3215,6 +3216,42 @@ describe("host event contracts", () => {
 
     expect(result.status).toBe("valid");
     expect(result.checkedEventCount).toBe(2);
+  });
+
+  it("accepts signed host event integrity report responses", () => {
+    const result = hostEventIntegritySignedReportResponseSchema.parse({
+      generatedAt: "2026-05-05T00:00:00.000Z",
+      hostAuthorityPubkey:
+        "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+      integrity: {
+        checkedEventCount: 2,
+        genesisHash:
+          "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+        schemaVersion: "1",
+        status: "valid",
+        unverifiableEventCount: 0
+      },
+      reportHash:
+        "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+      reportKind: "host_event_integrity",
+      schemaVersion: "1",
+      signedContent: "{\"reportKind\":\"host_event_integrity\"}",
+      signedEvent: {
+        createdAt: "2026-05-05T00:00:00.000Z",
+        createdAtUnix: 1777939200,
+        eventId:
+          "dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd",
+        kind: 30078,
+        signature:
+          "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+        signerPubkey:
+          "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        tags: [["report", "host_event_integrity"]]
+      }
+    });
+
+    expect(result.reportKind).toBe("host_event_integrity");
+    expect(result.signedEvent.signerPubkey).toBe(result.hostAuthorityPubkey);
   });
 
   it("accepts a typed bootstrap operator request audit event", () => {

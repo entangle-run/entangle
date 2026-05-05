@@ -19,8 +19,10 @@ remain readable. Host event appends must be serialized so concurrent operator
 requests do not fork the local audit chain.
 
 This is still bootstrap hardening, not final production audit retention. It
-adds local tamper evidence but does not yet implement signed audit export,
-external retention, or durable operator principals.
+adds local tamper evidence, and
+`493-signed-host-event-integrity-report-slice.md` adds compact signed report
+export. Full event-bundle export, external retention, and durable operator
+principals remain separate.
 
 ## Impacted Modules/Files
 
@@ -86,8 +88,8 @@ continues the chain from that point.
   Mitigation: Host serializes append operations and event reads await the
   append queue before reading the log.
 - Risk: operators mistake local hash chaining for immutable retention.
-  Mitigation: docs keep signed export, external retention, and production
-  operator identity as remaining hardening work.
+  Mitigation: docs keep full event-bundle export, external retention, and
+  production operator identity as remaining hardening work.
 - Risk: canonicalization drift makes verification brittle.
   Mitigation: the hash is computed from sorted object keys and stable array
   order, excluding only `auditRecordHash`.
@@ -97,5 +99,6 @@ continues the chain from that point.
 - `491-host-event-integrity-inspection-slice.md` adds a Host API and CLI
   command that verifies the full event chain and reports the first broken or
   unverifiable event.
-- Should production audit export be signed by Host Authority, an Operator
-  Identity, or both?
+- `493-signed-host-event-integrity-report-slice.md` signs compact integrity
+  reports with Host Authority; production bundle export and Operator Identity
+  co-signing remain future work.

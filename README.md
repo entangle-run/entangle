@@ -1259,9 +1259,11 @@ This repository currently contains:
   `entangle-cli` supports `host events list` plus `host events watch` with
   recovery-oriented filtering plus `host events integrity` for Host-side event
   hash-chain verification, Studio renders the same Host-owned integrity
-  summary in Host Status, and Studio consumes the live host event stream to
-  inspect runtime recovery policy, controller state, recovery history, and live
-  recovery events without introducing a client-owned recovery model, with
+  summary in Host Status, `host events integrity --signed` exports a compact
+  Host Authority-signed integrity report, and Studio consumes the live host
+  event stream to inspect runtime recovery policy, controller state, recovery
+  history, and live recovery events without introducing a client-owned recovery
+  model, with
   shared recovery presentation helpers and compact
   `host runtimes recovery --summary` output now keeping Studio and CLI
   vocabulary aligned;
@@ -1472,8 +1474,9 @@ The highest-value remaining gaps are:
 - production identity and authorization beyond the bootstrap operator-token
   boundary, multi-token attribution, visible status summary, route-level
   bootstrap permissions, and coarse read-only `viewer` enforcement, including
-  durable principals, policy-backed permission sources, and stronger signed
-  retention/export beyond the current Host-verifiable hash-chained event trace;
+  durable principals, policy-backed permission sources, and stronger audit
+  bundle retention/export beyond the current Host-verifiable, Host
+  Authority-signed integrity report;
 - stronger end-to-end deployment and integration hardening beyond the current
   disposable same-machine profile, especially infrastructure-backed
   multi-machine proof execution and non-disposable upgrade/repair behavior.

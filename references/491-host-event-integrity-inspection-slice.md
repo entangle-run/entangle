@@ -88,3 +88,6 @@ continue from pre-hash event traces while still exposing the trust gap.
   report and event bundle?
 - `492-studio-host-event-integrity-slice.md` adds the Host Status panel
   surface for the same Host-owned event-integrity response.
+- `493-signed-host-event-integrity-report-slice.md` adds compact Host
+  Authority-signed integrity report export; full event-bundle export remains
+  open.

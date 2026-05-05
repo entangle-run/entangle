@@ -786,6 +786,65 @@ describe("createHostClient", () => {
     ]);
   });
 
+  it("parses signed host event integrity report responses from the host surface", async () => {
+    const requests: string[] = [];
+    const client = createHostClient({
+      baseUrl: "http://entangle-host.test",
+      fetchImpl: (url) => {
+        requests.push(url);
+        return Promise.resolve(
+          createMockResponse({
+            body: JSON.stringify({
+              generatedAt: "2026-05-05T00:00:00.000Z",
+              hostAuthorityPubkey:
+                "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+              integrity: {
+                checkedEventCount: 3,
+                genesisHash:
+                  "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+                schemaVersion: "1",
+                status: "valid",
+                unverifiableEventCount: 0
+              },
+              reportHash:
+                "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+              reportKind: "host_event_integrity",
+              schemaVersion: "1",
+              signedContent: "{\"reportKind\":\"host_event_integrity\"}",
+              signedEvent: {
+                createdAt: "2026-05-05T00:00:00.000Z",
+                createdAtUnix: 1777939200,
+                eventId:
+                  "dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd",
+                kind: 30078,
+                signature:
+                  "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+                signerPubkey:
+                  "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+                tags: [["report", "host_event_integrity"]]
+              }
+            }),
+            ok: true,
+            status: 200
+          })
+        );
+      }
+    });
+
+    await expect(
+      client.exportSignedHostEventIntegrityReport()
+    ).resolves.toMatchObject({
+      reportKind: "host_event_integrity",
+      signedEvent: {
+        signerPubkey:
+          "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+      }
+    });
+    expect(requests).toEqual([
+      "http://entangle-host.test/v1/events/integrity/signed"
+    ]);
+  });
+
   it("calls Host Authority inspect, export, and import surfaces", async () => {
     const authority = {
       authorityId: "authority-main",

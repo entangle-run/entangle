@@ -43,6 +43,7 @@ import {
   identifierSchema,
   nostrEventIdSchema,
   hostEventIntegrityResponseSchema,
+  hostEventIntegritySignedReportResponseSchema,
   hostEventListQuerySchema,
   hostEventListResponseSchema,
   hostEventStreamQuerySchema,
@@ -176,6 +177,7 @@ import {
   listRuntimeTurns,
   listHostEvents,
   inspectHostEventIntegrity,
+  exportSignedHostEventIntegrityReport,
   getCatalogInspection,
   getGraphInspection,
   getGraphRevision,
@@ -1898,6 +1900,12 @@ export async function buildHostServer(options: HostServerOptions = {}) {
 
   server.get("/v1/events/integrity", async () =>
     hostEventIntegrityResponseSchema.parse(await inspectHostEventIntegrity())
+  );
+
+  server.get("/v1/events/integrity/signed", async () =>
+    hostEventIntegritySignedReportResponseSchema.parse(
+      await exportSignedHostEventIntegrityReport()
+    )
   );
 
   server.route({
