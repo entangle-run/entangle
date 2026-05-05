@@ -285,6 +285,7 @@ same-machine slice records.
 - [482-federated-process-smoke-fake-external-http-slice.md](482-federated-process-smoke-fake-external-http-slice.md)
 - [483-docker-runner-join-default-slice.md](483-docker-runner-join-default-slice.md)
 - [484-runner-startup-explicit-mode-slice.md](484-runner-startup-explicit-mode-slice.md)
+- [485-user-client-approval-turn-correlation-slice.md](485-user-client-approval-turn-correlation-slice.md)
 
 ## Audited Scope
 
@@ -758,7 +759,10 @@ for delegated sessions without copying transcripts.
     signer audit state when available. The process-runner smoke now verifies
     signer preservation across User Node publish responses, Host inbox records,
     User Client conversation records, source reviews, approval responses,
-    synthetic inbound agent messages, and the second User Node path.
+    synthetic inbound agent messages, and the second User Node path. User
+    Client approval responses now preserve the originating turn id from the
+    inbound approval request, and the process-runner smoke verifies both the
+    publish response and Host inbox record retain that correlation.
     Active User Node and operator-surface specs have been realigned so direct
     Host approval/review mutation removal is treated as complete, not as an
     open gap.
@@ -782,7 +786,9 @@ for delegated sessions without copying transcripts.
     upsert path for visible `wiki_page` resources in the selected User Node
     conversation; runner-enforced stale-edit guards and single-page wiki patch
     mode are implemented; and the User Client can request visible
-    source-history reconcile through the Human Interface Runtime. Richer
+    source-history reconcile through the Human Interface Runtime. User Client
+    approval responses now keep turn-level correlation with the agent request
+    they answer. Richer
     collaborative wiki merge UI, multi-page patch-set semantics, repository
     lifecycle behavior, replicated/fallback artifact behavior, and richer
     memory promotion remain open.

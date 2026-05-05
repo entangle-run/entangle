@@ -1,5 +1,14 @@
 # Entangle Wiki Log
 
+## [2026-05-05] user-client | Preserved approval turn correlation
+
+Added `references/485-user-client-approval-turn-correlation-slice.md`. The
+running User Client now includes the inbound approval request `turnId` when it
+publishes signed `approval.response` messages, keeping human-node approval
+decisions attached to the agent turn they answer. The federated process smoke
+now also checks the publish response and Host inbox record for that turn
+correlation.
+
 ## [2026-05-05] runner | Required explicit runner startup mode
 
 Added `references/484-runner-startup-explicit-mode-slice.md`. The runner now

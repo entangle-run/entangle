@@ -336,7 +336,9 @@ enforce the approval record's approver node set before applying inbound
 approval responses. Runner A2A envelopes now carry signer pubkeys when
 available, Nostr delivery verifies the NIP-59 seal signer and drops
 seal/rumor/fromPubkey mismatches, and service handling rejects mismatched
-signer envelopes before state mutation. User Node
+signer envelopes before state mutation. User Client approval responses now
+preserve the originating approval-request turn id, keeping signed human
+decisions correlated with the agent turn they answer. User Node
 inbox records now preserve signer pubkeys for inbound and outbound messages
 when available, and Host rejects inbound User Node message records whose signer
 differs from the payload `fromPubkey`. CLI compact User Node message summaries
@@ -1262,7 +1264,8 @@ The current implementation-truth audit now lives in
   source-history/wiki publication visibility checks plus explicit
   runner-owned artifact/source/wiki command completion receipts plus User
   Client and Studio wiki page upsert plus runner-enforced stale-edit detection
-  plus single-page wiki patch mode plus User Client source-history reconcile;
+  plus single-page wiki patch mode plus User Client source-history reconcile
+  plus approval-response turn correlation;
   the next git gaps are richer collaborative wiki merge UI, repository
   lifecycle behavior, and explicit fallback or
   replication behavior,

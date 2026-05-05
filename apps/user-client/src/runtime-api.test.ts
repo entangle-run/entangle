@@ -1,4 +1,5 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
+import type { UserNodeMessageRecord } from "@entangle/types";
 import {
   buildRuntimeApiUrl,
   chooseConversationId,
@@ -12,6 +13,7 @@ import {
   markConversationRead,
   normalizeApiBaseUrl,
   proposeArtifactSourceChange,
+  publishApprovalResponse,
   publishSourceHistory,
   publishWikiRepository,
   reconcileSourceHistory,
@@ -100,6 +102,92 @@ describe("user client runtime API helpers", () => {
           "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
       } as Parameters<typeof formatSignerLabel>[0])
     ).toBeUndefined();
+  });
+
+  it("preserves turn correlation when publishing approval responses", async () => {
+    const fetchMock = vi.spyOn(globalThis, "fetch").mockImplementation(() =>
+      Promise.resolve(
+        new Response(
+          JSON.stringify({
+            conversationId: "conversation-alpha",
+            deliveryStatus: "published",
+            eventId:
+              "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+            fromNodeId: "user",
+            fromPubkey:
+              "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+            messageType: "approval.response",
+            publishedRelays: ["ws://relay.test"],
+            relayUrls: ["ws://relay.test"],
+            sessionId: "session-alpha",
+            targetNodeId: "worker-it",
+            toPubkey:
+              "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+            turnId: "turn-alpha"
+          }),
+          {
+            headers: {
+              "content-type": "application/json"
+            },
+            status: 200
+          }
+        )
+      )
+    );
+    const approvalRequest = {
+      approval: {
+        approvalId: "approval-alpha",
+        approverNodeIds: ["user"],
+        reason: "Needs human approval."
+      },
+      artifactRefs: [],
+      conversationId: "conversation-alpha",
+      createdAt: "2026-05-05T12:00:00.000Z",
+      direction: "inbound",
+      deliveryErrors: [],
+      eventId:
+        "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+      fromNodeId: "worker-it",
+      fromPubkey:
+        "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+      messageType: "approval.request",
+      peerNodeId: "worker-it",
+      publishedRelays: [],
+      relayUrls: ["ws://relay.test"],
+      schemaVersion: "1",
+      sessionId: "session-alpha",
+      summary: "Approval requested.",
+      toNodeId: "user",
+      toPubkey:
+        "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+      turnId: "turn-alpha",
+      userNodeId: "user"
+    } satisfies UserNodeMessageRecord;
+
+    await publishApprovalResponse({
+      baseUrl: "http://127.0.0.1:4300",
+      decision: "approved",
+      message: approvalRequest
+    });
+
+    expect(fetchMock.mock.calls[0]?.[0]).toBe(
+      "http://127.0.0.1:4300/api/messages"
+    );
+    expect(JSON.parse(fetchMock.mock.calls[0]?.[1]?.body as string)).toEqual({
+      approval: {
+        approvalId: "approval-alpha",
+        decision: "approved",
+        reason: "Needs human approval."
+      },
+      conversationId: "conversation-alpha",
+      messageType: "approval.response",
+      parentMessageId:
+        "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+      sessionId: "session-alpha",
+      summary: "Approved approval-alpha.",
+      targetNodeId: "worker-it",
+      turnId: "turn-alpha"
+    });
   });
 
   it("calls runtime-local review and preview JSON APIs", async () => {

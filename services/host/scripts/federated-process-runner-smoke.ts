@@ -4809,6 +4809,7 @@ async function main(): Promise<void> {
     );
 
     const approvalId = `approval-${runId}`;
+    const approvalRequestTurnId = `${turnId}-approval-request`;
     const syntheticApprovalRequestMessageId = await publishSyntheticA2AMessage({
       message: {
         constraints: {
@@ -4830,7 +4831,7 @@ async function main(): Promise<void> {
         sessionId: userMessage.sessionId,
         toNodeId: "user",
         toPubkey: materializedUserContext.identityContext.publicKey,
-        turnId: `${turnId}-approval-request`,
+        turnId: approvalRequestTurnId,
         work: {
           artifactRefs: [],
           metadata: {
@@ -4900,7 +4901,8 @@ async function main(): Promise<void> {
         parentMessageId: syntheticApprovalRequestMessageId,
         sessionId: userMessage.sessionId,
         summary: `Approved ${approvalId}.`,
-        targetNodeId: "builder"
+        targetNodeId: "builder",
+        turnId: approvalRequestTurnId
       }),
       headers: {
         "content-type": "application/json"
@@ -4919,6 +4921,10 @@ async function main(): Promise<void> {
       approvalResponseMessage.signerPubkey ===
         materializedUserContext.identityContext.publicKey,
       "User Client JSON approval response must be signed by the assigned User Node identity."
+    );
+    assertCondition(
+      approvalResponseMessage.turnId === approvalRequestTurnId,
+      "User Client JSON approval response must preserve the approval request turn id."
     );
     const approvalResponseConversationDetail = await waitFor(
       "Host User Node approval response history",
@@ -4954,6 +4960,10 @@ async function main(): Promise<void> {
     assertSignerMatchesFromPubkey(
       approvalResponseRecord,
       "Host User Node approval response record"
+    );
+    assertCondition(
+      approvalResponseRecord.turnId === approvalRequestTurnId,
+      "Host User Node approval response record must preserve the approval request turn id."
     );
     printPass("user-node-approval-response", approvalId);
 

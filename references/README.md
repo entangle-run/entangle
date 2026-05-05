@@ -140,7 +140,9 @@ so matching responses from non-approver nodes do not transition the gate.
 Runner A2A envelopes now carry signer pubkeys when available, the Nostr A2A
 transport verifies the NIP-59 seal signer and drops seal/rumor/fromPubkey
 mismatches, and service handling rejects mismatched signer envelopes before
-state mutation. User Node inbox records now
+state mutation. User Client approval responses now preserve the originating
+approval-request turn id, keeping signed human decisions correlated with the
+agent turn they answer. User Node inbox records now
 preserve signer pubkeys for inbound and outbound messages when available, and
 Host rejects inbound User Node message records whose signer differs from the
 payload `fromPubkey`. CLI compact User Node message summaries and User Client
@@ -813,6 +815,7 @@ files are the active federated redesign pack.
 483. [482-federated-process-smoke-fake-external-http-slice.md](482-federated-process-smoke-fake-external-http-slice.md)
 484. [483-docker-runner-join-default-slice.md](483-docker-runner-join-default-slice.md)
 485. [484-runner-startup-explicit-mode-slice.md](484-runner-startup-explicit-mode-slice.md)
+486. [485-user-client-approval-turn-correlation-slice.md](485-user-client-approval-turn-correlation-slice.md)
 
 ## Role of this corpus
 

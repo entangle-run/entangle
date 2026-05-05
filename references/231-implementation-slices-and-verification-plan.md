@@ -898,6 +898,9 @@ Implementation record:
 - [484-runner-startup-explicit-mode-slice.md](484-runner-startup-explicit-mode-slice.md)
   makes unconfigured runner process startup fail fast instead of guessing an
   injected context file.
+- [485-user-client-approval-turn-correlation-slice.md](485-user-client-approval-turn-correlation-slice.md)
+  preserves the inbound approval request turn id when the User Client publishes
+  a signed approval response.
 - [465-cli-agent-engine-profile-upsert-slice.md](465-cli-agent-engine-profile-upsert-slice.md)
   adds a Host-backed CLI catalog command for creating and updating typed agent
   engine profiles, including attached OpenCode profiles, permission mode,
@@ -1258,6 +1261,9 @@ Current status:
   request event id, request signer, response event id, response signer, and
   source message id, and the runner stamps those fields for engine gates,
   inbound approval requests, and applied approval responses where available;
+- User Client approval responses now preserve the originating approval request
+  turn id so human-node decisions stay correlated with the agent turn they
+  answer;
 - runners now enforce the approval record's configured approver node set before
   applying inbound approval responses, leaving unauthorized matching responses
   from other nodes unable to approve, reject, close, or fail the gated session;

@@ -274,7 +274,8 @@ export function publishApprovalResponse(input: {
         parentMessageId: input.message.eventId,
         sessionId: input.message.sessionId,
         summary: `${input.decision === "approved" ? "Approved" : "Rejected"} ${input.message.approval.approvalId}.`,
-        targetNodeId: input.message.fromNodeId
+        targetNodeId: input.message.fromNodeId,
+        turnId: input.message.turnId
       }),
       headers: {
         "content-type": "application/json"

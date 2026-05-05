@@ -142,7 +142,9 @@ Client can also request source-history reconcile for visible plain
 `source_history` resources; publication-target resources are not accepted for
 reconcile because reconcile can mutate the runner-owned source workspace, and
 the smoke verifies that participant path through a completed projected command
-receipt.
+receipt. User Client approval responses now also preserve the originating turn
+id from the inbound approval request, keeping signed human decisions attached
+to the agent turn they answer.
 The smoke still runs without live model credentials. Live OpenCode
 behavior and real-provider credentials remain manual/operator validation, but
 the fake OpenCode path now proves same-session `--session` continuity through a
@@ -1461,7 +1463,8 @@ The highest-value remaining gaps are:
   target-specific source-history/wiki publication visibility checks and
   explicit runner-owned artifact/source/wiki command completion receipts,
   first operator and participant-scoped runner-owned wiki page upsert support
-  with runner-enforced stale-edit detection and single-page patch mode, richer
+  with runner-enforced stale-edit detection and single-page patch mode, User
+  Client approval-response turn correlation, richer
   collaborative wiki merge UI and repository lifecycle behavior beyond
   explicit target publication, and replicated fallback paths;
 - production identity and authorization beyond the bootstrap operator-token
