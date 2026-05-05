@@ -458,6 +458,8 @@ heartbeats from the real joined agent runner and User Node runners.
 Docker managed runners can now receive join config as inline JSON env, and the
 federated dev Compose profile selects Docker join mode with Host API bundle
 retrieval instead of mounting Host state just to read `runner-join.json`.
+Docker join bootstrap is now also the launcher default; direct runtime-context
+startup remains explicit compatibility/debug behavior.
 Runtime-context runner startup and the Human Interface Runtime now share the
 same mounted-file and environment-variable identity secret delivery support as
 generic runner join config.

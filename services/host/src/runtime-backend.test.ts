@@ -85,8 +85,9 @@ describe("createRuntimeBackend", () => {
     delete process.env.ENTANGLE_DOCKER_HUMAN_INTERFACE_PUBLIC_HOST;
   });
 
-  it("converges a missing container into a running runtime through the injected Docker client", async () => {
+  it("can launch a Docker runner through explicit runtime-context compatibility mode", async () => {
     process.env.ENTANGLE_RUNTIME_BACKEND = "docker";
+    process.env.ENTANGLE_DOCKER_RUNNER_BOOTSTRAP = "runtime-context";
     process.env.ENTANGLE_DOCKER_SHARED_STATE_VOLUME = "entangle-host-state";
     process.env.ENTANGLE_DOCKER_SHARED_STATE_TARGET = "/entangle-state";
     process.env.ENTANGLE_DOCKER_SECRET_STATE_VOLUME = "entangle-secret-state";
@@ -202,9 +203,8 @@ describe("createRuntimeBackend", () => {
     });
   });
 
-  it("can launch a Docker runner in generic join bootstrap mode", async () => {
+  it("defaults Docker runners to generic join bootstrap mode", async () => {
     process.env.ENTANGLE_RUNTIME_BACKEND = "docker";
-    process.env.ENTANGLE_DOCKER_RUNNER_BOOTSTRAP = "join";
     const tempRoot = await mkdtemp(path.join(os.tmpdir(), "entangle-join-"));
     const joinConfigPath = path.join(tempRoot, "runner-join.json");
     await writeFile(
@@ -288,6 +288,7 @@ describe("createRuntimeBackend", () => {
 
   it("publishes a reachable User Client port for Docker-backed User Node runtimes", async () => {
     process.env.ENTANGLE_RUNTIME_BACKEND = "docker";
+    process.env.ENTANGLE_DOCKER_RUNNER_BOOTSTRAP = "runtime-context";
     process.env.ENTANGLE_DOCKER_HUMAN_INTERFACE_BIND_HOST = "127.0.0.1";
     process.env.ENTANGLE_DOCKER_HUMAN_INTERFACE_PORT_BASE = "42000";
     process.env.ENTANGLE_DOCKER_HUMAN_INTERFACE_PORT_RANGE = "1";
@@ -366,6 +367,7 @@ describe("createRuntimeBackend", () => {
 
   it("recreates stale containers when the injected runtime context changed", async () => {
     process.env.ENTANGLE_RUNTIME_BACKEND = "docker";
+    process.env.ENTANGLE_DOCKER_RUNNER_BOOTSTRAP = "runtime-context";
 
     const dockerClient = createFakeDockerClient();
     dockerClient.inspectImage.mockResolvedValue(true);
@@ -427,6 +429,7 @@ describe("createRuntimeBackend", () => {
 
   it("recreates stale containers when the restart generation changed even if the runtime context stayed the same", async () => {
     process.env.ENTANGLE_RUNTIME_BACKEND = "docker";
+    process.env.ENTANGLE_DOCKER_RUNNER_BOOTSTRAP = "runtime-context";
 
     const dockerClient = createFakeDockerClient();
     dockerClient.inspectImage.mockResolvedValue(true);

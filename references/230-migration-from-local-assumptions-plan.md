@@ -8,9 +8,10 @@ The repo still has local deployment assumptions in implementation:
 - one injected `effective-runtime-context.json`;
 - `RuntimeBackend` as memory or Docker launcher;
 - Docker socket mounted into Host for the current single-machine adapter;
-- shared Host/runner state and secret volumes still exist for direct
-  runtime-context compatibility, but Docker join mode can now deliver inline
-  join config JSON and avoid mounting Host volumes into managed runner
+- direct runtime-context Docker bootstrap remains available only as explicit
+  compatibility/debug behavior; the Docker launcher default is now generic
+  join mode, and the federated dev profile no longer advertises shared
+  Host/runner state or secret mount env defaults for managed join-mode
   containers;
 - Host file reads from runner `runtimeRoot`;
 - Host approval and cancellation writes into runner runtime state;
@@ -106,7 +107,9 @@ Classified results:
     startup.
   - Docker managed runners needing Host volume access for join config delivery:
     fixed for join mode by
-    [317-docker-join-config-env-slice.md](317-docker-join-config-env-slice.md).
+    [317-docker-join-config-env-slice.md](317-docker-join-config-env-slice.md),
+    and join bootstrap is now the Docker launcher default in
+    [483-docker-runner-join-default-slice.md](483-docker-runner-join-default-slice.md).
   - runner Host API bootstrap that copies directly from Host-local context
     paths: fixed for default joined runners by
     [256-portable-runtime-bootstrap-bundle-slice.md](256-portable-runtime-bootstrap-bundle-slice.md).

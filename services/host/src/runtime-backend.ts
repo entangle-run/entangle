@@ -305,9 +305,9 @@ class MemoryRuntimeBackend implements RuntimeBackend {
 class DockerRuntimeBackend implements RuntimeBackend {
   readonly kind = "docker" as const;
   private readonly bootstrapMode =
-    process.env.ENTANGLE_DOCKER_RUNNER_BOOTSTRAP?.trim() === "join"
-      ? "join"
-      : "runtime-context";
+    process.env.ENTANGLE_DOCKER_RUNNER_BOOTSTRAP?.trim() === "runtime-context"
+      ? "runtime-context"
+      : "join";
   private readonly joinConfigDelivery =
     process.env.ENTANGLE_DOCKER_RUNNER_JOIN_CONFIG_DELIVERY?.trim() === "path"
       ? "path"

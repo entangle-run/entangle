@@ -1,5 +1,14 @@
 # Entangle Wiki Log
 
+## [2026-05-05] host | Made Docker managed runners default to join bootstrap
+
+Added `references/483-docker-runner-join-default-slice.md`. The Docker runtime
+backend now defaults managed runners to generic join bootstrap, while direct
+runtime-context startup remains available only as explicit compatibility/debug
+behavior. The federated dev Compose profile no longer advertises shared
+Host/runner state or secret mount env defaults for managed join-mode
+containers.
+
 ## [2026-05-05] verification | Added federated fake external HTTP engine smoke
 
 Added `references/482-federated-process-smoke-fake-external-http-slice.md`.

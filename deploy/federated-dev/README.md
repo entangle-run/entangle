@@ -417,9 +417,11 @@ Those volumes have explicit Compose names so Host state survives profile
 restarts. Managed runner containers created by `entangle-host` in join mode
 receive inline `ENTANGLE_RUNNER_JOIN_CONFIG_JSON` and retrieve their assignment
 bundle through Host API; they do not mount Host state or secret volumes just to
-read `runner-join.json`. Path delivery and direct runtime-context compatibility
-modes remain local launcher/debug paths rather than the target federated
-execution model.
+read `runner-join.json`. Join mode is also the Docker launcher default. Direct
+runtime-context compatibility remains available only when explicitly requested
+with `ENTANGLE_DOCKER_RUNNER_BOOTSTRAP=runtime-context`, and should be treated
+as a local launcher/debug path rather than the target federated execution
+model.
 
 Do not delete these volumes unless you intentionally want to reset host state,
 runtime identities, imported packages, and secret material.

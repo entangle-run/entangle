@@ -283,6 +283,7 @@ same-machine slice records.
 - [480-distributed-proof-custom-agent-engine-setup-slice.md](480-distributed-proof-custom-agent-engine-setup-slice.md)
 - [481-fake-external-http-agent-engine-harness-slice.md](481-fake-external-http-agent-engine-harness-slice.md)
 - [482-federated-process-smoke-fake-external-http-slice.md](482-federated-process-smoke-fake-external-http-slice.md)
+- [483-docker-runner-join-default-slice.md](483-docker-runner-join-default-slice.md)
 
 ## Audited Scope
 
@@ -329,9 +330,11 @@ The repository is not fully federated:
 - Host state layout declares product `"entangle"`;
 - Host still materializes launcher-owned workspaces and writes
   `effective-runtime-context.json`;
-- Docker direct runtime-context runners can still mount shared Host and secret
-  volumes, but Docker join mode now supports inline JSON join config delivery
-  without mounting those Host volumes into the managed runner container;
+- Docker direct runtime-context startup remains explicit compatibility/debug
+  behavior, while the Docker launcher adapter now defaults to generic join
+  bootstrap and the federated dev profile no longer advertises shared
+  Host/runner state or secret mount env defaults for managed join-mode
+  containers;
 - Host can publish signed assignment control payloads, signed runtime
   start/stop/restart commands for accepted assignments, and project
   runner-signed runtime status observations; node runtime lifecycle now uses
@@ -528,6 +531,8 @@ The repository is not fully federated:
 - Docker-managed joined runners can now receive inline join config JSON through
   environment, and the federated dev Compose profile selects Docker join mode
   with Host API bundle retrieval instead of path-mounted join config delivery;
+  Docker join bootstrap is now also the launcher default when
+  `ENTANGLE_DOCKER_RUNNER_BOOTSTRAP` is unset;
 - the process-runner smoke now validates Host-projected heartbeats from the
   agent runner and both User Node runners by writing a short interval into the
   temporary join configs;

@@ -197,7 +197,9 @@ route. The full federated process smoke can now also run with
 `pnpm ops:smoke-federated-process-runner:fake-external-http`, proving the same
 generic HTTP engine boundary through real Host assignment, User Node review,
 projected artifacts/source/wiki evidence, and multi-user Human Interface
-Runtime behavior. Active agent engine kind validation now exposes only runner-executable kinds:
+Runtime behavior. Docker managed runners now default to generic join bootstrap;
+direct runtime-context Docker startup is explicit compatibility/debug
+behavior. Active agent engine kind validation now exposes only runner-executable kinds:
 `opencode_server`, `external_process`, and `external_http`.
 Historical slice notes no longer preserve literal old product-name strings in
 local-assumption audit command examples; they now refer generically to old
@@ -807,6 +809,7 @@ files are the active federated redesign pack.
 481. [480-distributed-proof-custom-agent-engine-setup-slice.md](480-distributed-proof-custom-agent-engine-setup-slice.md)
 482. [481-fake-external-http-agent-engine-harness-slice.md](481-fake-external-http-agent-engine-harness-slice.md)
 483. [482-federated-process-smoke-fake-external-http-slice.md](482-federated-process-smoke-fake-external-http-slice.md)
+484. [483-docker-runner-join-default-slice.md](483-docker-runner-join-default-slice.md)
 
 ## Role of this corpus
 

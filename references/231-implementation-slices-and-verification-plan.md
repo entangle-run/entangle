@@ -309,7 +309,9 @@ Current status:
 - Docker managed runners can now receive inline join config JSON and the
   federated dev Compose profile selects Docker join mode with Host API bundle
   retrieval, avoiding Host state/secret volume mounts in managed join-mode
-  runner containers.
+  runner containers. Docker join bootstrap is now the launcher default when
+  `ENTANGLE_DOCKER_RUNNER_BOOTSTRAP` is unset; direct runtime-context startup
+  remains explicit compatibility/debug behavior.
 
 ### Slice 8: ProjectionStore
 
@@ -890,6 +892,9 @@ Implementation record:
 - [482-federated-process-smoke-fake-external-http-slice.md](482-federated-process-smoke-fake-external-http-slice.md)
   runs the fake external HTTP engine through the full federated process smoke
   and interactive User Node demo shortcut.
+- [483-docker-runner-join-default-slice.md](483-docker-runner-join-default-slice.md)
+  makes Docker managed runners default to generic join bootstrap and keeps
+  direct runtime-context startup explicit.
 - [465-cli-agent-engine-profile-upsert-slice.md](465-cli-agent-engine-profile-upsert-slice.md)
   adds a Host-backed CLI catalog command for creating and updating typed agent
   engine profiles, including attached OpenCode profiles, permission mode,
