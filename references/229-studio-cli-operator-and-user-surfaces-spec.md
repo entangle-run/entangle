@@ -25,8 +25,10 @@ groups projected runner receipts under assignment rows.
 Missing surfaces:
 
 - deeper per-relay transport diagnostics;
-- richer User Node runtime reassignment workflow controls in Studio;
-- rich Human Interface Runtime visibility beyond the projected runtime row;
+- richer User Node runtime reassignment workflow controls in Studio and CLI;
+- richer participant-side review flows beyond the current scoped artifact,
+  source-change, wiki, command-receipt, workload, and runtime-status surfaces;
+- production authentication/key-custody flows for User Client access;
 
 Recently added:
 
@@ -71,8 +73,8 @@ Recently added:
   require scanning every conversation.
 - Studio User Node overview summaries now combine identity, runtime state,
   runner placement, User Client URL, conversation counts, active counts,
-  pending approval counts, unread counts, and local read markers from Host
-  projection.
+  pending approval counts, unread counts, local read markers, and
+  participant-requested command receipt counts from Host projection.
 - CLI now exposes `entangle inbox read <conversationId> --user-node <nodeId>`
   for clearing a User Node conversation's local unread count.
 - User Client message history now shows derived delivery labels for outbound
@@ -86,8 +88,17 @@ Recently added:
   runtime preview.
 - CLI now exposes `entangle user-nodes clients`, a User Node-focused endpoint
   discovery command that joins active User Node identities with Host-projected
-  Human Interface Runtime state, runner placement, assignment id, and
-  `clientUrl`.
+  Human Interface Runtime state, runner placement, assignment id, `clientUrl`,
+  conversation count, unread count, pending approval count, latest message
+  time, participant-requested command receipt count, and failed command
+  receipt count.
+- Host exposes `GET /v1/user-nodes/:nodeId/command-receipts`, and both CLI
+  User Node receipt inspection and Human Interface Runtime `/api/state` use
+  that scoped endpoint instead of reading the full operator projection.
+- Human Interface Runtime `/api/state` now includes the running User Node's
+  own projected runtime status: assignment, backend, runner, desired/observed
+  lifecycle state, restart generation, last-seen time, status message, and
+  projected client URL.
 - Studio now has a Federation panel assignment control that offers any active
   graph node, including User Nodes, to a Host-projected trusted runner via the
   Host assignment API.
@@ -233,8 +244,10 @@ Node.
   before operator auth, and the federated dev profile allows the default Studio
   development origins.
 - Add Studio User Node runtime visibility and User Client open action. The
-  first projection-derived User Node runtime summaries and `clientUrl` open
-  actions are implemented; richer reassignment and health panels remain open.
+  projection-derived User Node runtime summaries, workload counts,
+  participant-requested command receipt counts, and `clientUrl` open actions
+  are implemented; richer reassignment workflow controls and production
+  health/key-custody panels remain open.
 - Build the dedicated User Client for conversation list, message detail,
   replies, and approvals. A usable runner-served shell now has conversation
   list, selected thread metadata, recorded inbound/outbound messages, and
@@ -242,10 +255,11 @@ Node.
   projected source-change summary rendering, projected source diff excerpts
   with runtime-diff fallback, artifact-ref rendering, bounded artifact preview,
   projected wiki-ref rendering, projected wiki preview rendering,
-  wiki-scoped approval context rendering, and local read-state updates plus
-  signed read receipts; a dedicated bundled `apps/user-client` app now exists
-  and richer participant-side source/wiki review flows beyond scoped
-  source-diff and source-file preview remain open.
+  wiki-scoped approval context rendering, scoped command receipt visibility,
+  participant workload summary, own runtime status projection, and local
+  read-state updates plus signed read receipts; a dedicated bundled
+  `apps/user-client` app now exists and richer participant-side source/wiki
+  review flows beyond scoped source-diff and source-file preview remain open.
 - Replace user-facing approval/session launch behavior with signed user-node
   messages in the User Client. Done for Studio: the selected-runtime launch
   card was removed, and Studio controls remain operator inspection,

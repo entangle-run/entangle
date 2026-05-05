@@ -32,11 +32,14 @@ User nodes are now partially runtime-capable:
   client exposes `/api/state`, renders a conversation list and selected thread
   metadata, and can send messages while preserving selected conversation and
   session ids. `/api/state` now also includes the User Node runtime identity,
-  Host API status, primary relay profile, and relay URLs; the rendered page
-  polls `/api/state` and refreshes when inbox/source/wiki projection state
-  changes. The Human Interface Runtime also exposes local JSON routes for
-  selected conversation detail and message publishing through
-  `GET /api/conversations/:conversationId` and `POST /api/messages`.
+  Host API status, primary relay profile, relay URLs, and Host-projected status
+  for its own `human_interface` runtime: assignment id, backend, client URL,
+  desired/observed state, runner id, restart generation, last seen, projection
+  update time, and status message. The rendered page polls `/api/state` and
+  refreshes when inbox/source/wiki/runtime projection state changes. The Human
+  Interface Runtime also exposes local JSON routes for selected conversation
+  detail and message publishing through `GET /api/conversations/:conversationId`
+  and `POST /api/messages`.
 - A first dedicated `apps/user-client` Vite/React app now consumes those local
   JSON routes for runtime status, conversation inspection, message publishing,
   approval responses, artifact preview, source-change diff and file preview loading,
@@ -89,6 +92,10 @@ User nodes are now partially runtime-capable:
   state when available.
 - User Client message history now shows derived delivery labels: outbound relay
   publish coverage and inbound receipt by the User Client.
+- Runtime command receipts preserve optional `requestedBy` attribution. Host
+  exposes `GET /v1/user-nodes/:nodeId/command-receipts`, and Human Interface
+  Runtime uses that scoped route for the running User Client's participant
+  command receipt list.
 - The User Client renders bounded artifact refs attached to message records,
   including backend, kind, summary, and locator details, and now exposes a
   server-side artifact preview page that renders bounded content without
@@ -109,8 +116,9 @@ User nodes are now partially runtime-capable:
   Nodes publish with distinct stable pubkeys.
 - CLI now exposes `entangle user-nodes clients` so operators and headless users
   can discover each active User Node's projected Human Interface Runtime state,
-  runner placement, assignment id, and User Client URL without filtering the
-  full projection snapshot by hand.
+  runner placement, assignment id, User Client URL, conversation/unread/pending
+  approval counts, latest message time, and participant-requested command
+  receipt counts without filtering the full projection snapshot by hand.
 
 Still missing:
 
@@ -118,7 +126,10 @@ Still missing:
   artifact workflow controls;
 - richer User Client review flows beyond the current source-change diff/file
   preview, signed source-change review, approval response, artifact preview,
-  artifact history/diff, and wiki preview paths;
+  artifact history/diff, artifact restore, artifact source-change proposal,
+  source-history publication/reconcile, wiki publication, wiki page upsert,
+  stale-edit detection, patch mode, participant command receipt visibility, and
+  read-only runtime status projection;
 - production-grade User Node key custody beyond the current Host-provisioned
   development key backend.
 

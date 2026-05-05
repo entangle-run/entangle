@@ -5957,3 +5957,16 @@ Added `references/505-studio-user-node-workload-summary-slice.md`. Studio's
 Federation panel User Node roster now reports participant-requested command
 receipt count and failed command receipt count next to the existing runtime
 placement, conversation, unread, and approval summary.
+
+## [2026-05-05] docs | Repaired canonical User Node surface specs
+
+Added `references/506-canonical-user-node-surface-spec-repair.md`. The
+canonical entity, User Node/Human Interface Runtime, and Studio/CLI specs now
+match the implemented baseline for Host Authority, runner registry, User Node
+identity/signing, scoped participant command receipts, workload summaries, and
+own-runtime status projection.
+
+The remaining documented gaps are now production hardening, richer
+reassignment workflows, external identity/key custody, and deeper
+participant-side review flows rather than already-shipped baseline federation
+surfaces.

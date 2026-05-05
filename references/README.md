@@ -836,6 +836,7 @@ files are the active federated redesign pack.
 504. [503-user-client-runtime-status-projection-slice.md](503-user-client-runtime-status-projection-slice.md)
 505. [504-user-node-client-workload-summary-slice.md](504-user-node-client-workload-summary-slice.md)
 506. [505-studio-user-node-workload-summary-slice.md](505-studio-user-node-workload-summary-slice.md)
+507. [506-canonical-user-node-surface-spec-repair.md](506-canonical-user-node-surface-spec-repair.md)
 
 ## Role of this corpus
 

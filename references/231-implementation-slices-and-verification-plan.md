@@ -1053,6 +1053,10 @@ receipt and failed receipt counts alongside the existing conversation and
 runtime placement summary.
 Remaining User Node surface work is now focused on runtime reassignment UX
 without violating Host authority and participant-side source/wiki review depth.
+The canonical surface and authority specs were repaired in
+[506-canonical-user-node-surface-spec-repair.md](506-canonical-user-node-surface-spec-repair.md)
+so they classify these shipped behaviors as current baseline rather than open
+gaps.
 
 ### Slice 13: Product Naming Migration
 
@@ -1431,6 +1435,9 @@ Current status:
   summary page and future memory ref, so closures, completions, replacements,
   consolidations, and exact-overlap retirements are visible through the node
   memory substrate without adding a Host filesystem read path;
+- canonical User Node, entity, and Studio/CLI specs now match the implemented
+  Host Authority, runner registry, User Node signing, scoped command-receipt,
+  workload, and own-runtime status baseline;
 - the remaining distributed proof hardening is infrastructure-backed
   orchestration that can provision multiple machines or VM/container boundaries
   around the verifier.

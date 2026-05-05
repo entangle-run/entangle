@@ -12,16 +12,31 @@ Important boundaries already exist:
 - External git principals are Host records resolved into runtime context.
 - Agent engine profile selection is a graph/node binding.
 - User nodes exist in graph contracts.
+- Host Authority is modeled as a first-class signing authority with status,
+  import/export, signed integrity-report, graph, assignment, and runner-control
+  behavior.
+- Operator identity is modeled through bootstrap operator-token records,
+  hashed token storage, permission scopes, route-level enforcement, and request
+  audit attribution.
+- User Node identities are materialized from active graph state and used for
+  signed task/reply/approval/source-review messages.
+- Runner identity, runner hello, trust/revoke, heartbeats, liveness, runtime
+  assignments, assignment leases, lifecycle receipts, and runtime command
+  receipts are modeled and projected.
+- Approval and User Node message records carry signer identity evidence where
+  transport/Host intake can observe it.
 
-Important boundaries are missing or blurred:
+Important boundaries still requiring deeper production hardening:
 
-- Host Authority is not modeled as a first-class signing authority.
-- Operator identity is only a Host bearer-token/API concern.
-- User Node identity is not materialized or used for signing.
-- Runner identity and runner registration are not modeled.
-- Runtime assignments and leases do not exist.
-- Host is not yet portable by moving a Host Authority key plus projection/state.
-- Approval records do not carry signer identity evidence.
+- Host Authority portability is implemented at the record/export/import layer,
+  but production operational runbooks for cold standby and split-brain avoidance
+  still need hardening.
+- Operator identity remains bootstrap-token based, not full production RBAC,
+  tenancy, SSO, hardware-backed signing, or external policy delegation.
+- User Node key custody is Host-provisioned for development; external signer
+  and device-owned custody are still future work.
+- Runtime reassignment UX exists through Host assignment surfaces, but richer
+  participant-aware reassignment workflows remain future work.
 
 ## Target Model
 
@@ -78,35 +93,38 @@ Identity separation:
 
 ## Concrete Changes Required
 
-- Add Host Authority record and key reference schemas.
-- Add user-node identity records separate from runtime identities.
-- Add runner registration and trust-state schemas.
-- Add assignment and lease schemas.
-- Add signed event envelope schemas that bind payload hash, signer pubkey,
-  signature, graph id, node id, runner id, and monotonic timestamp/nonce where
-  needed.
-- Add validation rules preventing Host Authority from masquerading as User Node.
-- Add Host APIs for authority status, export/import, runners, trust/revoke,
-  assignments, and leases.
-- Add CLI and Studio surfaces for identity and assignment inspection.
+- Keep Host Authority, User Node identity, runner identity, assignment, lease,
+  control-event, observation-event, and projection schemas aligned as new
+  protocol payloads are added.
+- Add validation and tests whenever a route crosses authority boundaries:
+  Host Authority commands, runner observations, User Node signed messages,
+  operator API mutations, and git/external-principal bindings.
+- Harden production operator identity beyond bootstrap tokens.
+- Design User Node key custody migration from Host-provisioned development keys
+  to device-owned or external signer-backed material.
+- Keep Studio and CLI assignment/reassignment controls Host-authority mediated;
+  User Clients may show runtime status but must not directly assign runners.
 
 ## Tests Required
 
-- Schema parse/reject tests for every new entity.
-- Signature verification tests.
-- Host Authority import/export tests.
-- User Node identity stability tests.
-- Runner trust/revoke tests.
+- Schema parse/reject tests for every new authority-bearing entity.
+- Signature verification tests for Host Authority, runner, and User Node
+  signing roles.
+- Host Authority import/export and signed-report tests.
+- User Node identity stability and signed-message tests.
+- Runner hello/trust/revoke/heartbeat/assignment tests.
 - Assignment signer/graph-revision validation tests.
-- Negative tests for wrong signer roles.
+- Negative tests for wrong signer roles and authority-role confusion.
 
 ## Migration/Compatibility Notes
 
-Current host-owned runtime identities for non-user nodes can become node
-runtime identities. User nodes need a new identity store.
+Current host-owned runtime identities for non-user nodes act as node runtime
+identities. User nodes now have a separate identity store and bootstrap secret
+delivery path for Human Interface Runtime assignments.
 
-Existing external principal records should remain compatible; they are not
-Nostr identities and should not be overloaded as user or node identities.
+Existing external principal records remain compatible; they are not Nostr
+identities and should not be overloaded as user, runner, Host Authority, or node
+runtime identities.
 
 ## Risks And Mitigations
 

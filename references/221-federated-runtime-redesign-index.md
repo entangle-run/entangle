@@ -1099,7 +1099,10 @@ a runner-owned indexed wiki page at
 `wiki/summaries/focused-register-transition-history.md`, so closure,
 completion, replacement, consolidation, and exact-overlap retirements flow into
 future memory refs and projected wiki evidence instead of remaining only in
-runtime-local carry state.
+runtime-local carry state. The canonical entity, User Node/Human Interface
+Runtime, and Studio/CLI surface specs have been repaired so they no longer list
+implemented Host Authority, runner registry, User Node identity, scoped command
+receipt, workload, and own-runtime status behavior as missing baseline work.
 The highest-value remaining implementation areas are richer model-guided
 memory maintenance, deeper delegated-session semantics beyond the current
 controlled handoff path and first owner-aware memory projection, participant
