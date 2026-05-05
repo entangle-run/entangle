@@ -1,5 +1,6 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 import type {
+  RuntimeCommandReceiptProjectionRecord,
   UserNodeMessageRecord,
   WikiRefProjectionRecord
 } from "@entangle/types";
@@ -16,6 +17,7 @@ import {
   fetchArtifactPreview,
   fetchSourceChangeDiff,
   fetchSourceChangeFilePreview,
+  findLatestWikiPageConflictSummary,
   formatDeliveryLabel,
   formatRuntimeCommandReceiptDetailLines,
   formatSignerLabel,
@@ -210,6 +212,76 @@ describe("user client runtime API helpers", () => {
         receiptStatus: "completed"
       })
     ).toBeUndefined();
+  });
+
+  it("selects the latest wiki conflict matching a page path", () => {
+    const receipts = [
+      {
+        commandEventType: "runtime.wiki.upsert_page",
+        commandId: "cmd-other",
+        graphId: "graph-alpha",
+        hostAuthorityPubkey:
+          "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        nodeId: "worker-it",
+        observedAt: "2026-05-05T12:01:00.000Z",
+        projection: {
+          source: "observation_event",
+          updatedAt: "2026-05-05T12:01:00.000Z"
+        },
+        receiptStatus: "failed",
+        runnerId: "runner-alpha",
+        runnerPubkey:
+          "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+        wikiPageExpectedSha256:
+          "1111111111111111111111111111111111111111111111111111111111111111",
+        wikiPagePath: "wiki/other.md",
+        wikiPagePreviousSha256:
+          "2222222222222222222222222222222222222222222222222222222222222222"
+      },
+      {
+        commandEventType: "runtime.wiki.patch_set",
+        commandId: "cmd-target",
+        graphId: "graph-alpha",
+        hostAuthorityPubkey:
+          "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        nodeId: "worker-it",
+        observedAt: "2026-05-05T12:00:00.000Z",
+        projection: {
+          source: "observation_event",
+          updatedAt: "2026-05-05T12:00:00.000Z"
+        },
+        receiptStatus: "failed",
+        runnerId: "runner-alpha",
+        runnerPubkey:
+          "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+        wikiPageExpectedSha256:
+          "3333333333333333333333333333333333333333333333333333333333333333",
+        wikiPagePath: "/wiki/summaries/working-context.md",
+        wikiPagePreviousSha256:
+          "4444444444444444444444444444444444444444444444444444444444444444"
+      }
+    ] as RuntimeCommandReceiptProjectionRecord[];
+
+    expect(
+      findLatestWikiPageConflictSummary({
+        path: "wiki/summaries/working-context.md",
+        receipts
+      })
+    ).toMatchObject({
+      commandId: "cmd-target",
+      currentShort: "444444444444",
+      expectedShort: "333333333333",
+      path: "/wiki/summaries/working-context.md"
+    });
+    expect(
+      findLatestWikiPageConflictSummary({
+        path: "wiki/missing.md",
+        receipts
+      })
+    ).toBeUndefined();
+    expect(findLatestWikiPageConflictSummary({ receipts })).toMatchObject({
+      commandId: "cmd-other"
+    });
   });
 
   it("summarizes User Client workload from projected state", () => {

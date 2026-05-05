@@ -1396,7 +1396,8 @@ The current implementation-truth audit now lives in
   User Client participant JSON requests for visible wiki patch-sets with
   process-smoke proof plus browser queue/request UI plus local wiki draft diff
   preview plus stale-edit conflict receipt summaries in the browser, CLI, and
-  fallback Human Interface Runtime plus
+  fallback Human Interface Runtime plus User Client conflict-base recovery into
+  the visible page editor plus
   approval-response turn correlation;
   the next git gaps are richer collaborative wiki merge UI, repository
   lifecycle behavior, and explicit fallback or replication behavior,

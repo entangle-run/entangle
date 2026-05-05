@@ -646,6 +646,9 @@ Current status:
   page update and single-page patch-set forms over the same participant-scoped
   Host control path, with expected base hashes derived from visible projected
   previews when omitted;
+- the React User Client now surfaces matching stale-edit wiki conflict receipts
+  next to the visible page editor and can load the current projected page as a
+  retry draft with the current hash installed as the next stale-edit guard;
 - deterministic runner task memory now records source-change candidate ids,
   status, totals, diff availability, and changed-file summaries from the live
   turn record, and recent-work summaries surface that compact code-change

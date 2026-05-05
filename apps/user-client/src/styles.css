@@ -224,6 +224,15 @@ textarea {
   overflow-wrap: anywhere;
 }
 
+.wiki-edit-conflict {
+  flex: 1 1 100%;
+}
+
+.wiki-edit-conflict button {
+  justify-self: start;
+  margin-top: 4px;
+}
+
 .conversation-list {
   display: grid;
   gap: 8px;

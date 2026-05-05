@@ -1256,6 +1256,10 @@ The Human Interface Runtime fallback HTML client now exposes visible wiki page
 update and single-page patch-set forms over the same participant-scoped Host
 control path, deriving expected base hashes from visible projected previews
 when the form leaves them blank.
+The React User Client now also places matching stale-edit wiki conflict
+receipts beside the visible page editor and can load the current projected page
+as a retry draft with the current hash prefilled as the next
+`expectedCurrentSha256` guard.
 Deterministic runner task memory now also preserves bounded source-change
 candidate ids, status, totals, diff availability, and changed-file summaries
 from the live turn record, and the derived recent-work summary surfaces the

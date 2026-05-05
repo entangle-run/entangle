@@ -993,6 +993,31 @@ export function formatWikiPageConflictSummaryLines(
   ];
 }
 
+function normalizeWikiPathForComparison(value: string | undefined): string {
+  return value?.trim().replace(/^\/+/u, "") ?? "";
+}
+
+export function findLatestWikiPageConflictSummary(input: {
+  path?: string | undefined;
+  receipts: RuntimeCommandReceiptProjectionRecord[];
+}): WikiPageConflictSummary | undefined {
+  const requestedPath = normalizeWikiPathForComparison(input.path);
+
+  return input.receipts
+    .map(buildWikiPageConflictSummary)
+    .find((summary): summary is WikiPageConflictSummary => {
+      if (!summary) {
+        return false;
+      }
+
+      if (!requestedPath) {
+        return true;
+      }
+
+      return normalizeWikiPathForComparison(summary.path) === requestedPath;
+    });
+}
+
 export type WikiPageDraftFromProjection = {
   artifactId: string;
   content: string;

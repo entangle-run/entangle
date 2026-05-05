@@ -167,6 +167,9 @@ categories when the React bundle is not available.
 The fallback HTML client can also request visible wiki page updates and
 single-page wiki patch-sets through the same participant-scoped Host control
 path as the React User Client.
+The React User Client can now recover from visible wiki stale-edit conflicts by
+loading the current projected page as a retry draft with the current hash
+prefilled as the next edit guard.
 The smoke still runs without live model credentials. Live OpenCode
 behavior and real-provider credentials remain manual/operator validation, but
 the fake OpenCode path now proves same-session `--session` continuity through a
@@ -790,7 +793,10 @@ This repository currently contains:
   expected/current hashes, and CLI summary output exposes the same structured
   `wikiConflict` object for global projection and User Node command receipt
   summaries. The Human Interface Runtime fallback HTML client now renders the
-  same conflict block in participant command receipt cards.
+  same conflict block in participant command receipt cards. The running User
+  Client also surfaces matching stale-edit conflicts beside the visible page
+  editor and can load the current projected page as a retry draft with the
+  current hash prefilled.
   Public deep runtime reads
   for accepted federated
   assignments now ignore Host-local runtime files and use projected

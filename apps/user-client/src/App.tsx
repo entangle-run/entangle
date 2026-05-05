@@ -26,6 +26,7 @@ import {
   fetchSourceChangeDiff,
   fetchSourceChangeFilePreview,
   fetchUserClientState,
+  findLatestWikiPageConflictSummary,
   formatConversationTimestamp,
   formatDeliveryLabel,
   formatRuntimeCommandReceiptDetailLines,
@@ -871,9 +872,48 @@ function WikiResourceCards({
       })
     });
   }, [canUpsertPage, pageBaseContent, pageContent, pageMode]);
+  const latestWikiConflict = canUpsertPage
+    ? findLatestWikiPageConflictSummary({
+        path: effectivePagePath,
+        receipts: state?.runtimeCommandReceipts ?? []
+      })
+    : undefined;
+  const latestConflictDraft = latestWikiConflict
+    ? refs
+        .map(buildWikiPageDraftFromProjection)
+        .find(
+          (draft) =>
+            draft?.path === normalizeWikiPagePath(latestWikiConflict.path)
+        )
+    : undefined;
 
   if (refs.length === 0 && !canUpsertPage) {
     return null;
+  }
+
+  function loadWikiPageDraft(input: {
+    draft: NonNullable<ReturnType<typeof buildWikiPageDraftFromProjection>>;
+    expectedSha256?: string | undefined;
+    status: string;
+  }): void {
+    setPageContent(input.draft.content);
+    setPageBaseContent(input.draft.content);
+    setPageMode("replace");
+    setPagePath(input.draft.path);
+    setStatus(input.status);
+
+    if (input.expectedSha256) {
+      setPageExpectedSha256(input.expectedSha256);
+      return;
+    }
+
+    void computeUtf8Sha256Hex(input.draft.content)
+      .then((sha256) => {
+        setPageExpectedSha256(sha256);
+      })
+      .catch(() => {
+        setPageExpectedSha256("");
+      });
   }
 
   async function requestPublication(
@@ -1007,18 +1047,10 @@ function WikiResourceCards({
             {canUpsertPage && draft ? (
               <button
                 onClick={() => {
-                  setPageContent(draft.content);
-                  setPageBaseContent(draft.content);
-                  setPageMode("replace");
-                  setPagePath(draft.path);
-                  setStatus(`draft loaded ${draft.path}`);
-                  void computeUtf8Sha256Hex(draft.content)
-                    .then((sha256) => {
-                      setPageExpectedSha256(sha256);
-                    })
-                    .catch(() => {
-                      setPageExpectedSha256("");
-                    });
+                  loadWikiPageDraft({
+                    draft,
+                    status: `draft loaded ${draft.path}`
+                  });
                 }}
                 type="button"
               >
@@ -1063,6 +1095,30 @@ function WikiResourceCards({
         ) : null}
         {canUpsertPage ? (
           <>
+            {latestWikiConflict ? (
+              <div className="receipt-conflict wiki-edit-conflict">
+                <strong>Wiki conflict</strong>
+                {formatWikiPageConflictSummaryLines(latestWikiConflict).map(
+                  (line) => (
+                    <span key={line}>{line}</span>
+                  )
+                )}
+                {latestConflictDraft ? (
+                  <button
+                    onClick={() => {
+                      loadWikiPageDraft({
+                        draft: latestConflictDraft,
+                        expectedSha256: latestWikiConflict.currentSha256,
+                        status: `current draft loaded ${latestConflictDraft.path}`
+                      });
+                    }}
+                    type="button"
+                  >
+                    Load Current Page
+                  </button>
+                ) : null}
+              </div>
+            ) : null}
             <input
               aria-label="Wiki page path"
               onChange={(event) => setPagePath(event.target.value)}

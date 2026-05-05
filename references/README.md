@@ -911,6 +911,7 @@ files are the active federated redesign pack.
 550. [549-source-change-ledger-memory-slice.md](549-source-change-ledger-memory-slice.md)
 551. [550-human-runtime-fallback-wiki-controls-slice.md](550-human-runtime-fallback-wiki-controls-slice.md)
 552. [551-delegation-ledger-memory-slice.md](551-delegation-ledger-memory-slice.md)
+553. [552-user-client-wiki-conflict-recovery-slice.md](552-user-client-wiki-conflict-recovery-slice.md)
 
 ## Role of this corpus
 

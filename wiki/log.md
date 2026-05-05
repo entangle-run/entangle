@@ -6554,3 +6554,10 @@ Successful non-blocked turns now write post-turn memory after outbound handoff
 publication, so each node's private wiki can remember the handoff event ids it
 actually emitted without copying peer transcripts or artifact bodies into
 memory.
+
+## [2026-05-05] user-client | Added wiki conflict recovery
+
+Added `references/552-user-client-wiki-conflict-recovery-slice.md`. The React
+User Client now surfaces matching stale-edit wiki conflict receipts next to the
+visible page editor and can load the current projected page as a retry draft
+with the current hash prefilled as the next `expectedCurrentSha256` guard.
