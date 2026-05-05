@@ -251,6 +251,8 @@ The most accurate current description is:
 - the running User Client can now load a complete projected wiki preview into
   its page-update form as a replacement draft, so participant wiki memory edits
   start from visible Host projection without exposing runner-local paths;
+- failed stale-edit wiki page receipts now render as explicit User Client
+  conflict summaries using projected expected/current hashes;
 - joined runners now publish session/conversation observations for later
   lifecycle transitions after handoffs, coordination result/close, approval
   request/response, completion, cancellation, and failure paths;
@@ -1339,8 +1341,8 @@ The current implementation-truth audit now lives in
   Client and Studio wiki page upsert plus runner-enforced stale-edit detection
   plus single-page wiki patch mode plus projected-preview draft prefill with
   automatic expected-hash population plus User Client source-history reconcile
-  plus local wiki draft diff preview plus approval-response turn
-  correlation;
+  plus local wiki draft diff preview plus stale-edit conflict receipt summaries
+  plus approval-response turn correlation;
   the next git gaps are richer collaborative wiki merge UI, repository
   lifecycle behavior, and explicit fallback or
   replication behavior,

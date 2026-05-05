@@ -14,6 +14,7 @@ import type {
 } from "@entangle/types";
 import {
   buildWikiPageChangePreview,
+  buildWikiPageConflictSummary,
   buildWikiPageDraftFromProjection,
   buildWikiPageNextContentPreview,
   chooseConversationId,
@@ -30,6 +31,7 @@ import {
   formatRuntimeCommandReceiptDetailLines,
   formatSignerLabel,
   formatUserClientWorkloadLines,
+  formatWikiPageConflictSummaryLines,
   markConversationRead,
   normalizeApiBaseUrl,
   proposeArtifactSourceChange,
@@ -1118,18 +1120,30 @@ function RuntimeCommandReceiptList({
 
   return (
     <div className="receipt-list">
-      {receipts.slice(0, 6).map((receipt) => (
-        <article className="receipt-card" key={receipt.commandId}>
-          <header>
-            <span>{receipt.receiptStatus}</span>
-            <span>{receipt.commandEventType}</span>
-          </header>
-          <strong>{receipt.commandId}</strong>
-          {formatRuntimeCommandReceiptDetailLines(receipt).map((line) => (
-            <span key={line}>{line}</span>
-          ))}
-        </article>
-      ))}
+      {receipts.slice(0, 6).map((receipt) => {
+        const wikiConflict = buildWikiPageConflictSummary(receipt);
+
+        return (
+          <article className="receipt-card" key={receipt.commandId}>
+            <header>
+              <span>{receipt.receiptStatus}</span>
+              <span>{receipt.commandEventType}</span>
+            </header>
+            <strong>{receipt.commandId}</strong>
+            {formatRuntimeCommandReceiptDetailLines(receipt).map((line) => (
+              <span key={line}>{line}</span>
+            ))}
+            {wikiConflict ? (
+              <div className="receipt-conflict">
+                <strong>Wiki conflict</strong>
+                {formatWikiPageConflictSummaryLines(wikiConflict).map((line) => (
+                  <span key={line}>{line}</span>
+                ))}
+              </div>
+            ) : null}
+          </article>
+        );
+      })}
     </div>
   );
 }

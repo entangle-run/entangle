@@ -331,6 +331,7 @@ same-machine slice records.
 - [528-distributed-proof-verifier-junit-slice.md](528-distributed-proof-verifier-junit-slice.md)
 - [529-distributed-proof-kit-junit-script-slice.md](529-distributed-proof-kit-junit-script-slice.md)
 - [530-bootstrap-operator-token-expiry-slice.md](530-bootstrap-operator-token-expiry-slice.md)
+- [531-user-client-wiki-conflict-receipts-slice.md](531-user-client-wiki-conflict-receipts-slice.md)
 
 ## Audited Scope
 
@@ -1167,8 +1168,10 @@ continuation basis. The User Client now computes the SHA-256 of projected wiki
 page previews when loading them into editable drafts, so participant page
 updates carry stale-edit protection by default; it also renders a local line
 diff for replace/append wiki drafts before sending the runner-owned mutation
-request. Focused-register lifecycle transition history now also has
-a runner-owned indexed wiki page at
+request. Failed stale-edit wiki page receipts now render as explicit User
+Client conflict blocks over the projected expected/current page hashes instead
+of only generic command receipt lines. Focused-register lifecycle transition
+history now also has a runner-owned indexed wiki page at
 `wiki/summaries/focused-register-transition-history.md`, so closure,
 completion, replacement, consolidation, and exact-overlap retirements flow into
 future memory refs and projected wiki evidence instead of remaining only in

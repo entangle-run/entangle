@@ -902,6 +902,49 @@ export function formatRuntimeCommandReceiptDetailLines(
   ].filter((line): line is string => Boolean(line));
 }
 
+export type WikiPageConflictSummary = {
+  commandId: string;
+  currentSha256: string;
+  currentShort: string;
+  expectedSha256: string;
+  expectedShort: string;
+  path: string;
+};
+
+export function buildWikiPageConflictSummary(
+  receipt: RuntimeCommandReceiptProjectionRecord
+): WikiPageConflictSummary | undefined {
+  if (
+    receipt.commandEventType !== "runtime.wiki.upsert_page" ||
+    receipt.receiptStatus !== "failed" ||
+    !receipt.wikiPageExpectedSha256 ||
+    !receipt.wikiPagePreviousSha256 ||
+    receipt.wikiPageExpectedSha256 === receipt.wikiPagePreviousSha256
+  ) {
+    return undefined;
+  }
+
+  return {
+    commandId: receipt.commandId,
+    currentSha256: receipt.wikiPagePreviousSha256,
+    currentShort: shortHash(receipt.wikiPagePreviousSha256),
+    expectedSha256: receipt.wikiPageExpectedSha256,
+    expectedShort: shortHash(receipt.wikiPageExpectedSha256),
+    path: receipt.wikiPagePath ?? receipt.targetPath ?? "unknown"
+  };
+}
+
+export function formatWikiPageConflictSummaryLines(
+  summary: WikiPageConflictSummary
+): string[] {
+  return [
+    `page ${summary.path}`,
+    `expected ${summary.expectedShort}`,
+    `current ${summary.currentShort}`,
+    `command ${summary.commandId}`
+  ];
+}
+
 export type WikiPageDraftFromProjection = {
   artifactId: string;
   content: string;

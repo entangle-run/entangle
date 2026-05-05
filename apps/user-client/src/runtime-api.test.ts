@@ -5,6 +5,7 @@ import type {
 } from "@entangle/types";
 import {
   buildWikiPageChangePreview,
+  buildWikiPageConflictSummary,
   buildWikiPageDraftFromProjection,
   buildWikiPageNextContentPreview,
   buildRuntimeApiUrl,
@@ -19,6 +20,7 @@ import {
   formatRuntimeCommandReceiptDetailLines,
   formatSignerLabel,
   formatUserClientWorkloadLines,
+  formatWikiPageConflictSummaryLines,
   markConversationRead,
   normalizeApiBaseUrl,
   proposeArtifactSourceChange,
@@ -157,6 +159,56 @@ describe("user client runtime API helpers", () => {
       "wiki previous eeeeeeeeeeee",
       "wiki next dddddddddddd"
     ]);
+  });
+
+  it("summarizes failed wiki page stale-edit receipts", () => {
+    const receipt = {
+      commandEventType: "runtime.wiki.upsert_page",
+      commandId: "cmd-wiki-page",
+      graphId: "graph-alpha",
+      hostAuthorityPubkey:
+        "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+      nodeId: "worker-it",
+      observedAt: "2026-05-05T12:00:00.000Z",
+      projection: {
+        source: "observation_event",
+        updatedAt: "2026-05-05T12:00:00.000Z"
+      },
+      receiptStatus: "failed",
+      runnerId: "runner-alpha",
+      runnerPubkey:
+        "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+      targetPath: "wiki/summaries/working-context.md",
+      wikiPageExpectedSha256:
+        "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+      wikiPagePath: "wiki/summaries/working-context.md",
+      wikiPagePreviousSha256:
+        "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee"
+    } as const;
+    const summary = buildWikiPageConflictSummary(receipt);
+
+    expect(summary).toEqual({
+      commandId: "cmd-wiki-page",
+      currentSha256:
+        "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+      currentShort: "eeeeeeeeeeee",
+      expectedSha256:
+        "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+      expectedShort: "cccccccccccc",
+      path: "wiki/summaries/working-context.md"
+    });
+    expect(formatWikiPageConflictSummaryLines(summary!)).toEqual([
+      "page wiki/summaries/working-context.md",
+      "expected cccccccccccc",
+      "current eeeeeeeeeeee",
+      "command cmd-wiki-page"
+    ]);
+    expect(
+      buildWikiPageConflictSummary({
+        ...receipt,
+        receiptStatus: "completed"
+      })
+    ).toBeUndefined();
   });
 
   it("summarizes User Client workload from projected state", () => {

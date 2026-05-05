@@ -767,7 +767,9 @@ This repository currently contains:
   The running User Client can also load a complete projected wiki preview into
   the participant page-update form as an edit draft, keeping normal wiki memory
   edits inside the node-local client rather than requiring manual copy/paste
-  from projection cards.
+  from projection cards. Failed stale-edit wiki page receipts now render as
+  explicit conflict summaries in the User Client using projected
+  expected/current hashes.
   Public deep runtime reads
   for accepted federated
   assignments now ignore Host-local runtime files and use projected
@@ -1558,8 +1560,9 @@ The highest-value remaining gaps are:
   first operator and participant-scoped runner-owned wiki page upsert support
   with runner-enforced stale-edit detection, single-page patch mode, and
   projected-preview draft prefill with automatic expected-hash population, User
-  Client local wiki draft diff preview, approval-response turn correlation, richer
-  collaborative wiki merge UI and repository lifecycle behavior beyond
+  Client local wiki draft diff preview plus stale-edit conflict receipt
+  summaries, approval-response turn correlation, richer collaborative wiki
+  merge UI and repository lifecycle behavior beyond
   explicit target publication, and replicated fallback paths;
 - production identity and authorization beyond the bootstrap operator-token
   boundary, multi-token attribution, visible status summary, route-level

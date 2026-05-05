@@ -1482,6 +1482,8 @@ Current status:
 - the User Client now renders a local line diff for replace/append wiki drafts
   loaded from projected previews, improving participant review before the
   runner-owned mutation request is sent;
+- failed stale-edit wiki page receipts now render as explicit User Client
+  conflict summaries using the projected expected/current hashes;
 - focused-register lifecycle transition history now writes an indexed wiki
   summary page and future memory ref, so closures, completions, replacements,
   consolidations, and exact-overlap retirements are visible through the node

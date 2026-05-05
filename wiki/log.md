@@ -1,5 +1,21 @@
 # Entangle Wiki Log
 
+## [2026-05-05] user-client | Added wiki conflict receipt summaries
+
+Added `references/531-user-client-wiki-conflict-receipts-slice.md`.
+The User Client now detects failed `runtime.wiki.upsert_page` receipts whose
+expected hash differs from the runner current hash and renders a dedicated
+wiki conflict block.
+
+This keeps existing command receipt evidence visible while making stale-edit
+failures understandable to the human graph participant.
+
+Targeted checks passed:
+
+- `pnpm --filter @entangle/user-client test -- src/runtime-api.test.ts`
+- `pnpm --filter @entangle/user-client typecheck`
+- `pnpm --filter @entangle/user-client lint`
+
 ## [2026-05-05] host | Added bootstrap operator token expiry
 
 Added `references/530-bootstrap-operator-token-expiry-slice.md`.
