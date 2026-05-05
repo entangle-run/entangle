@@ -1,5 +1,6 @@
 import type {
   HostProjectionSnapshot,
+  RuntimeCommandReceiptProjectionRecord,
   RuntimeProjectionRecord,
   UserConversationProjectionRecord,
   UserNodeIdentityRecord,
@@ -71,6 +72,19 @@ export type UserNodeMessageCliSummary = {
   turnId: string;
 };
 
+export type UserNodeCommandReceiptCliSummary = {
+  artifactId?: string;
+  commandEventType: string;
+  commandId: string;
+  nodeId: string;
+  observedAt: string;
+  receiptStatus: string;
+  runnerId: string;
+  sourceHistoryId?: string;
+  wikiArtifactId?: string;
+  wikiPagePath?: string;
+};
+
 function projectSignerAudit(input: {
   fromPubkey: string;
   signerPubkey?: string | undefined;
@@ -118,6 +132,72 @@ export function sortUserConversationsForCli(
 
     return left.conversationId.localeCompare(right.conversationId);
   });
+}
+
+export function sortUserNodeCommandReceiptsForCli(
+  receipts: RuntimeCommandReceiptProjectionRecord[]
+): RuntimeCommandReceiptProjectionRecord[] {
+  return [...receipts].sort((left, right) => {
+    const timeOrder = right.observedAt.localeCompare(left.observedAt);
+    return timeOrder !== 0
+      ? timeOrder
+      : left.commandId.localeCompare(right.commandId);
+  });
+}
+
+export function filterUserNodeCommandReceiptsForCli(input: {
+  commandEventType?: string;
+  nodeId?: string;
+  projection: HostProjectionSnapshot;
+  receiptStatus?: RuntimeCommandReceiptProjectionRecord["receiptStatus"];
+  userNodeId: string;
+}): RuntimeCommandReceiptProjectionRecord[] {
+  return sortUserNodeCommandReceiptsForCli(
+    input.projection.runtimeCommandReceipts.filter((receipt) => {
+      if (receipt.requestedBy !== input.userNodeId) {
+        return false;
+      }
+
+      if (input.nodeId !== undefined && receipt.nodeId !== input.nodeId) {
+        return false;
+      }
+
+      if (
+        input.commandEventType !== undefined &&
+        receipt.commandEventType !== input.commandEventType
+      ) {
+        return false;
+      }
+
+      if (
+        input.receiptStatus !== undefined &&
+        receipt.receiptStatus !== input.receiptStatus
+      ) {
+        return false;
+      }
+
+      return true;
+    })
+  );
+}
+
+export function projectUserNodeCommandReceiptSummary(
+  receipt: RuntimeCommandReceiptProjectionRecord
+): UserNodeCommandReceiptCliSummary {
+  return {
+    ...(receipt.artifactId ? { artifactId: receipt.artifactId } : {}),
+    commandEventType: receipt.commandEventType,
+    commandId: receipt.commandId,
+    nodeId: receipt.nodeId,
+    observedAt: receipt.observedAt,
+    receiptStatus: receipt.receiptStatus,
+    runnerId: receipt.runnerId,
+    ...(receipt.sourceHistoryId
+      ? { sourceHistoryId: receipt.sourceHistoryId }
+      : {}),
+    ...(receipt.wikiArtifactId ? { wikiArtifactId: receipt.wikiArtifactId } : {}),
+    ...(receipt.wikiPagePath ? { wikiPagePath: receipt.wikiPagePath } : {})
+  };
 }
 
 export function projectUserConversationSummary(

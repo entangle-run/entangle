@@ -107,6 +107,8 @@ import {
 } from "./projection-output.js";
 import {
   buildUserNodeClientSummariesForCli,
+  filterUserNodeCommandReceiptsForCli,
+  projectUserNodeCommandReceiptSummary,
   projectUserConversationSummary,
   projectUserNodeIdentitySummary,
   projectUserNodeMessageSummary,
@@ -1488,6 +1490,56 @@ userNodesCommand
 
     printJson(options.summary ? { clients } : { generatedAt: projection.generatedAt, clients });
   });
+
+userNodesCommand
+  .command("command-receipts")
+  .argument("<nodeId>", "User Node identifier.")
+  .option("--target-node <nodeId>", "Filter to one runtime node.")
+  .option("--type <commandEventType>", "Filter to one runtime command event type.")
+  .option(
+    "--status <status>",
+    "Filter by command receipt status: received, completed, or failed."
+  )
+  .option("--limit <n>", "Maximum number of receipts to return.", "20")
+  .option("--summary", "Print compact User Node command receipt summaries.")
+  .description("List runtime command receipts requested by one User Node.")
+  .action(
+    async (
+      nodeId: string,
+      options: {
+        limit: string;
+        status?: string;
+        summary?: boolean;
+        targetNode?: string;
+        type?: string;
+      },
+      command: Command
+    ) => {
+      const limit = parsePositiveIntegerOption(options.limit, "--limit");
+      const receiptStatus = parseRuntimeCommandReceiptStatusForCli(
+        options.status
+      );
+      const client = createCliHostClient(command);
+      const projection = await client.getProjection();
+      const filteredReceipts = filterUserNodeCommandReceiptsForCli({
+        ...(options.targetNode ? { nodeId: options.targetNode } : {}),
+        projection,
+        ...(receiptStatus ? { receiptStatus } : {}),
+        ...(options.type ? { commandEventType: options.type } : {}),
+        userNodeId: nodeId
+      });
+      const receipts = filteredReceipts.slice(0, limit);
+
+      printJson({
+        returned: receipts.length,
+        runtimeCommandReceipts: options.summary
+          ? receipts.map(projectUserNodeCommandReceiptSummary)
+          : receipts,
+        totalMatched: filteredReceipts.length,
+        userNodeId: nodeId
+      });
+    }
+  );
 
 userNodesCommand
   .command("message")

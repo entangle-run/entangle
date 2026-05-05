@@ -299,7 +299,9 @@ The most accurate current description is:
   source-history, replay, or wiki artifact result ids where available;
 - runtime command receipts now preserve optional requester attribution, and the
   running User Client state shows only receipts requested by the current User
-  Node while Studio and CLI retain full operator projection access;
+  Node while `entangle user-nodes command-receipts <nodeId>` gives the same
+  headless participant view and Studio plus operator CLI retain full projection
+  access;
 - the running User Client can now request runner-owned artifact restore for
   artifacts visible in the selected User Node conversation, and the
   process-runner smoke proves that path through a completed projected

@@ -1,12 +1,15 @@
 import { describe, expect, it } from "vitest";
 import type {
   HostProjectionSnapshot,
+  RuntimeCommandReceiptProjectionRecord,
   UserConversationProjectionRecord,
   UserNodeIdentityRecord,
   UserNodeMessageRecord
 } from "@entangle/types";
 import {
   buildUserNodeClientSummariesForCli,
+  filterUserNodeCommandReceiptsForCli,
+  projectUserNodeCommandReceiptSummary,
   projectUserConversationSummary,
   projectUserNodeIdentitySummary,
   projectUserNodeMessageSummary,
@@ -81,6 +84,67 @@ const conversations: UserConversationProjectionRecord[] = [
   }
 ];
 
+const runtimeCommandReceipts: RuntimeCommandReceiptProjectionRecord[] = [
+  {
+    assignmentId: "assignment-worker-b",
+    commandEventType: "runtime.wiki.publish",
+    commandId: "cmd-user-a-wiki-publish",
+    graphId: "team-alpha",
+    hostAuthorityPubkey:
+      "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+    nodeId: "worker-b",
+    observedAt: "2026-04-26T12:08:00.000Z",
+    projection: {
+      source: "observation_event",
+      updatedAt: "2026-04-26T12:08:00.000Z"
+    },
+    receiptStatus: "completed",
+    requestedBy: "user-a",
+    runnerId: "runner-worker-b",
+    runnerPubkey:
+      "dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd",
+    wikiArtifactId: "wiki-alpha"
+  },
+  {
+    assignmentId: "assignment-worker-a",
+    commandEventType: "runtime.artifact.restore",
+    commandId: "cmd-user-a-artifact-restore",
+    graphId: "team-alpha",
+    hostAuthorityPubkey:
+      "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+    nodeId: "worker-a",
+    observedAt: "2026-04-26T12:07:00.000Z",
+    projection: {
+      source: "observation_event",
+      updatedAt: "2026-04-26T12:07:00.000Z"
+    },
+    receiptStatus: "failed",
+    requestedBy: "user-a",
+    runnerId: "runner-worker-a",
+    runnerPubkey:
+      "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee"
+  },
+  {
+    assignmentId: "assignment-worker-b",
+    commandEventType: "runtime.wiki.publish",
+    commandId: "cmd-user-b-wiki-publish",
+    graphId: "team-alpha",
+    hostAuthorityPubkey:
+      "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+    nodeId: "worker-b",
+    observedAt: "2026-04-26T12:09:00.000Z",
+    projection: {
+      source: "observation_event",
+      updatedAt: "2026-04-26T12:09:00.000Z"
+    },
+    receiptStatus: "completed",
+    requestedBy: "user-b",
+    runnerId: "runner-worker-b",
+    runnerPubkey:
+      "ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff"
+  }
+];
+
 const projection: HostProjectionSnapshot = {
   artifactRefs: [],
   assignmentReceipts: [],
@@ -111,7 +175,7 @@ const projection: HostProjectionSnapshot = {
       statusMessage: "Human Interface Runtime listening"
     }
   ],
-  runtimeCommandReceipts: [],
+  runtimeCommandReceipts,
   runners: [],
   schemaVersion: "1",
   sourceChangeRefs: [],
@@ -178,6 +242,33 @@ describe("user node CLI output", () => {
           "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"
       }
     ]);
+  });
+
+  it("filters projected command receipts to one User Node requester", () => {
+    const receipts = filterUserNodeCommandReceiptsForCli({
+      projection,
+      receiptStatus: "completed",
+      userNodeId: "user-a"
+    });
+
+    expect(receipts.map((receipt) => receipt.commandId)).toEqual([
+      "cmd-user-a-wiki-publish"
+    ]);
+    expect(projectUserNodeCommandReceiptSummary(receipts[0]!)).toMatchObject({
+      commandEventType: "runtime.wiki.publish",
+      commandId: "cmd-user-a-wiki-publish",
+      nodeId: "worker-b",
+      receiptStatus: "completed",
+      wikiArtifactId: "wiki-alpha"
+    });
+    expect(
+      filterUserNodeCommandReceiptsForCli({
+        commandEventType: "runtime.wiki.publish",
+        nodeId: "worker-b",
+        projection,
+        userNodeId: "user-a"
+      }).map((receipt) => receipt.commandId)
+    ).toEqual(["cmd-user-a-wiki-publish"]);
   });
 
   it("projects published User Node messages", () => {

@@ -1190,8 +1190,9 @@ Current status:
   `runtime.source_history.reconcile` command receipt;
 - runtime command receipt observations, Host events, and Host projection
   records now preserve optional `requestedBy` attribution. The running User
-  Client exposes only receipts requested by its own User Node, while Studio and
-  CLI keep operator access to the full Host projection.
+  Client exposes only receipts requested by its own User Node, headless User
+  Node CLI can list the same participant-scoped receipts, and Studio plus
+  operator CLI keep access to the full Host projection.
 - Host-generated artifact source-change proposal ids now derive from the
   command id when omitted by callers and are returned in the response
   acknowledgement as the runner candidate id to follow;

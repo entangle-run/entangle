@@ -5911,3 +5911,13 @@ commands into received/completed/failed command receipts. The running User
 Client now exposes and renders only receipts requested by its own User Node,
 while CLI and Studio retain operator access to the full projected receipt set;
 CLI command receipt inspection also supports `--requested-by`.
+
+## [2026-05-05] cli | Added User Node command receipt inspection
+
+Added `references/501-user-node-cli-command-receipts-slice.md`. The CLI now
+has `entangle user-nodes command-receipts <nodeId>` for headless participant
+inspection of runtime command receipts requested by that User Node.
+
+The command reads Host projection, filters by `requestedBy`, supports target
+node, command type, status, limit, and compact summary options, and leaves
+`entangle host command-receipts` as the full operator projection surface.

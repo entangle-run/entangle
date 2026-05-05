@@ -301,6 +301,7 @@ same-machine slice records.
 - [498-focused-register-transition-history-wiki-slice.md](498-focused-register-transition-history-wiki-slice.md)
 - [499-host-event-audit-bundle-cli-retention-slice.md](499-host-event-audit-bundle-cli-retention-slice.md)
 - [500-user-client-command-receipt-visibility-slice.md](500-user-client-command-receipt-visibility-slice.md)
+- [501-user-node-cli-command-receipts-slice.md](501-user-node-cli-command-receipts-slice.md)
 
 ## Audited Scope
 
@@ -618,7 +619,9 @@ The repository is not fully federated:
   command with assignment, node, runner, command type, status, requester, and
   limit filters over the same Host projection. Runtime command receipts now
   also preserve optional `requestedBy` attribution for participant-originated
-  commands. Studio can fetch the same Host assignment
+  commands. Headless User Node CLI can list only the receipts requested by one
+  User Node through `entangle user-nodes command-receipts`. Studio can fetch
+  the same Host assignment
   timeline endpoint per projected assignment and render lifecycle, assignment
   receipt, and runtime command receipt entries without direct runner access;
 - User Client source-candidate accept/reject now publishes signed
