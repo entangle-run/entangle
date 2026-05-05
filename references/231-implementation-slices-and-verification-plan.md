@@ -1457,6 +1457,8 @@ Current status:
 - deployment backup manifests now include a machine-readable inventory of
   known excluded external service volumes for Gitea, strfry, and Host secret
   state, and restore warnings print that inventory for non-disposable planning;
+- deployment backup summaries now expose `externalVolumeCount` so operators
+  can see the excluded-volume inventory at command-output level;
 - Host event records now include optional audit hash-chain fields, Host event
   appends are serialized to preserve chain order, and CLI runtime-trace
   summaries expose the hashes when present; Host, host-client, and CLI now

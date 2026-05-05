@@ -109,6 +109,7 @@ describe("deployment backup command helpers", () => {
     expect(summary).toMatchObject({
       configIncludedPathCount: 8,
       configMissingPathCount: 0,
+      externalVolumeCount: 3,
       stateLayoutStatus: "current",
       stateLayoutVersion: 1
     });

@@ -84,6 +84,7 @@ export interface DeploymentBackupSummary {
   configIncludedPathCount: number;
   configMissingPathCount: number;
   createdAt: string;
+  externalVolumeCount: number;
   manifestPath: string;
   outputPath: string;
   stateLayoutStatus: StateLayoutInspection["status"];
@@ -518,6 +519,7 @@ export async function createDeploymentBackup(
     configIncludedPathCount: config.includedPaths.length,
     configMissingPathCount: config.missingPaths.length,
     createdAt,
+    externalVolumeCount: manifest.exclusions.externalVolumes.length,
     manifestPath,
     outputPath,
     stateLayoutStatus: layout.status,

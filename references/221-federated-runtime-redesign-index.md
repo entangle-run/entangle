@@ -336,6 +336,7 @@ same-machine slice records.
 - [533-human-runtime-wiki-conflict-receipts-slice.md](533-human-runtime-wiki-conflict-receipts-slice.md)
 - [534-distributed-proof-external-host-url-slice.md](534-distributed-proof-external-host-url-slice.md)
 - [535-deployment-backup-external-volume-inventory-slice.md](535-deployment-backup-external-volume-inventory-slice.md)
+- [536-deployment-backup-external-volume-summary-slice.md](536-deployment-backup-external-volume-summary-slice.md)
 
 ## Audited Scope
 
@@ -1145,7 +1146,9 @@ unreadable or unsupported state layouts remain blocked for manual inspection.
 Deployment backup manifests now also carry a machine-readable inventory of
 known excluded external service volumes for Gitea, strfry, and Host secret
 state, and restore warnings print that inventory so non-disposable service
-state is explicit.
+state is explicit. Backup command summaries also include
+`externalVolumeCount` so operators can see that inventory exists without
+opening the manifest.
 New Host events now carry optional audit hash-chain fields, and Host serializes
 event appends so concurrent operator requests do not fork the local audit
 sequence. Host now also exposes `GET /v1/events/integrity`, host-client

@@ -1,5 +1,19 @@
 # Entangle Wiki Log
 
+## [2026-05-05] cli | Added backup external volume count
+
+Added `references/536-deployment-backup-external-volume-summary-slice.md`.
+`entangle deployment backup` summaries now include `externalVolumeCount`.
+
+The manifest remains the detailed source of truth, while the command output
+now tells operators that excluded service-volume inventory exists.
+
+Targeted checks passed:
+
+- `pnpm --filter @entangle/cli test -- src/deployment-backup-command.test.ts`
+- `pnpm --filter @entangle/cli typecheck`
+- `pnpm --filter @entangle/cli lint`
+
 ## [2026-05-05] cli | Added backup external volume inventory
 
 Added `references/535-deployment-backup-external-volume-inventory-slice.md`.

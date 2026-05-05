@@ -874,6 +874,7 @@ files are the active federated redesign pack.
 534. [533-human-runtime-wiki-conflict-receipts-slice.md](533-human-runtime-wiki-conflict-receipts-slice.md)
 535. [534-distributed-proof-external-host-url-slice.md](534-distributed-proof-external-host-url-slice.md)
 536. [535-deployment-backup-external-volume-inventory-slice.md](535-deployment-backup-external-volume-inventory-slice.md)
+537. [536-deployment-backup-external-volume-summary-slice.md](536-deployment-backup-external-volume-summary-slice.md)
 
 ## Role of this corpus
 
