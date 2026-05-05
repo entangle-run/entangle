@@ -5942,3 +5942,11 @@ last seen, projected client URL, restart generation, and status message.
 The React User Client and server-rendered fallback page show those read-only
 fields so a human participant can inspect where their node is running without
 using Studio for basic node-local health context.
+
+## [2026-05-05] cli | Added User Node client workload summaries
+
+Added `references/504-user-node-client-workload-summary-slice.md`.
+`entangle user-nodes clients` now reports per-User-Node conversation count,
+unread count, pending approval count, latest message timestamp,
+participant-requested command receipt count, and failed command receipt count
+alongside the existing Human Interface Runtime placement fields.

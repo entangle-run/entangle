@@ -11,15 +11,21 @@ import type {
 export type UserNodeClientCliSummary = {
   assignmentId?: string;
   clientUrl?: string;
+  commandReceiptCount: number;
+  conversationCount: number;
   desiredState?: string;
+  failedCommandReceiptCount: number;
   graphId: string;
   identityStatus: string;
+  lastMessageAt?: string;
   lastSeenAt?: string;
   nodeId: string;
   observedState: string;
+  pendingApprovalCount: number;
   publicKey: string;
   runnerId?: string;
   statusMessage?: string;
+  unreadCount: number;
   updatedAt?: string;
 };
 
@@ -232,23 +238,43 @@ export function projectUserNodeIdentitySummary(
 }
 
 function projectUserNodeClientSummary(input: {
+  commandReceipts: RuntimeCommandReceiptProjectionRecord[];
+  conversations: UserConversationProjectionRecord[];
   runtime?: RuntimeProjectionRecord | undefined;
   userNode: UserNodeIdentityRecord;
 }): UserNodeClientCliSummary {
   const runtime = input.runtime;
+  const lastMessageAt = input.conversations
+    .map((conversation) => conversation.lastMessageAt)
+    .filter((value): value is string => value !== undefined)
+    .sort((left, right) => right.localeCompare(left))[0];
 
   return {
     ...(runtime?.assignmentId ? { assignmentId: runtime.assignmentId } : {}),
     ...(runtime?.clientUrl ? { clientUrl: runtime.clientUrl } : {}),
+    commandReceiptCount: input.commandReceipts.length,
+    conversationCount: input.conversations.length,
     ...(runtime?.desiredState ? { desiredState: runtime.desiredState } : {}),
+    failedCommandReceiptCount: input.commandReceipts.filter(
+      (receipt) => receipt.receiptStatus === "failed"
+    ).length,
     graphId: input.userNode.graphId,
     identityStatus: input.userNode.status,
+    ...(lastMessageAt ? { lastMessageAt } : {}),
     ...(runtime?.lastSeenAt ? { lastSeenAt: runtime.lastSeenAt } : {}),
     nodeId: input.userNode.nodeId,
     observedState: runtime?.observedState ?? "unassigned",
+    pendingApprovalCount: input.conversations.reduce(
+      (total, conversation) => total + conversation.pendingApprovalIds.length,
+      0
+    ),
     publicKey: input.userNode.publicKey,
     ...(runtime?.runnerId ? { runnerId: runtime.runnerId } : {}),
     ...(runtime?.statusMessage ? { statusMessage: runtime.statusMessage } : {}),
+    unreadCount: input.conversations.reduce(
+      (total, conversation) => total + conversation.unreadCount,
+      0
+    ),
     ...(runtime?.projection.updatedAt
       ? { updatedAt: runtime.projection.updatedAt }
       : {})
@@ -262,10 +288,35 @@ export function buildUserNodeClientSummariesForCli(input: {
   const runtimesByNodeId = new Map(
     input.projection.runtimes.map((runtime) => [runtime.nodeId, runtime])
   );
+  const conversationsByUserNodeId = new Map<
+    string,
+    UserConversationProjectionRecord[]
+  >();
+  for (const conversation of input.projection.userConversations) {
+    conversationsByUserNodeId.set(conversation.userNodeId, [
+      ...(conversationsByUserNodeId.get(conversation.userNodeId) ?? []),
+      conversation
+    ]);
+  }
+  const commandReceiptsByRequester = new Map<
+    string,
+    RuntimeCommandReceiptProjectionRecord[]
+  >();
+  for (const receipt of input.projection.runtimeCommandReceipts) {
+    if (!receipt.requestedBy) {
+      continue;
+    }
+    commandReceiptsByRequester.set(receipt.requestedBy, [
+      ...(commandReceiptsByRequester.get(receipt.requestedBy) ?? []),
+      receipt
+    ]);
+  }
 
   return sortUserNodeClientSummariesForCli(
     input.userNodes.map((userNode) =>
       projectUserNodeClientSummary({
+        commandReceipts: commandReceiptsByRequester.get(userNode.nodeId) ?? [],
+        conversations: conversationsByUserNodeId.get(userNode.nodeId) ?? [],
         runtime: runtimesByNodeId.get(userNode.nodeId),
         userNode
       })

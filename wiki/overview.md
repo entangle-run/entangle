@@ -305,6 +305,10 @@ The most accurate current description is:
   `human_interface` runtime: assignment, runner, desired/observed state,
   last-seen timestamp, projected client URL, restart generation, and status
   message;
+- the headless `entangle user-nodes clients` roster now joins Human Interface
+  Runtime placement with per-User-Node conversation count, unread count,
+  pending approval count, latest message time, participant-requested command
+  receipt count, and failed command receipt count;
 - the running User Client can now request runner-owned artifact restore for
   artifacts visible in the selected User Node conversation, and the
   process-runner smoke proves that path through a completed projected

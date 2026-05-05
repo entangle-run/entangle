@@ -153,7 +153,9 @@ participant surfaces read Host's scoped
 the full Host projection. The running User Client state also shows its own
 Host-projected `human_interface` runtime assignment, runner, desired/observed
 state, last-seen timestamp, projected client URL, restart generation, and
-status message.
+status message. The headless `entangle user-nodes clients` roster now also
+adds per-User-Node conversation, unread, pending approval, latest message, and
+participant-command receipt counts.
 The smoke still runs without live model credentials. Live OpenCode
 behavior and real-provider credentials remain manual/operator validation, but
 the fake OpenCode path now proves same-session `--session` continuity through a
@@ -840,7 +842,9 @@ This repository currently contains:
   User Node CLI through a scoped Host route, read-only User Client visibility
   into its own projected Human Interface Runtime status, and a Studio
   assignment timeline drilldown over the same Host endpoint with related
-  navigation to runtime, runner, source-history, and command receipt panels;
+  navigation to runtime, runner, source-history, and command receipt panels.
+  The CLI User Node client roster also reports conversation/unread/approval and
+  participant-command receipt counts per User Node;
 - a Studio federation overview that joins User Node identities with runtime
   projection and conversation projection, so operators can see Human Interface
   Runtime state, runner placement, User Client links, conversation counts,

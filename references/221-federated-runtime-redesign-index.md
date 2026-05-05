@@ -304,6 +304,7 @@ same-machine slice records.
 - [501-user-node-cli-command-receipts-slice.md](501-user-node-cli-command-receipts-slice.md)
 - [502-user-node-command-receipts-host-api-slice.md](502-user-node-command-receipts-host-api-slice.md)
 - [503-user-client-runtime-status-projection-slice.md](503-user-client-runtime-status-projection-slice.md)
+- [504-user-node-client-workload-summary-slice.md](504-user-node-client-workload-summary-slice.md)
 
 ## Audited Scope
 
@@ -627,7 +628,10 @@ The repository is not fully federated:
   projection. The running User Client state also includes the Host-projected
   status of its own `human_interface` runtime: assignment, runner, desired and
   observed state, last seen, projected client URL, restart generation, and
-  status message. Studio can fetch the same Host assignment
+  status message. The headless User Node client roster now also joins runtime
+  placement with conversation counts, unread counts, pending approval counts,
+  latest message timestamp, participant-requested command receipt counts, and
+  failed receipt counts. Studio can fetch the same Host assignment
   timeline endpoint per projected assignment and render lifecycle, assignment
   receipt, and runtime command receipt entries without direct runner access;
 - User Client source-candidate accept/reject now publishes signed

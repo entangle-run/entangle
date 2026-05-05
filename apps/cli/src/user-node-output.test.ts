@@ -221,25 +221,36 @@ describe("user node CLI output", () => {
       {
         assignmentId: "assignment-user-a",
         clientUrl: "http://127.0.0.1:4301/",
+        commandReceiptCount: 2,
+        conversationCount: 2,
         desiredState: "running",
+        failedCommandReceiptCount: 1,
         graphId: "team-alpha",
         identityStatus: "active",
+        lastMessageAt: "2026-04-26T12:05:00.000Z",
         lastSeenAt: "2026-04-26T12:05:30.000Z",
         nodeId: "user-a",
         observedState: "running",
+        pendingApprovalCount: 1,
         publicKey:
           "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
         runnerId: "runner-human-a",
         statusMessage: "Human Interface Runtime listening",
+        unreadCount: 2,
         updatedAt: "2026-04-26T12:05:30.000Z"
       },
       {
+        commandReceiptCount: 1,
+        conversationCount: 0,
+        failedCommandReceiptCount: 0,
         graphId: "team-alpha",
         identityStatus: "active",
         nodeId: "user-b",
         observedState: "unassigned",
+        pendingApprovalCount: 0,
         publicKey:
-          "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"
+          "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+        unreadCount: 0
       }
     ]);
   });

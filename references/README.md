@@ -834,6 +834,7 @@ files are the active federated redesign pack.
 502. [501-user-node-cli-command-receipts-slice.md](501-user-node-cli-command-receipts-slice.md)
 503. [502-user-node-command-receipts-host-api-slice.md](502-user-node-command-receipts-host-api-slice.md)
 504. [503-user-client-runtime-status-projection-slice.md](503-user-client-runtime-status-projection-slice.md)
+505. [504-user-node-client-workload-summary-slice.md](504-user-node-client-workload-summary-slice.md)
 
 ## Role of this corpus
 

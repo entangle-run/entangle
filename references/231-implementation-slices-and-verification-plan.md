@@ -380,6 +380,7 @@ Implementation record:
 - [501-user-node-cli-command-receipts-slice.md](501-user-node-cli-command-receipts-slice.md)
 - [502-user-node-command-receipts-host-api-slice.md](502-user-node-command-receipts-host-api-slice.md)
 - [503-user-client-runtime-status-projection-slice.md](503-user-client-runtime-status-projection-slice.md)
+- [504-user-node-client-workload-summary-slice.md](504-user-node-client-workload-summary-slice.md)
 - [401-root-test-gate-reliability-slice.md](401-root-test-gate-reliability-slice.md)
 - [446-runner-test-gate-fork-stability-slice.md](446-runner-test-gate-fork-stability-slice.md)
 - [447-runner-owned-wiki-page-upsert-slice.md](447-runner-owned-wiki-page-upsert-slice.md)
@@ -1042,6 +1043,10 @@ The previously listed durable User Node inbox/outbox projection gap is closed
 in the current implementation. The running User Client now also exposes its own
 Host-projected `human_interface` runtime assignment, runner, desired/observed
 state, last-seen timestamp, client URL, restart generation, and status message.
+The headless `entangle user-nodes clients` roster now joins those endpoint and
+runtime fields with participant workload counts from Host projection:
+conversation count, unread count, pending approval count, latest message time,
+participant-requested command receipt count, and failed command receipt count.
 Remaining User Node surface work is now focused on runtime reassignment UX
 without violating Host authority and participant-side source/wiki review depth.
 
