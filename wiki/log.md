@@ -1,5 +1,15 @@
 # Entangle Wiki Log
 
+## [2026-05-05] verification | Added federated fake external HTTP engine smoke
+
+Added `references/482-federated-process-smoke-fake-external-http-slice.md`.
+`pnpm ops:smoke-federated-process-runner:fake-external-http` now starts the
+deterministic fake external HTTP engine and runs it through the full joined
+agent runner, two User Node runners, User Client review/approval,
+source-history/artifact/wiki projection, and filesystem-isolation proof.
+`pnpm ops:demo-user-node-runtime:fake-external-http` exposes the same engine
+mode for the keep-running interactive demo.
+
 ## [2026-05-05] tooling | Added fake external HTTP agent-engine harness
 
 Added `references/481-fake-external-http-agent-engine-harness-slice.md`.

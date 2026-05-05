@@ -282,6 +282,7 @@ same-machine slice records.
 - [479-legacy-product-name-residue-cleanup-slice.md](479-legacy-product-name-residue-cleanup-slice.md)
 - [480-distributed-proof-custom-agent-engine-setup-slice.md](480-distributed-proof-custom-agent-engine-setup-slice.md)
 - [481-fake-external-http-agent-engine-harness-slice.md](481-fake-external-http-agent-engine-harness-slice.md)
+- [482-federated-process-smoke-fake-external-http-slice.md](482-federated-process-smoke-fake-external-http-slice.md)
 
 ## Audited Scope
 
@@ -656,6 +657,12 @@ The repository is not fully federated:
   `/turn` endpoint, and use `pnpm ops:smoke-fake-agent-engine-http` to verify
   no-credential health, shared turn execution, optional workspace mutation, and
   debug-state plumbing;
+- `pnpm ops:smoke-federated-process-runner:fake-external-http` now proves that
+  same fake `external_http` engine through the full federated process path:
+  Host default profile selection, runner capability advertisement, real
+  assignment, source workspace mutation, User Node review/approval, projected
+  source-history/artifact/wiki evidence, and multi-user Human Interface
+  Runtime behavior;
 - the active agent engine kind contract now exposes only runner-executable
   kinds: `opencode_server`, `external_process`, and `external_http`;
 - the distributed proof kit can now generate Host operator setup for

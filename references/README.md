@@ -193,7 +193,11 @@ the configured endpoint and validating the shared turn result response. A root
 no-credential external HTTP agent-engine fixture for manual custom-engine
 plumbing tests, and `pnpm ops:smoke-fake-agent-engine-http` verifies that
 fixture's health, turn response, optional workspace mutation, and debug-state
-route. Active agent engine kind validation now exposes only runner-executable kinds:
+route. The full federated process smoke can now also run with
+`pnpm ops:smoke-federated-process-runner:fake-external-http`, proving the same
+generic HTTP engine boundary through real Host assignment, User Node review,
+projected artifacts/source/wiki evidence, and multi-user Human Interface
+Runtime behavior. Active agent engine kind validation now exposes only runner-executable kinds:
 `opencode_server`, `external_process`, and `external_http`.
 Historical slice notes no longer preserve literal old product-name strings in
 local-assumption audit command examples; they now refer generically to old
@@ -802,6 +806,7 @@ files are the active federated redesign pack.
 480. [479-legacy-product-name-residue-cleanup-slice.md](479-legacy-product-name-residue-cleanup-slice.md)
 481. [480-distributed-proof-custom-agent-engine-setup-slice.md](480-distributed-proof-custom-agent-engine-setup-slice.md)
 482. [481-fake-external-http-agent-engine-harness-slice.md](481-fake-external-http-agent-engine-harness-slice.md)
+483. [482-federated-process-smoke-fake-external-http-slice.md](482-federated-process-smoke-fake-external-http-slice.md)
 
 ## Role of this corpus
 

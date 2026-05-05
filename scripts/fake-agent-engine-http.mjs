@@ -4,7 +4,12 @@ import { mkdirSync, writeFileSync } from "node:fs";
 import path from "node:path";
 
 const defaultOptions = {
+  approvalApprover: "user",
+  approvalId: undefined,
+  approvalReason: "Approve deterministic fake external HTTP source application.",
+  approvalResourceId: undefined,
   content: "Deterministic Entangle fake external HTTP engine response.",
+  engineSessionId: undefined,
   engineVersion: "fake-agent-engine-http-1.0.0",
   host: "127.0.0.1",
   jsonLog: false,
@@ -108,19 +113,31 @@ async function handleRequest(input) {
         writtenFile
       });
 
+      const approvalDirective = buildApprovalDirective();
       sendJson(input.response, 200, {
+        ...(approvalDirective
+          ? { approvalRequestDirectives: [approvalDirective] }
+          : {}),
         assistantMessages: [
           `${options.content} request=${nodeId} runtime=${runtimeNodeId}`
         ],
+        ...(options.engineSessionId
+          ? { engineSessionId: options.engineSessionId }
+          : {}),
         engineVersion: options.engineVersion,
         stopReason: "completed",
         ...(writtenFile
           ? {
               toolExecutions: [
                 {
+                  durationMs: 1,
                   inputSummary: writtenFile,
-                  name: "fake_workspace_write",
-                  outcome: "success"
+                  outcome: "success",
+                  outputSummary: `wrote ${writtenFile}`,
+                  sequence: 1,
+                  title: "Fake workspace write",
+                  toolCallId: `fake-workspace-write-${requests.length}`,
+                  toolId: "fake_workspace_write"
                 }
               ]
             }
@@ -151,8 +168,23 @@ function parseArgs(args) {
     const arg = args[index];
 
     switch (arg) {
+      case "--approval-approver":
+        parsed.approvalApprover = readRequiredValue(args, ++index, arg);
+        break;
+      case "--approval-id":
+        parsed.approvalId = readRequiredValue(args, ++index, arg);
+        break;
+      case "--approval-reason":
+        parsed.approvalReason = readRequiredValue(args, ++index, arg);
+        break;
+      case "--approval-resource-id":
+        parsed.approvalResourceId = readRequiredValue(args, ++index, arg);
+        break;
       case "--content":
         parsed.content = readRequiredValue(args, ++index, arg);
+        break;
+      case "--engine-session-id":
+        parsed.engineSessionId = readRequiredValue(args, ++index, arg);
         break;
       case "--engine-version":
         parsed.engineVersion = readRequiredValue(args, ++index, arg);
@@ -184,6 +216,15 @@ function parseArgs(args) {
     }
   }
 
+  if (
+    (parsed.approvalId && !parsed.approvalResourceId) ||
+    (!parsed.approvalId && parsed.approvalResourceId)
+  ) {
+    throw new Error(
+      "--approval-id and --approval-resource-id must be supplied together."
+    );
+  }
+
   return parsed;
 }
 
@@ -206,7 +247,13 @@ Options:
   --host <host>             Bind host. Default: 127.0.0.1
   --port <port>             Bind port. Use 0 for ephemeral. Default: 18082
   --content <text>          Assistant message prefix.
+  --engine-session-id <id>  Optional engine session id reported in turn results.
   --engine-version <value>  Engine version reported in turn results.
+  --approval-id <id>        Optional approval directive id.
+  --approval-resource-id <id>
+                            Optional source-change approval resource id.
+  --approval-approver <id>  Approval approver node id. Default: user
+  --approval-reason <text>  Approval reason.
   --write-file <path>       Optional source-workspace relative file to write on each turn.
   --write-content <text>    Content for --write-file.
   --json-log                Print startup metadata as JSON.
@@ -267,6 +314,24 @@ function maybeWriteWorkspaceFile(sourceWorkspaceRoot) {
   mkdirSync(path.dirname(target), { recursive: true });
   writeFileSync(target, options.writeContent, "utf8");
   return path.relative(root, target);
+}
+
+function buildApprovalDirective() {
+  if (!options.approvalId || !options.approvalResourceId) {
+    return undefined;
+  }
+
+  return {
+    approvalId: options.approvalId,
+    approverNodeIds: [options.approvalApprover],
+    operation: "source_application",
+    reason: options.approvalReason,
+    resource: {
+      id: options.approvalResourceId,
+      kind: "source_change_candidate",
+      label: options.approvalResourceId
+    }
+  };
 }
 
 function sendJson(response, statusCode, body) {

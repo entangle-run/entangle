@@ -274,6 +274,18 @@ pnpm ops:smoke-fake-agent-engine-http
 That smoke starts the endpoint on an ephemeral port and verifies health, turn
 execution, response shape, optional workspace mutation, and debug state.
 
+The same fake engine can now run inside the full federated process smoke:
+
+```bash
+pnpm ops:smoke-federated-process-runner:fake-external-http
+```
+
+That mode starts Host, one `external_http` agent runner, two User Node runners,
+the fake external HTTP endpoint, and the same User Client/source/artifact/wiki
+verification path used by the OpenCode smoke. It proves the generic custom
+engine boundary through real runner assignment and signed Host projection
+without live model credentials.
+
 Active product naming is also guarded:
 
 ```bash
@@ -333,6 +345,16 @@ pnpm ops:demo-user-node-runtime:fake-opencode
 That command keeps the same Host, runner, relay, and User Client path, but uses
 the deterministic attached OpenCode fixture so the permission bridge and
 attached-session continuity can be exercised without live model credentials.
+
+To run the interactive demo through the generic fake `external_http` engine
+profile, use:
+
+```bash
+pnpm ops:demo-user-node-runtime:fake-external-http
+```
+
+That command keeps the same admin Studio/User Client path while exercising a
+custom HTTP agent-engine endpoint under the assigned agent runner.
 
 To prepare a generic runner outside the smoke path, start Host, export a runner
 Nostr secret on the runner machine, then generate and use a Host-derived join

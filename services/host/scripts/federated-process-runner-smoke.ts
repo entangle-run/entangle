@@ -84,6 +84,15 @@ const userClientStaticDir = resolveUserClientStaticDir();
 const useFakeOpenCodeServer = process.argv.includes(
   "--use-fake-opencode-server"
 );
+const useFakeExternalHttpEngine = process.argv.includes(
+  "--use-fake-external-http-engine"
+);
+
+if (useFakeOpenCodeServer && useFakeExternalHttpEngine) {
+  throw new Error(
+    "Choose either --use-fake-opencode-server or --use-fake-external-http-engine, not both."
+  );
+}
 
 type StartedAttachedFakeOpenCodeServer = {
   baseUrl: string;
@@ -92,6 +101,13 @@ type StartedAttachedFakeOpenCodeServer = {
   stderr: () => string;
   stdout: () => string;
   username: string;
+};
+
+type StartedFakeExternalHttpEngine = {
+  child: ChildProcessByStdio<null, Readable, Readable>;
+  stderr: () => string;
+  stdout: () => string;
+  turnUrl: string;
 };
 
 function readFlagValue(name: string): string | undefined {
@@ -734,6 +750,126 @@ async function startAttachedFakeOpenCodeServer(input: {
   };
 }
 
+async function startFakeExternalHttpEngine(input: {
+  approvalId: string;
+  content: string;
+  engineSessionId: string;
+  sourceChangeId: string;
+  writeContent: string;
+  writeFile: string;
+}): Promise<StartedFakeExternalHttpEngine> {
+  let stdout = "";
+  let stderr = "";
+  let lineBuffer = "";
+  let settled = false;
+  const child = spawn(
+    process.execPath,
+    [
+      path.join(repoRoot, "scripts", "fake-agent-engine-http.mjs"),
+      "--port",
+      "0",
+      "--content",
+      input.content,
+      "--engine-session-id",
+      input.engineSessionId,
+      "--engine-version",
+      "fake-agent-engine-http-1.0.0",
+      "--approval-id",
+      input.approvalId,
+      "--approval-resource-id",
+      input.sourceChangeId,
+      "--approval-reason",
+      "Approve deterministic fake external HTTP source application.",
+      "--write-file",
+      input.writeFile,
+      "--write-content",
+      input.writeContent,
+      "--json-log"
+    ],
+    {
+      cwd: repoRoot,
+      stdio: ["ignore", "pipe", "pipe"]
+    }
+  );
+
+  const turnUrl = await new Promise<string>((resolve, reject) => {
+    const timer = setTimeout(() => {
+      settle(
+        new Error(
+          `Fake external HTTP agent engine did not start within ${Math.min(timeoutMs, 5000)}ms.\nstdout:\n${stdout}\nstderr:\n${stderr}`
+        )
+      );
+    }, Math.min(timeoutMs, 5000));
+
+    function settle(error: Error | undefined, value?: string): void {
+      if (settled) {
+        return;
+      }
+
+      settled = true;
+      clearTimeout(timer);
+
+      if (error) {
+        reject(error);
+        return;
+      }
+
+      resolve(value ?? "");
+    }
+
+    child.stdout.on("data", (chunk: Buffer | string) => {
+      stdout = appendBounded(stdout, chunk);
+      lineBuffer += chunk.toString();
+
+      while (lineBuffer.includes("\n")) {
+        const newlineIndex = lineBuffer.indexOf("\n");
+        const line = lineBuffer.slice(0, newlineIndex).trim();
+        lineBuffer = lineBuffer.slice(newlineIndex + 1);
+
+        if (!line) {
+          continue;
+        }
+
+        try {
+          const parsed = JSON.parse(line) as unknown;
+
+          if (
+            parsed &&
+            typeof parsed === "object" &&
+            !Array.isArray(parsed) &&
+            (parsed as { event?: unknown }).event === "listening" &&
+            typeof (parsed as { turnUrl?: unknown }).turnUrl === "string"
+          ) {
+            settle(undefined, (parsed as { turnUrl: string }).turnUrl);
+          }
+        } catch {
+          // Ignore non-JSON startup noise; stderr/stdout are included on timeout.
+        }
+      }
+    });
+    child.stderr.on("data", (chunk: Buffer | string) => {
+      stderr = appendBounded(stderr, chunk);
+    });
+    child.once("close", (code, signal) => {
+      settle(
+        new Error(
+          `Fake external HTTP agent engine exited before listening: code=${code ?? "null"} signal=${signal ?? "null"}.\nstdout:\n${stdout}\nstderr:\n${stderr}`
+        )
+      );
+    });
+  }).catch(async (error: unknown) => {
+    await stopRunnerProcess(child);
+    throw error;
+  });
+
+  return {
+    child,
+    stderr: () => stderr,
+    stdout: () => stdout,
+    turnUrl
+  };
+}
+
 function assertSignerMatchesFromPubkey(
   value: {
     fromPubkey: string;
@@ -845,6 +981,7 @@ async function main(): Promise<void> {
   const reviewerTurnId = `turn-reviewer-${runId}`;
   const engineApprovalId = `approval-engine-${runId}`;
   const engineSourceChangeId = `source-change-engine-${runId}`;
+  const fakeExternalHttpEngineSessionId = "external-http-smoke-session";
   const fakeOpenCodeBin = path.join(tempRoot, "fake-bin");
   const hostHome = path.join(tempRoot, "host-home");
   const hostSecrets = path.join(tempRoot, "host-secrets");
@@ -947,6 +1084,7 @@ async function main(): Promise<void> {
   let attachedFakeOpenCodeServer:
     | StartedAttachedFakeOpenCodeServer
     | undefined;
+  let fakeExternalHttpEngine: StartedFakeExternalHttpEngine | undefined;
   let runnerExit:
     | {
         code: number | null;
@@ -1013,6 +1151,28 @@ async function main(): Promise<void> {
         "attached-fake-opencode-server",
         attachedFakeOpenCodeServer.baseUrl
       );
+    }
+
+    if (useFakeExternalHttpEngine) {
+      fakeExternalHttpEngine = await startFakeExternalHttpEngine({
+        approvalId: engineApprovalId,
+        content:
+          "Smoke fake external HTTP engine completed a deterministic turn.",
+        engineSessionId: fakeExternalHttpEngineSessionId,
+        sourceChangeId: engineSourceChangeId,
+        writeContent: `export const smokeSourceChange = '${engineSourceChangeId}';\n`,
+        writeFile: "src/smoke-generated.ts"
+      });
+      process.env.ENTANGLE_DEFAULT_AGENT_ENGINE_KIND = "external_http";
+      process.env.ENTANGLE_DEFAULT_AGENT_ENGINE_ID =
+        "external-http-fake-smoke";
+      process.env.ENTANGLE_DEFAULT_AGENT_ENGINE_DISPLAY_NAME =
+        "Smoke Fake External HTTP Engine";
+      process.env.ENTANGLE_DEFAULT_AGENT_ENGINE_VERSION =
+        "fake-agent-engine-http-1.0.0";
+      process.env.ENTANGLE_DEFAULT_AGENT_ENGINE_BASE_URL =
+        fakeExternalHttpEngine.turnUrl;
+      printPass("fake-external-http-engine", fakeExternalHttpEngine.turnUrl);
     }
 
     const [stateModule, hostModule, controlPlaneModule, hostTransportModule] =
@@ -1150,7 +1310,9 @@ async function main(): Promise<void> {
     const runnerSecretHex = Buffer.from(runnerSecretKey).toString("hex");
     const joinConfig: RunnerJoinConfig = runnerJoinConfigSchema.parse({
       capabilities: {
-        agentEngineKinds: ["opencode_server"],
+        agentEngineKinds: [
+          useFakeExternalHttpEngine ? "external_http" : "opencode_server"
+        ],
         labels: ["process-smoke"],
         maxAssignments: 1,
         runtimeKinds: ["agent_runner"],
@@ -3268,7 +3430,9 @@ async function main(): Promise<void> {
           },
           sessionId: userMessage.sessionId,
           summary:
-            "Process runner smoke: verify OpenCode same-session continuation.",
+            useFakeExternalHttpEngine
+              ? "Process runner smoke: verify external HTTP engine continuation."
+              : "Process runner smoke: verify OpenCode same-session continuation.",
           targetNodeId: "builder",
           turnId: continuationTurnId
         }),
@@ -3406,11 +3570,15 @@ async function main(): Promise<void> {
       );
     }
 
-    const expectedContinuedEngineSessionId = attachedFakeOpenCodeServer
-      ? "opencode-smoke-session"
-      : "opencode-smoke-session-continued";
+    const expectedContinuedEngineSessionId = useFakeExternalHttpEngine
+      ? fakeExternalHttpEngineSessionId
+      : attachedFakeOpenCodeServer
+        ? "opencode-smoke-session"
+        : "opencode-smoke-session-continued";
     const projectedContinuedEngineTurn = await waitFor(
-      "Host projected OpenCode continued engine turn",
+      useFakeExternalHttpEngine
+        ? "Host projected external HTTP continued engine turn"
+        : "Host projected OpenCode continued engine turn",
       async () => {
         const turnList = runtimeTurnListResponseSchema.parse(
           await hostRequest({
@@ -3445,7 +3613,9 @@ async function main(): Promise<void> {
       () => `\nstdout:\n${runnerStdout}\nstderr:\n${runnerStderr}`
     );
     printPass(
-      "opencode-session-continuity",
+      useFakeExternalHttpEngine
+        ? "external-http-engine-session-continuity"
+        : "opencode-session-continuity",
       `turn=${projectedContinuedEngineTurn.turnId}; engineSession=${projectedContinuedEngineTurn.engineOutcome?.engineSessionId}`
     );
 
@@ -5039,6 +5209,7 @@ async function main(): Promise<void> {
     await stopRunnerProcess(userRunnerProcess);
     await stopRunnerProcess(reviewerUserRunnerProcess);
     await stopRunnerProcess(attachedFakeOpenCodeServer?.child);
+    await stopRunnerProcess(fakeExternalHttpEngine?.child);
     await server?.close();
     await controlPlane?.close();
 
@@ -5052,6 +5223,7 @@ async function main(): Promise<void> {
     delete process.env.ENTANGLE_DEFAULT_RELAY_WRITE_URL;
     delete process.env.ENTANGLE_DEFAULT_GIT_TRANSPORT;
     delete process.env.ENTANGLE_DEFAULT_GIT_REMOTE_BASE;
+    delete process.env.ENTANGLE_DEFAULT_AGENT_ENGINE_KIND;
     delete process.env.ENTANGLE_DEFAULT_AGENT_ENGINE_ID;
     delete process.env.ENTANGLE_DEFAULT_AGENT_ENGINE_DISPLAY_NAME;
     delete process.env.ENTANGLE_DEFAULT_AGENT_ENGINE_VERSION;

@@ -22,6 +22,12 @@ const serverProcess = spawn(
     generatedRelativePath,
     "--write-content",
     generatedContent,
+    "--engine-session-id",
+    "external-http-smoke-session",
+    "--approval-id",
+    "approval-fake-external-http",
+    "--approval-resource-id",
+    "source-change-fake-external-http",
     "--json-log"
   ],
   {
@@ -148,8 +154,16 @@ async function verifyTurn(turnUrl) {
   if (
     !response.ok ||
     body.stopReason !== "completed" ||
+    body.engineSessionId !== "external-http-smoke-session" ||
     !Array.isArray(body.assistantMessages) ||
-    !String(body.assistantMessages[0] ?? "").includes("request=worker-it")
+    !String(body.assistantMessages[0] ?? "").includes("request=worker-it") ||
+    !Array.isArray(body.toolExecutions) ||
+    body.toolExecutions[0]?.toolId !== "fake_workspace_write" ||
+    body.toolExecutions[0]?.toolCallId !== "fake-workspace-write-1" ||
+    body.toolExecutions[0]?.sequence !== 1 ||
+    !Array.isArray(body.approvalRequestDirectives) ||
+    body.approvalRequestDirectives[0]?.approvalId !==
+      "approval-fake-external-http"
   ) {
     throw new Error(`Turn check failed: ${response.status}`);
   }

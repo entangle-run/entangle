@@ -172,6 +172,11 @@ The most accurate current description is:
   `pnpm ops:smoke-fake-agent-engine-http` verifies no-credential health, turn
   response, optional workspace mutation, and debug-state plumbing for
   `external_http` profiles;
+- `pnpm ops:smoke-federated-process-runner:fake-external-http` now runs the
+  same fake endpoint through the full joined-runner proof, including Host
+  engine profile selection, `external_http` runner capability, User Node review
+  and approval, projected source-history/artifact/wiki evidence, and the
+  two-User-Node Human Interface Runtime path;
 - active agent engine kinds now expose only runner-executable options:
   `opencode_server`, `external_process`, and `external_http`; native Claude
   support should be reintroduced only with a real runner adapter, while

@@ -15,7 +15,8 @@ Operators should be able to validate custom HTTP engine plumbing without live
 model credentials or a real third-party service. The fixture should run as a
 normal process, expose a health route, accept the shared turn request on
 `/turn`, optionally mutate the runner-provided source workspace, and return a
-valid `AgentEngineTurnResult` JSON object.
+valid `AgentEngineTurnResult` JSON object with schema-valid tool evidence,
+optional engine session id, and optional approval directives.
 
 This harness is not a second runtime engine inside Entangle. It is a
 deterministic endpoint for testing the existing `external_http` boundary while
@@ -42,6 +43,9 @@ projection, artifacts, and User Node surfaces.
   ephemeral port, check `/health`, POST a turn to `/turn`, verify the shared
   turn result shape, verify optional workspace mutation, and inspect
   `/debug/state`.
+- Return runner-valid `toolExecutions` fields and optional
+  `approvalRequestDirectives` so the fixture can be used by the real
+  `external_http` runner adapter.
 - Document how to bind the fake endpoint to an `external_http` engine profile
   and how to use it with the distributed proof kit.
 

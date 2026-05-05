@@ -17,6 +17,9 @@ const skipRelay = args.includes("--skip-relay");
 const fakeOpenCodeServer =
   args.includes("--fake-opencode-server") ||
   args.includes("--use-fake-opencode-server");
+const fakeExternalHttpEngine =
+  args.includes("--fake-external-http-engine") ||
+  args.includes("--use-fake-external-http-engine");
 const relayUrl =
   readFlagValue("--relay-url") ??
   process.env.ENTANGLE_RELAY_URL ??
@@ -41,6 +44,7 @@ Options:
   --timeout-ms <milliseconds>    Timeout passed to the process-runner smoke.
   --user-client-static-dir <dir> Serve a specific built User Client directory.
   --fake-opencode-server         Use the deterministic attached fake OpenCode server profile.
+  --fake-external-http-engine    Use the deterministic fake external_http engine profile.
   --skip-build                   Do not build apps/user-client before running.
   --skip-relay                   Do not start the local strfry service first.
   --dry-run                      Print the commands without running them.
@@ -49,6 +53,7 @@ Options:
 Examples:
   pnpm ops:demo-user-node-runtime
   pnpm ops:demo-user-node-runtime:fake-opencode
+  pnpm ops:demo-user-node-runtime:fake-external-http
   pnpm ops:demo-user-node-runtime -- --keep-temp
   pnpm ops:demo-user-node-runtime --skip-relay --relay-url ws://relay.example:7777
 `);
@@ -89,6 +94,13 @@ function run(label, command, commandArgs) {
   }
 }
 
+if (fakeOpenCodeServer && fakeExternalHttpEngine) {
+  console.error(
+    "Choose either --fake-opencode-server or --fake-external-http-engine, not both."
+  );
+  process.exit(1);
+}
+
 function buildSmokeArgs() {
   const smokeArgs = [
     "ops:smoke-federated-process-runner",
@@ -110,6 +122,13 @@ function buildSmokeArgs() {
     !passThroughArgs.includes("--use-fake-opencode-server")
   ) {
     smokeArgs.push("--use-fake-opencode-server");
+  }
+
+  if (
+    fakeExternalHttpEngine &&
+    !passThroughArgs.includes("--use-fake-external-http-engine")
+  ) {
+    smokeArgs.push("--use-fake-external-http-engine");
   }
 
   smokeArgs.push(...passThroughArgs);

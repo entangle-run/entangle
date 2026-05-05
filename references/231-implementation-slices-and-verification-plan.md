@@ -271,6 +271,11 @@ Current status:
   `pnpm ops:smoke-fake-agent-engine-http` verifies health, turn execution,
   response shape, optional workspace mutation, and debug state without live
   model credentials.
+- `pnpm ops:smoke-federated-process-runner:fake-external-http` now runs that
+  fake endpoint through the full joined-runner process proof, with the builder
+  runner advertising `external_http`, Host selecting that engine profile,
+  runner-owned workspace mutation, User Node source review/approval, projected
+  source-history/artifact/wiki evidence, and the two-User-Node path.
 - `pnpm ops:smoke-federated-process-runner` can now run with
   `--use-fake-opencode-server` to configure the builder node with that attached
   fake OpenCode server, approve OpenCode permission requests through the
@@ -882,6 +887,9 @@ Implementation record:
 - [481-fake-external-http-agent-engine-harness-slice.md](481-fake-external-http-agent-engine-harness-slice.md)
   adds a deterministic no-credential HTTP endpoint plus smoke coverage for
   custom `external_http` agent-engine plumbing.
+- [482-federated-process-smoke-fake-external-http-slice.md](482-federated-process-smoke-fake-external-http-slice.md)
+  runs the fake external HTTP engine through the full federated process smoke
+  and interactive User Node demo shortcut.
 - [465-cli-agent-engine-profile-upsert-slice.md](465-cli-agent-engine-profile-upsert-slice.md)
   adds a Host-backed CLI catalog command for creating and updating typed agent
   engine profiles, including attached OpenCode profiles, permission mode,
