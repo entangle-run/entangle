@@ -654,6 +654,11 @@ Current status:
   `summaries/source-change-ledger.md` from source-change-bearing task pages,
   links it from the node wiki index, and feeds it into future turn
   `memoryRefs` plus bounded memory briefs;
+- deterministic task memory now records requested handoff directives and
+  emitted handoff event ids, and post-turn memory maintenance rebuilds
+  `summaries/delegation-ledger.md` from handoff-bearing task pages so future
+  engine turns receive recent delegation history through memory refs plus the
+  bounded memory brief;
 - model-guided runner memory synthesis now writes
   `summaries/coordination-map.md` as a focused graph-relation memory page,
   carrying local node relation, inbound message provenance, active peer

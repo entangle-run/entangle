@@ -1226,6 +1226,10 @@ This repository currently contains:
   synthesis sees bounded handoff evidence from the completed turn, and the
   durable `working-context.md` page now carries emitted handoff message ids
   without copying peer conversations or logs into memory;
+- a deterministic delegation-memory refinement where task pages now record
+  requested handoff directives plus emitted event ids, and
+  `summaries/delegation-ledger.md` feeds recent handoff history into future
+  memory refs and bounded memory briefs;
 - a conversation-aware working-context refinement where the durable
   `working-context.md` page now carries active conversation ids plus bounded
   peer, lifecycle, response-policy, follow-up, artifact-count, and last-message
@@ -1579,7 +1583,8 @@ The highest-value remaining gaps are:
   session-aware, artifact-aware/artifact-carrying, engine-outcome-aware,
   execution-insight-carrying, source-change-aware, owner-aware, and
   coordination-map-aware bounded runtime inspection surface plus deterministic
-  task-page source-change memory plus the source-change ledger;
+  task-page source-change/delegation memory and the source-change/delegation
+  ledgers;
 - deeper delegated-session runtime semantics beyond the current controlled
   autonomous handoff and runner-local active-conversation reconciliation path,
   especially formal cross-runtime relation modeling, richer participant-aware

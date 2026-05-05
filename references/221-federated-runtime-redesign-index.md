@@ -1264,9 +1264,15 @@ Post-turn memory maintenance now also rebuilds
 `summaries/source-change-ledger.md` from source-change-bearing task pages,
 links it from the node wiki index, and exposes it through future turn
 `memoryRefs` and bounded memory briefs.
+Deterministic task memory now also preserves bounded handoff evidence and
+rebuilds `summaries/delegation-ledger.md` from handoff-bearing task pages.
+Successful non-blocked turns write memory after outbound handoff publication,
+so the ledger can carry emitted Nostr event ids as well as requested target,
+edge, response-policy, artifact-inclusion, intent, and summary metadata.
 The highest-value remaining implementation areas are richer model-guided
 memory maintenance, deeper delegated-session semantics beyond the current
-controlled handoff path and first owner-aware memory projection, participant
+controlled handoff path and deterministic owner/coordination/delegation memory
+projection, participant
 runtime reassignment UX beyond the current read-only User Client runtime
 status projection, collaborative wiki merge UI on top of the participant-scoped
 page upsert and patch-set commands,

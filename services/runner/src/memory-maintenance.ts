@@ -19,6 +19,7 @@ type PostTurnMemoryUpdateInput = {
 };
 
 type PostTurnMemoryUpdateResult = {
+  delegationLedgerPagePath: string;
   indexPath: string;
   logPath: string;
   sourceChangeLedgerPagePath: string;
@@ -39,8 +40,11 @@ export const focusedRegisterTransitionHistoryRelativePath =
   "summaries/focused-register-transition-history.md";
 export const sourceChangeLedgerSummaryRelativePath =
   "summaries/source-change-ledger.md";
+export const delegationLedgerSummaryRelativePath =
+  "summaries/delegation-ledger.md";
 const maxRecentSummaryEntries = 5;
 const maxSourceChangeLedgerEntries = 12;
+const maxDelegationLedgerEntries = 12;
 
 function buildTaskPageRelativePath(input: {
   sessionId: string;
@@ -237,11 +241,72 @@ export function resolveSourceChangeLedgerSummaryPath(wikiRoot: string): string {
   return path.join(wikiRoot, sourceChangeLedgerSummaryRelativePath);
 }
 
+export function resolveDelegationLedgerSummaryPath(wikiRoot: string): string {
+  return path.join(wikiRoot, delegationLedgerSummaryRelativePath);
+}
+
 function buildTaskPageTitle(input: {
   sessionId: string;
   turnId: string;
 }): string {
   return `${input.sessionId} / ${input.turnId}`;
+}
+
+function renderInlineCodeList(values: string[]): string {
+  return values.length > 0
+    ? values.map((value) => `\`${value}\``).join(", ")
+    : "none";
+}
+
+function compactInlineText(value: string | undefined): string {
+  return value?.replace(/\s+/g, " ").trim() ?? "";
+}
+
+function renderHandoffMemoryLines(input: {
+  result: AgentEngineTurnResult;
+  turnRecord?: RunnerTurnRecord | undefined;
+}): string[] {
+  const emittedMessageIds = input.turnRecord?.emittedHandoffMessageIds ?? [];
+  const directives = input.result.handoffDirectives ?? [];
+
+  if (emittedMessageIds.length === 0 && directives.length === 0) {
+    return ["- No autonomous handoff messages were requested or emitted."];
+  }
+
+  return [
+    `- Emitted message ids: ${renderInlineCodeList(emittedMessageIds)}`,
+    directives.length > 0
+      ? "- Requested handoff directives:"
+      : "- Requested handoff directives: none",
+    ...directives.map((directive) => {
+      const responsePolicy = directive.responsePolicy ?? {
+        closeOnResult: true,
+        maxFollowups: 1,
+        responseRequired: true
+      };
+      const target = [
+        directive.targetNodeId ? `targetNodeId=\`${directive.targetNodeId}\`` : "",
+        directive.edgeId ? `edgeId=\`${directive.edgeId}\`` : ""
+      ]
+        .filter(Boolean)
+        .join(" ");
+      const intent = compactInlineText(directive.intent);
+      const response = [
+        `includeArtifacts=\`${directive.includeArtifacts ?? "produced"}\``,
+        `responseRequired=\`${responsePolicy.responseRequired}\``,
+        `closeOnResult=\`${responsePolicy.closeOnResult}\``,
+        `maxFollowups=\`${responsePolicy.maxFollowups}\``
+      ].join(" ");
+      const summary = compactInlineText(directive.summary);
+
+      return [
+        `  - ${target || "target=unspecified"}`,
+        response,
+        ...(intent ? [`intent="${intent}"`] : []),
+        `summary="${summary}"`
+      ].join(" ");
+    })
+  ];
 }
 
 function buildTaskPageContent(input: {
@@ -306,6 +371,13 @@ function buildTaskPageContent(input: {
     "",
     renderSourceChangeCandidateLine(input.turnRecord),
     ...renderSourceChangeSummaryLines(input.turnRecord?.sourceChangeSummary),
+    "",
+    "## Delegation / Handoffs",
+    "",
+    ...renderHandoffMemoryLines({
+      result: input.result,
+      turnRecord: input.turnRecord
+    }),
     ""
   ].join("\n");
 }
@@ -502,6 +574,37 @@ function extractTaskPageSourceChange(content: string): string | undefined {
     : undefined;
 }
 
+function extractTaskPageDelegation(content: string): string | undefined {
+  const lines = content.split("\n");
+  const headingIndex = lines.findIndex(
+    (line) => line.trim() === "## Delegation / Handoffs"
+  );
+
+  if (headingIndex === -1) {
+    return undefined;
+  }
+
+  const delegationLines: string[] = [];
+
+  for (const line of lines.slice(headingIndex + 1)) {
+    if (line.trim().startsWith("## ")) {
+      break;
+    }
+
+    const trimmedLine = line.trimEnd();
+
+    if (
+      trimmedLine.startsWith("- Emitted message ids:") ||
+      trimmedLine.startsWith("- Requested handoff directives:") ||
+      trimmedLine.startsWith("  - ")
+    ) {
+      delegationLines.push(trimmedLine);
+    }
+  }
+
+  return delegationLines.length > 0 ? delegationLines.join("\n") : undefined;
+}
+
 function sourceChangeMemoryHasDurableSignal(summary: string): boolean {
   const lines = summary.split("\n").map((line) => line.trim());
 
@@ -525,6 +628,25 @@ function sourceChangeMemoryHasDurableSignal(summary: string): boolean {
       /^- (added|modified|deleted|renamed|copied|type_changed|unknown) `/.test(
         line
       )
+    );
+  });
+}
+
+function delegationMemoryHasDurableSignal(summary: string): boolean {
+  const lines = summary.split("\n").map((line) => line.trim());
+
+  return lines.some((line) => {
+    if (line === "- Emitted message ids: none") {
+      return false;
+    }
+
+    if (line === "- Requested handoff directives: none") {
+      return false;
+    }
+
+    return (
+      (line.startsWith("- Emitted message ids:") && !line.endsWith("none")) ||
+      line.startsWith("  - ")
     );
   });
 }
@@ -563,6 +685,10 @@ async function buildRecentWorkSummaryContent(input: {
     );
     const outcome = extractTaskPageOutcome(entry.content);
     const sourceChangeSummary = extractTaskPageSourceChange(entry.content);
+    const delegationSummary = extractTaskPageDelegation(entry.content);
+    const delegationHasDurableSignal = delegationSummary
+      ? delegationMemoryHasDurableSignal(delegationSummary)
+      : false;
 
     contentLines.push(
       `### ${title}`,
@@ -584,8 +710,72 @@ async function buildRecentWorkSummaryContent(input: {
       ...(sourceChangeSummary
         ? ["", "Source-change memory:", sourceChangeSummary]
         : []),
+      ...(delegationSummary && delegationHasDurableSignal
+        ? ["", "Delegation memory:", delegationSummary]
+        : []),
       "",
       outcome.assistantSummary,
+      ""
+    );
+  }
+
+  return contentLines.join("\n");
+}
+
+async function buildDelegationLedgerContent(input: {
+  wikiRoot: string;
+}): Promise<string> {
+  const taskRoot = path.join(input.wikiRoot, "tasks");
+  const taskPaths = await collectMarkdownFilesRecursively(taskRoot);
+  const taskEntries = await Promise.all(
+    taskPaths.map(async (taskPath) => ({
+      content: await readFile(taskPath, "utf8"),
+      modifiedAt: (await stat(taskPath)).mtimeMs,
+      relativePath: path
+        .relative(input.wikiRoot, taskPath)
+        .split(path.sep)
+        .join(path.posix.sep)
+    }))
+  );
+
+  const delegationEntries = taskEntries
+    .map((entry) => {
+      const delegationSummary = extractTaskPageDelegation(entry.content);
+
+      return {
+        ...entry,
+        delegationSummary
+      };
+    })
+    .filter((entry): entry is typeof entry & { delegationSummary: string } => {
+      const delegationSummary = entry.delegationSummary;
+
+      return (
+        delegationSummary !== undefined &&
+        delegationMemoryHasDurableSignal(delegationSummary)
+      );
+    })
+    .sort((left, right) => right.modifiedAt - left.modifiedAt)
+    .slice(0, maxDelegationLedgerEntries);
+
+  const contentLines = ["# Delegation Ledger", "", "## Latest Handoffs", ""];
+
+  if (delegationEntries.length === 0) {
+    contentLines.push("No autonomous handoff turns have been recorded yet.", "");
+    return contentLines.join("\n");
+  }
+
+  for (const entry of delegationEntries) {
+    const title = extractTaskPageTitle(
+      entry.content,
+      path.basename(entry.relativePath, ".md")
+    );
+
+    contentLines.push(
+      `### ${title}`,
+      "",
+      `- Task page: [${title}](${entry.relativePath})`,
+      entry.delegationSummary,
       ""
     );
   }
@@ -663,6 +853,7 @@ export async function performPostTurnMemoryUpdate(
   const summaryPagePath = resolveRecentWorkSummaryPath(wikiRoot);
   const sourceChangeLedgerPagePath =
     resolveSourceChangeLedgerSummaryPath(wikiRoot);
+  const delegationLedgerPagePath = resolveDelegationLedgerSummaryPath(wikiRoot);
   const taskPageRelativePath = buildTaskPageRelativePath({
     sessionId: input.envelope.message.sessionId,
     turnId: input.turnId
@@ -693,14 +884,20 @@ export async function performPostTurnMemoryUpdate(
   const summaryBullet = "- [Recent Work Summary](summaries/recent-work.md)";
   const sourceChangeLedgerBullet =
     "- [Source Change Ledger](summaries/source-change-ledger.md)";
+  const delegationLedgerBullet =
+    "- [Delegation Ledger](summaries/delegation-ledger.md)";
   const nextIndex = appendSectionBullet(
     appendSectionBullet(
-      appendSectionBullet(currentIndex, "Task Pages", indexBullet),
+      appendSectionBullet(
+        appendSectionBullet(currentIndex, "Task Pages", indexBullet),
+        "Summaries",
+        summaryBullet
+      ),
       "Summaries",
-      summaryBullet
+      sourceChangeLedgerBullet
     ),
     "Summaries",
-    sourceChangeLedgerBullet
+    delegationLedgerBullet
   );
   const nextLog = `${currentLog.trimEnd()}\n\n${buildLogEntry({
     nodeId: input.context.binding.node.nodeId,
@@ -720,16 +917,24 @@ export async function performPostTurnMemoryUpdate(
   const sourceChangeLedger = await buildSourceChangeLedgerContent({
     wikiRoot
   });
+  const delegationLedger = await buildDelegationLedgerContent({
+    wikiRoot
+  });
 
   await Promise.all([
     writeTextFile(summaryPagePath, `${recentWorkSummary.trimEnd()}\n`),
     writeTextFile(
       sourceChangeLedgerPagePath,
       `${sourceChangeLedger.trimEnd()}\n`
+    ),
+    writeTextFile(
+      delegationLedgerPagePath,
+      `${delegationLedger.trimEnd()}\n`
     )
   ]);
 
   return {
+    delegationLedgerPagePath,
     indexPath,
     logPath,
     sourceChangeLedgerPagePath,

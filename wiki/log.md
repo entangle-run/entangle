@@ -6541,3 +6541,16 @@ Added `references/550-human-runtime-fallback-wiki-controls-slice.md`. The
 Human Interface Runtime fallback HTML client now renders visible wiki page
 update and single-page patch-set forms and forwards those requests through the
 same participant-scoped Host control path as the React User Client.
+
+## [2026-05-05] runner | Added delegation ledger memory
+
+Added `references/551-delegation-ledger-memory-slice.md`. Deterministic runner
+task pages now record requested handoff directives plus emitted handoff event
+ids, and post-turn memory maintenance rebuilds
+`memory/wiki/summaries/delegation-ledger.md` for future memory refs and bounded
+memory briefs.
+
+Successful non-blocked turns now write post-turn memory after outbound handoff
+publication, so each node's private wiki can remember the handoff event ids it
+actually emitted without copying peer transcripts or artifact bodies into
+memory.

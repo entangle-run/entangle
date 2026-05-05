@@ -1223,6 +1223,40 @@ describe("RunnerService", () => {
       expect(upstreamTurn?.emittedHandoffMessageIds).toEqual([
         handoffEnvelope.eventId
       ]);
+      if (!upstreamTurn) {
+        throw new Error("Expected an upstream runner turn record.");
+      }
+
+      const upstreamTaskPage = await readFile(
+        path.join(
+          upstreamContext.workspace.memoryRoot,
+          "wiki",
+          "tasks",
+          "autonomous-handoff-session",
+          `${upstreamTurn.turnId}.md`
+        ),
+        "utf8"
+      );
+      const upstreamDelegationLedger = await readFile(
+        path.join(
+          upstreamContext.workspace.memoryRoot,
+          "wiki",
+          "summaries",
+          "delegation-ledger.md"
+        ),
+        "utf8"
+      );
+
+      expect(upstreamTaskPage).toContain("## Delegation / Handoffs");
+      expect(upstreamTaskPage).toContain(
+        `- Emitted message ids: \`${handoffEnvelope.eventId}\``
+      );
+      expect(upstreamTaskPage).toContain("targetNodeId=`worker-qa`");
+      expect(upstreamDelegationLedger).toContain("# Delegation Ledger");
+      expect(upstreamDelegationLedger).toContain(
+        `- Emitted message ids: \`${handoffEnvelope.eventId}\``
+      );
+      expect(upstreamDelegationLedger).toContain("targetNodeId=`worker-qa`");
       expect(handoffConversation?.status).toBe("closed");
       expect(handoffConversation?.lastOutboundMessageId).toBe(
         handoffEnvelope.eventId

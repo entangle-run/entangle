@@ -1407,7 +1407,8 @@ The current implementation-truth audit now lives in
   autonomous `task.handoff` emission and runner-local active-conversation
   reconciliation plus host-derived conversation lifecycle diagnostics,
   consistency findings, read-only participant runtime status, and first
-  owner-aware plus coordination-map memory projection are implemented;
+  owner-aware, coordination-map, and deterministic delegation-ledger memory
+  projection are implemented;
 - deepen the bootstrap host operator-token boundary, multi-token request audit,
   status reporting, server-filterable event inspection, route-level bootstrap
   permissions, coarse read-only `viewer` enforcement, bootstrap token expiry,
@@ -1421,7 +1422,8 @@ The current implementation-truth audit now lives in
   and otherwise deepen model-guided memory maintenance on top of the now
   stronger session-aware, artifact-aware/artifact-carrying,
   engine-outcome-aware, execution-insight-carrying, and source-change-aware
-  bounded runtime inspection surface plus deterministic source-change ledger;
+  bounded runtime inspection surface plus deterministic source-change and
+  delegation ledgers;
 - keep later CLI widening focused only on real operational leverage, not
   surface parity for its own sake;
 - keep Studio host-first as it deepens, so richer operator flows continue to

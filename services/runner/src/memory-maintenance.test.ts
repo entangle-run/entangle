@@ -26,6 +26,18 @@ describe("post-turn memory maintenance", () => {
       producedArtifactIds: ["report-turn-001"],
       result: {
         assistantMessages: ["Reviewed the parser patch and found no blockers."],
+        handoffDirectives: [
+          {
+            includeArtifacts: "produced",
+            responsePolicy: {
+              closeOnResult: true,
+              maxFollowups: 1,
+              responseRequired: true
+            },
+            summary: "Ask the reviewer node to inspect the parser changes.",
+            targetNodeId: "reviewer-node"
+          }
+        ],
         providerStopReason: "end_turn",
         stopReason: "completed",
         toolExecutions: [
@@ -50,6 +62,7 @@ describe("post-turn memory maintenance", () => {
       },
       turnRecord: {
         graphId: context.binding.graphId,
+        emittedHandoffMessageIds: ["a".repeat(64)],
         nodeId: context.binding.node.nodeId,
         phase: "persisting",
         sourceChangeCandidateIds: ["source-change-parser"],
@@ -79,15 +92,23 @@ describe("post-turn memory maintenance", () => {
       turnId: "turn-memory-001"
     });
 
-    const [taskPage, logPage, indexPage, summaryPage, sourceLedgerPage, turnRequest] =
-      await Promise.all([
-        readFile(memoryUpdate.taskPagePath, "utf8"),
-        readFile(memoryUpdate.logPath, "utf8"),
-        readFile(memoryUpdate.indexPath, "utf8"),
-        readFile(memoryUpdate.summaryPagePath, "utf8"),
-        readFile(memoryUpdate.sourceChangeLedgerPagePath, "utf8"),
-        buildAgentEngineTurnRequest(context)
-      ]);
+    const [
+      taskPage,
+      logPage,
+      indexPage,
+      summaryPage,
+      sourceLedgerPage,
+      delegationLedgerPage,
+      turnRequest
+    ] = await Promise.all([
+      readFile(memoryUpdate.taskPagePath, "utf8"),
+      readFile(memoryUpdate.logPath, "utf8"),
+      readFile(memoryUpdate.indexPath, "utf8"),
+      readFile(memoryUpdate.summaryPagePath, "utf8"),
+      readFile(memoryUpdate.sourceChangeLedgerPagePath, "utf8"),
+      readFile(memoryUpdate.delegationLedgerPagePath, "utf8"),
+      buildAgentEngineTurnRequest(context)
+    ]);
 
     expect(taskPage).toContain("# Task Memory session-alpha / turn-memory-001");
     expect(taskPage).toContain("Reviewed the parser patch and found no blockers.");
@@ -104,10 +125,20 @@ describe("post-turn memory maintenance", () => {
     expect(taskPage).toContain("- Totals: files=1 additions=3 deletions=1");
     expect(taskPage).toContain("- Diff excerpt: available");
     expect(taskPage).toContain("- modified `src/parser.ts` +3 -1");
+    expect(taskPage).toContain("## Delegation / Handoffs");
+    expect(taskPage).toContain(`- Emitted message ids: \`${"a".repeat(64)}\``);
+    expect(taskPage).toContain("- Requested handoff directives:");
+    expect(taskPage).toContain("targetNodeId=`reviewer-node`");
+    expect(taskPage).toContain(
+      'summary="Ask the reviewer node to inspect the parser changes."'
+    );
     expect(summaryPage).toContain("Source-change memory:");
     expect(summaryPage).toContain("- Candidate ids: `source-change-parser`");
     expect(summaryPage).toContain("- Totals: files=1 additions=3 deletions=1");
     expect(summaryPage).toContain("- modified `src/parser.ts` +3 -1");
+    expect(summaryPage).toContain("Delegation memory:");
+    expect(summaryPage).toContain(`- Emitted message ids: \`${"a".repeat(64)}\``);
+    expect(summaryPage).toContain("targetNodeId=`reviewer-node`");
     expect(sourceLedgerPage).toContain("# Source Change Ledger");
     expect(sourceLedgerPage).toContain("### session-alpha / turn-memory-001");
     expect(sourceLedgerPage).toContain(
@@ -116,6 +147,15 @@ describe("post-turn memory maintenance", () => {
     expect(sourceLedgerPage).toContain("- Candidate ids: `source-change-parser`");
     expect(sourceLedgerPage).toContain("- Source changes: `changed`");
     expect(sourceLedgerPage).toContain("- modified `src/parser.ts` +3 -1");
+    expect(delegationLedgerPage).toContain("# Delegation Ledger");
+    expect(delegationLedgerPage).toContain("### session-alpha / turn-memory-001");
+    expect(delegationLedgerPage).toContain(
+      "- Task page: [session-alpha / turn-memory-001](tasks/session-alpha/turn-memory-001.md)"
+    );
+    expect(delegationLedgerPage).toContain(
+      `- Emitted message ids: \`${"a".repeat(64)}\``
+    );
+    expect(delegationLedgerPage).toContain("targetNodeId=`reviewer-node`");
     expect(logPage).toContain("runner turn | session-alpha / turn-memory-001");
     expect(indexPage).toContain(
       "[session-alpha / turn-memory-001](tasks/session-alpha/turn-memory-001.md)"
@@ -124,11 +164,13 @@ describe("post-turn memory maintenance", () => {
     expect(indexPage).toContain(
       "[Source Change Ledger](summaries/source-change-ledger.md)"
     );
+    expect(indexPage).toContain("[Delegation Ledger](summaries/delegation-ledger.md)");
     expect(turnRequest.memoryRefs).toEqual(
       expect.arrayContaining([
         path.join(context.workspace.memoryRoot, "wiki", "log.md"),
         memoryUpdate.summaryPagePath,
         memoryUpdate.sourceChangeLedgerPagePath,
+        memoryUpdate.delegationLedgerPagePath,
         memoryUpdate.taskPagePath
       ])
     );

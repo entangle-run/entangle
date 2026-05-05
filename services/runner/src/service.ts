@@ -4590,35 +4590,42 @@ export class RunnerService {
         );
       }
 
-      const memoryUpdate = await performPostTurnMemoryUpdate({
-        consumedArtifactIds,
-        context: this.context,
-        envelope,
-        producedArtifactIds,
-        result,
-        turnRecord,
-        turnId: turnRecord.turnId
-      });
-      const memorySynthesisInput = {
-        artifactInputs: [
-          ...retrievedArtifacts.artifactInputs,
-          ...buildArtifactInputsFromMaterializedRecords(
-            materializedArtifacts.artifacts
-          )
-        ],
-        artifactRefs: [
-          ...envelope.message.work.artifactRefs,
-          ...materializedArtifacts.artifacts.map((artifactRecord) => artifactRecord.ref)
-        ],
-        consumedArtifactIds,
-        envelope,
-        producedArtifactIds,
-        recentWorkSummaryPath: memoryUpdate.summaryPagePath,
-        result,
-        statePaths,
-        taskPagePath: memoryUpdate.taskPagePath,
-        turnRecord,
-        turnId: turnRecord.turnId
+      const prepareMemorySynthesisInput = async (
+        memoryTurnRecord: RunnerTurnRecord
+      ) => {
+        const memoryUpdate = await performPostTurnMemoryUpdate({
+          consumedArtifactIds,
+          context: this.context,
+          envelope,
+          producedArtifactIds,
+          result,
+          turnRecord: memoryTurnRecord,
+          turnId: memoryTurnRecord.turnId
+        });
+
+        return {
+          artifactInputs: [
+            ...retrievedArtifacts.artifactInputs,
+            ...buildArtifactInputsFromMaterializedRecords(
+              materializedArtifacts.artifacts
+            )
+          ],
+          artifactRefs: [
+            ...envelope.message.work.artifactRefs,
+            ...materializedArtifacts.artifacts.map(
+              (artifactRecord) => artifactRecord.ref
+            )
+          ],
+          consumedArtifactIds,
+          envelope,
+          producedArtifactIds,
+          recentWorkSummaryPath: memoryUpdate.summaryPagePath,
+          result,
+          statePaths,
+          taskPagePath: memoryUpdate.taskPagePath,
+          turnRecord: memoryTurnRecord,
+          turnId: memoryTurnRecord.turnId
+        };
       };
 
       if (materializedApprovalRequests.waitingApprovalIds.length > 0) {
@@ -4653,6 +4660,8 @@ export class RunnerService {
         });
         await this.publishConversationObservation(currentConversation);
         turnRecord = await this.writeRunnerPhase(statePaths, turnRecord, "blocked");
+        const memorySynthesisInput =
+          await prepareMemorySynthesisInput(turnRecord);
         turnRecord = await this.runOptionalMemorySynthesis({
           ...memorySynthesisInput,
           turnRecord
@@ -4757,6 +4766,8 @@ export class RunnerService {
           await this.publishConversationObservation(currentConversation);
         }
 
+        const memorySynthesisInput =
+          await prepareMemorySynthesisInput(turnRecord);
         turnRecord = await this.runOptionalMemorySynthesis({
           ...memorySynthesisInput,
           turnRecord
@@ -4808,6 +4819,7 @@ export class RunnerService {
         session: currentSession,
         statePaths
       });
+      const memorySynthesisInput = await prepareMemorySynthesisInput(turnRecord);
       turnRecord = await this.runOptionalMemorySynthesis({
         ...memorySynthesisInput,
         turnRecord
