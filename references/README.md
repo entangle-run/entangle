@@ -318,9 +318,12 @@ required-artifact-evidence success/failure paths, before an operator attempts
 the real distributed proof. It also proves relay-health success and missing
 relay failure paths plus git-backend-health success, file-backed-git rejection,
 and missing-git-service rejection.
-The root `pnpm test` gate and the runner package script now run the runner
-suite with `--pool=forks --maxWorkers=1`, after the previous threads setting
-reproduced a no-output hang while the single-fork command passed directly.
+The root `pnpm test` gate now runs every test-bearing workspace through a
+bounded runner that invokes package-level scripts, after the root aggregate
+Vitest process reproduced a no-output stall while the same package-level suites
+completed directly. The runner package script keeps `--pool=forks
+--maxWorkers=1` after the previous threads setting reproduced a no-output hang
+while the single-fork command passed directly.
 Studio can now also trust or revoke projected runners from the Federation panel
 through the same Host runner registry boundary used by the CLI, and enriches
 those rows with full Host runner registry liveness, heartbeat, runtime-kind,
@@ -876,6 +879,7 @@ files are the active federated redesign pack.
 536. [535-deployment-backup-external-volume-inventory-slice.md](535-deployment-backup-external-volume-inventory-slice.md)
 537. [536-deployment-backup-external-volume-summary-slice.md](536-deployment-backup-external-volume-summary-slice.md)
 538. [537-bootstrap-operator-config-validation-slice.md](537-bootstrap-operator-config-validation-slice.md)
+539. [538-root-test-gate-package-level-slice.md](538-root-test-gate-package-level-slice.md)
 
 ## Role of this corpus
 

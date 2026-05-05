@@ -1,5 +1,26 @@
 # Entangle Wiki Log
 
+## [2026-05-05] tooling | Replaced root aggregate test gate
+
+Added `references/538-root-test-gate-package-level-slice.md`.
+`pnpm verify` passed lint and typecheck, then reproduced a no-output stall in
+the root aggregate Vitest segment.
+
+The root `pnpm test` and `pnpm test:coverage` commands now run every
+test-bearing workspace through a bounded runner that invokes package-level
+scripts with direct package working-directory execution. The User Client suite
+now uses the same single-fork stability profile as the service suites after its
+threads pool stalled inside the root sequence. Direct package-level test runs
+passed for the app/package suites that the aggregate process used to cover, and
+generated coverage directories are ignored.
+
+Targeted checks passed:
+
+- `node --check scripts/run-workspace-tests.mjs`
+- `pnpm -C packages/package-scaffold test --coverage.enabled true`
+- `pnpm test`
+- `pnpm verify`
+
 ## [2026-05-05] host | Hardened bootstrap operator config validation
 
 Added `references/537-bootstrap-operator-config-validation-slice.md`.

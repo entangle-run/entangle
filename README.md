@@ -318,23 +318,17 @@ pnpm ops:check-product-naming
 That check scans active code, deployment, example, script, package, and README
 surfaces so obsolete local product/profile labels do not return.
 
-The root test gate uses an aggregate Vitest run plus isolated service suites:
+The root test gate uses each package's own test script:
 
 ```bash
 pnpm test
 ```
 
-It runs Vitest directly from the repository root with
-`vitest.aggregate.config.ts` instead of routing tests through Turbo, chained
-`pnpm --filter` execution, nested wrappers, or repeated Vitest child processes,
-because those paths reproduced intermittent no-output hangs in this
-environment. The aggregate config covers workspace `src/**/*.test.ts` files
-under `apps` and `packages`; Host and Runner service tests then run through
-their package-level scripts so their service-local fixtures keep their
-existing isolated process boundaries. The aggregate segment uses a single fork
-worker (`--pool=forks --maxWorkers=1`) for predictable local completion, and
-the Runner service script now uses the same single-fork stability profile after
-the previous threads setting reproduced a no-output hang.
+It runs the app, package, Runner, and Host suites through a bounded root runner
+that invokes each package-level `pnpm -C ... test` script. That keeps each
+workspace's explicit Vitest pool and fixture boundaries intact; the previous
+root aggregate Vitest process was removed after it reproduced a no-output stall
+while the same package-level suites completed directly.
 
 For manual API-backed testing, add `--keep-running`. The smoke keeps Host and
 all joined runner processes alive, keeps their temporary state roots, prints

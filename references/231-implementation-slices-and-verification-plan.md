@@ -5,15 +5,11 @@
 The repo already follows a slice discipline: each implemented runtime
 capability has a reference record, tests, wiki log entry, and usually a
 coherent commit. The root `pnpm verify` gate runs lint, typecheck, and tests.
-Root `pnpm test` now runs one direct aggregate Vitest command with
-`vitest.aggregate.config.ts`, because Turbo test execution, long shell
-`pnpm --filter ... && ...` chains, nested package test execution, repeated
-Vitest child processes, and a Node wrapper around Vitest reproduced no-output
-hangs in this environment. The aggregate config covers workspace
-`src/**/*.test.ts` files under `apps` and `packages`, while Host and Runner
-service tests run through their package-level scripts so service-local
-fixtures keep isolated process boundaries. The aggregate segment uses a single
-fork worker for predictable local completion.
+Root `pnpm test` now runs every app, package, Runner, and Host suite through a
+bounded root runner that invokes package-level scripts with direct package
+working-directory execution. The earlier root aggregate Vitest process has
+been removed from active tooling because it reproduced a no-output stall while
+the same package-level suites completed directly.
 Same-machine deployment smokes cover Compose, diagnostics, reliability,
 disposable runtime, and preview demo.
 

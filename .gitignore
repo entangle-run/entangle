@@ -10,6 +10,7 @@ workspaces/
 state/
 tmp/
 dist/
+coverage/
 node_modules/
 .venv/
 *.tsbuildinfo
