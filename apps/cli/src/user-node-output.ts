@@ -12,6 +12,7 @@ import type {
 export type UserNodeClientCliSummary = {
   assignmentId?: string;
   clientUrl?: string;
+  clientHealth?: UserNodeClientHealthCliSummary;
   commandReceiptCount: number;
   conversationCount: number;
   desiredState?: string;
@@ -29,6 +30,25 @@ export type UserNodeClientCliSummary = {
   unreadCount: number;
   updatedAt?: string;
 };
+
+export type UserNodeClientHealthCliSummary = {
+  checkedAt: string;
+  error?: string;
+  ok: boolean;
+  statusCode?: number;
+  statusText?: string;
+  url?: string;
+};
+
+type UserNodeClientHealthFetchResponse = {
+  ok: boolean;
+  status: number;
+  statusText?: string | undefined;
+};
+
+type UserNodeClientHealthFetch = (
+  url: string
+) => Promise<UserNodeClientHealthFetchResponse>;
 
 export type UserConversationCliSummary = {
   conversationId: string;
@@ -372,6 +392,91 @@ export function buildUserNodeClientSummariesForCli(input: {
         userNode
       })
     )
+  );
+}
+
+function buildUserClientHealthUrl(clientUrl: string): string {
+  return new URL("/health", clientUrl).toString();
+}
+
+export async function attachUserNodeClientHealthForCli(input: {
+  fetchImpl?: UserNodeClientHealthFetch | undefined;
+  now?: (() => string) | undefined;
+  summaries: UserNodeClientCliSummary[];
+}): Promise<UserNodeClientCliSummary[]> {
+  const checkedAt = input.now?.() ?? new Date().toISOString();
+  const fetchImpl =
+    input.fetchImpl ??
+    (async (url: string): Promise<UserNodeClientHealthFetchResponse> => {
+      const response = await fetch(url);
+
+      return {
+        ok: response.ok,
+        status: response.status,
+        statusText: response.statusText
+      };
+    });
+
+  return Promise.all(
+    input.summaries.map(async (summary) => {
+      if (!summary.clientUrl) {
+        return {
+          ...summary,
+          clientHealth: {
+            checkedAt,
+            error: "missing clientUrl",
+            ok: false
+          }
+        };
+      }
+
+      let url: string;
+
+      try {
+        url = buildUserClientHealthUrl(summary.clientUrl);
+      } catch (error) {
+        return {
+          ...summary,
+          clientHealth: {
+            checkedAt,
+            error:
+              error instanceof Error
+                ? `invalid clientUrl: ${error.message}`
+                : "invalid clientUrl",
+            ok: false
+          }
+        };
+      }
+
+      try {
+        const response = await fetchImpl(url);
+
+        return {
+          ...summary,
+          clientHealth: {
+            checkedAt,
+            ok: response.ok,
+            statusCode: response.status,
+            ...(response.statusText ? { statusText: response.statusText } : {}),
+            url,
+            ...(response.ok ? {} : { error: `HTTP ${response.status}` })
+          }
+        };
+      } catch (error) {
+        return {
+          ...summary,
+          clientHealth: {
+            checkedAt,
+            error:
+              error instanceof Error
+                ? error.message
+                : "User Client health check failed.",
+            ok: false,
+            url
+          }
+        };
+      }
+    })
   );
 }
 

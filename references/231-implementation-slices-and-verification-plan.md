@@ -1462,6 +1462,9 @@ Current status:
 - generated proof kits can now require User Client Basic Auth placeholders and
   fail-fast start checks for User Node runner machines, keeping credentials out
   of the kit command line while hardening physical proof endpoints;
+- CLI user-node client summaries can now optionally check Host-projected User
+  Client `/health` endpoints from the operator machine, preserving Host
+  projection as the topology source while adding a concrete reachability check;
 - the remaining distributed proof hardening is infrastructure-backed
   orchestration that can provision multiple machines or VM/container boundaries
   around the verifier.

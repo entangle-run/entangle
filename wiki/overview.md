@@ -447,6 +447,9 @@ real distributed proof is attempted.
 Generated proof kits can also require User Client Basic Auth placeholders and
 start-script checks for User Node runner machines, so physical proofs can avoid
 publishing participant clients without at least runtime-local browser auth.
+CLI operators can now run `entangle user-nodes clients --check-health` to probe
+Host-projected User Client `/health` URLs from the operator machine and see
+successes or failures inline with the User Node client summary.
 Host runtime synchronization now also preserves observed User Node
 `human_interface` runtime projection records, so a runtime inspection refresh
 does not hide live User Client endpoints for active User Nodes.

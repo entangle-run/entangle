@@ -6027,3 +6027,13 @@ When enabled, User Node runner env files include a required
 `ENTANGLE_HUMAN_INTERFACE_BASIC_AUTH` placeholder and generated `start.sh`
 scripts fail fast until the operator supplies `username:password`. The proof
 tool smoke now covers the dry-run summary and invalid env-var rejection path.
+
+## [2026-05-05] cli | Added User Client health checks
+
+Added `references/512-cli-user-client-health-check-slice.md`. CLI operators
+can now run `entangle user-nodes clients --check-health` to probe
+Host-projected User Client `/health` endpoints from the operator machine.
+
+The command keeps Host projection as the topology source and serializes probe
+success, missing URL, HTTP failure, or connection failure into each
+`clientHealth` summary without mutating Host, runner, or User Node state.

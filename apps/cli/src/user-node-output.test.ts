@@ -8,6 +8,7 @@ import type {
   UserNodeMessageRecord
 } from "@entangle/types";
 import {
+  attachUserNodeClientHealthForCli,
   buildUserNodeClientSummariesForCli,
   filterUserNodeCommandReceiptsForCli,
   listCurrentUserNodeAssignmentsForCli,
@@ -334,6 +335,60 @@ describe("user node CLI output", () => {
         unreadCount: 0
       }
     ]);
+  });
+
+  it("attaches operator-side User Client health checks", async () => {
+    const healthUrls: string[] = [];
+    const summaries = buildUserNodeClientSummariesForCli({
+      projection,
+      userNodes
+    });
+    const checked = await attachUserNodeClientHealthForCli({
+      fetchImpl: (url) => {
+        healthUrls.push(url);
+
+        return Promise.resolve({
+          ok: true,
+          status: 200,
+          statusText: "OK"
+        });
+      },
+      now: () => "2026-04-26T12:10:00.000Z",
+      summaries
+    });
+
+    expect(healthUrls).toEqual(["http://127.0.0.1:4301/health"]);
+    expect(checked[0]?.clientHealth).toEqual({
+      checkedAt: "2026-04-26T12:10:00.000Z",
+      ok: true,
+      statusCode: 200,
+      statusText: "OK",
+      url: "http://127.0.0.1:4301/health"
+    });
+    expect(checked[1]?.clientHealth).toEqual({
+      checkedAt: "2026-04-26T12:10:00.000Z",
+      error: "missing clientUrl",
+      ok: false
+    });
+  });
+
+  it("captures failed User Client health checks without throwing", async () => {
+    const summaries = buildUserNodeClientSummariesForCli({
+      projection,
+      userNodes
+    });
+    const checked = await attachUserNodeClientHealthForCli({
+      fetchImpl: () => Promise.reject(new Error("connection refused")),
+      now: () => "2026-04-26T12:10:00.000Z",
+      summaries: summaries.slice(0, 1)
+    });
+
+    expect(checked[0]?.clientHealth).toEqual({
+      checkedAt: "2026-04-26T12:10:00.000Z",
+      error: "connection refused",
+      ok: false,
+      url: "http://127.0.0.1:4301/health"
+    });
   });
 
   it("finds current User Node assignments for explicit reassignment", () => {

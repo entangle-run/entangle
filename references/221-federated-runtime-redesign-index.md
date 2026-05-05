@@ -312,6 +312,7 @@ same-machine slice records.
 - [509-user-client-wiki-draft-prefill-slice.md](509-user-client-wiki-draft-prefill-slice.md)
 - [510-distributed-proof-external-user-client-url-slice.md](510-distributed-proof-external-user-client-url-slice.md)
 - [511-distributed-proof-user-client-basic-auth-slice.md](511-distributed-proof-user-client-basic-auth-slice.md)
+- [512-cli-user-client-health-check-slice.md](512-cli-user-client-health-check-slice.md)
 
 ## Audited Scope
 
@@ -1075,7 +1076,10 @@ physical multi-machine proofs an explicit check that human-node clients are not
 advertised only as local-machine endpoints. Proof kits can now also generate
 required User Client Basic Auth placeholders for User Node runner env files and
 fail fast in generated `start.sh` when those placeholders were not replaced,
-while leaving same-machine demos unchanged unless the operator opts in. Host
+while leaving same-machine demos unchanged unless the operator opts in. CLI
+operators can now also add `--check-health` to `entangle user-nodes clients`
+to probe Host-projected User Client `/health` endpoints from the operator
+machine without mutating Host or runner state. Host
 session cancellation no
 longer falls back to writing
 request records into runner runtime roots; it requires an accepted federated

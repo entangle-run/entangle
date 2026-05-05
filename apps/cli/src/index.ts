@@ -107,6 +107,7 @@ import {
   sortRuntimeCommandReceiptsForCli
 } from "./projection-output.js";
 import {
+  attachUserNodeClientHealthForCli,
   buildUserNodeClientSummariesForCli,
   filterUserNodeCommandReceiptsForCli,
   listCurrentUserNodeAssignmentsForCli,
@@ -1477,9 +1478,16 @@ userNodesCommand
 
 userNodesCommand
   .command("clients")
+  .option(
+    "--check-health",
+    "Probe projected User Client /health endpoints from this CLI machine."
+  )
   .option("--summary", "Print compact User Client runtime summaries.")
   .description("List User Client endpoints projected for active graph User Nodes.")
-  .action(async (options: { summary?: boolean }, command: Command) => {
+  .action(async (
+    options: { checkHealth?: boolean; summary?: boolean },
+    command: Command
+  ) => {
     const client = createCliHostClient(command);
     const [userNodes, projection] = await Promise.all([
       client.listUserNodes(),
@@ -1489,8 +1497,15 @@ userNodesCommand
       projection,
       userNodes: userNodes.userNodes
     });
+    const clientsWithHealth = options.checkHealth
+      ? await attachUserNodeClientHealthForCli({ summaries: clients })
+      : clients;
 
-    printJson(options.summary ? { clients } : { generatedAt: projection.generatedAt, clients });
+    printJson(
+      options.summary
+        ? { clients: clientsWithHealth }
+        : { generatedAt: projection.generatedAt, clients: clientsWithHealth }
+    );
   });
 
 userNodesCommand

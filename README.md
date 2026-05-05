@@ -428,6 +428,16 @@ User Clients start. Use `--user-client-basic-auth-env-var <envVar>` if the
 operator machines should source the placeholder from a different environment
 variable. Generated `start.sh` scripts fail fast until the placeholder is
 replaced with `username:password`.
+Operators can also inspect and probe projected User Client endpoints from the
+Host-facing CLI:
+
+```bash
+pnpm --filter @entangle/cli dev user-nodes clients --summary --check-health
+```
+
+The health probe reads Host projection for the endpoint list, then checks each
+User Client `/health` endpoint from the CLI machine and reports success or
+failure in `clientHealth`.
 Copy runner directories to machines with Entangle checkouts; the proof is valid
 only when the runners do not rely on Host filesystem access and report running
 runtime observations, expected runtime-kind capabilities, expected

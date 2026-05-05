@@ -77,6 +77,10 @@ Recently added:
 - Distributed proof kits can now opt into required User Client Basic Auth for
   User Node runner machines, writing env placeholders and generated start
   checks instead of putting cleartext credentials on the kit command line.
+- CLI `entangle user-nodes clients --check-health` can now probe projected
+  User Client `/health` endpoints from the operator machine and serialize
+  successes, missing URLs, HTTP failures, or connection failures into
+  `clientHealth` summaries.
 - Studio User Node overview summaries now combine identity, runtime state,
   runner placement, User Client URL, conversation counts, active counts,
   pending approval counts, unread counts, local read markers, and
