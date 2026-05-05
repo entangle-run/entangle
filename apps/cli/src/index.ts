@@ -1520,10 +1520,10 @@ userNodesCommand
         options.status
       );
       const client = createCliHostClient(command);
-      const projection = await client.getProjection();
+      const response = await client.listUserNodeCommandReceipts(nodeId);
       const filteredReceipts = filterUserNodeCommandReceiptsForCli({
         ...(options.targetNode ? { nodeId: options.targetNode } : {}),
-        projection,
+        receipts: response.runtimeCommandReceipts,
         ...(receiptStatus ? { receiptStatus } : {}),
         ...(options.type ? { commandEventType: options.type } : {}),
         userNodeId: nodeId

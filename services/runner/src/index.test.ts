@@ -1362,6 +1362,40 @@ describe("runner runtime context", () => {
 
         if (
           request.method === "GET" &&
+          request.url === "/v1/user-nodes/user-main/command-receipts"
+        ) {
+          response.end(
+            JSON.stringify({
+              generatedAt: "2026-04-26T12:04:00.000Z",
+              runtimeCommandReceipts: [
+                {
+                  assignmentId: "assignment-alpha",
+                  commandEventType: "runtime.wiki.publish",
+                  commandId: "cmd-user-wiki-publish-alpha",
+                  graphId: "graph-alpha",
+                  hostAuthorityPubkey: hostPublicKey,
+                  nodeId: "worker-it",
+                  observedAt: "2026-04-26T12:04:00.000Z",
+                  projection: {
+                    source: "observation_event",
+                    updatedAt: "2026-04-26T12:04:00.000Z"
+                  },
+                  receiptMessage: "Wiki publication completed.",
+                  receiptStatus: "completed",
+                  requestedBy: "user-main",
+                  runnerId: "runner-alpha",
+                  runnerPubkey: remotePublicKey,
+                  wikiArtifactId: "wiki-alpha"
+                }
+              ],
+              userNodeId: "user-main"
+            })
+          );
+          return;
+        }
+
+        if (
+          request.method === "GET" &&
           request.url === "/v1/user-nodes/user-main/inbox/conversation-alpha"
         ) {
           response.end(
@@ -2999,6 +3033,13 @@ describe("runner runtime context", () => {
         authorization: "Bearer host-secret",
         method: "GET",
         url: "/v1/user-nodes/user-main/inbox"
+      })
+    );
+    expect(hostRequests).toContainEqual(
+      expect.objectContaining({
+        authorization: "Bearer host-secret",
+        method: "GET",
+        url: "/v1/user-nodes/user-main/command-receipts"
       })
     );
     expect(hostRequests).toContainEqual(

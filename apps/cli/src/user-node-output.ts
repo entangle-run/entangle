@@ -148,12 +148,12 @@ export function sortUserNodeCommandReceiptsForCli(
 export function filterUserNodeCommandReceiptsForCli(input: {
   commandEventType?: string;
   nodeId?: string;
-  projection: HostProjectionSnapshot;
+  receipts: RuntimeCommandReceiptProjectionRecord[];
   receiptStatus?: RuntimeCommandReceiptProjectionRecord["receiptStatus"];
   userNodeId: string;
 }): RuntimeCommandReceiptProjectionRecord[] {
   return sortUserNodeCommandReceiptsForCli(
-    input.projection.runtimeCommandReceipts.filter((receipt) => {
+    input.receipts.filter((receipt) => {
       if (receipt.requestedBy !== input.userNodeId) {
         return false;
       }

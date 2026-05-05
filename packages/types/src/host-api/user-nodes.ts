@@ -12,7 +12,10 @@ import {
   entangleA2ASourceChangeReviewDecisionSchema,
   entangleA2AResponsePolicySchema
 } from "../protocol/a2a.js";
-import { userConversationProjectionRecordSchema } from "../projection/projection.js";
+import {
+  runtimeCommandReceiptProjectionRecordSchema,
+  userConversationProjectionRecordSchema
+} from "../projection/projection.js";
 import {
   userInteractionGatewayRecordSchema,
   userNodeIdentityRecordSchema
@@ -31,6 +34,14 @@ export const userNodeIdentityInspectionResponseSchema = z.object({
 export const userNodeInboxResponseSchema = z.object({
   conversations: z.array(userConversationProjectionRecordSchema).default([]),
   generatedAt: nonEmptyStringSchema,
+  userNodeId: identifierSchema
+});
+
+export const userNodeCommandReceiptListResponseSchema = z.object({
+  generatedAt: nonEmptyStringSchema,
+  runtimeCommandReceipts: z
+    .array(runtimeCommandReceiptProjectionRecordSchema)
+    .default([]),
   userNodeId: identifierSchema
 });
 
@@ -215,6 +226,9 @@ export type UserNodeIdentityInspectionResponse = z.infer<
   typeof userNodeIdentityInspectionResponseSchema
 >;
 export type UserNodeInboxResponse = z.infer<typeof userNodeInboxResponseSchema>;
+export type UserNodeCommandReceiptListResponse = z.infer<
+  typeof userNodeCommandReceiptListResponseSchema
+>;
 export type UserNodeConversationResponse = z.infer<
   typeof userNodeConversationResponseSchema
 >;

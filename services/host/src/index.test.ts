@@ -94,6 +94,7 @@ import {
   sessionCancellationResponseSchema,
   sessionInspectionResponseSchema,
   sessionListResponseSchema,
+  userNodeCommandReceiptListResponseSchema,
   userNodeConversationReadResponseSchema,
   userNodeConversationResponseSchema,
   userNodeInboxResponseSchema,
@@ -2184,6 +2185,33 @@ describe("buildHostServer", () => {
         },
         status: "accepted"
       });
+
+      const userCommandReceiptsResponse = await server.inject({
+        method: "GET",
+        url: "/v1/user-nodes/user-main/command-receipts"
+      });
+      expect(userCommandReceiptsResponse.statusCode).toBe(200);
+      expect(
+        userNodeCommandReceiptListResponseSchema.parse(
+          userCommandReceiptsResponse.json()
+        )
+      ).toMatchObject({
+        runtimeCommandReceipts: [
+          {
+            commandEventType: "runtime.start",
+            commandId: "cmd-start-alpha",
+            nodeId: "worker-it",
+            requestedBy: "user-main"
+          }
+        ],
+        userNodeId: "user-main"
+      });
+
+      const missingUserCommandReceiptsResponse = await server.inject({
+        method: "GET",
+        url: "/v1/user-nodes/missing-user/command-receipts"
+      });
+      expect(missingUserCommandReceiptsResponse.statusCode).toBe(404);
 
       const stopRuntimeResponse = await server.inject({
         method: "POST",

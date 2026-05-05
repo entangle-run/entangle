@@ -123,6 +123,7 @@ import {
   sessionListResponseSchema,
   userNodeConversationReadResponseSchema,
   userNodeConversationResponseSchema,
+  userNodeCommandReceiptListResponseSchema,
   userNodeIdentityInspectionResponseSchema,
   userNodeIdentityListResponseSchema,
   userNodeInboxResponseSchema,
@@ -168,6 +169,7 @@ import {
   getUserNodeIdentity,
   getUserNodeMessage,
   getUserNodeSigningMaterial,
+  listUserNodeCommandReceipts,
   markUserNodeConversationRead,
   getExternalPrincipalInspection,
   listRuntimeArtifacts,
@@ -1419,6 +1421,25 @@ export async function buildHostServer(options: HostServerOptions = {}) {
 
     return userNodeIdentityInspectionResponseSchema.parse(inspection);
   });
+
+  server.get(
+    "/v1/user-nodes/:nodeId/command-receipts",
+    async (request, reply) => {
+      const params = request.params as { nodeId: string };
+      const nodeId = identifierSchema.parse(params.nodeId);
+      const receipts = await listUserNodeCommandReceipts(nodeId);
+
+      if (!receipts) {
+        reply.status(404);
+        return hostErrorResponseSchema.parse({
+          code: "not_found",
+          message: `User Node '${nodeId}' was not found.`
+        });
+      }
+
+      return userNodeCommandReceiptListResponseSchema.parse(receipts);
+    }
+  );
 
   server.get("/v1/user-nodes/:nodeId/inbox", async (request, reply) => {
     const params = request.params as { nodeId: string };

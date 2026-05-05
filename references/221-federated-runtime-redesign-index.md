@@ -302,6 +302,7 @@ same-machine slice records.
 - [499-host-event-audit-bundle-cli-retention-slice.md](499-host-event-audit-bundle-cli-retention-slice.md)
 - [500-user-client-command-receipt-visibility-slice.md](500-user-client-command-receipt-visibility-slice.md)
 - [501-user-node-cli-command-receipts-slice.md](501-user-node-cli-command-receipts-slice.md)
+- [502-user-node-command-receipts-host-api-slice.md](502-user-node-command-receipts-host-api-slice.md)
 
 ## Audited Scope
 
@@ -619,9 +620,10 @@ The repository is not fully federated:
   command with assignment, node, runner, command type, status, requester, and
   limit filters over the same Host projection. Runtime command receipts now
   also preserve optional `requestedBy` attribution for participant-originated
-  commands. Headless User Node CLI can list only the receipts requested by one
-  User Node through `entangle user-nodes command-receipts`. Studio can fetch
-  the same Host assignment
+  commands. Host now exposes `GET /v1/user-nodes/:nodeId/command-receipts`,
+  so the running User Client and headless User Node CLI can list only the
+  receipts requested by one User Node without consuming the full operator
+  projection. Studio can fetch the same Host assignment
   timeline endpoint per projected assignment and render lifecycle, assignment
   receipt, and runtime command receipt entries without direct runner access;
 - User Client source-candidate accept/reject now publishes signed
@@ -942,8 +944,9 @@ The running User Client can now request that same page upsert path for visible
 Interface Runtime normalizes the page path, forwards through Host with
 `requestedBy` set to the User Node id, and the process-runner smoke validates
 the projected receipt plus page `wiki.ref`. The running User Client state now
-also exposes a participant-scoped command receipt list filtered to receipts
-whose `requestedBy` matches the current User Node id.
+also exposes a participant-scoped command receipt list from Host's
+`/v1/user-nodes/:nodeId/command-receipts` route, which filters receipts whose
+`requestedBy` matches the current User Node id.
 Studio's Runtime Memory panel now exposes the same Host/runner control path
 for operators through `host-client.upsertRuntimeWikiPage`.
 Per-assignment

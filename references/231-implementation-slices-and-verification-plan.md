@@ -179,9 +179,11 @@ Current status:
   and command receipt summaries under assignment rows while Studio and CLI
   compact projection summaries list recent command receipts from Host
   projection. CLI can also list runtime command receipts directly with
-  assignment, node, runner, command type, status, and limit filters. Studio can
-  fetch and render the same Host assignment timeline read model per projected
-  assignment row.
+  assignment, node, runner, command type, status, requester, and limit filters.
+  Host now exposes `GET /v1/user-nodes/:nodeId/command-receipts` for
+  participant-scoped command receipt inspection by User Client and CLI without
+  requiring the full operator projection. Studio can fetch and render the same
+  Host assignment timeline read model per projected assignment row.
 - The process-runner smoke now validates that the real joined runner path
   produces assignment acceptance, `started` receipt evidence, and completed
   runtime command receipt entries visible through the assignment timeline read
@@ -374,6 +376,9 @@ Implementation record:
 - [397-cli-projection-command-receipt-summary-slice.md](397-cli-projection-command-receipt-summary-slice.md)
 - [398-cli-command-receipt-list-slice.md](398-cli-command-receipt-list-slice.md)
 - [399-studio-assignment-timeline-drilldown-slice.md](399-studio-assignment-timeline-drilldown-slice.md)
+- [500-user-client-command-receipt-visibility-slice.md](500-user-client-command-receipt-visibility-slice.md)
+- [501-user-node-cli-command-receipts-slice.md](501-user-node-cli-command-receipts-slice.md)
+- [502-user-node-command-receipts-host-api-slice.md](502-user-node-command-receipts-host-api-slice.md)
 - [401-root-test-gate-reliability-slice.md](401-root-test-gate-reliability-slice.md)
 - [446-runner-test-gate-fork-stability-slice.md](446-runner-test-gate-fork-stability-slice.md)
 - [447-runner-owned-wiki-page-upsert-slice.md](447-runner-owned-wiki-page-upsert-slice.md)
@@ -1190,9 +1195,10 @@ Current status:
   `runtime.source_history.reconcile` command receipt;
 - runtime command receipt observations, Host events, and Host projection
   records now preserve optional `requestedBy` attribution. The running User
-  Client exposes only receipts requested by its own User Node, headless User
-  Node CLI can list the same participant-scoped receipts, and Studio plus
-  operator CLI keep access to the full Host projection.
+  Client and headless User Node CLI now read the Host-scoped
+  `/v1/user-nodes/:nodeId/command-receipts` route for receipts requested by
+  one User Node, and Studio plus operator CLI keep access to the full Host
+  projection.
 - Host-generated artifact source-change proposal ids now derive from the
   command id when omitted by callers and are returned in the response
   acknowledgement as the runner candidate id to follow;

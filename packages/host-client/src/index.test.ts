@@ -549,6 +549,35 @@ describe("createHostClient", () => {
             userNodeId: "user-main"
           };
         } else if (
+          url.endsWith("/v1/user-nodes/user-main/command-receipts")
+        ) {
+          body = {
+            generatedAt: "2026-04-26T12:02:00.000Z",
+            runtimeCommandReceipts: [
+              {
+                assignmentId: "assignment-alpha",
+                commandEventType: "runtime.wiki.publish",
+                commandId: "cmd-user-wiki-publish-alpha",
+                graphId: "graph-alpha",
+                hostAuthorityPubkey:
+                  "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+                nodeId: "worker-it",
+                observedAt: "2026-04-26T12:02:00.000Z",
+                projection: {
+                  source: "observation_event",
+                  updatedAt: "2026-04-26T12:02:00.000Z"
+                },
+                receiptStatus: "completed",
+                requestedBy: "user-main",
+                runnerId: "runner-alpha",
+                runnerPubkey:
+                  "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+                wikiArtifactId: "wiki-alpha"
+              }
+            ],
+            userNodeId: "user-main"
+          };
+        } else if (
           url.endsWith("/v1/user-nodes/user-main/inbox/conversation-alpha")
         ) {
           body = {
@@ -616,6 +645,17 @@ describe("createHostClient", () => {
       ]
     });
     await expect(
+      client.listUserNodeCommandReceipts("user-main")
+    ).resolves.toMatchObject({
+      runtimeCommandReceipts: [
+        {
+          commandId: "cmd-user-wiki-publish-alpha",
+          requestedBy: "user-main"
+        }
+      ],
+      userNodeId: "user-main"
+    });
+    await expect(
       client.getUserNodeConversation("user-main", "conversation-alpha")
     ).resolves.toMatchObject({
       messages: [
@@ -656,6 +696,7 @@ describe("createHostClient", () => {
       "http://entangle-host.test/v1/user-nodes",
       "http://entangle-host.test/v1/user-nodes/user-main",
       "http://entangle-host.test/v1/user-nodes/user-main/inbox",
+      "http://entangle-host.test/v1/user-nodes/user-main/command-receipts",
       "http://entangle-host.test/v1/user-nodes/user-main/inbox/conversation-alpha",
       "http://entangle-host.test/v1/user-nodes/user-main/inbox/conversation-alpha/read",
       "http://entangle-host.test/v1/user-nodes/user-main/messages"

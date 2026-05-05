@@ -196,6 +196,7 @@ import {
   entangleA2AApprovalResponseMetadataSchema,
   entangleA2ASourceChangeReviewMetadataSchema,
   type ParsedUserNodeMessagePublishRequest,
+  type UserNodeCommandReceiptListResponse,
   type UserNodeConversationReadRecord,
   type UserNodeConversationReadResponse,
   type UserNodeConversationResponse,
@@ -203,6 +204,7 @@ import {
   userNodeConversationReadRecordSchema,
   userNodeConversationReadResponseSchema,
   userNodeConversationResponseSchema,
+  userNodeCommandReceiptListResponseSchema,
   userNodeMessageInspectionResponseSchema,
   userNodeIdentityInspectionResponseSchema,
   type UserNodeIdentityInspectionResponse,
@@ -4097,6 +4099,34 @@ export async function getUserNodeIdentity(
   return userNodeIdentityInspectionResponseSchema.parse({
     gateways: [],
     userNode
+  });
+}
+
+export async function listUserNodeCommandReceipts(
+  nodeId: string
+): Promise<UserNodeCommandReceiptListResponse | undefined> {
+  await initializeHostState();
+
+  const [inspection, projection] = await Promise.all([
+    getUserNodeIdentity(nodeId),
+    getHostProjectionSnapshot()
+  ]);
+
+  if (!inspection) {
+    return undefined;
+  }
+
+  return userNodeCommandReceiptListResponseSchema.parse({
+    generatedAt: projection.generatedAt,
+    runtimeCommandReceipts: projection.runtimeCommandReceipts
+      .filter((receipt) => receipt.requestedBy === nodeId)
+      .sort((left, right) => {
+        const timeOrder = right.observedAt.localeCompare(left.observedAt);
+        return timeOrder !== 0
+          ? timeOrder
+          : left.commandId.localeCompare(right.commandId);
+      }),
+    userNodeId: nodeId
   });
 }
 

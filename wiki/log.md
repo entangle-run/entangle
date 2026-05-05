@@ -5921,3 +5921,13 @@ inspection of runtime command receipts requested by that User Node.
 The command reads Host projection, filters by `requestedBy`, supports target
 node, command type, status, limit, and compact summary options, and leaves
 `entangle host command-receipts` as the full operator projection surface.
+
+## [2026-05-05] host | Added scoped User Node command receipt API
+
+Added `references/502-user-node-command-receipts-host-api-slice.md`. Host now
+exposes `GET /v1/user-nodes/:nodeId/command-receipts`, returning only runtime
+command receipts whose `requestedBy` matches the selected User Node.
+
+host-client exposes the route, `entangle user-nodes command-receipts <nodeId>`
+uses it instead of fetching the full projection, and Human Interface Runtime
+uses the same scoped API when building running User Client state.

@@ -51,6 +51,7 @@ import {
   sourceHistoryPublicationTargetSchema,
   userNodeConversationResponseSchema,
   userNodeConversationReadResponseSchema,
+  userNodeCommandReceiptListResponseSchema,
   gitRepositoryTargetSelectorSchema,
   userNodeInboxResponseSchema,
   userNodeMessagePublishRequestSchema,
@@ -708,33 +709,83 @@ async function fetchUserNodeInbox(input: {
   }
 }
 
+async function fetchUserNodeCommandReceipts(input: {
+  hostApi?: RunnerJoinHostApi | undefined;
+  userNodeId: string;
+}): Promise<{
+  error?: string;
+  runtimeCommandReceipts: RuntimeCommandReceiptProjectionRecord[];
+}> {
+  if (!input.hostApi) {
+    return {
+      error: "Host API is not configured for command receipt history.",
+      runtimeCommandReceipts: []
+    };
+  }
+
+  try {
+    const response = await fetch(
+      new URL(
+        `/v1/user-nodes/${encodeURIComponent(input.userNodeId)}/command-receipts`,
+        input.hostApi.baseUrl
+      ),
+      {
+        headers: buildHostApiHeaders(input.hostApi)
+      }
+    );
+
+    if (!response.ok) {
+      return {
+        error: `Host command receipt request failed with HTTP ${response.status}.`,
+        runtimeCommandReceipts: []
+      };
+    }
+
+    const receipts = userNodeCommandReceiptListResponseSchema.parse(
+      await response.json()
+    );
+
+    return {
+      runtimeCommandReceipts: receipts.runtimeCommandReceipts
+    };
+  } catch (error) {
+    return {
+      error:
+        error instanceof Error
+          ? error.message
+          : "Host command receipt request failed.",
+      runtimeCommandReceipts: []
+    };
+  }
+}
+
 async function buildUserClientState(input: {
   context: EffectiveRuntimeContext;
   hostApi?: RunnerJoinHostApi | undefined;
 }): Promise<UserClientState> {
   const userNodeId = input.context.binding.node.nodeId;
-  const inbox = await fetchUserNodeInbox({
-    hostApi: input.hostApi,
-    userNodeId
-  });
-  const projection = await fetchHostProjection({
-    hostApi: input.hostApi
-  });
-  const runtimeCommandReceipts = (
-    projection.detail?.runtimeCommandReceipts ?? []
-  )
-    .filter((receipt) => receipt.requestedBy === userNodeId)
-    .sort((left, right) => {
-      const timeOrder = right.observedAt.localeCompare(left.observedAt);
-      return timeOrder !== 0
-        ? timeOrder
-        : left.commandId.localeCompare(right.commandId);
-    });
+  const [inbox, projection, commandReceipts] = await Promise.all([
+    fetchUserNodeInbox({
+      hostApi: input.hostApi,
+      userNodeId
+    }),
+    fetchHostProjection({
+      hostApi: input.hostApi
+    }),
+    fetchUserNodeCommandReceipts({
+      hostApi: input.hostApi,
+      userNodeId
+    })
+  ]);
 
   return {
     conversations: inbox.conversations,
-    ...(inbox.error ?? projection.error
-      ? { error: [inbox.error, projection.error].filter(Boolean).join(" ") }
+    ...(inbox.error ?? projection.error ?? commandReceipts.error
+      ? {
+          error: [inbox.error, projection.error, commandReceipts.error]
+            .filter(Boolean)
+            .join(" ")
+        }
       : {}),
     ...(inbox.generatedAt ? { generatedAt: inbox.generatedAt } : {}),
     graphId: input.context.binding.graphId,
@@ -755,7 +806,7 @@ async function buildUserClientState(input: {
     },
     sourceChangeRefs: projection.detail?.sourceChangeRefs ?? [],
     sourceHistoryRefs: projection.detail?.sourceHistoryRefs ?? [],
-    runtimeCommandReceipts,
+    runtimeCommandReceipts: commandReceipts.runtimeCommandReceipts,
     targets: listTargetNodes(input.context),
     userNodeId,
     wikiRefs: projection.detail?.wikiRefs ?? []

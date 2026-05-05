@@ -246,7 +246,7 @@ describe("user node CLI output", () => {
 
   it("filters projected command receipts to one User Node requester", () => {
     const receipts = filterUserNodeCommandReceiptsForCli({
-      projection,
+      receipts: runtimeCommandReceipts,
       receiptStatus: "completed",
       userNodeId: "user-a"
     });
@@ -265,7 +265,7 @@ describe("user node CLI output", () => {
       filterUserNodeCommandReceiptsForCli({
         commandEventType: "runtime.wiki.publish",
         nodeId: "worker-b",
-        projection,
+        receipts: runtimeCommandReceipts,
         userNodeId: "user-a"
       }).map((receipt) => receipt.commandId)
     ).toEqual(["cmd-user-a-wiki-publish"]);

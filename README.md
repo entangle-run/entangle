@@ -147,8 +147,10 @@ id from the inbound approval request, keeping signed human decisions attached
 to the agent turn they answer. Runtime command receipts now carry optional
 `requestedBy` attribution, so the running User Client can show only command
 receipts requested by its own User Node while `entangle user-nodes
-command-receipts <nodeId>` provides the same headless participant view and
-operator surfaces retain the full Host projection.
+command-receipts <nodeId>` provides the same headless participant view. Both
+participant surfaces read Host's scoped
+`/v1/user-nodes/:nodeId/command-receipts` route, while operator surfaces retain
+the full Host projection.
 The smoke still runs without live model credentials. Live OpenCode
 behavior and real-provider credentials remain manual/operator validation, but
 the fake OpenCode path now proves same-session `--session` continuity through a
@@ -832,9 +834,9 @@ This repository currently contains:
   from Host projection, plus a dedicated CLI command receipt list with
   assignment, node, runner, command type, status, requester, and limit filters,
   participant-scoped command receipt visibility in the running User Client and
-  User Node CLI, and a Studio assignment timeline drilldown over the same Host
-  endpoint with related navigation to runtime, runner, source-history, and
-  command receipt panels;
+  User Node CLI through a scoped Host route, and a Studio assignment timeline
+  drilldown over the same Host endpoint with related navigation to runtime,
+  runner, source-history, and command receipt panels;
 - a Studio federation overview that joins User Node identities with runtime
   projection and conversation projection, so operators can see Human Interface
   Runtime state, runner placement, User Client links, conversation counts,

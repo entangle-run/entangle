@@ -102,6 +102,7 @@ import {
   resolvePrimaryGitRepositoryTarget,
   secretRefSchema,
   userInteractionGatewayRecordSchema,
+  userNodeCommandReceiptListResponseSchema,
   userNodeConversationReadResponseSchema,
   userNodeConversationResponseSchema,
   userNodeIdentityInspectionResponseSchema,
@@ -3448,6 +3449,36 @@ describe("host event contracts", () => {
       "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc"
     );
     expect(result.wikiPagePath).toBe("operator/notes.md");
+  });
+
+  it("accepts User Node scoped command receipt API responses", () => {
+    const response = userNodeCommandReceiptListResponseSchema.parse({
+      generatedAt: observedAt,
+      runtimeCommandReceipts: [
+        {
+          assignmentId: "assignment-alpha",
+          commandEventType: "runtime.wiki.publish",
+          commandId: "cmd-user-wiki-publish-alpha",
+          graphId: "team-alpha",
+          hostAuthorityPubkey: authorityPubkey,
+          nodeId: "worker-it",
+          observedAt,
+          projection: {
+            source: "observation_event",
+            updatedAt: observedAt
+          },
+          receiptStatus: "completed",
+          requestedBy: "user-main",
+          runnerId: "runner-alpha",
+          runnerPubkey,
+          wikiArtifactId: "wiki-alpha"
+        }
+      ],
+      userNodeId: "user-main"
+    });
+
+    expect(response.userNodeId).toBe("user-main");
+    expect(response.runtimeCommandReceipts[0]?.requestedBy).toBe("user-main");
   });
 
   it("accepts a typed external-principal deleted event", () => {

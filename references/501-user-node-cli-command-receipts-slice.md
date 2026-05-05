@@ -67,9 +67,10 @@ participant-scoped command intentionally requires `requestedBy` attribution.
 
 ## Open Questions
 
-- Whether Host should expose a dedicated `/v1/user-nodes/:nodeId/command-receipts`
-  API so both CLI and Human Interface Runtime avoid fetching the full
-  projection when only participant receipts are needed.
+Resolved by
+`references/502-user-node-command-receipts-host-api-slice.md`: Host now exposes
+`GET /v1/user-nodes/:nodeId/command-receipts`, and both CLI and Human
+Interface Runtime use the scoped route.
 
 ## Verification
 

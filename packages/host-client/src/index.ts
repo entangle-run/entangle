@@ -101,6 +101,7 @@ import {
   sessionListResponseSchema,
   userNodeConversationReadResponseSchema,
   userNodeConversationResponseSchema,
+  userNodeCommandReceiptListResponseSchema,
   userNodeIdentityInspectionResponseSchema,
   userNodeIdentityListResponseSchema,
   userNodeInboxResponseSchema,
@@ -209,6 +210,7 @@ import {
   type SessionListResponse,
   type UserNodeConversationReadResponse,
   type UserNodeConversationResponse,
+  type UserNodeCommandReceiptListResponse,
   type UserNodeIdentityInspectionResponse,
   type UserNodeIdentityListResponse,
   type UserNodeInboxResponse,
@@ -477,6 +479,15 @@ export function createHostClient(options: HostClientOptions) {
       return parseResponse(
         await hostFetch(`${baseUrl}/v1/user-nodes/${nodeId}/inbox`),
         userNodeInboxResponseSchema
+      );
+    },
+
+    async listUserNodeCommandReceipts(
+      nodeId: string
+    ): Promise<UserNodeCommandReceiptListResponse> {
+      return parseResponse(
+        await hostFetch(`${baseUrl}/v1/user-nodes/${nodeId}/command-receipts`),
+        userNodeCommandReceiptListResponseSchema
       );
     },
 
