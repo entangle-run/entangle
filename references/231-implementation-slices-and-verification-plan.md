@@ -1413,8 +1413,10 @@ Current status:
   or agent-engine rejection, making the distributed proof tooling CI-checkable
   before the real multi-machine proof is attempted; the verifier can now write
   a JUnit XML report with one testcase per check for CI retention, and the same
-  smoke proves that report path; the same smoke also proves
-  a non-default expected agent engine can pass when the registry fixture
+  smoke proves that report path; generated proof-kit verifier scripts now also
+  write topology and post-work JUnit reports when `ENTANGLE_PROOF_JUNIT_DIR` is
+  set, and the smoke guards those generated command paths; the same smoke also
+  proves a non-default expected agent engine can pass when the registry fixture
   advertises it and that the proof kit can generate a matching custom-engine
   runner profile plus a matching custom verifier profile, and that the verifier
   can consume a generated-style proof profile manifest; the profile manifest is

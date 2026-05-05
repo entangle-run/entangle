@@ -1,5 +1,22 @@
 # Entangle Wiki Log
 
+## [2026-05-05] ops | Added proof-kit JUnit report hooks
+
+Added `references/529-distributed-proof-kit-junit-script-slice.md`.
+Generated `operator/verify-topology.sh` and `operator/verify-artifacts.sh`
+scripts now pass optional JUnit report paths when `ENTANGLE_PROOF_JUNIT_DIR` is
+set.
+
+The proof-tool smoke now guards both generated report path expansions in dry-run
+output, so CI/operator proof kits can retain topology and post-work verifier
+evidence without editing generated scripts.
+
+Targeted checks passed:
+
+- `node --check scripts/federated-distributed-proof-kit.mjs`
+- `node --check scripts/smoke-distributed-proof-tools.mjs`
+- `pnpm ops:smoke-distributed-proof-tools`
+
 ## [2026-05-05] ops | Added distributed proof JUnit output
 
 Added `references/528-distributed-proof-verifier-junit-slice.md`.

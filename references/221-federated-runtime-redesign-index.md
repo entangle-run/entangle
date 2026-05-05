@@ -329,6 +329,7 @@ same-machine slice records.
 - [526-user-client-wiki-draft-stale-hash-slice.md](526-user-client-wiki-draft-stale-hash-slice.md)
 - [527-user-client-wiki-draft-diff-preview-slice.md](527-user-client-wiki-draft-diff-preview-slice.md)
 - [528-distributed-proof-verifier-junit-slice.md](528-distributed-proof-verifier-junit-slice.md)
+- [529-distributed-proof-kit-junit-script-slice.md](529-distributed-proof-kit-junit-script-slice.md)
 
 ## Audited Scope
 
@@ -1082,8 +1083,10 @@ parameterized with the same runner ids, graph node ids, and expected agent
 engine kind through a generated proof profile manifest, while keeping OpenCode
 as the default. The verifier can also write an optional JUnit XML report for CI
 retention of distributed proof check results. Generated proof kits can also
-configure a deterministic attached fake OpenCode profile and agent-node
-binding for no-credential
+write topology and post-work JUnit verifier reports when
+`ENTANGLE_PROOF_JUNIT_DIR` is set. Generated proof kits can also configure a
+deterministic attached fake OpenCode profile and agent-node binding for
+no-credential
 distributed checks, while still requiring the agent runner to advertise
 `opencode_server`. The verifier can optionally require projected
 artifact/source/wiki

@@ -482,6 +482,8 @@ post-work check. The post-work script uses
 `operator/proof-profile-post-work.json` and requires both projected work
 evidence and a published git artifact or source-history publication from the
 agent node.
+Set `ENTANGLE_PROOF_JUNIT_DIR` before running either generated verifier script
+to persist JUnit XML reports as `topology.xml` and `artifacts.xml`.
 Generated `operator/commands.sh` also runs
 `user-nodes clients --summary --check-health` before publishing the scripted
 User Node task, so the operator sees User Client reachability from the operator
@@ -505,7 +507,8 @@ That smoke checks proof-kit syntax/help/dry-run paths and verifier self-test
 JSON, including the default failure path for non-running runtime observations.
 It also checks that duplicated User Client URLs and wrong runner runtime-kind
 or agent-engine capabilities fail the multi-user proof, that verifier JUnit
-output is written, that malformed proof
+output is written, that generated proof-kit verifier scripts expose optional
+JUnit report paths, that malformed proof
 profiles fail before Host inspection, and that missing artifact evidence,
 missing relay URLs, file-backed git services, or missing git service refs fail
 when explicitly required. It also checks loopback User Client URL rejection

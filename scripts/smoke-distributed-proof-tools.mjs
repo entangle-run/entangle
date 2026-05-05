@@ -377,6 +377,8 @@ try {
   ], {
     mustContain: [
       '--profile "$SCRIPT_DIR/proof-profile.json"',
+      '${ENTANGLE_PROOF_JUNIT_DIR:+--junit "$ENTANGLE_PROOF_JUNIT_DIR/topology.xml"}',
+      '${ENTANGLE_PROOF_JUNIT_DIR:+--junit "$ENTANGLE_PROOF_JUNIT_DIR/artifacts.xml"}',
       "--check-relay-health",
       "--require-external-user-client-urls",
       "--require-artifact-evidence",

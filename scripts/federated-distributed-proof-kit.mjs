@@ -127,6 +127,8 @@ runner-local env/start scripts, and creates operator commands for trust,
 assignment, User Node messaging, projection inspection, and User Client
 discovery. Copy each runner directory to the intended machine and start it
 there from an Entangle checkout.
+Generated verifier scripts write JUnit reports when ENTANGLE_PROOF_JUNIT_DIR
+is set in the operator environment.
 
 Options:
   --output <dir>                    Output directory. Default: .entangle/distributed-proof-kit
@@ -555,11 +557,13 @@ function buildCustomAgentEngineOperatorCommands() {
 
 function buildVerifierCommand(options = {}) {
   const profileFile = options.profileFile ?? "proof-profile.json";
+  const junitReportFile = options.junitReportFile ?? "topology.xml";
   const args = [
     `pnpm ops:distributed-proof-verify --profile "$SCRIPT_DIR/${profileFile}"`,
     '--host-url "$ENTANGLE_HOST_URL"',
     "--check-user-client-health",
-    "--require-conversation"
+    "--require-conversation",
+    `\${ENTANGLE_PROOF_JUNIT_DIR:+--junit "$ENTANGLE_PROOF_JUNIT_DIR/${junitReportFile}"}`
   ];
 
   if (checkGitBackendHealth) {
@@ -707,6 +711,10 @@ ${buildCustomAgentEngineReadmeSection()}
    verifier also runs \`git ls-remote\` from the operator machine against
    projected published git artifact locators.
 
+Set \`ENTANGLE_PROOF_JUNIT_DIR\` before running \`operator/verify-topology.sh\`
+or \`operator/verify-artifacts.sh\` to persist JUnit XML reports named
+\`topology.xml\` and \`artifacts.xml\` in that directory.
+
 ## Files
 
 - \`agent-runner/runner-join.json\`: generic agent runner join config for the configured engine kind(s).
@@ -834,6 +842,7 @@ async function writeKit() {
     console.log(`[dry-run] operator verifier command: ${buildVerifierCommand()}`);
     console.log(
       `[dry-run] operator artifact verifier command: ${buildVerifierCommand({
+        junitReportFile: "artifacts.xml",
         profileFile: "proof-profile-post-work.json",
         requireArtifactEvidence: true
       })}`
@@ -897,6 +906,7 @@ async function writeKit() {
   await writeExecutable(
     path.join(operatorDir, "verify-artifacts.sh"),
     buildOperatorVerifierScript({
+      junitReportFile: "artifacts.xml",
       profileFile: "proof-profile-post-work.json",
       requireArtifactEvidence: true
     })
