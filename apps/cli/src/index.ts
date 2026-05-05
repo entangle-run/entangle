@@ -716,6 +716,7 @@ deploymentCommand
     "Maximum captured characters per command stream.",
     "65536"
   )
+  .option("--no-audit-bundle", "Skip Host event audit-bundle collection.")
   .option(
     "--output <path>",
     "Diagnostics bundle JSON output path.",
@@ -731,6 +732,7 @@ deploymentCommand
       options: {
         eventLimit: string;
         giteaUrl: string;
+        auditBundle?: boolean;
         hostToken?: string;
         hostUrl: string;
         logTail: string;
@@ -764,6 +766,7 @@ deploymentCommand
             options.maxCommandOutputChars,
             10
           ),
+          includeAuditBundle: options.auditBundle !== false,
           relayUrl: options.relayUrl,
           repositoryRoot,
           runnerImage: options.runnerImage,

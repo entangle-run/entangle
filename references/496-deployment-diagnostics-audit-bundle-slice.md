@@ -65,8 +65,9 @@ diagnostics bundle with a readable `event audit bundle: ...` error in
 ## Risks And Mitigations
 
 - Risk: diagnostics bundles become too large.
-  Mitigation: this is an explicit operator diagnostic command. Future work can
-  add `--no-audit-bundle` or size caps if real deployments need them.
+  Mitigation: `497-deployment-diagnostics-audit-bundle-skip-slice.md` adds
+  `--no-audit-bundle`; future work can still add size caps if real deployments
+  need them.
 - Risk: audit bundle collection failure hides other diagnostics.
   Mitigation: collection is non-fatal and appends only one host error.
 - Risk: operators mistake diagnostics output for external retention.
@@ -74,13 +75,13 @@ diagnostics bundle with a readable `event audit bundle: ...` error in
 
 ## Open Questions
 
-- Should `entangle deployment diagnostics` eventually support
-  `--no-audit-bundle` or a maximum audit-event count once production traces get
-  large?
+- Should `entangle deployment diagnostics` eventually support a maximum
+  audit-event count once production traces get large?
 
 ## Result
 
 Deployment diagnostics now embeds Host event audit-bundle evidence when
 available, giving support bundles typed events, event-content hash, signed
 integrity report, and bundle hash without requiring a separate Host event
-export command.
+export command. Operators can now intentionally skip that heavier evidence with
+`--no-audit-bundle`.

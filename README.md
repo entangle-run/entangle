@@ -1393,7 +1393,8 @@ This repository currently contains:
   containing doctor output, bounded Compose status/logs, runner-image
   inspection, live host state, and bounded runtime evidence for
   turns, engine failures, permission decisions, approval blockers, artifact
-  counts, and Host event audit-bundle evidence when available, and
+  counts, and Host event audit-bundle evidence when available unless
+  `--no-audit-bundle` is set, and
   `entangle deployment backup` / `entangle deployment restore`
   now provide the first versioned
   `.entangle/host` backup and validated restore path without bundling local

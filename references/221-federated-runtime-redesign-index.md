@@ -297,6 +297,7 @@ same-machine slice records.
 - [494-owner-aware-session-memory-slice.md](494-owner-aware-session-memory-slice.md)
 - [495-host-event-audit-bundle-slice.md](495-host-event-audit-bundle-slice.md)
 - [496-deployment-diagnostics-audit-bundle-slice.md](496-deployment-diagnostics-audit-bundle-slice.md)
+- [497-deployment-diagnostics-audit-bundle-skip-slice.md](497-deployment-diagnostics-audit-bundle-skip-slice.md)
 
 ## Audited Scope
 
@@ -1060,10 +1061,12 @@ operator identity. Host can now also export a typed event audit bundle through
 `entangle host events audit-bundle`, including typed events, a canonical event
 JSONL hash, the signed integrity report, and a bundle hash. Deployment
 diagnostics now embeds that audit bundle when available while keeping
-collection failure non-fatal. Runner-owned session memory now also carries owner,
-originating-node, entrypoint-node, last-message, and active-route metadata in
-both the model-guided memory prompt and deterministic working-context wiki
-page, giving delegated sessions a stronger owner-aware continuation basis.
+collection failure non-fatal, and operators can pass `--no-audit-bundle` when a
+smaller live support bundle is required. Runner-owned session memory now also
+carries owner, originating-node, entrypoint-node, last-message, and active-route
+metadata in both the model-guided memory prompt and deterministic
+working-context wiki page, giving delegated sessions a stronger owner-aware
+continuation basis.
 The highest-value remaining implementation areas are richer
 model-guided memory maintenance, deeper delegated-session semantics beyond the
 current controlled handoff path and first owner-aware memory projection,

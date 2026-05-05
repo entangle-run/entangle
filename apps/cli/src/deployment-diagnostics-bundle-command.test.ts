@@ -328,6 +328,7 @@ describe("deployment diagnostics bundle helpers", () => {
       },
       profile: {
         eventLimit: 3,
+        includeAuditBundle: true,
         logTail: 10
       },
       schemaVersion: "1"
@@ -361,5 +362,36 @@ describe("deployment diagnostics bundle helpers", () => {
     expect(JSON.stringify(bundle)).toContain("<redacted>");
     expect(JSON.stringify(bundle)).not.toContain("plain-secret");
     expect(JSON.stringify(bundle)).not.toContain("abc.def");
+  });
+
+  it("skips Host event audit bundle collection when disabled", async () => {
+    let called = false;
+    const deps = createDeps();
+    deps.hostClient = {
+      ...deps.hostClient!,
+      exportHostEventAuditBundle() {
+        called = true;
+        throw new Error("audit bundle should not be collected");
+      }
+    };
+
+    const bundle = await buildDeploymentDiagnosticsBundle(
+      {
+        eventLimit: 3,
+        includeAuditBundle: false,
+        logTail: 10,
+        maxCommandOutputChars: 128,
+        repositoryRoot: "/repo",
+        skipLive: false
+      },
+      deps
+    );
+
+    expect(called).toBe(false);
+    expect(bundle.profile.includeAuditBundle).toBe(false);
+    expect(bundle.host?.auditBundle).toBeUndefined();
+    expect(
+      bundle.host?.errors.some((error) => error.includes("event audit bundle"))
+    ).toBe(false);
   });
 });

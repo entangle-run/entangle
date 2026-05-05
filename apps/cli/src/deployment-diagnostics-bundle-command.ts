@@ -19,6 +19,7 @@ import {
 
 export interface DeploymentDiagnosticsBundleOptions extends DeploymentDoctorOptions {
   eventLimit?: number | undefined;
+  includeAuditBundle?: boolean | undefined;
   logTail?: number | undefined;
   maxCommandOutputChars?: number | undefined;
 }
@@ -71,6 +72,7 @@ export interface DeploymentDiagnosticsBundle {
   profile: {
     composeFile: string;
     eventLimit: number;
+    includeAuditBundle: boolean;
     logTail: number;
     maxCommandOutputChars: number;
     runnerImage: string;
@@ -174,6 +176,7 @@ function normalizeCommandCapture(input: {
 async function collectHostDiagnostics(input: {
   eventLimit: number;
   hostClient: DeploymentDiagnosticsHostClient | undefined;
+  includeAuditBundle: boolean;
   runtimeEvidenceLimit: number;
 }): Promise<DeploymentDiagnosticsBundle["host"] | undefined> {
   if (!input.hostClient) {
@@ -227,14 +230,16 @@ async function collectHostDiagnostics(input: {
     );
   }
 
-  try {
-    host.auditBundle = await input.hostClient.exportHostEventAuditBundle();
-  } catch (error) {
-    errors.push(
-      `event audit bundle: ${
-        error instanceof Error ? error.message : "request failed"
-      }`
-    );
+  if (input.includeAuditBundle) {
+    try {
+      host.auditBundle = await input.hostClient.exportHostEventAuditBundle();
+    } catch (error) {
+      errors.push(
+        `event audit bundle: ${
+          error instanceof Error ? error.message : "request failed"
+        }`
+      );
+    }
   }
 
   return host;
@@ -323,6 +328,7 @@ export async function buildDeploymentDiagnosticsBundle(
 ): Promise<DeploymentDiagnosticsBundle> {
   const commandRunner = deps.commandRunner ?? defaultCommandRunner;
   const eventLimit = options.eventLimit ?? defaultEventLimit;
+  const includeAuditBundle = options.includeAuditBundle ?? true;
   const logTail = options.logTail ?? defaultLogTail;
   const maxCommandOutputChars =
     options.maxCommandOutputChars ?? defaultMaxCommandOutputChars;
@@ -364,6 +370,7 @@ export async function buildDeploymentDiagnosticsBundle(
   const host = await collectHostDiagnostics({
     eventLimit,
     hostClient: deps.hostClient,
+    includeAuditBundle,
     runtimeEvidenceLimit: 5
   });
 
@@ -375,6 +382,7 @@ export async function buildDeploymentDiagnosticsBundle(
     profile: {
       composeFile: federatedDevProfileComposeFile,
       eventLimit,
+      includeAuditBundle,
       logTail,
       maxCommandOutputChars,
       runnerImage: options.runnerImage ?? "entangle-runner:federated-dev"

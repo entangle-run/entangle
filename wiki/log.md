@@ -1,5 +1,18 @@
 # Entangle Wiki Log
 
+## [2026-05-05] cli | Added diagnostics audit-bundle skip flag
+
+Added `references/497-deployment-diagnostics-audit-bundle-skip-slice.md`.
+`entangle deployment diagnostics` now keeps Host event audit-bundle collection
+enabled by default but supports `--no-audit-bundle` for smaller live support
+bundles.
+
+Targeted checks passed:
+
+- `pnpm --filter @entangle/cli test -- src/deployment-diagnostics-bundle-command.test.ts`
+- `pnpm --filter @entangle/cli typecheck`
+- `pnpm --filter @entangle/cli lint`
+
 ## [2026-05-05] cli | Added audit bundle evidence to deployment diagnostics
 
 Added `references/496-deployment-diagnostics-audit-bundle-slice.md`.
