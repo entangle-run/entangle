@@ -32,7 +32,9 @@ export type FederationProjectionSummary = {
 export type UserNodeRuntimeSummary = {
   activeConversationCount: number;
   clientUrl?: string;
+  commandReceiptCount: number;
   conversationCount: number;
+  failedCommandReceiptCount: number;
   gatewayCount: number;
   graphId: string;
   nodeId: string;
@@ -484,16 +486,34 @@ export function buildUserNodeRuntimeSummaries(
     conversations.push(conversation);
     conversationsByUserNodeId.set(conversation.userNodeId, conversations);
   }
+  const commandReceiptsByRequester = new Map<
+    string,
+    RuntimeCommandReceiptProjectionRecord[]
+  >();
+  for (const receipt of projection?.runtimeCommandReceipts ?? []) {
+    if (!receipt.requestedBy) {
+      continue;
+    }
+    const receipts = commandReceiptsByRequester.get(receipt.requestedBy) ?? [];
+    receipts.push(receipt);
+    commandReceiptsByRequester.set(receipt.requestedBy, receipts);
+  }
 
   return sortUserNodeIdentitiesForStudio(userNodes).map((userNode) => {
     const conversations = conversationsByUserNodeId.get(userNode.nodeId) ?? [];
+    const commandReceipts =
+      commandReceiptsByRequester.get(userNode.nodeId) ?? [];
     const runtime = runtimesByNodeId.get(userNode.nodeId);
 
     return {
       activeConversationCount: conversations.filter(isActiveUserConversation)
         .length,
       ...(runtime?.clientUrl ? { clientUrl: runtime.clientUrl } : {}),
+      commandReceiptCount: commandReceipts.length,
       conversationCount: conversations.length,
+      failedCommandReceiptCount: commandReceipts.filter(
+        (receipt) => receipt.receiptStatus === "failed"
+      ).length,
       gatewayCount: userNode.gatewayIds.length,
       graphId: userNode.graphId,
       nodeId: userNode.nodeId,
@@ -586,6 +606,8 @@ export function formatUserNodeRuntimeSummaryDetail(
     `active ${summary.activeConversationCount}`,
     `approvals ${summary.pendingApprovalCount}`,
     `unread ${summary.unreadCount}`,
+    `commands ${summary.commandReceiptCount}`,
+    `failed commands ${summary.failedCommandReceiptCount}`,
     `gateways ${summary.gatewayCount}`,
     `pubkey ${summary.publicKeyPrefix}`
   ].join(" · ");

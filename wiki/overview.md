@@ -309,6 +309,9 @@ The most accurate current description is:
   Runtime placement with per-User-Node conversation count, unread count,
   pending approval count, latest message time, participant-requested command
   receipt count, and failed command receipt count;
+- Studio's User Node roster reports the same participant-requested command
+  receipt count and failed receipt count alongside its existing conversation
+  and Human Interface Runtime placement summary;
 - the running User Client can now request runner-owned artifact restore for
   artifacts visible in the selected User Node conversation, and the
   process-runner smoke proves that path through a completed projected

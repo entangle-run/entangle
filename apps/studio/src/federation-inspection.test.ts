@@ -576,6 +576,47 @@ describe("Studio federation inspection helpers", () => {
   it("builds User Node runtime summaries for operator visibility", () => {
     const summaries = buildUserNodeRuntimeSummaries(userNodes, {
       ...projection,
+      runtimeCommandReceipts: [
+        ...projection.runtimeCommandReceipts,
+        {
+          assignmentId: "assignment-worker-a",
+          commandEventType: "runtime.wiki.publish",
+          commandId: "cmd-user-a-wiki-publish",
+          graphId: "team-alpha",
+          hostAuthorityPubkey:
+            "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+          nodeId: "worker-a",
+          observedAt: "2026-04-26T12:06:00.000Z",
+          projection: {
+            source: "observation_event",
+            updatedAt: "2026-04-26T12:06:00.000Z"
+          },
+          receiptStatus: "completed",
+          requestedBy: "user-a",
+          runnerId: "runner-worker-a",
+          runnerPubkey:
+            "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee"
+        },
+        {
+          assignmentId: "assignment-worker-b",
+          commandEventType: "runtime.artifact.restore",
+          commandId: "cmd-user-a-artifact-restore",
+          graphId: "team-alpha",
+          hostAuthorityPubkey:
+            "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+          nodeId: "worker-b",
+          observedAt: "2026-04-26T12:07:00.000Z",
+          projection: {
+            source: "observation_event",
+            updatedAt: "2026-04-26T12:07:00.000Z"
+          },
+          receiptStatus: "failed",
+          requestedBy: "user-a",
+          runnerId: "runner-worker-b",
+          runnerPubkey:
+            "ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff"
+        }
+      ],
       userConversations: conversations
     });
     const userSummary = summaries.find((summary) => summary.nodeId === "user-a");
@@ -583,7 +624,9 @@ describe("Studio federation inspection helpers", () => {
     expect(userSummary).toMatchObject({
       activeConversationCount: 2,
       clientUrl: "http://127.0.0.1:4174/",
+      commandReceiptCount: 2,
       conversationCount: 2,
+      failedCommandReceiptCount: 1,
       pendingApprovalCount: 1,
       runnerId: "runner-user-a",
       runtimeObservedState: "running",
@@ -594,6 +637,9 @@ describe("Studio federation inspection helpers", () => {
     );
     expect(formatUserNodeRuntimeSummaryDetail(userSummary!)).toContain(
       "approvals 1"
+    );
+    expect(formatUserNodeRuntimeSummaryDetail(userSummary!)).toContain(
+      "failed commands 1"
     );
   });
 });

@@ -5950,3 +5950,10 @@ Added `references/504-user-node-client-workload-summary-slice.md`.
 unread count, pending approval count, latest message timestamp,
 participant-requested command receipt count, and failed command receipt count
 alongside the existing Human Interface Runtime placement fields.
+
+## [2026-05-05] studio | Added User Node workload command receipt counts
+
+Added `references/505-studio-user-node-workload-summary-slice.md`. Studio's
+Federation panel User Node roster now reports participant-requested command
+receipt count and failed command receipt count next to the existing runtime
+placement, conversation, unread, and approval summary.
