@@ -6070,3 +6070,14 @@ Node task.
 
 Proof-kit dry-run output now prints the same operator health command, and
 `pnpm ops:smoke-distributed-proof-tools` covers its presence.
+
+## [2026-05-05] cli | Bounded User Client health probes
+
+Added `references/516-cli-user-client-health-timeout-slice.md`. CLI
+`user-nodes clients --check-health` now bounds each projected User Client
+`/health` probe with a default 3000ms timeout and exposes
+`--health-timeout-ms <ms>` for slower remote links.
+
+Timeouts are serialized into each `clientHealth` summary just like missing
+URLs, HTTP failures, and connection failures, keeping the operator command
+responsive without mutating Host, runner, or User Node state.

@@ -1482,10 +1482,15 @@ userNodesCommand
     "--check-health",
     "Probe projected User Client /health endpoints from this CLI machine."
   )
+  .option(
+    "--health-timeout-ms <ms>",
+    "Timeout for each --check-health probe.",
+    "3000"
+  )
   .option("--summary", "Print compact User Client runtime summaries.")
   .description("List User Client endpoints projected for active graph User Nodes.")
   .action(async (
-    options: { checkHealth?: boolean; summary?: boolean },
+    options: { checkHealth?: boolean; healthTimeoutMs: string; summary?: boolean },
     command: Command
   ) => {
     const client = createCliHostClient(command);
@@ -1498,7 +1503,13 @@ userNodesCommand
       userNodes: userNodes.userNodes
     });
     const clientsWithHealth = options.checkHealth
-      ? await attachUserNodeClientHealthForCli({ summaries: clients })
+      ? await attachUserNodeClientHealthForCli({
+          summaries: clients,
+          timeoutMs: parsePositiveIntegerOption(
+            options.healthTimeoutMs,
+            "--health-timeout-ms"
+          )
+        })
       : clients;
 
     printJson(

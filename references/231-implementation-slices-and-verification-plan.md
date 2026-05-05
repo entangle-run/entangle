@@ -1476,6 +1476,9 @@ Current status:
 - generated distributed proof operator commands now run
   `user-nodes clients --summary --check-health` before the scripted User Node
   task, keeping manual proof execution aligned with verifier health checks;
+- CLI User Client health probes now use a default bounded timeout and expose
+  `--health-timeout-ms`, so unreachable participant endpoints cannot hold the
+  operator command open indefinitely;
 - the remaining distributed proof hardening is infrastructure-backed
   orchestration that can provision multiple machines or VM/container boundaries
   around the verifier.

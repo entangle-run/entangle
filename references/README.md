@@ -854,6 +854,7 @@ files are the active federated redesign pack.
 514. [513-inbound-message-working-context-memory-slice.md](513-inbound-message-working-context-memory-slice.md)
 515. [514-agent-engine-inbound-routing-context-slice.md](514-agent-engine-inbound-routing-context-slice.md)
 516. [515-distributed-proof-cli-user-client-health-command-slice.md](515-distributed-proof-cli-user-client-health-command-slice.md)
+517. [516-cli-user-client-health-timeout-slice.md](516-cli-user-client-health-timeout-slice.md)
 
 ## Role of this corpus
 

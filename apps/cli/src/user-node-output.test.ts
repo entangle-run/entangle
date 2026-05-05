@@ -339,13 +339,15 @@ describe("user node CLI output", () => {
 
   it("attaches operator-side User Client health checks", async () => {
     const healthUrls: string[] = [];
+    const signals: (AbortSignal | undefined)[] = [];
     const summaries = buildUserNodeClientSummariesForCli({
       projection,
       userNodes
     });
     const checked = await attachUserNodeClientHealthForCli({
-      fetchImpl: (url) => {
+      fetchImpl: (url, init) => {
         healthUrls.push(url);
+        signals.push(init?.signal);
 
         return Promise.resolve({
           ok: true,
@@ -358,6 +360,7 @@ describe("user node CLI output", () => {
     });
 
     expect(healthUrls).toEqual(["http://127.0.0.1:4301/health"]);
+    expect(signals[0]).toBeInstanceOf(AbortSignal);
     expect(checked[0]?.clientHealth).toEqual({
       checkedAt: "2026-04-26T12:10:00.000Z",
       ok: true,
@@ -386,6 +389,31 @@ describe("user node CLI output", () => {
     expect(checked[0]?.clientHealth).toEqual({
       checkedAt: "2026-04-26T12:10:00.000Z",
       error: "connection refused",
+      ok: false,
+      url: "http://127.0.0.1:4301/health"
+    });
+  });
+
+  it("bounds User Client health probes with a timeout", async () => {
+    const summaries = buildUserNodeClientSummariesForCli({
+      projection,
+      userNodes
+    });
+    const checked = await attachUserNodeClientHealthForCli({
+      fetchImpl: (_url, init) =>
+        new Promise((_resolve, reject) => {
+          init?.signal?.addEventListener("abort", () => {
+            reject(new Error("aborted"));
+          });
+        }),
+      now: () => "2026-04-26T12:10:00.000Z",
+      summaries: summaries.slice(0, 1),
+      timeoutMs: 1
+    });
+
+    expect(checked[0]?.clientHealth).toEqual({
+      checkedAt: "2026-04-26T12:10:00.000Z",
+      error: "User Client health check timed out after 1ms.",
       ok: false,
       url: "http://127.0.0.1:4301/health"
     });

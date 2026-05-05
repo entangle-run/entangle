@@ -46,9 +46,22 @@ type UserNodeClientHealthFetchResponse = {
   statusText?: string | undefined;
 };
 
+type UserNodeClientHealthFetchInit = {
+  signal?: AbortSignal | undefined;
+};
+
 type UserNodeClientHealthFetch = (
-  url: string
+  url: string,
+  init?: UserNodeClientHealthFetchInit
 ) => Promise<UserNodeClientHealthFetchResponse>;
+
+const defaultUserNodeClientHealthTimeoutMs = 3000;
+
+class UserNodeClientHealthTimeoutError extends Error {
+  constructor(readonly timeoutMs: number) {
+    super(`User Client health check timed out after ${timeoutMs}ms.`);
+  }
+}
 
 export type UserConversationCliSummary = {
   conversationId: string;
@@ -399,16 +412,69 @@ function buildUserClientHealthUrl(clientUrl: string): string {
   return new URL("/health", clientUrl).toString();
 }
 
+function resolveUserNodeClientHealthTimeoutMs(
+  timeoutMs: number | undefined
+): number {
+  const resolved = timeoutMs ?? defaultUserNodeClientHealthTimeoutMs;
+
+  if (!Number.isSafeInteger(resolved) || resolved <= 0) {
+    throw new Error("User Client health timeout must be a positive integer.");
+  }
+
+  return resolved;
+}
+
+async function fetchUserNodeClientHealthWithTimeout(input: {
+  fetchImpl: UserNodeClientHealthFetch;
+  timeoutMs: number;
+  url: string;
+}): Promise<UserNodeClientHealthFetchResponse> {
+  const controller = new AbortController();
+  let timedOut = false;
+  let timeoutHandle: ReturnType<typeof setTimeout> | undefined;
+
+  try {
+    return await Promise.race([
+      input.fetchImpl(input.url, { signal: controller.signal }),
+      new Promise<never>((_resolve, reject) => {
+        timeoutHandle = setTimeout(() => {
+          timedOut = true;
+          controller.abort();
+          reject(new UserNodeClientHealthTimeoutError(input.timeoutMs));
+        }, input.timeoutMs);
+      })
+    ]);
+  } catch (error) {
+    if (timedOut) {
+      throw new UserNodeClientHealthTimeoutError(input.timeoutMs);
+    }
+
+    throw error;
+  } finally {
+    if (timeoutHandle !== undefined) {
+      clearTimeout(timeoutHandle);
+    }
+  }
+}
+
 export async function attachUserNodeClientHealthForCli(input: {
   fetchImpl?: UserNodeClientHealthFetch | undefined;
   now?: (() => string) | undefined;
   summaries: UserNodeClientCliSummary[];
+  timeoutMs?: number | undefined;
 }): Promise<UserNodeClientCliSummary[]> {
   const checkedAt = input.now?.() ?? new Date().toISOString();
+  const timeoutMs = resolveUserNodeClientHealthTimeoutMs(input.timeoutMs);
   const fetchImpl =
     input.fetchImpl ??
-    (async (url: string): Promise<UserNodeClientHealthFetchResponse> => {
-      const response = await fetch(url);
+    (async (
+      url: string,
+      init?: UserNodeClientHealthFetchInit
+    ): Promise<UserNodeClientHealthFetchResponse> => {
+      const response = await fetch(
+        url,
+        init?.signal ? { signal: init.signal } : undefined
+      );
 
       return {
         ok: response.ok,
@@ -449,7 +515,11 @@ export async function attachUserNodeClientHealthForCli(input: {
       }
 
       try {
-        const response = await fetchImpl(url);
+        const response = await fetchUserNodeClientHealthWithTimeout({
+          fetchImpl,
+          timeoutMs,
+          url
+        });
 
         return {
           ...summary,
@@ -468,9 +538,11 @@ export async function attachUserNodeClientHealthForCli(input: {
           clientHealth: {
             checkedAt,
             error:
-              error instanceof Error
+              error instanceof UserNodeClientHealthTimeoutError
                 ? error.message
-                : "User Client health check failed.",
+                : error instanceof Error
+                  ? error.message
+                  : "User Client health check failed.",
             ok: false,
             url
           }

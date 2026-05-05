@@ -437,7 +437,8 @@ pnpm --filter @entangle/cli dev user-nodes clients --summary --check-health
 
 The health probe reads Host projection for the endpoint list, then checks each
 User Client `/health` endpoint from the CLI machine and reports success or
-failure in `clientHealth`.
+failure in `clientHealth`. Each probe is bounded by a default 3000ms timeout;
+use `--health-timeout-ms <ms>` for slower remote links.
 Copy runner directories to machines with Entangle checkouts; the proof is valid
 only when the runners do not rely on Host filesystem access and report running
 runtime observations, expected runtime-kind capabilities, expected
@@ -474,7 +475,8 @@ agent node.
 Generated `operator/commands.sh` also runs
 `user-nodes clients --summary --check-health` before publishing the scripted
 User Node task, so the operator sees User Client reachability from the operator
-machine during the manual proof flow.
+machine during the manual proof flow. CLI health probes serialize timeout
+failures into `clientHealth` and do not mutate Host or runner state.
 For real multi-machine network checks, add `--check-relay-health`; the verifier
 uses relay URLs from `--relay-url` or the generated proof profile.
 Add `--check-git-backend-health` to require the Host catalog's selected or
