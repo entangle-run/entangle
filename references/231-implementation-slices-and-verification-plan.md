@@ -1314,6 +1314,10 @@ Current status:
   when focused node-memory summary pages exist, while keeping `memoryRefs` as
   the complete page source and recording `memoryBriefContextIncluded` in the
   engine request summary;
+- `ops:smoke-federated-dev:runtime` now delegates to the process-runner
+  federated smoke and defaults to the deterministic fake OpenCode
+  attached-server profile, so the active runtime smoke proves the current
+  agentic node path rather than the retired model-endpoint fixture path;
 - runtime approval records now carry optional signed-message lineage fields for
   request event id, request signer, response event id, response signer, and
   source message id, and the runner stamps those fields for engine gates,

@@ -1043,22 +1043,16 @@ This repository currently contains:
   stale Host-local runtime files for accepted federated assignments;
 - host package lint now covers TypeScript host smoke scripts, including the
   process-runner smoke that exercises the fastest federated runtime proof;
-- a Docker-backed runtime lifecycle smoke through `pnpm ops:smoke-federated-dev:runtime`
-  and `pnpm ops:smoke-federated-dev:disposable:runtime` that admits a disposable
-  package, bootstraps local Gitea with a disposable user and HTTPS token,
-  applies a smoke graph with two managed worker runtimes and a local
-  model-secret binding, verifies restart generation recreation plus the
-  durable restart host event, publishes real NIP-59 `task.request` messages
-  through the local relay, verifies provider-backed OpenAI-compatible
-  execution against a credential-checking model stub, observes completed host
-  session and runner-turn state, verifies published git-backed artifact
-  materialization, verifies downstream retrieval of the upstream artifact by
-  `ArtifactRef`, and stops both runtimes;
-- a released Federated Preview demo path through `pnpm ops:demo-federated-preview` that
-  starts the Federated dev Compose profile, verifies local services, runs the runtime
-  path through canonical `examples/federated-preview/` package assets, publishes
-  through the local relay, writes git-backed artifacts to local Gitea, and
-  leaves the profile running for Studio and CLI inspection, with
+- an agentic runtime smoke through `pnpm ops:smoke-federated-dev:runtime`
+  and `pnpm ops:smoke-federated-dev:disposable:runtime` that uses the current
+  process-runner path, assigns joined agent and User Node runners through the
+  relay, defaults to a deterministic fake OpenCode attached-server profile,
+  bridges signed User Node approvals into engine permissions, verifies
+  source/wiki/artifact projection, exercises User Client routes, and avoids
+  live model-provider credentials;
+- a Federated Preview service demo path through `pnpm ops:demo-federated-preview`
+  that starts the Federated dev Compose profile, verifies local services, then
+  runs the current agentic runtime smoke against the development relay, with
   `pnpm ops:demo-federated-preview:reset` as the reset path;
 - a released L2 Federated Workbench implementation with `entangle package
   inspect`, package tool-catalog validation, `entangle graph diff`,

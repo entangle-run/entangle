@@ -31,13 +31,6 @@ function run(command, commandArgs) {
   }
 }
 
-function removePreviewModelStub() {
-  spawnSync("docker", ["rm", "-f", "entangle-preview-model"], {
-    encoding: "utf8",
-    stdio: "ignore"
-  });
-}
-
 function sleep(milliseconds) {
   Atomics.wait(new Int32Array(new SharedArrayBuffer(4)), 0, 0, milliseconds);
 }
@@ -74,7 +67,6 @@ function waitForHttp(url, label) {
 }
 
 if (reset) {
-  removePreviewModelStub();
   run("docker", [
     "compose",
     "-f",

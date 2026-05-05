@@ -340,17 +340,12 @@ For the full disposable runtime lifecycle path, use:
 pnpm ops:smoke-federated-dev:disposable:runtime
 ```
 
-This variant performs the disposable profile smoke and then admits a temporary
-package into the host container, applies a temporary graph with a development
-model-secret binding, bootstraps development Gitea with a disposable user and
-HTTPS token, starts two managed runner containers, verifies restart generation
-recreation and the durable restart host event, publishes real NIP-59
-`task.request` messages through the development relay, proves provider-backed
-OpenAI-compatible execution against a credential-checking model stub, verifies
-completed host session and runner-turn state, verifies published git-backed
-artifact materialization, verifies downstream retrieval of the upstream
-artifact by `ArtifactRef`, stops both runtimes, and tears the profile down with
-volumes.
+This variant performs the disposable profile smoke and then runs the current
+agentic process-runner proof against the development relay. It assigns joined
+agent and User Node runners, defaults to a deterministic fake OpenCode
+attached-server profile, bridges signed User Node approvals into engine
+permissions, verifies source/wiki/artifact projection, exercises User Client
+routes, and tears the profile down with volumes.
 
 For an already-running federated dev profile, the runtime lifecycle smoke can be
 run directly:
@@ -359,9 +354,9 @@ run directly:
 pnpm ops:smoke-federated-dev:runtime
 ```
 
-The direct runtime smoke mutates the active host catalog and graph for the
-smoke run. Prefer the disposable runtime variant unless the current profile is
-dedicated to operational testing.
+The direct runtime smoke starts an isolated Host and joined runners while using
+the configured relay. Prefer the disposable runtime variant when validating the
+same-machine deployment profile end to end.
 
 ## User Client Ports
 

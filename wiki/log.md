@@ -6112,3 +6112,14 @@ deployment, operator, release, and package metadata surfaces.
 Historical design and session notes now describe retired public labels without
 preserving their exact strings, keeping the canonical corpus aligned with
 Entangle as the product identity.
+
+## [2026-05-05] ops | Repointed dev runtime smoke to agentic engines
+
+Added `references/520-agentic-dev-runtime-smoke-wrapper-slice.md`.
+`ops:smoke-federated-dev:runtime` now delegates to the process-runner
+federated smoke and defaults to the deterministic fake OpenCode attached-server
+profile.
+
+The active smoke command now proves joined agent and User Node runners, signed
+User Node messages, OpenCode permission approval bridging, source/wiki/artifact
+projection, and User Client routes without live model-provider credentials.

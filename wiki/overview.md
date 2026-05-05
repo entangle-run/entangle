@@ -585,9 +585,9 @@ The repository now also contains the first real implementation baseline:
 - a Studio graph surface that now renders live host topology instead of a fake
   demo graph;
 - canonical Federated Preview assets under `examples/federated-preview/` plus
-  `pnpm ops:demo-federated-preview`, which reuses the real local host, runner,
-  relay, model-stub, and Gitea/git-backed artifact path for an inspectable
-  preview session;
+  `pnpm ops:demo-federated-preview`, with the active runtime proof now routed
+  through the process-runner agentic smoke and deterministic fake OpenCode
+  engine instead of the retired model fixture path;
 - a released L2 Federated Workbench slice with CLI package inspection, package
   tool-catalog validation, offline graph diffing, root-relative path handling
   for `pnpm --filter @entangle/cli dev`, headless session launch through the
@@ -1198,17 +1198,12 @@ The repository now also contains the first real implementation baseline:
 - a disposable same-machine profile smoke through `pnpm ops:smoke-federated-dev:disposable`,
   covering strict preflight, runner image build, stable service startup,
   readiness probing through the active smoke, and teardown with volumes;
-- a Docker-backed runtime lifecycle smoke through
-  `pnpm ops:smoke-federated-dev:runtime` and
-  `pnpm ops:smoke-federated-dev:disposable:runtime`, covering disposable package
-  admission, local Gitea disposable user/token bootstrap, smoke graph
-  application, local model-secret binding, two managed runner starts,
-  restart-generation recreation, restart event persistence, real NIP-59 task
-  intake through the local relay, provider-backed OpenAI-compatible execution
-  against a credential-checking model stub, completed host session and
-  runner-turn inspection, published git-backed artifact materialization,
-  downstream artifact retrieval by `ArtifactRef`, stop, and disposable
-  teardown;
+- an agentic runtime smoke through `pnpm ops:smoke-federated-dev:runtime` and
+  `pnpm ops:smoke-federated-dev:disposable:runtime`, covering the current
+  process-runner path with joined agent and User Node runners, deterministic
+  fake OpenCode attached-server execution, signed User Node approval bridging
+  for engine permissions, source/wiki/artifact projection, User Client routes,
+  and disposable teardown;
 - build outputs for deployable runtime packages that now exclude compiled test
   files, while typed linting keeps explicit coverage over tests through a
   tightly scoped out-of-project configuration;
