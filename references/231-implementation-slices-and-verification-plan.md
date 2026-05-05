@@ -259,7 +259,9 @@ Current status:
   streaming chat completions, and streaming Responses API frames.
 - `pnpm ops:fake-opencode-server` now starts a deterministic fake attached
   OpenCode server for no-credential route and permission-bridge plumbing
-  checks.
+  checks. It can also optionally write deterministic content into the workspace
+  declared by `x-opencode-directory`, which lets attached-server tests verify
+  source workspace mutation without live model credentials.
 - `pnpm ops:smoke-fake-opencode-server` now starts that fake OpenCode server
   on an ephemeral port and verifies Basic-authenticated health, session
   creation, SSE permission delivery, permission reply, deterministic assistant
@@ -826,6 +828,10 @@ Implementation record:
   validation; the runner adapter test also starts that fake server as a real
   process and drives the attached OpenCode bridge through real HTTP/SSE
   traffic.
+- [470-fake-opencode-server-workspace-write-slice.md](470-fake-opencode-server-workspace-write-slice.md)
+  extends the fake attached server with safe workspace writes and verifies
+  action-block parsing plus source workspace mutation through the real
+  fake-server process.
 - [465-cli-agent-engine-profile-upsert-slice.md](465-cli-agent-engine-profile-upsert-slice.md)
   adds a Host-backed CLI catalog command for creating and updating typed agent
   engine profiles, including attached OpenCode profiles, permission mode,

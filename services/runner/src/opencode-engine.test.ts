@@ -69,7 +69,9 @@ function buildTurnRequest(
   });
 }
 
-async function startFakeOpenCodeServer(): Promise<FakeOpenCodeServerHandle> {
+async function startFakeOpenCodeServer(
+  args: string[] = []
+): Promise<FakeOpenCodeServerHandle> {
   const username = "entangle";
   const password = "server-secret";
   const scriptPath = fileURLToPath(
@@ -86,6 +88,7 @@ async function startFakeOpenCodeServer(): Promise<FakeOpenCodeServerHandle> {
       username,
       "--password",
       password,
+      ...args,
       "--json-log"
     ],
     {
@@ -893,12 +896,42 @@ describe("OpenCode runner engine adapter", () => {
   });
 
   it("runs attached OpenCode against the deterministic fake HTTP server", async () => {
-    const fakeServer = await startFakeOpenCodeServer();
+    const fixture = await createRuntimeFixture();
+    const generatedRelativePath = "src/fake-opencode-generated.ts";
+    const generatedContent =
+      "export const fakeOpenCodeGenerated = 'attached-server';\n";
+    const approvalId = "approval-fake-opencode-http-source";
+    const sourceChangeId = "source-change-fake-opencode-http";
+    const fakeServer = await startFakeOpenCodeServer([
+      "--content",
+      [
+        "Deterministic Entangle fake OpenCode response.",
+        "```entangle-actions",
+        JSON.stringify({
+          approvalRequestDirectives: [
+            {
+              approvalId,
+              operation: "source_application",
+              reason: "Approve deterministic fake OpenCode source write.",
+              resource: {
+                id: sourceChangeId,
+                kind: "source_change_candidate",
+                label: sourceChangeId
+              }
+            }
+          ]
+        }),
+        "```"
+      ].join("\n"),
+      "--write-file",
+      generatedRelativePath,
+      "--write-content",
+      generatedContent
+    ]);
 
     try {
       process.env.OPENCODE_SERVER_USERNAME = fakeServer.username;
       process.env.OPENCODE_SERVER_PASSWORD = fakeServer.password;
-      const fixture = await createRuntimeFixture();
       const context = {
         ...fixture.context,
         agentRuntimeContext: {
@@ -950,8 +983,30 @@ describe("OpenCode runner engine adapter", () => {
         "once"
       );
       expect(debugState.sessions?.[fakeServer.sessionId]?.completed).toBe(true);
+      await expect(
+        readFile(
+          path.join(
+            fixture.context.workspace.sourceWorkspaceRoot,
+            generatedRelativePath
+          ),
+          "utf8"
+        )
+      ).resolves.toBe(generatedContent);
       expect(result).toMatchObject({
         assistantMessages: ["Deterministic Entangle fake OpenCode response."],
+        approvalRequestDirectives: [
+          {
+            approvalId,
+            approverNodeIds: [],
+            operation: "source_application",
+            reason: "Approve deterministic fake OpenCode source write.",
+            resource: {
+              id: sourceChangeId,
+              kind: "source_change_candidate",
+              label: sourceChangeId
+            }
+          }
+        ],
         engineSessionId: fakeServer.sessionId,
         engineVersion: "server fake-opencode-1.0.0",
         permissionObservations: [

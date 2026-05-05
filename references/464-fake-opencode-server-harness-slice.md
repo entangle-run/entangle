@@ -26,6 +26,9 @@ boundary with deterministic HTTP/SSE behavior:
 - `POST /permission/:requestID/reply` records the Entangle/OpenCode decision
   and emits either a completion text event or a session error followed by idle;
 - optional Basic auth mirrors the adapter's OpenCode server auth path.
+- optional workspace writes can mutate a relative file under the workspace
+  declared by `x-opencode-directory` for attached-server source-change
+  plumbing tests.
 
 This fixture does not replace real OpenCode/provider validation. It narrows
 the gap between mocked adapter tests and live API-backed manual validation.
@@ -56,6 +59,10 @@ the gap between mocked adapter tests and live API-backed manual validation.
 - Add runner adapter coverage that starts the fake server as a real child
   process and drives the attached OpenCode adapter through real HTTP/SSE
   traffic.
+- Follow-up
+  `470-fake-opencode-server-workspace-write-slice.md` extends that
+  child-process coverage to verify safe workspace writes and Entangle action
+  block parsing through the same fake server.
 - Document that this proves attached-server plumbing without live model
   credentials, while real OpenCode and real provider behavior remain manual
   acceptance work.

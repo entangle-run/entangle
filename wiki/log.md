@@ -5586,3 +5586,15 @@ agent-engine profile mutation.
 CLI and Studio use that Host-owned route for real profile saves, so operator
 profile editing no longer depends on applying a client-mutated full catalog
 document. Full catalog apply remains available for whole-catalog workflows.
+
+## [2026-05-05] verification | Added fake OpenCode workspace-write coverage
+
+Added `references/470-fake-opencode-server-workspace-write-slice.md`. The
+deterministic fake OpenCode server can now optionally write a relative file
+inside the workspace declared by `x-opencode-directory` after a permission
+approval.
+
+The fake-server smoke verifies that workspace mutation, and the runner
+attached-server adapter test now verifies permission bridging, Entangle action
+block parsing, and source workspace mutation through the real fake-server
+process.

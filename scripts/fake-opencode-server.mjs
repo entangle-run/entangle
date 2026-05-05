@@ -1,5 +1,7 @@
 #!/usr/bin/env node
 import { createServer } from "node:http";
+import { mkdirSync, writeFileSync } from "node:fs";
+import path from "node:path";
 
 const defaultOptions = {
   content: "Deterministic Entangle fake OpenCode response.",
@@ -12,7 +14,9 @@ const defaultOptions = {
   sessionId: "opencode-session-alpha",
   username: undefined,
   password: undefined,
-  version: "fake-opencode-1.0.0"
+  version: "fake-opencode-1.0.0",
+  writeContent: "export const fakeOpenCodeWorkspaceWrite = true;\n",
+  writeFile: undefined
 };
 
 let options;
@@ -123,7 +127,8 @@ async function handleRequest(input) {
         body,
         completed: false,
         permissionAsked: false,
-        promptBody: undefined
+        promptBody: undefined,
+        workspace: readWorkspaceHeader(input.request)
       });
       requests.push({
         body,
@@ -144,6 +149,7 @@ async function handleRequest(input) {
       const session = getOrCreateSession(sessionId);
       const body = parseJsonObject(await readIncomingBody(input.request));
       session.promptBody = body;
+      session.workspace = readWorkspaceHeader(input.request) ?? session.workspace;
       requests.push({
         body,
         method: "POST",
@@ -168,10 +174,10 @@ async function handleRequest(input) {
         method: "POST",
         path: `/permission/${permissionId}/reply`
       });
+      completeSessionAfterPermission(permissionId, body);
       sendJson(input.response, 200, {
         ok: true
       });
-      completeSessionAfterPermission(permissionId, body);
       return;
     }
 
@@ -211,7 +217,8 @@ function getOrCreateSession(sessionId) {
     body: {},
     completed: false,
     permissionAsked: false,
-    promptBody: undefined
+    promptBody: undefined,
+    workspace: undefined
   };
   sessions.set(sessionId, created);
   return created;
@@ -254,6 +261,7 @@ function completeSessionAfterPermission(permissionId, body) {
   }
 
   if (reply === "once" || reply === "always") {
+    writeWorkspaceMutation(session);
     writeEvent({
       properties: {
         part: {
@@ -330,6 +338,47 @@ function closeEventClients() {
   eventClients.clear();
 }
 
+function readWorkspaceHeader(request) {
+  const rawHeader = request.headers["x-opencode-directory"];
+  const rawValue = Array.isArray(rawHeader) ? rawHeader[0] : rawHeader;
+
+  if (typeof rawValue !== "string" || rawValue.trim().length === 0) {
+    return undefined;
+  }
+
+  return decodeURIComponent(rawValue);
+}
+
+function resolveWorkspaceWritePath(workspace, relativePath) {
+  if (path.isAbsolute(relativePath)) {
+    throw new Error("Fake OpenCode write path must be relative.");
+  }
+
+  const root = path.resolve(workspace);
+  const target = path.resolve(root, relativePath);
+  const relative = path.relative(root, target);
+
+  if (relative === "" || relative.startsWith("..") || path.isAbsolute(relative)) {
+    throw new Error("Fake OpenCode write path must stay inside the workspace.");
+  }
+
+  return target;
+}
+
+function writeWorkspaceMutation(session) {
+  if (!options.writeFile) {
+    return;
+  }
+
+  if (!session.workspace) {
+    throw new Error("Fake OpenCode workspace write requested without workspace header.");
+  }
+
+  const target = resolveWorkspaceWritePath(session.workspace, options.writeFile);
+  mkdirSync(path.dirname(target), { recursive: true });
+  writeFileSync(target, options.writeContent, "utf8");
+}
+
 async function readIncomingBody(request) {
   const chunks = [];
 
@@ -398,7 +447,9 @@ function parseArgs(args) {
       arg === "--port" ||
       arg === "--session-id" ||
       arg === "--username" ||
-      arg === "--version"
+      arg === "--version" ||
+      arg === "--write-content" ||
+      arg === "--write-file"
     ) {
       const value = args[index + 1];
       if (!value) {
@@ -430,6 +481,10 @@ function parseArgs(args) {
         parsed.username = value;
       } else if (arg === "--version") {
         parsed.version = value;
+      } else if (arg === "--write-content") {
+        parsed.writeContent = value;
+      } else if (arg === "--write-file") {
+        parsed.writeFile = value;
       }
       continue;
     }
@@ -454,6 +509,8 @@ Options:
   --content <text>           Deterministic assistant response content.
   --username <name>          Require Basic auth username.
   --password <password>      Require Basic auth password.
+  --write-file <path>        Write deterministic content into the OpenCode workspace after permission approval.
+  --write-content <text>     Content for --write-file.
   --json-log                 Print startup metadata as JSON.
   -h, --help                 Show this help.
 

@@ -270,6 +270,7 @@ same-machine slice records.
 - [467-studio-agent-engine-profile-visibility-slice.md](467-studio-agent-engine-profile-visibility-slice.md)
 - [468-studio-agent-engine-profile-editor-slice.md](468-studio-agent-engine-profile-editor-slice.md)
 - [469-host-agent-engine-profile-upsert-api-slice.md](469-host-agent-engine-profile-upsert-api-slice.md)
+- [470-fake-opencode-server-workspace-write-slice.md](470-fake-opencode-server-workspace-write-slice.md)
 
 ## Audited Scope
 
@@ -401,6 +402,10 @@ The repository is not fully federated:
   and idle status;
 - runner OpenCode adapter tests now also start that fake server as a real child
   process and drive an attached-server turn through actual HTTP/SSE traffic;
+- the fake OpenCode server can now optionally write deterministic content into
+  the OpenCode workspace declared by `x-opencode-directory`, and the attached
+  server adapter test verifies permission bridging, action-block parsing, and
+  workspace mutation through that real fake-server process;
 - CLI can now upsert active catalog agent engine profiles through
   `host catalog agent-engine upsert`, including attached OpenCode base URLs,
   permission mode, state scope, default-agent notes, default-profile selection,

@@ -136,7 +136,7 @@ The most accurate current description is:
 - `pnpm ops:smoke-fake-opencode-server` now verifies that fake OpenCode
   harness end to end, including Basic-authenticated health, session creation,
   SSE permission delivery, permission reply, deterministic assistant output,
-  and idle status;
+  optional workspace mutation through `x-opencode-directory`, and idle status;
 - CLI can now upsert active catalog agent engine profiles with
   `host catalog agent-engine upsert`, so operators can configure an attached
   OpenCode or fake OpenCode profile, make it default, and assign it to graph

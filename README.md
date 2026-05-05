@@ -219,7 +219,8 @@ pnpm ops:smoke-fake-opencode-server
 
 That smoke starts the fake OpenCode server on an ephemeral port and verifies
 Basic-authenticated health, session creation, SSE permission delivery,
-permission reply, deterministic assistant output, and idle status.
+permission reply, deterministic assistant output, optional workspace mutation
+through `x-opencode-directory`, and idle status.
 
 Active product naming is also guarded:
 

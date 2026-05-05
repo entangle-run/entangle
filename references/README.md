@@ -756,6 +756,7 @@ files are the active federated redesign pack.
 468. [467-studio-agent-engine-profile-visibility-slice.md](467-studio-agent-engine-profile-visibility-slice.md)
 469. [468-studio-agent-engine-profile-editor-slice.md](468-studio-agent-engine-profile-editor-slice.md)
 470. [469-host-agent-engine-profile-upsert-api-slice.md](469-host-agent-engine-profile-upsert-api-slice.md)
+471. [470-fake-opencode-server-workspace-write-slice.md](470-fake-opencode-server-workspace-write-slice.md)
 
 ## Role of this corpus
 

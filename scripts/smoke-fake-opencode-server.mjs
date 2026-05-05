@@ -1,10 +1,18 @@
 #!/usr/bin/env node
 import { spawn } from "node:child_process";
 import { once } from "node:events";
+import { mkdtemp, readFile, rm } from "node:fs/promises";
+import os from "node:os";
+import path from "node:path";
 import { createInterface } from "node:readline";
 
 const username = "entangle";
 const password = "server-secret";
+const workspaceRoot = await mkdtemp(
+  path.join(os.tmpdir(), "entangle-fake-opencode-workspace-")
+);
+const generatedRelativePath = "src/fake-opencode-generated.ts";
+const generatedContent = "export const fakeOpenCodeGenerated = true;\n";
 
 const serverProcess = spawn(
   process.execPath,
@@ -16,6 +24,10 @@ const serverProcess = spawn(
     username,
     "--password",
     password,
+    "--write-file",
+    generatedRelativePath,
+    "--write-content",
+    generatedContent,
     "--json-log"
   ],
   {
@@ -30,10 +42,14 @@ try {
   startup = await waitForStartup(serverProcess);
   await verifyHealth(startup.healthUrl);
   await verifyTurnWithPermission(startup.baseUrl);
+  await verifyWorkspaceWrite(workspaceRoot, generatedRelativePath);
   await verifyDebugState(startup.baseUrl);
   console.log(`fake OpenCode server smoke passed (${startup.baseUrl})`);
 } finally {
-  await stopServer(serverProcess);
+  await Promise.all([
+    stopServer(serverProcess),
+    rm(workspaceRoot, { force: true, recursive: true })
+  ]);
 }
 
 async function waitForStartup(child) {
@@ -183,7 +199,9 @@ async function verifyTurnWithPermission(baseUrl) {
       ],
       title: "worker-it:session-alpha"
     }),
-    headers: jsonHeaders(),
+    headers: jsonHeaders({
+      "x-opencode-directory": encodeURIComponent(workspaceRoot)
+    }),
     method: "POST"
   });
   const sessionBody = await sessionResponse.json();
@@ -203,7 +221,9 @@ async function verifyTurnWithPermission(baseUrl) {
           }
         ]
       }),
-      headers: jsonHeaders(),
+      headers: jsonHeaders({
+        "x-opencode-directory": encodeURIComponent(workspaceRoot)
+      }),
       method: "POST"
     }
   );
@@ -218,6 +238,14 @@ async function verifyTurnWithPermission(baseUrl) {
     throw new Error(
       `Incomplete fake OpenCode event flow: permissionReplySent=${permissionReplySent} sawCompletionText=${sawCompletionText} sawIdle=${sawIdle} events=${events.map((event) => event.type).join(",")}`
     );
+  }
+}
+
+async function verifyWorkspaceWrite(workspace, relativePath) {
+  const content = await readFile(path.join(workspace, relativePath), "utf8");
+
+  if (content !== generatedContent) {
+    throw new Error(`Unexpected fake OpenCode workspace content: ${content}`);
   }
 }
 
@@ -299,10 +327,11 @@ function authorizationHeaders() {
   };
 }
 
-function jsonHeaders() {
+function jsonHeaders(extra = {}) {
   return {
     ...authorizationHeaders(),
-    "content-type": "application/json"
+    "content-type": "application/json",
+    ...extra
   };
 }
 
