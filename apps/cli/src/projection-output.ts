@@ -46,6 +46,7 @@ export type RuntimeCommandReceiptCliSummary = {
   requestedBy?: string;
   runnerId: string;
   wikiConflict?: RuntimeCommandReceiptWikiConflictCliSummary;
+  wikiPageCount?: number;
   wikiPageExpectedSha256?: string;
   wikiPageNextSha256?: string;
   wikiPagePath?: string;
@@ -177,6 +178,7 @@ export function projectRuntimeCommandReceiptSummary(
     commandId: receipt.commandId,
     nodeId: receipt.nodeId,
     observedAt: receipt.observedAt,
+    ...(receipt.wikiPageCount ? { wikiPageCount: receipt.wikiPageCount } : {}),
     ...(receipt.wikiPageExpectedSha256
       ? { wikiPageExpectedSha256: receipt.wikiPageExpectedSha256 }
       : {}),

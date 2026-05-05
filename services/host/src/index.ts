@@ -25,6 +25,7 @@ import {
   type ArtifactRef,
   type GitRepositoryTargetSelector,
   type RuntimeAssignmentRecord,
+  type RuntimeWikiPatchSetPageRequest,
   type RuntimeWikiUpsertPageResponse,
   type SourceHistoryPublicationTarget,
   type SessionCancellationMutationRequest,
@@ -106,6 +107,8 @@ import {
   runtimeSourceHistoryReplayResponseSchema,
   runtimeWikiPublishRequestSchema,
   runtimeWikiPublishResponseSchema,
+  runtimeWikiPatchSetRequestSchema,
+  runtimeWikiPatchSetResponseSchema,
   runtimeWikiUpsertPageBatchRequestSchema,
   runtimeWikiUpsertPageBatchResponseSchema,
   runtimeWikiUpsertPageRequestSchema,
@@ -406,6 +409,16 @@ type HostFederatedAssignmentPublisher = {
     expectedCurrentSha256?: string;
     mode?: "append" | "patch" | "replace";
     path: string;
+    reason?: string;
+    relayUrls: string[];
+    requestedBy?: string;
+  }): Promise<unknown>;
+  publishRuntimeWikiPatchSet?(input: {
+    assignment: RuntimeAssignmentRecord;
+    authRequired?: boolean;
+    commandId: string;
+    correlationId?: string;
+    pages: RuntimeWikiPatchSetPageRequest[];
     reason?: string;
     relayUrls: string[];
     requestedBy?: string;
@@ -1113,6 +1126,39 @@ async function publishRuntimeWikiUpsertPageCommandFromHost(
       : {}),
     mode: input.mode ?? "replace",
     path: input.path,
+    ...(input.reason ? { reason: input.reason } : {}),
+    relayUrls: options.federatedControlRelayUrls,
+    ...(input.requestedBy ? { requestedBy: input.requestedBy } : {})
+  });
+
+  return commandId;
+}
+
+async function publishRuntimeWikiPatchSetCommandFromHost(
+  options: HostServerOptions,
+  input: {
+    assignment: RuntimeAssignmentRecord;
+    pages: RuntimeWikiPatchSetPageRequest[];
+    reason?: string;
+    requestedBy?: string;
+  }
+): Promise<string | undefined> {
+  if (
+    !options.federatedControlPlane?.publishRuntimeWikiPatchSet ||
+    !options.federatedControlRelayUrls ||
+    options.federatedControlRelayUrls.length === 0
+  ) {
+    return undefined;
+  }
+
+  const commandId = `cmd-wiki-patch-set-${randomUUID()}`;
+  await options.federatedControlPlane.publishRuntimeWikiPatchSet({
+    assignment: input.assignment,
+    ...(options.federatedControlAuthRequired !== undefined
+      ? { authRequired: options.federatedControlAuthRequired }
+      : {}),
+    commandId,
+    pages: input.pages,
     ...(input.reason ? { reason: input.reason } : {}),
     relayUrls: options.federatedControlRelayUrls,
     ...(input.requestedBy ? { requestedBy: input.requestedBy } : {})
@@ -3102,6 +3148,85 @@ export async function buildHostServer(options: HostServerOptions = {}) {
         nodeId: params.nodeId,
         pageCount: pages.length,
         pages,
+        requestedAt,
+        status: "requested"
+      });
+    }
+  );
+
+  server.post(
+    "/v1/runtimes/:nodeId/wiki/pages/patch-set",
+    async (request, reply) => {
+      const params = request.params as { nodeId: string };
+      const body = parseRequestInput(
+        runtimeWikiPatchSetRequestSchema,
+        request.body ?? {},
+        {
+          detailsKey: "bodyIssues",
+          message:
+            "Request body did not match the expected wiki patch-set schema."
+        }
+      );
+      const inspection = await getRuntimeInspection(params.nodeId);
+
+      if (!inspection) {
+        reply.status(404);
+        return hostErrorResponseSchema.parse({
+          code: "not_found",
+          message: `Runtime '${params.nodeId}' was not found in the active graph.`
+        });
+      }
+
+      const assignment = selectFederatedRuntimeControlAssignment({
+        assignments: (await listRuntimeAssignments()).assignments,
+        nodeId: params.nodeId
+      });
+
+      if (!assignment) {
+        throw new HostHttpError({
+          code: "conflict",
+          details: {
+            nodeId: params.nodeId
+          },
+          message:
+            `Wiki patch-set mutation for runtime '${params.nodeId}' requires ` +
+            "an accepted federated runner assignment.",
+          statusCode: 409
+        });
+      }
+
+      const requestedAt = new Date().toISOString();
+      const commandId = await publishRuntimeWikiPatchSetCommandFromHost(options, {
+        assignment,
+        pages: body.pages,
+        ...(body.reason ? { reason: body.reason } : {}),
+        ...(body.requestedBy ? { requestedBy: body.requestedBy } : {})
+      });
+
+      if (!commandId) {
+        throw new HostHttpError({
+          code: "conflict",
+          details: {
+            nodeId: params.nodeId
+          },
+          message:
+            "Federated wiki patch-set mutation requires an active Host control plane and relay configuration.",
+          statusCode: 409
+        });
+      }
+
+      return runtimeWikiPatchSetResponseSchema.parse({
+        assignmentId: assignment.assignmentId,
+        commandId,
+        nodeId: params.nodeId,
+        pageCount: body.pages.length,
+        pages: body.pages.map((page) => ({
+          ...(page.expectedCurrentSha256
+            ? { expectedCurrentSha256: page.expectedCurrentSha256 }
+            : {}),
+          mode: page.mode,
+          path: page.path
+        })),
         requestedAt,
         status: "requested"
       });

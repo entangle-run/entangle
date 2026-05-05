@@ -765,6 +765,26 @@ describe("Host federated control plane", () => {
       relayUrls,
       requestedBy: "operator-main"
     });
+    await controlPlane.publishRuntimeWikiPatchSet({
+      assignment,
+      commandId: "cmd-wiki-patch-set-alpha",
+      pages: [
+        {
+          content: "# Patch Set Note\n",
+          path: "operator/patch-set.md"
+        },
+        {
+          content: "\nAppend this note.\n",
+          expectedCurrentSha256:
+            "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+          mode: "append",
+          path: "operator/patch-set-follow-up.md"
+        }
+      ],
+      reason: "Apply wiki patch-set.",
+      relayUrls,
+      requestedBy: "operator-main"
+    });
 
     expect(transport.publishedControlEvents.map((event) => event.payload)).toEqual([
       expect.objectContaining({
@@ -921,6 +941,32 @@ describe("Host federated control plane", () => {
         requestedBy: "operator-main",
         runnerId: "runner-alpha",
         runnerPubkey
+      }),
+      expect.objectContaining({
+        assignmentId: "assignment-alpha",
+        commandId: "cmd-wiki-patch-set-alpha",
+        eventType: "runtime.wiki.patch_set",
+        graphId: "federated-smoke-graph",
+        hostAuthorityPubkey: authority.authority.publicKey,
+        issuedAt: "2026-04-26T12:00:11.000Z",
+        nodeId: "builder",
+        pages: [
+          {
+            content: "# Patch Set Note\n",
+            mode: "replace",
+            path: "operator/patch-set.md"
+          },
+          {
+            content: "\nAppend this note.\n",
+            expectedCurrentSha256:
+              "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+            mode: "append",
+            path: "operator/patch-set-follow-up.md"
+          }
+        ],
+        requestedBy: "operator-main",
+        runnerId: "runner-alpha",
+        runnerPubkey
       })
     ]);
     expect(transport.publishedControlEvents[3]?.payload).toMatchObject({
@@ -930,6 +976,7 @@ describe("Host federated control plane", () => {
       }
     });
     expect(transport.publishedControlEvents.map((event) => event.relayUrls)).toEqual([
+      relayUrls,
       relayUrls,
       relayUrls,
       relayUrls,

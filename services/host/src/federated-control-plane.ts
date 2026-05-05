@@ -740,6 +740,54 @@ export class HostFederatedControlPlane {
     });
   }
 
+  publishRuntimeWikiPatchSet(input: {
+    assignment: RuntimeAssignmentRecord;
+    authRequired?: boolean;
+    commandId: string;
+    correlationId?: string;
+    pages: Array<{
+      content: string;
+      expectedCurrentSha256?: string;
+      mode?: "append" | "patch" | "replace";
+      path: string;
+    }>;
+    reason?: string;
+    relayUrls: string[];
+    requestedBy?: string;
+  }): Promise<EntangleNostrPublishedEvent<EntangleControlEvent>> {
+    return this.input.transport.publishControlEvent({
+      ...(input.authRequired !== undefined
+        ? { authRequired: input.authRequired }
+        : {}),
+      ...(input.correlationId !== undefined
+        ? { correlationId: input.correlationId }
+        : {}),
+      payload: {
+        assignmentId: input.assignment.assignmentId,
+        commandId: input.commandId,
+        eventType: "runtime.wiki.patch_set",
+        graphId: input.assignment.graphId,
+        hostAuthorityPubkey: input.assignment.hostAuthorityPubkey,
+        issuedAt: this.now(),
+        nodeId: input.assignment.nodeId,
+        pages: input.pages.map((page) => ({
+          content: page.content,
+          ...(page.expectedCurrentSha256
+            ? { expectedCurrentSha256: page.expectedCurrentSha256 }
+            : {}),
+          mode: page.mode ?? "replace",
+          path: page.path
+        })),
+        protocol: "entangle.control.v1",
+        ...(input.reason ? { reason: input.reason } : {}),
+        ...(input.requestedBy ? { requestedBy: input.requestedBy } : {}),
+        runnerId: input.assignment.runnerId,
+        runnerPubkey: input.assignment.runnerPubkey
+      },
+      relayUrls: input.relayUrls
+    });
+  }
+
   private publishRunnerHelloAck(input: {
     authRequired?: boolean;
     hostAuthorityPubkey: string;

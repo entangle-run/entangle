@@ -471,6 +471,34 @@ export const runtimeWikiUpsertPageBatchResponseSchema = z.object({
   status: z.literal("requested")
 });
 
+export const runtimeWikiPatchSetPageRequestSchema = z.object({
+  content: z.string().max(128 * 1024),
+  expectedCurrentSha256: sha256DigestSchema.optional(),
+  mode: z.enum(["append", "patch", "replace"]).default("replace"),
+  path: nonEmptyStringSchema
+});
+
+export const runtimeWikiPatchSetRequestSchema = z.object({
+  pages: z.array(runtimeWikiPatchSetPageRequestSchema).min(1).max(16),
+  reason: nonEmptyStringSchema.optional(),
+  requestedBy: identifierSchema.optional()
+});
+
+export const runtimeWikiPatchSetPageResponseSchema =
+  runtimeWikiPatchSetPageRequestSchema.omit({
+    content: true
+  });
+
+export const runtimeWikiPatchSetResponseSchema = z.object({
+  assignmentId: identifierSchema,
+  commandId: identifierSchema,
+  nodeId: identifierSchema,
+  pageCount: z.number().int().min(1).max(16),
+  pages: z.array(runtimeWikiPatchSetPageResponseSchema).min(1).max(16),
+  requestedAt: nonEmptyStringSchema,
+  status: z.literal("requested")
+});
+
 export const runtimeSourceHistoryReplayRequestSchema = z.object({
   approvalId: identifierSchema.optional(),
   reason: nonEmptyStringSchema.optional(),
@@ -670,6 +698,15 @@ export type RuntimeWikiUpsertPageBatchRequest = z.input<
 >;
 export type RuntimeWikiUpsertPageBatchResponse = z.infer<
   typeof runtimeWikiUpsertPageBatchResponseSchema
+>;
+export type RuntimeWikiPatchSetPageRequest = z.input<
+  typeof runtimeWikiPatchSetPageRequestSchema
+>;
+export type RuntimeWikiPatchSetRequest = z.input<
+  typeof runtimeWikiPatchSetRequestSchema
+>;
+export type RuntimeWikiPatchSetResponse = z.infer<
+  typeof runtimeWikiPatchSetResponseSchema
 >;
 export type RuntimeSourceHistoryReplayRequest = z.input<
   typeof runtimeSourceHistoryReplayRequestSchema

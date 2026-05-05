@@ -159,6 +159,33 @@ export type RunnerWikiPageUpsertCommandResult = {
     | "committed"
     | "conflict"
     | "failed"
+      | "not_configured"
+      | "unchanged";
+};
+
+export type RunnerWikiPatchSetPageInput = {
+  content: string;
+  expectedCurrentSha256?: string;
+  mode?: "append" | "patch" | "replace";
+  path: string;
+};
+
+export type RunnerWikiPatchSetPageResult = {
+  expectedCurrentSha256?: string;
+  mode: "append" | "patch" | "replace";
+  nextSha256?: string;
+  path: string;
+  previousSha256?: string;
+};
+
+export type RunnerWikiPatchSetCommandResult = {
+  message?: string;
+  pageCount: number;
+  pages: RunnerWikiPatchSetPageResult[];
+  syncStatus?:
+    | "committed"
+    | "conflict"
+    | "failed"
     | "not_configured"
     | "unchanged";
 };
@@ -2982,6 +3009,173 @@ export class RunnerService {
       nextSha256,
       path: relativePath,
       previousSha256,
+      syncStatus: sync.status
+    };
+  }
+
+  async requestWikiPatchSet(input: {
+    commandId?: string;
+    pages: RunnerWikiPatchSetPageInput[];
+    reason?: string;
+    requestedAt?: string;
+    requestedBy?: string;
+  }): Promise<RunnerWikiPatchSetCommandResult> {
+    const statePaths =
+      this.statePaths ??
+      (await ensureRunnerStatePaths(this.context.workspace.runtimeRoot));
+    this.statePaths = statePaths;
+    const wikiRoot = path.join(this.context.workspace.memoryRoot, "wiki");
+    const indexPath = path.join(wikiRoot, "index.md");
+    const seenPaths = new Set<string>();
+    const plannedPages: Array<{
+      absolutePath: string;
+      expectedCurrentSha256?: string;
+      mode: "append" | "patch" | "replace";
+      nextContent: string;
+      nextSha256: string;
+      previousSha256: string;
+      relativePath: string;
+    }> = [];
+
+    for (const page of input.pages) {
+      const relativePath = resolveWikiPageRelativePath(page.path);
+      if (seenPaths.has(relativePath)) {
+        throw new Error(
+          `Wiki patch-set contains duplicate page path '${relativePath}'.`
+        );
+      }
+      seenPaths.add(relativePath);
+
+      const absolutePath = resolveWikiPageAbsolutePath({
+        context: this.context,
+        relativePath
+      });
+      const mode = page.mode ?? "replace";
+      const currentContent = await readTextFileOrDefault(absolutePath, "");
+      const previousSha256 = hashWikiPageContent(currentContent);
+      const resultPage: RunnerWikiPatchSetPageResult = {
+        ...(page.expectedCurrentSha256
+          ? { expectedCurrentSha256: page.expectedCurrentSha256 }
+          : {}),
+        mode,
+        path: relativePath,
+        previousSha256
+      };
+
+      if (
+        page.expectedCurrentSha256 &&
+        page.expectedCurrentSha256 !== previousSha256
+      ) {
+        return {
+          message:
+            `Wiki patch-set was not applied because page '${relativePath}' ` +
+            "does not match the requested base SHA-256.",
+          pageCount: input.pages.length,
+          pages: [...plannedPages.map((planned) => ({
+            ...(planned.expectedCurrentSha256
+              ? { expectedCurrentSha256: planned.expectedCurrentSha256 }
+              : {}),
+            mode: planned.mode,
+            nextSha256: planned.nextSha256,
+            path: planned.relativePath,
+            previousSha256: planned.previousSha256
+          })), resultPage],
+          syncStatus: "conflict"
+        };
+      }
+
+      const nextContent =
+        mode === "append"
+          ? [currentContent.trimEnd(), page.content.trimEnd()]
+              .filter((part) => part.length > 0)
+              .join("\n\n") + "\n"
+          : mode === "patch"
+            ? applyWikiPageUnifiedPatch({
+                currentContent,
+                patchContent: page.content
+              })
+            : `${page.content.trimEnd()}\n`;
+      const nextSha256 = hashWikiPageContent(nextContent);
+
+      plannedPages.push({
+        absolutePath,
+        ...(page.expectedCurrentSha256
+          ? { expectedCurrentSha256: page.expectedCurrentSha256 }
+          : {}),
+        mode,
+        nextContent,
+        nextSha256,
+        previousSha256,
+        relativePath
+      });
+    }
+
+    await Promise.all(
+      plannedPages.map((page) => writeTextFile(page.absolutePath, page.nextContent))
+    );
+
+    const currentIndex = await readTextFileOrDefault(indexPath, "# Wiki Index\n");
+    const nextIndex = plannedPages.reduce(
+      (index, page) =>
+        appendSectionBullet(
+          index,
+          "Managed Pages",
+          `- [${page.relativePath}](${page.relativePath})`
+        ),
+      currentIndex
+    );
+    await writeTextFile(indexPath, nextIndex);
+
+    const sync = await syncWikiRepository(this.context, {
+      turnId: input.commandId ?? "wiki-patch-set"
+    });
+
+    if (sync.status === "committed" || sync.status === "unchanged") {
+      await Promise.all(
+        plannedPages.map(async (page) => {
+          const artifactRef: ArtifactRef = {
+            artifactId: buildWikiPageArtifactId({
+              nodeId: this.context.binding.node.nodeId,
+              relativePath: page.relativePath
+            }),
+            artifactKind: "knowledge_summary",
+            backend: "wiki",
+            contentSummary:
+              `Wiki page '${page.relativePath}' updated by patch-set.`,
+            createdByNodeId: this.context.binding.node.nodeId,
+            locator: {
+              nodeId: this.context.binding.node.nodeId,
+              path: `/${page.relativePath}`
+            },
+            preferred: false,
+            status: "materialized"
+          };
+          await this.publishWikiRefObservation(
+            artifactRef,
+            sync.syncedAt,
+            await readWikiPagePreview({ absolutePath: page.absolutePath })
+          );
+        })
+      );
+    }
+
+    return {
+      ...(sync.status === "failed" || sync.status === "not_configured"
+        ? { message: sync.reason }
+        : {
+            message:
+              `Wiki patch-set updated ${plannedPages.length} pages and repository sync ${sync.status}.`
+          }),
+      pageCount: plannedPages.length,
+      pages: plannedPages.map((page) => ({
+        ...(page.expectedCurrentSha256
+          ? { expectedCurrentSha256: page.expectedCurrentSha256 }
+          : {}),
+        mode: page.mode,
+        nextSha256: page.nextSha256,
+        path: page.relativePath,
+        previousSha256: page.previousSha256
+      })),
       syncStatus: sync.status
     };
   }

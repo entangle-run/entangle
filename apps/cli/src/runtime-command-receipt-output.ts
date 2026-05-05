@@ -16,8 +16,12 @@ function shortHash(value: string): string {
 export function projectRuntimeCommandReceiptWikiConflictSummary(
   receipt: RuntimeCommandReceiptProjectionRecord
 ): RuntimeCommandReceiptWikiConflictCliSummary | undefined {
+  const isWikiPageMutation =
+    receipt.commandEventType === "runtime.wiki.upsert_page" ||
+    receipt.commandEventType === "runtime.wiki.patch_set";
+
   if (
-    receipt.commandEventType !== "runtime.wiki.upsert_page" ||
+    !isWikiPageMutation ||
     receipt.receiptStatus !== "failed" ||
     !receipt.wikiPageExpectedSha256 ||
     !receipt.wikiPagePreviousSha256 ||

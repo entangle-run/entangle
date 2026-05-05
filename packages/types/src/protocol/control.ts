@@ -31,6 +31,7 @@ export const entangleControlEventTypeSchema = z.enum([
   "runtime.source_history.replay",
   "runtime.source_history.reconcile",
   "runtime.wiki.upsert_page",
+  "runtime.wiki.patch_set",
   "runtime.wiki.publish"
 ]);
 
@@ -45,6 +46,7 @@ export const entangleRuntimeCommandEventTypeSchema = z.enum([
   "runtime.source_history.replay",
   "runtime.source_history.reconcile",
   "runtime.wiki.upsert_page",
+  "runtime.wiki.patch_set",
   "runtime.wiki.publish"
 ]);
 
@@ -278,6 +280,24 @@ export const runtimeWikiUpsertPagePayloadSchema = controlPayloadBaseSchema.exten
   requestedBy: identifierSchema.optional()
 });
 
+export const runtimeWikiPatchSetPagePayloadSchema = z.object({
+  content: z.string().max(128 * 1024),
+  expectedCurrentSha256: sha256DigestSchema.optional(),
+  mode: z.enum(["append", "patch", "replace"]).default("replace"),
+  path: nonEmptyStringSchema
+});
+
+export const runtimeWikiPatchSetPayloadSchema = controlPayloadBaseSchema.extend({
+  assignmentId: identifierSchema.optional(),
+  commandId: identifierSchema,
+  eventType: z.literal("runtime.wiki.patch_set"),
+  graphId: identifierSchema,
+  nodeId: identifierSchema,
+  pages: z.array(runtimeWikiPatchSetPagePayloadSchema).min(1).max(16),
+  reason: nonEmptyStringSchema.optional(),
+  requestedBy: identifierSchema.optional()
+});
+
 export const entangleControlEventPayloadSchema = z.discriminatedUnion(
   "eventType",
   [
@@ -295,6 +315,7 @@ export const entangleControlEventPayloadSchema = z.discriminatedUnion(
     runtimeSourceHistoryReplayPayloadSchema,
     runtimeSourceHistoryReconcilePayloadSchema,
     runtimeWikiUpsertPagePayloadSchema,
+    runtimeWikiPatchSetPayloadSchema,
     runtimeWikiPublishPayloadSchema
   ]
 );

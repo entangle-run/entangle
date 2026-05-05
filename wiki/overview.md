@@ -250,6 +250,11 @@ The most accurate current description is:
   `runtime.wiki.upsert_page` command per page to the accepted runner
   assignment, so this is a non-atomic batch request rather than a new runner
   transaction protocol;
+- operators can now also send a signed `runtime.wiki.patch_set` command for
+  related multi-page wiki updates; the runner validates every page before
+  writing, rejects stale or invalid sets without partial page mutation, syncs
+  the wiki repository once, and projects page-count receipts plus per-page
+  `wiki.ref` evidence;
 - the process-runner smoke now proves that patch mode through the running
   User Client JSON API, including expected-base hash forwarding, completed
   command receipt projection, and projected patched wiki preview content;
@@ -1364,12 +1369,12 @@ The current implementation-truth audit now lives in
   plus single-page wiki patch mode plus projected-preview draft prefill with
   automatic expected-hash population plus User Client source-history reconcile
   plus bounded operator batch requests for multiple existing wiki page-upsert
-  commands plus local wiki draft diff preview plus stale-edit conflict receipt
-  summaries in the browser, CLI, and fallback Human Interface Runtime plus
+  commands plus signed runner-owned multi-page wiki patch-set commands plus
+  local wiki draft diff preview plus stale-edit conflict receipt summaries in
+  the browser, CLI, and fallback Human Interface Runtime plus
   approval-response turn correlation;
-  the next git gaps are richer collaborative wiki merge UI, true atomic
-  multi-page patch-set semantics, repository lifecycle behavior, and explicit fallback or
-  replication behavior,
+  the next git gaps are richer collaborative wiki merge UI, repository
+  lifecycle behavior, and explicit fallback or replication behavior,
   while the next deployment-grade gap is
   non-disposable profile upgrade behavior for older Gitea volumes;
 - complete CLI parity where it adds real headless operational value;

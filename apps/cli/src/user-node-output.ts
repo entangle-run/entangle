@@ -125,6 +125,7 @@ export type UserNodeCommandReceiptCliSummary = {
   sourceHistoryId?: string;
   wikiArtifactId?: string;
   wikiConflict?: RuntimeCommandReceiptWikiConflictCliSummary;
+  wikiPageCount?: number;
   wikiPagePath?: string;
 };
 
@@ -292,6 +293,7 @@ export function projectUserNodeCommandReceiptSummary(
       : {}),
     ...(receipt.wikiArtifactId ? { wikiArtifactId: receipt.wikiArtifactId } : {}),
     ...(wikiConflict ? { wikiConflict } : {}),
+    ...(receipt.wikiPageCount ? { wikiPageCount: receipt.wikiPageCount } : {}),
     ...(receipt.wikiPagePath ? { wikiPagePath: receipt.wikiPagePath } : {})
   };
 }

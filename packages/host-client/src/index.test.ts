@@ -3860,6 +3860,102 @@ describe("createHostClient", () => {
     ]);
   });
 
+  it("posts runner-owned runtime wiki patch-set requests", async () => {
+    const requests: { body?: string; method?: string; url: string }[] = [];
+    const client = createHostClient({
+      baseUrl: "http://entangle-host.test",
+      fetchImpl: (url, init) => {
+        requests.push({
+          body: init?.body,
+          method: init?.method,
+          url
+        });
+
+        return Promise.resolve(
+          createMockResponse({
+            body: JSON.stringify({
+              assignmentId: "assignment-alpha",
+              commandId: "cmd-wiki-patch-set-alpha",
+              nodeId: "worker-it",
+              pageCount: 2,
+              pages: [
+                {
+                  mode: "replace",
+                  path: "operator/notes.md"
+                },
+                {
+                  mode: "append",
+                  path: "operator/follow-up.md"
+                }
+              ],
+              requestedAt: "2026-04-24T10:10:00.000Z",
+              status: "requested"
+            }),
+            ok: true,
+            status: 200
+          })
+        );
+      }
+    });
+
+    await expect(
+      client.patchRuntimeWikiPages("worker-it", {
+        pages: [
+          {
+            content: "# Operator Note\n",
+            path: "operator/notes.md"
+          },
+          {
+            content: "\nFollow up from the operator.\n",
+            mode: "append",
+            path: "operator/follow-up.md"
+          }
+        ],
+        reason: "Apply related wiki updates.",
+        requestedBy: "operator-main"
+      })
+    ).resolves.toMatchObject({
+      assignmentId: "assignment-alpha",
+      commandId: "cmd-wiki-patch-set-alpha",
+      nodeId: "worker-it",
+      pageCount: 2,
+      pages: [
+        {
+          mode: "replace",
+          path: "operator/notes.md"
+        },
+        {
+          mode: "append",
+          path: "operator/follow-up.md"
+        }
+      ],
+      status: "requested"
+    });
+    expect(requests).toEqual([
+      {
+        body: JSON.stringify({
+          pages: [
+            {
+              content: "# Operator Note\n",
+              mode: "replace",
+              path: "operator/notes.md"
+            },
+            {
+              content: "\nFollow up from the operator.\n",
+              mode: "append",
+              path: "operator/follow-up.md"
+            }
+          ],
+          reason: "Apply related wiki updates.",
+          requestedBy: "operator-main"
+        }),
+        method: "POST",
+        url:
+          "http://entangle-host.test/v1/runtimes/worker-it/wiki/pages/patch-set"
+      }
+    ]);
+  });
+
   it("parses runtime recovery policy mutation responses from the host surface", async () => {
     const client = createHostClient({
       baseUrl: "http://entangle-host.test",

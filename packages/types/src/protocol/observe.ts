@@ -127,6 +127,7 @@ export const runtimeCommandReceiptPayloadSchema =
     status: runtimeCommandReceiptStatusSchema,
     targetPath: nonEmptyStringSchema.optional(),
     wikiArtifactId: identifierSchema.optional(),
+    wikiPageCount: z.number().int().min(1).max(16).optional(),
     wikiPageExpectedSha256: sha256DigestSchema.optional(),
     wikiPageNextSha256: sha256DigestSchema.optional(),
     wikiPagePath: nonEmptyStringSchema.optional(),

@@ -6481,3 +6481,13 @@ actions.
 
 The command still applies only safe Host-state repairs with `--apply-safe`;
 service-owned data migration remains a visible manual operator step.
+
+## [2026-05-05] runtime | Added runner-owned wiki patch-sets
+
+Added `references/544-runtime-wiki-patch-set-slice.md`. Host API,
+host-client, CLI, runner join, and runner service now support the signed
+`runtime.wiki.patch_set` command for related multi-page wiki mutations.
+
+The assigned runner validates all pages before writing, rejects stale or
+invalid sets without partial page mutation, syncs the wiki repository once,
+and projects page-count command receipts plus per-page wiki refs.

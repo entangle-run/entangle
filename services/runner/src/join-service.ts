@@ -191,6 +191,34 @@ export type RunnerAssignmentRuntimeHandle = {
       | "not_configured"
       | "unchanged";
   }>;
+  patchWikiPages?(request: {
+    commandId?: string;
+    pages: Array<{
+      content: string;
+      expectedCurrentSha256?: string;
+      mode?: "append" | "patch" | "replace";
+      path: string;
+    }>;
+    reason?: string;
+    requestedAt?: string;
+    requestedBy?: string;
+  }): Promise<{
+    message?: string;
+    pageCount: number;
+    pages: Array<{
+      expectedCurrentSha256?: string;
+      mode: "append" | "patch" | "replace";
+      nextSha256?: string;
+      path: string;
+      previousSha256?: string;
+    }>;
+    syncStatus?:
+      | "committed"
+      | "conflict"
+      | "failed"
+      | "not_configured"
+      | "unchanged";
+  }>;
   runtimeContextPath: string;
   runtimeRoot?: string;
   stop(): Promise<void>;
@@ -384,6 +412,11 @@ export class RunnerJoinService {
 
     if (payload.eventType === "runtime.wiki.upsert_page") {
       await this.handleRuntimeWikiUpsertPageCommand(payload);
+      return;
+    }
+
+    if (payload.eventType === "runtime.wiki.patch_set") {
+      await this.handleRuntimeWikiPatchSetCommand(payload);
     }
   }
 
@@ -536,6 +569,7 @@ export class RunnerJoinService {
           | "runtime.start"
           | "runtime.stop"
           | "runtime.wiki.publish"
+          | "runtime.wiki.patch_set"
           | "runtime.wiki.upsert_page";
       }
     >
@@ -581,6 +615,7 @@ export class RunnerJoinService {
       sourceHistoryId: string;
       targetPath: string;
       wikiArtifactId: string;
+      wikiPageCount: number;
       wikiPageExpectedSha256: string;
       wikiPageNextSha256: string;
       wikiPagePath: string;
@@ -625,6 +660,7 @@ export class RunnerJoinService {
       sourceHistoryId: string;
       targetPath: string;
       wikiArtifactId: string;
+      wikiPageCount: number;
       wikiPageExpectedSha256: string;
       wikiPageNextSha256: string;
       wikiPagePath: string;
@@ -678,6 +714,9 @@ export class RunnerJoinService {
         : {}),
       ...(input.receipt?.wikiArtifactId
         ? { wikiArtifactId: input.receipt.wikiArtifactId }
+        : {}),
+      ...(input.receipt?.wikiPageCount
+        ? { wikiPageCount: input.receipt.wikiPageCount }
         : {}),
       ...(input.receipt?.wikiPageExpectedSha256
         ? { wikiPageExpectedSha256: input.receipt.wikiPageExpectedSha256 }
@@ -1710,6 +1749,134 @@ export class RunnerJoinService {
         payload,
         receipt: {
           wikiPagePath: payload.path
+        }
+      });
+    }
+  }
+
+  private async handleRuntimeWikiPatchSetCommand(
+    payload: Extract<
+      EntangleControlEvent["payload"],
+      { eventType: "runtime.wiki.patch_set" }
+    >
+  ): Promise<void> {
+    const assignment = this.resolveRuntimeCommandAssignment(payload);
+    const pageCount = payload.pages.length;
+
+    if (!assignment) {
+      await this.publishRuntimeCommandFailure({
+        assignmentId: payload.assignmentId,
+        message:
+          "Runtime wiki patch-set command did not match an accepted assignment.",
+        payload,
+        receipt: {
+          wikiPageCount: pageCount
+        }
+      });
+      return;
+    }
+
+    await this.publishRuntimeCommandReceipt({
+      assignmentId: assignment.assignmentId,
+      ...(payload.reason ? { message: payload.reason } : {}),
+      payload,
+      receipt: {
+        wikiPageCount: pageCount
+      },
+      status: "received"
+    });
+
+    await this.publishObservation({
+      assignmentId: assignment.assignmentId,
+      eventType: "assignment.receipt",
+      message: payload.reason,
+      observedAt: this.now(),
+      receiptKind: "received"
+    });
+
+    const handle = this.assignmentRuntimeHandles.get(assignment.assignmentId);
+    if (!handle?.patchWikiPages) {
+      await this.publishRuntimeCommandFailure({
+        assignmentId: assignment.assignmentId,
+        message:
+          "Runtime wiki patch-set command cannot be applied because the assigned runtime is not running.",
+        payload,
+        receipt: {
+          wikiPageCount: pageCount
+        }
+      });
+      return;
+    }
+
+    try {
+      const result = await handle.patchWikiPages({
+        commandId: payload.commandId,
+        pages: payload.pages.map((page) => ({
+          content: page.content,
+          ...(page.expectedCurrentSha256
+            ? { expectedCurrentSha256: page.expectedCurrentSha256 }
+            : {}),
+          mode: page.mode,
+          path: page.path
+        })),
+        ...(payload.reason ? { reason: payload.reason } : {}),
+        requestedAt: payload.issuedAt,
+        ...(payload.requestedBy ? { requestedBy: payload.requestedBy } : {})
+      });
+
+      const conflictPage = result.pages.find(
+        (page) =>
+          page.expectedCurrentSha256 &&
+          page.previousSha256 &&
+          page.expectedCurrentSha256 !== page.previousSha256
+      );
+
+      if (
+        result.syncStatus === "failed" ||
+        result.syncStatus === "not_configured" ||
+        result.syncStatus === "conflict"
+      ) {
+        await this.publishRuntimeCommandFailure({
+          assignmentId: assignment.assignmentId,
+          message:
+            result.message ??
+            `Wiki patch-set '${payload.commandId}' failed before all pages were updated.`,
+          payload,
+          receipt: {
+            ...(conflictPage?.expectedCurrentSha256
+              ? { wikiPageExpectedSha256: conflictPage.expectedCurrentSha256 }
+              : {}),
+            wikiPageCount: result.pageCount,
+            ...(conflictPage?.path ? { wikiPagePath: conflictPage.path } : {}),
+            ...(conflictPage?.previousSha256
+              ? { wikiPagePreviousSha256: conflictPage.previousSha256 }
+              : {})
+          }
+        });
+        return;
+      }
+
+      await this.publishRuntimeCommandReceipt({
+        assignmentId: assignment.assignmentId,
+        message:
+          result.message ??
+          `Wiki patch-set '${payload.commandId}' updated ${result.pageCount} pages.`,
+        payload,
+        receipt: {
+          wikiPageCount: result.pageCount
+        },
+        status: "completed"
+      });
+    } catch (error) {
+      await this.publishRuntimeCommandFailure({
+        assignmentId: assignment.assignmentId,
+        message:
+          error instanceof Error
+            ? error.message
+            : "Runtime wiki patch-set command failed.",
+        payload,
+        receipt: {
+          wikiPageCount: pageCount
         }
       });
     }

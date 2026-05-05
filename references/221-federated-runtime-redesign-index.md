@@ -344,6 +344,7 @@ same-machine slice records.
 - [541-runtime-wiki-page-batch-request-slice.md](541-runtime-wiki-page-batch-request-slice.md)
 - [542-coordination-map-memory-slice.md](542-coordination-map-memory-slice.md)
 - [543-deployment-repair-previous-service-volume-slice.md](543-deployment-repair-previous-service-volume-slice.md)
+- [544-runtime-wiki-patch-set-slice.md](544-runtime-wiki-patch-set-slice.md)
 
 ## Audited Scope
 
@@ -863,10 +864,11 @@ for delegated sessions without copying transcripts.
     mode are implemented; and the User Client can request visible
     source-history reconcile through the Human Interface Runtime. User Client
     approval responses now keep turn-level correlation with the agent request
-    they answer. Richer
-    collaborative wiki merge UI, multi-page patch-set semantics, repository
-    lifecycle behavior, replicated/fallback artifact behavior, and richer
-    memory promotion remain open.
+    they answer. A signed multi-page wiki patch-set command now covers related
+    page mutations with runner-side validation before writes. Richer
+    collaborative wiki merge UI, repository lifecycle behavior,
+    replicated/fallback artifact behavior, and richer memory promotion remain
+    open.
 12. Studio and CLI operator/user-node federation surfaces. CLI and Studio now
     both expose first-pass assignment offer and revoke operations through
     Host-owned APIs.
@@ -1225,13 +1227,18 @@ Deployment repair now also converts doctor evidence about previous
 Compose-prefixed Gitea or strfry service volumes into explicit manual repair
 actions. This keeps service-owned data migration visible in the operator repair
 plan without letting `--apply-safe` copy or mutate service data.
+Runtime wiki maintenance now also has a signed `runtime.wiki.patch_set`
+command: Host, host-client, CLI, runner join, and runner service can request
+multiple page mutations as one patch-set, the runner validates all paths,
+base hashes, duplicate paths, and patch hunks before writing, syncs the wiki
+repository once, and projects page-count receipts plus per-page wiki refs.
 The highest-value remaining implementation areas are richer model-guided
 memory maintenance, deeper delegated-session semantics beyond the current
 controlled handoff path and first owner-aware memory projection, participant
 runtime reassignment UX beyond the current read-only User Client runtime
-status projection, collaborative wiki merge UI and true multi-page patch-set
-semantics on top of the participant-scoped page upsert command and new
-non-atomic operator batch surface,
+status projection, collaborative wiki merge UI on top of the participant-scoped
+page upsert command, the non-atomic operator batch surface, and the new
+patch-set command,
 repository lifecycle and replicated/fallback artifact behavior,
 infrastructure-backed multi-machine proof execution, non-disposable upgrade
 behavior, external audit retention, and deeper production identity and

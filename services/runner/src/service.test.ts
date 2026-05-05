@@ -577,6 +577,132 @@ describe("RunnerService", () => {
     ).rejects.toThrow("patch removal did not match");
   });
 
+  it("applies runner-owned wiki patch-sets after validating every page", async () => {
+    const fixture = await createRuntimeFixture();
+    const context = await loadRuntimeContext(fixture.contextPath);
+    const observedWikiRefs: Array<{
+      artifactId: string;
+      path: string;
+      previewContent?: string;
+    }> = [];
+    const service = new RunnerService({
+      context,
+      observationPublisher: {
+        publishConversationUpdated: () => Promise.resolve(),
+        publishSessionUpdated: () => Promise.resolve(),
+        publishTurnUpdated: () => Promise.resolve(),
+        publishWikiRefObserved: (record) => {
+          observedWikiRefs.push({
+            artifactId: record.artifactRef.artifactId,
+            path: record.artifactRef.locator.path,
+            ...(record.artifactPreview?.available
+              ? { previewContent: record.artifactPreview.content }
+              : {})
+          });
+          return Promise.resolve();
+        }
+      },
+      transport: new InMemoryRunnerTransport()
+    });
+
+    const result = await service.requestWikiPatchSet({
+      commandId: "cmd-wiki-patch-set-alpha",
+      pages: [
+        {
+          content: "# Patch Set A\n",
+          expectedCurrentSha256: sha256Hex(""),
+          path: "operator/patch-set-a.md"
+        },
+        {
+          content: "# Patch Set B\n",
+          path: "operator/patch-set-b.md"
+        }
+      ],
+      reason: "Apply related wiki updates.",
+      requestedBy: "operator-main"
+    });
+
+    expect(result).toMatchObject({
+      pageCount: 2,
+      pages: [
+        {
+          expectedCurrentSha256: sha256Hex(""),
+          mode: "replace",
+          nextSha256: sha256Hex("# Patch Set A\n"),
+          path: "operator/patch-set-a.md",
+          previousSha256: sha256Hex("")
+        },
+        {
+          mode: "replace",
+          nextSha256: sha256Hex("# Patch Set B\n"),
+          path: "operator/patch-set-b.md",
+          previousSha256: sha256Hex("")
+        }
+      ],
+      syncStatus: "committed"
+    });
+    await expect(
+      readFile(
+        path.join(context.workspace.memoryRoot, "wiki", "operator", "patch-set-a.md"),
+        "utf8"
+      )
+    ).resolves.toBe("# Patch Set A\n");
+    await expect(
+      readFile(
+        path.join(context.workspace.memoryRoot, "wiki", "operator", "patch-set-b.md"),
+        "utf8"
+      )
+    ).resolves.toBe("# Patch Set B\n");
+    await expect(
+      readFile(path.join(context.workspace.memoryRoot, "wiki", "index.md"), "utf8")
+    ).resolves.toContain("- [operator/patch-set-b.md](operator/patch-set-b.md)");
+    expect(observedWikiRefs).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          path: "/operator/patch-set-a.md",
+          previewContent: "# Patch Set A\n"
+        }),
+        expect.objectContaining({
+          path: "/operator/patch-set-b.md",
+          previewContent: "# Patch Set B\n"
+        })
+      ])
+    );
+
+    const conflict = await service.requestWikiPatchSet({
+      pages: [
+        {
+          content: "# Stale\n",
+          expectedCurrentSha256: sha256Hex("# Wrong Base\n"),
+          path: "operator/patch-set-a.md"
+        },
+        {
+          content: "# Must Not Be Written\n",
+          path: "operator/patch-set-c.md"
+        }
+      ]
+    });
+
+    expect(conflict).toMatchObject({
+      pageCount: 2,
+      syncStatus: "conflict"
+    });
+    await expect(
+      readFile(
+        path.join(context.workspace.memoryRoot, "wiki", "operator", "patch-set-a.md"),
+        "utf8"
+      )
+    ).resolves.toBe("# Patch Set A\n");
+    await expect(
+      readFile(
+        path.join(context.workspace.memoryRoot, "wiki", "operator", "patch-set-c.md"),
+        "utf8"
+      )
+    ).rejects.toMatchObject({
+      code: "ENOENT"
+    });
+  });
+
   it("cancels an active engine turn when an external cancellation request is observed", async () => {
     const fixture = await createRuntimeFixture();
     const context = await loadRuntimeContext(fixture.contextPath);

@@ -903,6 +903,7 @@ files are the active federated redesign pack.
 542. [541-runtime-wiki-page-batch-request-slice.md](541-runtime-wiki-page-batch-request-slice.md)
 543. [542-coordination-map-memory-slice.md](542-coordination-map-memory-slice.md)
 544. [543-deployment-repair-previous-service-volume-slice.md](543-deployment-repair-previous-service-volume-slice.md)
+545. [544-runtime-wiki-patch-set-slice.md](544-runtime-wiki-patch-set-slice.md)
 
 ## Role of this corpus
 

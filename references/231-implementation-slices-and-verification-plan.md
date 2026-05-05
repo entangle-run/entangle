@@ -625,6 +625,11 @@ Current status:
   signed `runtime.wiki.upsert_page` command per page to the accepted runner
   assignment, making headless multi-page memory/wiki maintenance practical
   without adding a runner transaction protocol;
+- Host API, host-client, CLI, runner join, and runner service now also expose
+  a signed `runtime.wiki.patch_set` command for related multi-page wiki
+  mutations; the runner validates every path, base hash, duplicate path, and
+  patch hunk before writing pages, syncs the wiki repository once, and emits a
+  page-count command receipt plus per-page `wiki.ref` evidence;
 - model-guided runner memory synthesis now writes
   `summaries/coordination-map.md` as a focused graph-relation memory page,
   carrying local node relation, inbound message provenance, active peer
@@ -638,10 +643,10 @@ Current status:
   assignment, node, runner, command type, status, requester, and limit filters;
 - Studio can inspect per-assignment timeline entries through the Host
   assignment timeline endpoint, keeping operator drilldown aligned with CLI;
-- richer collaborative wiki merge UI and true atomic multi-page patch-set
-  behavior still need protocol-backed replacement on top of the
+- richer collaborative wiki merge UI still needs product work on top of the
   participant-scoped wiki page upsert command, runner-enforced stale-edit
-  guard, single-page patch mode, and non-atomic operator batch request surface.
+  guard, single-page patch mode, non-atomic operator batch requests, and the
+  new protocol-backed patch-set command.
 
 ### Slice 9: User Node Runtime
 

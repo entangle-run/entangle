@@ -83,6 +83,8 @@ import {
   runtimeSourceHistoryReplayResponseSchema,
   runtimeWikiPublishRequestSchema,
   runtimeWikiPublishResponseSchema,
+  runtimeWikiPatchSetRequestSchema,
+  runtimeWikiPatchSetResponseSchema,
   runtimeWikiUpsertPageBatchRequestSchema,
   runtimeWikiUpsertPageBatchResponseSchema,
   runtimeWikiUpsertPageRequestSchema,
@@ -194,6 +196,8 @@ import {
   type RuntimeSourceHistoryReplayResponse,
   type RuntimeWikiPublishRequest,
   type RuntimeWikiPublishResponse,
+  type RuntimeWikiPatchSetRequest,
+  type RuntimeWikiPatchSetResponse,
   type RuntimeWikiUpsertPageBatchRequest,
   type RuntimeWikiUpsertPageBatchResponse,
   type RuntimeWikiUpsertPageRequest,
@@ -1476,6 +1480,25 @@ export function createHostClient(options: HostClientOptions) {
           }
         ),
         runtimeWikiUpsertPageBatchResponseSchema
+      );
+    },
+
+    async patchRuntimeWikiPages(
+      nodeId: string,
+      request: RuntimeWikiPatchSetRequest
+    ): Promise<RuntimeWikiPatchSetResponse> {
+      return parseResponse(
+        await hostFetch(
+          `${baseUrl}/v1/runtimes/${nodeId}/wiki/pages/patch-set`,
+          {
+            method: "POST",
+            headers: {
+              "content-type": "application/json"
+            },
+            body: JSON.stringify(runtimeWikiPatchSetRequestSchema.parse(request))
+          }
+        ),
+        runtimeWikiPatchSetResponseSchema
       );
     },
 

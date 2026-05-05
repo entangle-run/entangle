@@ -670,6 +670,7 @@ describe("federated runtime contracts", () => {
       sessionId: "session-alpha",
       status: "completed",
       targetPath: "proposals/report.md",
+      wikiPageCount: 2,
       wikiPageExpectedSha256:
         "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
       wikiPageNextSha256:
@@ -705,6 +706,7 @@ describe("federated runtime contracts", () => {
         runnerPubkey: receipt.runnerPubkey,
         sessionId: receipt.sessionId,
         targetPath: receipt.targetPath,
+        wikiPageCount: receipt.wikiPageCount,
         wikiPageExpectedSha256: receipt.wikiPageExpectedSha256,
         wikiPageNextSha256: receipt.wikiPageNextSha256,
         wikiPagePath: receipt.wikiPagePath,
@@ -1017,6 +1019,40 @@ describe("federated runtime contracts", () => {
         runnerPubkey
       }
     });
+    const wikiPatchSet = entangleControlEventSchema.parse({
+      envelope: buildSignedEnvelope({
+        protocol: "entangle.control.v1",
+        recipientPubkey: runnerPubkey,
+        signerPubkey: authorityPubkey
+      }),
+      payload: {
+        assignmentId: "assignment-alpha",
+        commandId: "cmd-wiki-patch-set-alpha",
+        eventType: "runtime.wiki.patch_set",
+        graphId: "team-alpha",
+        hostAuthorityPubkey: authorityPubkey,
+        issuedAt: observedAt,
+        nodeId: "worker-it",
+        pages: [
+          {
+            content: "# Patch Set Note\n",
+            path: "operator/patch-set.md"
+          },
+          {
+            content: "\nAppend this note.\n",
+            expectedCurrentSha256:
+              "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+            mode: "append",
+            path: "operator/patch-set-follow-up.md"
+          }
+        ],
+        protocol: "entangle.control.v1",
+        reason: "Apply runner-owned wiki patch-set.",
+        requestedBy: "operator-main",
+        runnerId: "runner-alpha",
+        runnerPubkey
+      }
+    });
 
     expect(start.payload.eventType).toBe("runtime.start");
     expect(stop.payload.eventType).toBe("runtime.stop");
@@ -1062,6 +1098,21 @@ describe("federated runtime contracts", () => {
         "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
       mode: "replace",
       path: "operator/notes.md"
+    });
+    expect(wikiPatchSet.payload.eventType).toBe("runtime.wiki.patch_set");
+    expect(wikiPatchSet.payload).toMatchObject({
+      pages: [
+        {
+          mode: "replace",
+          path: "operator/patch-set.md"
+        },
+        {
+          expectedCurrentSha256:
+            "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+          mode: "append",
+          path: "operator/patch-set-follow-up.md"
+        }
+      ]
     });
   });
 

@@ -888,6 +888,7 @@ export function formatRuntimeCommandReceiptDetailLines(
     receipt.replayId ? `replay ${receipt.replayId}` : undefined,
     receipt.targetPath ? `target ${receipt.targetPath}` : undefined,
     receipt.wikiArtifactId ? `wiki artifact ${receipt.wikiArtifactId}` : undefined,
+    receipt.wikiPageCount ? `wiki pages ${receipt.wikiPageCount}` : undefined,
     receipt.wikiPagePath ? `wiki page ${receipt.wikiPagePath}` : undefined,
     receipt.wikiPageExpectedSha256
       ? `wiki expected ${shortHash(receipt.wikiPageExpectedSha256)}`
@@ -914,8 +915,12 @@ export type WikiPageConflictSummary = {
 export function buildWikiPageConflictSummary(
   receipt: RuntimeCommandReceiptProjectionRecord
 ): WikiPageConflictSummary | undefined {
+  const isWikiPageMutation =
+    receipt.commandEventType === "runtime.wiki.upsert_page" ||
+    receipt.commandEventType === "runtime.wiki.patch_set";
+
   if (
-    receipt.commandEventType !== "runtime.wiki.upsert_page" ||
+    !isWikiPageMutation ||
     receipt.receiptStatus !== "failed" ||
     !receipt.wikiPageExpectedSha256 ||
     !receipt.wikiPagePreviousSha256 ||

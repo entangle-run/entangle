@@ -83,6 +83,7 @@ import {
   runtimeSourceHistoryReplayListResponseSchema,
   runtimeSourceHistoryReplayResponseSchema,
   runtimeWikiPublishResponseSchema,
+  runtimeWikiPatchSetResponseSchema,
   runtimeWikiUpsertPageBatchResponseSchema,
   runtimeWikiUpsertPageResponseSchema,
   runtimeTurnInspectionResponseSchema,
@@ -8204,6 +8205,18 @@ describe("buildHostServer", () => {
       relayUrls: string[];
       requestedBy?: string;
     }> = [];
+    const wikiPatchSetRequests: Array<{
+      assignment: RuntimeAssignmentRecord;
+      pages: Array<{
+        content: string;
+        expectedCurrentSha256?: string;
+        mode?: "append" | "patch" | "replace";
+        path: string;
+      }>;
+      reason?: string;
+      relayUrls: string[];
+      requestedBy?: string;
+    }> = [];
     const artifactRestoreRequests: Array<{
       artifactRef: ArtifactRef;
       assignment: RuntimeAssignmentRecord;
@@ -8246,6 +8259,18 @@ describe("buildHostServer", () => {
       expectedCurrentSha256?: string;
       mode?: "append" | "patch" | "replace";
       path: string;
+      reason?: string;
+      relayUrls: string[];
+      requestedBy?: string;
+    };
+    type WikiPatchSetPublishInput = {
+      assignment: RuntimeAssignmentRecord;
+      pages: Array<{
+        content: string;
+        expectedCurrentSha256?: string;
+        mode?: "append" | "patch" | "replace";
+        path: string;
+      }>;
       reason?: string;
       relayUrls: string[];
       requestedBy?: string;
@@ -8348,6 +8373,23 @@ describe("buildHostServer", () => {
               : {}),
             mode: input.mode,
             path: input.path,
+            ...(input.reason ? { reason: input.reason } : {}),
+            relayUrls: input.relayUrls,
+            ...(input.requestedBy ? { requestedBy: input.requestedBy } : {})
+          });
+          return Promise.resolve();
+        },
+        publishRuntimeWikiPatchSet: (input: WikiPatchSetPublishInput) => {
+          wikiPatchSetRequests.push({
+            assignment: input.assignment,
+            pages: input.pages.map((page) => ({
+              content: page.content,
+              ...(page.expectedCurrentSha256
+                ? { expectedCurrentSha256: page.expectedCurrentSha256 }
+                : {}),
+              mode: page.mode,
+              path: page.path
+            })),
             ...(input.reason ? { reason: input.reason } : {}),
             relayUrls: input.relayUrls,
             ...(input.requestedBy ? { requestedBy: input.requestedBy } : {})
@@ -8859,6 +8901,72 @@ describe("buildHostServer", () => {
           mode: "append",
           path: "operator/batch-follow-up.md",
           reason: "Operator requested wiki page batch update.",
+          relayUrls: ["ws://relay.example"],
+          requestedBy: "operator-main"
+        })
+      ]);
+
+      const wikiPatchSetResponse = await server.inject({
+        method: "POST",
+        payload: {
+          pages: [
+            {
+              content: "# Patch Set Note\n\nReplace this page.\n",
+              mode: "replace",
+              path: "operator/patch-set.md"
+            },
+            {
+              content: "\nAppend this note.\n",
+              expectedCurrentSha256:
+                "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+              mode: "append",
+              path: "operator/patch-set-follow-up.md"
+            }
+          ],
+          reason: "Operator requested atomic wiki patch-set.",
+          requestedBy: "operator-main"
+        },
+        url: "/v1/runtimes/worker-it/wiki/pages/patch-set"
+      });
+
+      expect(wikiPatchSetResponse.statusCode).toBe(200);
+      expect(
+        runtimeWikiPatchSetResponseSchema.parse(wikiPatchSetResponse.json())
+      ).toMatchObject({
+        assignmentId: "assignment-alpha",
+        nodeId: "worker-it",
+        pageCount: 2,
+        pages: [
+          {
+            mode: "replace",
+            path: "operator/patch-set.md"
+          },
+          {
+            expectedCurrentSha256:
+              "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+            mode: "append",
+            path: "operator/patch-set-follow-up.md"
+          }
+        ],
+        status: "requested"
+      });
+      expect(wikiPatchSetRequests).toEqual([
+        expect.objectContaining({
+          pages: [
+            {
+              content: "# Patch Set Note\n\nReplace this page.\n",
+              mode: "replace",
+              path: "operator/patch-set.md"
+            },
+            {
+              content: "\nAppend this note.\n",
+              expectedCurrentSha256:
+                "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+              mode: "append",
+              path: "operator/patch-set-follow-up.md"
+            }
+          ],
+          reason: "Operator requested atomic wiki patch-set.",
           relayUrls: ["ws://relay.example"],
           requestedBy: "operator-main"
         })

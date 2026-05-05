@@ -300,6 +300,7 @@ export const runtimeCommandReceiptEventSchema = hostEventBaseSchema.extend({
   targetPath: nonEmptyStringSchema.optional(),
   type: z.literal("runtime.command.receipt"),
   wikiArtifactId: identifierSchema.optional(),
+  wikiPageCount: z.number().int().min(1).max(16).optional(),
   wikiPageExpectedSha256: sha256DigestSchema.optional(),
   wikiPageNextSha256: sha256DigestSchema.optional(),
   wikiPagePath: nonEmptyStringSchema.optional(),

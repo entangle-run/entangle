@@ -250,6 +250,7 @@ export function formatRuntimeCommandReceiptDetail(
     receipt.candidateId ? `candidate ${receipt.candidateId}` : undefined,
     receipt.sourceHistoryId ? `source ${receipt.sourceHistoryId}` : undefined,
     receipt.wikiArtifactId ? `wiki ${receipt.wikiArtifactId}` : undefined,
+    receipt.wikiPageCount ? `wiki pages ${receipt.wikiPageCount}` : undefined,
     receipt.wikiPagePath ? `wiki page ${receipt.wikiPagePath}` : undefined,
     receipt.wikiPagePreviousSha256
       ? `wiki previous ${receipt.wikiPagePreviousSha256.slice(0, 12)}`

@@ -182,7 +182,10 @@ import {
   projectRuntimeMemorySummary
 } from "./runtime-memory-command.js";
 import { projectRuntimeRecoverySummary } from "./runtime-recovery-output.js";
-import { parseRuntimeWikiUpsertPageBatchManifest } from "./runtime-wiki-command.js";
+import {
+  parseRuntimeWikiPatchSetManifest,
+  parseRuntimeWikiUpsertPageBatchManifest
+} from "./runtime-wiki-command.js";
 import {
   filterRuntimeSourceChangeCandidatesForCli,
   projectRuntimeSourceChangeCandidateDiffSummary,
@@ -4344,6 +4347,32 @@ hostRuntimesCommand
       );
       const client = createCliHostClient(command);
       printJson(await client.upsertRuntimeWikiPages(nodeId, manifest));
+    }
+  );
+
+hostRuntimesCommand
+  .command("wiki-patch-set")
+  .argument("<nodeId>", "Node identifier in the active graph.")
+  .requiredOption(
+    "--manifest <path>",
+    "Read a JSON manifest with { pages: [...], reason?, requestedBy? } wiki mutations."
+  )
+  .description(
+    "Ask the assigned runner to apply multiple wiki page mutations as one patch-set."
+  )
+  .action(
+    async (
+      nodeId: string,
+      options: {
+        manifest: string;
+      },
+      command: Command
+    ) => {
+      const manifest = parseRuntimeWikiPatchSetManifest(
+        await readFile(resolveCliPath(options.manifest), "utf8")
+      );
+      const client = createCliHostClient(command);
+      printJson(await client.patchRuntimeWikiPages(nodeId, manifest));
     }
   );
 

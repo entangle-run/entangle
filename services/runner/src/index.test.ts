@@ -598,6 +598,52 @@ function buildRuntimeWikiUpsertPageEvent(
   };
 }
 
+function buildRuntimeWikiPatchSetEvent(
+  assignment: RuntimeAssignmentRecord
+): EntangleControlEvent {
+  return {
+    envelope: {
+      createdAt: "2026-04-26T12:00:09.000Z",
+      eventId: "cdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcd",
+      payloadHash:
+        "efefefefefefefefefefefefefefefefefefefefefefefefefefefefefefefef",
+      protocol: "entangle.control.v1",
+      recipientPubkey: runnerPublicKey,
+      schemaVersion: "1",
+      signature:
+        "fefefefefefefefefefefefefefefefefefefefefefefefefefefefefefefefefefefefefefefefefefefefefefefefefefefefefefefefefefefefefefefe",
+      signerPubkey: hostPublicKey
+    },
+    payload: {
+      assignmentId: assignment.assignmentId,
+      commandId: "cmd-wiki-patch-set-alpha",
+      eventType: "runtime.wiki.patch_set",
+      graphId: assignment.graphId,
+      hostAuthorityPubkey: hostPublicKey,
+      issuedAt: "2026-04-26T12:00:09.000Z",
+      nodeId: assignment.nodeId,
+      pages: [
+        {
+          content: "# Patch Set Note\n",
+          path: "operator/patch-set.md"
+        },
+        {
+          content: "\nAppend this note.\n",
+          expectedCurrentSha256:
+            "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+          mode: "append",
+          path: "operator/patch-set-follow-up.md"
+        }
+      ],
+      protocol: "entangle.control.v1",
+      reason: "Apply wiki patch-set",
+      requestedBy: "operator-main",
+      runnerId: assignment.runnerId,
+      runnerPubkey: runnerPublicKey
+    }
+  };
+}
+
 describe("runner runtime context", () => {
   const stubEngine: AgentEngine = {
     executeTurn(request) {
@@ -3796,6 +3842,7 @@ describe("runner runtime context", () => {
     const runtimeSourceHistoryReconciles: string[] = [];
     const runtimeWikiPublications: string[] = [];
     const runtimeWikiPageUpserts: string[] = [];
+    const runtimeWikiPatchSets: string[] = [];
     process.env.ENTANGLE_RUNNER_NOSTR_SECRET_KEY = runnerSecretHex;
 
     const configured = await createConfiguredRunnerJoinService(
@@ -3845,6 +3892,27 @@ describe("runner runtime context", () => {
                 path: request.path,
                 previousSha256:
                   "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+                syncStatus: "committed"
+              });
+            },
+            patchWikiPages: (request) => {
+              runtimeWikiPatchSets.push(
+                `${request.pages.length}:${request.requestedBy ?? "unknown"}:${request.commandId ?? "generated"}:${request.pages.map((page) => `${page.path}:${page.mode ?? "replace"}`).join(",")}`
+              );
+              return Promise.resolve({
+                pageCount: request.pages.length,
+                pages: request.pages.map((page) => ({
+                  ...(page.expectedCurrentSha256
+                    ? { expectedCurrentSha256: page.expectedCurrentSha256 }
+                    : {}),
+                  mode: page.mode ?? "replace",
+                  nextSha256:
+                    "dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd",
+                  path: page.path,
+                  previousSha256:
+                    page.expectedCurrentSha256 ??
+                    "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc"
+                })),
                 syncStatus: "committed"
               });
             },
@@ -3914,6 +3982,7 @@ describe("runner runtime context", () => {
     await transport.dispatch(buildRuntimeSourceHistoryReconcileEvent(assignment));
     await transport.dispatch(buildRuntimeWikiPublishEvent(assignment));
     await transport.dispatch(buildRuntimeWikiUpsertPageEvent(assignment));
+    await transport.dispatch(buildRuntimeWikiPatchSetEvent(assignment));
 
     expect(runtimeStarts).toEqual([
       "/runner/assignments/assignment-alpha/runtime-context.json",
@@ -3945,6 +4014,9 @@ describe("runner runtime context", () => {
     ]);
     expect(runtimeWikiPageUpserts).toEqual([
       "operator/notes.md:replace:operator-main:cmd-wiki-upsert-page-alpha:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa:48"
+    ]);
+    expect(runtimeWikiPatchSets).toEqual([
+      "2:operator-main:cmd-wiki-patch-set-alpha:operator/patch-set.md:replace,operator/patch-set-follow-up.md:append"
     ]);
     expect(
       transport.observations.filter(
@@ -4075,6 +4147,13 @@ describe("runner runtime context", () => {
           wikiPagePreviousSha256:
             "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
           wikiPagePath: "operator/notes.md"
+        }),
+        expect.objectContaining({
+          commandEventType: "runtime.wiki.patch_set",
+          commandId: "cmd-wiki-patch-set-alpha",
+          requestedBy: "operator-main",
+          status: "completed",
+          wikiPageCount: 2
         })
       ])
     );
