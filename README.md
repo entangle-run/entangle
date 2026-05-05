@@ -1268,8 +1268,10 @@ This repository currently contains:
   hash-chain verification, Studio renders the same Host-owned integrity
   summary in Host Status, `host events integrity --signed` exports a compact
   Host Authority-signed integrity report, `host events audit-bundle` exports
-  typed events plus bundle hashes and the signed integrity report, and Studio
-  consumes the live host event stream to inspect runtime recovery policy,
+  typed events plus bundle hashes and the signed integrity report, with
+  `--output <file>` for explicit retention handoff and `--summary` for bounded
+  terminal output, and Studio consumes the live host event stream to inspect
+  runtime recovery policy,
   controller state, recovery history, and live recovery events without
   introducing a client-owned recovery model, with
   shared recovery presentation helpers and compact
@@ -1486,7 +1488,7 @@ The highest-value remaining gaps are:
   bootstrap permissions, and coarse read-only `viewer` enforcement, including
   durable principals, policy-backed permission sources, and external audit
   retention beyond the current Host-verifiable chain, Host Authority-signed
-  integrity report, and typed audit-bundle export;
+  integrity report, typed audit-bundle export, and CLI file handoff;
 - stronger end-to-end deployment and integration hardening beyond the current
   disposable same-machine profile, especially infrastructure-backed
   multi-machine proof execution and non-disposable upgrade/repair behavior.

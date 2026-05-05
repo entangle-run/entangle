@@ -1,5 +1,18 @@
 # Entangle Wiki Log
 
+## [2026-05-05] cli | Added Host audit-bundle file export
+
+Added `references/499-host-event-audit-bundle-cli-retention-slice.md`.
+`entangle host events audit-bundle` now supports `--output <file>` for full
+JSON bundle retention and `--summary` for compact hash/provenance terminal
+output.
+
+Targeted checks passed:
+
+- `pnpm --filter @entangle/cli test -- src/host-event-audit-output.test.ts`
+- `pnpm --filter @entangle/cli typecheck`
+- `pnpm --filter @entangle/cli lint`
+
 ## [2026-05-05] runner | Added focused-register transition history wiki page
 
 Added `references/498-focused-register-transition-history-wiki-slice.md`.

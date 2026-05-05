@@ -53,6 +53,7 @@ import {
   getGraphTemplate,
   listGraphTemplates
 } from "./graph-template-command.js";
+import { projectHostEventAuditBundleSummary } from "./host-event-audit-output.js";
 import { buildHostEventFilter } from "./host-event-inspection.js";
 import { projectHostStatusSummary } from "./host-status-output.js";
 import {
@@ -2229,11 +2230,28 @@ hostEventsCommand
 
 hostEventsCommand
   .command("audit-bundle")
+  .option("--output <file>", "Write the Host event audit bundle JSON to a file.")
+  .option("--summary", "Print a compact audit-bundle summary.")
   .description("Export Host events with a signed integrity report and bundle hashes.")
-  .action(async (_options: Record<string, never>, command: Command) => {
-    const client = createCliHostClient(command);
-    printJson(await client.exportHostEventAuditBundle());
-  });
+  .action(
+    async (
+      options: { output?: string; summary?: boolean },
+      command: Command
+    ) => {
+      const client = createCliHostClient(command);
+      const response = await client.exportHostEventAuditBundle();
+
+      if (options.output) {
+        await writeJsonDocument(resolveCliPath(options.output), response);
+      }
+
+      printJson(
+        options.summary || options.output
+          ? { auditBundle: projectHostEventAuditBundleSummary(response) }
+          : response
+      );
+    }
+  );
 
 hostEventsCommand
   .command("watch")

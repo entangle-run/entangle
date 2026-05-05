@@ -299,6 +299,7 @@ same-machine slice records.
 - [496-deployment-diagnostics-audit-bundle-slice.md](496-deployment-diagnostics-audit-bundle-slice.md)
 - [497-deployment-diagnostics-audit-bundle-skip-slice.md](497-deployment-diagnostics-audit-bundle-skip-slice.md)
 - [498-focused-register-transition-history-wiki-slice.md](498-focused-register-transition-history-wiki-slice.md)
+- [499-host-event-audit-bundle-cli-retention-slice.md](499-host-event-audit-bundle-cli-retention-slice.md)
 
 ## Audited Scope
 
@@ -1063,7 +1064,10 @@ operator identity. Host can now also export a typed event audit bundle through
 JSONL hash, the signed integrity report, and a bundle hash. Deployment
 diagnostics now embeds that audit bundle when available while keeping
 collection failure non-fatal, and operators can pass `--no-audit-bundle` when a
-smaller live support bundle is required. Runner-owned session memory now also
+smaller live support bundle is required. The dedicated CLI audit-bundle command
+now also supports `--output <file>` and `--summary`, giving operators a
+repeatable external-retention handoff for the full signed bundle while keeping
+terminal output compact. Runner-owned session memory now also
 carries owner, originating-node, entrypoint-node, last-message, and active-route
 metadata in both the model-guided memory prompt and deterministic
 working-context wiki page, giving delegated sessions a stronger owner-aware

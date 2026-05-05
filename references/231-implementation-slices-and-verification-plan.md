@@ -1397,7 +1397,9 @@ Current status:
   a bundle hash, and deployment diagnostics now embeds that audit bundle when
   available while preserving non-fatal support-bundle collection and allowing
   operators to pass `--no-audit-bundle` when a smaller live diagnostics bundle
-  is required;
+  is required; `entangle host events audit-bundle` can now also write the full
+  signed bundle with `--output <file>` while printing a compact hash/provenance
+  summary;
 - runner-owned session memory now carries owner, originating-node,
   entrypoint-node, last-message, and active-route metadata in both the bounded
   synthesis prompt and deterministic working-context wiki page, giving

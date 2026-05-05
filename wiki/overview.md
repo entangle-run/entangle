@@ -902,8 +902,10 @@ The repository now also contains the first real implementation baseline:
   Host-side event hash-chain verification, Studio renders the same Host-owned
   integrity summary in Host Status, `host events integrity --signed` exports a
   compact Host Authority-signed integrity report, `host events audit-bundle`
-  exports typed events plus bundle hashes and the signed integrity report, and
-  Studio consumes the live host event stream to inspect runtime recovery
+  exports typed events plus bundle hashes and the signed integrity report, with
+  `--output <file>` for explicit retention handoff and `--summary` for bounded
+  terminal output, and Studio consumes the live host event stream to inspect
+  runtime recovery
   policy, controller state, recovery history, and live recovery events without
   introducing a client-owned recovery model, with shared recovery presentation
   helpers and compact
@@ -1294,10 +1296,10 @@ The current implementation-truth audit now lives in
 - deepen the bootstrap host operator-token boundary, multi-token request audit,
   status reporting, server-filterable event inspection, route-level bootstrap
   permissions, coarse read-only `viewer` enforcement, Host event hash-chain
-  tamper evidence, and typed audit-bundle export into real production
-  identity, authorization, and external audit retention only through explicit
-  contracts, tests, policy decisions, enforced roles, and operator-visible
-  attribution;
+  tamper evidence, typed audit-bundle export, and CLI file handoff into real
+  production identity, authorization, and external audit retention only through
+  explicit contracts, tests, policy decisions, enforced roles, and
+  operator-visible attribution;
 - continue broadening normalized provider metadata and bounded failure
   reporting only where later provider adapters justify new canonical fields,
   and otherwise deepen model-guided memory maintenance on top of the now
