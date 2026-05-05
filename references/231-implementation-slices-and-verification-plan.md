@@ -827,8 +827,8 @@ Verification:
 Keep OpenCode default. The first attached-server path now moves permissioned
 turns beyond one-shot `opencode run` by using OpenCode server APIs for
 sessions, permission events, and permission replies. Remaining hardening is
-focused on live OpenCode/provider validation, abort coverage, and richer
-long-running state. Preserve Entangle policy and projection ownership.
+focused on live OpenCode/provider validation and richer long-running state.
+Preserve Entangle policy and projection ownership.
 
 Implementation record:
 
@@ -878,6 +878,11 @@ Implementation record:
   adds shorter root smoke and interactive demo commands for the attached fake
   OpenCode path while keeping the fake server as a deterministic fixture over
   the normal federated runtime path.
+- [523-opencode-permission-cancellation-slice.md](523-opencode-permission-cancellation-slice.md)
+  makes the attached OpenCode permission bridge abort-aware while waiting for
+  Entangle permission approval callbacks, so session cancellation can stop a
+  turn that is paused on a human/policy decision without sending a stale
+  OpenCode permission reply.
 - [476-external-process-agent-engine-adapter-slice.md](476-external-process-agent-engine-adapter-slice.md)
   adds a minimal runner adapter for `external_process` profiles: the runner
   spawns the configured executable, sends the shared turn request JSON on
@@ -949,6 +954,7 @@ Verification:
 - runtime inspection permission-mode contract and presentation tests;
 - permission bridge tests;
 - attached OpenCode SSE/permission-reply bridge tests;
+- attached OpenCode permission-wait cancellation tests;
 - fake OpenCode attached-server HTTP/SSE smoke;
 - runner adapter test against the fake OpenCode child-process server;
 - federated process smoke with attached fake OpenCode server, User Node-signed

@@ -895,6 +895,141 @@ describe("OpenCode runner engine adapter", () => {
     });
   });
 
+  it("cancels an attached OpenCode turn while waiting for Entangle permission approval", async () => {
+    const fixture = await createRuntimeFixture();
+    const baseUrl = "http://127.0.0.1:4567";
+    const context = {
+      ...fixture.context,
+      agentRuntimeContext: {
+        ...fixture.context.agentRuntimeContext,
+        engineProfile: {
+          ...fixture.context.agentRuntimeContext.engineProfile,
+          baseUrl,
+          permissionMode: "entangle_approval" as const
+        }
+      }
+    };
+    const permissionReplies: unknown[] = [];
+    let resolvePermissionRequested!: () => void;
+    const permissionRequested = new Promise<void>((resolve) => {
+      resolvePermissionRequested = resolve;
+    });
+    vi.stubGlobal(
+      "fetch",
+      (
+        input: Parameters<typeof fetch>[0],
+        init?: Parameters<typeof fetch>[1]
+      ) => {
+        const url =
+          input instanceof URL
+            ? input.toString()
+            : typeof input === "string"
+              ? input
+              : input.url;
+
+        if (url === "http://127.0.0.1:4567/global/health") {
+          return new Response(
+            JSON.stringify({
+              healthy: true,
+              version: "1.14.20"
+            }),
+            {
+              headers: {
+                "content-type": "application/json"
+              },
+              status: 200
+            }
+          );
+        }
+
+        if (url === "http://127.0.0.1:4567/session") {
+          return new Response(JSON.stringify({ id: "opencode-session" }), {
+            headers: {
+              "content-type": "application/json"
+            },
+            status: 200
+          });
+        }
+
+        if (url === "http://127.0.0.1:4567/event") {
+          const encoder = new TextEncoder();
+          return new Response(
+            new ReadableStream({
+              start(controller) {
+                controller.enqueue(
+                  encoder.encode(
+                    [
+                      "data: {\"type\":\"permission.asked\",\"properties\":{\"id\":\"permission-alpha\",\"sessionID\":\"opencode-session\",\"permission\":\"bash\",\"patterns\":[\"git commit -m test\"],\"tool\":{\"callID\":\"tool-call-alpha\"}}}",
+                      "",
+                      ""
+                    ].join("\n")
+                  )
+                );
+                controller.close();
+              }
+            }),
+            {
+              headers: {
+                "content-type": "text/event-stream"
+              },
+              status: 200
+            }
+          );
+        }
+
+        if (
+          url ===
+          "http://127.0.0.1:4567/permission/permission-alpha/reply"
+        ) {
+          permissionReplies.push(init?.body);
+          return new Response("{}", {
+            headers: {
+              "content-type": "application/json"
+            },
+            status: 200
+          });
+        }
+
+        if (
+          url ===
+          "http://127.0.0.1:4567/session/opencode-session/prompt_async"
+        ) {
+          return new Response("{}", {
+            headers: {
+              "content-type": "application/json"
+            },
+            status: 200
+          });
+        }
+
+        return new Response("{}", {
+          status: 404
+        });
+      }
+    );
+    const engine = createOpenCodeAgentEngine({
+      runtimeContext: context,
+      spawn: createMockOpenCodeSpawn().spawn
+    });
+    const abortController = new AbortController();
+    const turnPromise = engine.executeTurn(buildTurnRequest(), {
+      abortSignal: abortController.signal,
+      requestPermission: () => {
+        resolvePermissionRequested();
+        return new Promise<never>(() => undefined);
+      }
+    });
+
+    await permissionRequested;
+    abortController.abort();
+
+    await expect(turnPromise).rejects.toMatchObject({
+      classification: "cancelled",
+      name: AgentEngineExecutionError.name
+    });
+    expect(permissionReplies).toEqual([]);
+  });
+
   it("runs attached OpenCode against the deterministic fake HTTP server", async () => {
     const fixture = await createRuntimeFixture();
     const generatedRelativePath = "src/fake-opencode-generated.ts";

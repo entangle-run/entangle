@@ -142,6 +142,9 @@ The most accurate current description is:
   runner, including User Node-signed OpenCode permission approvals, source
   workspace mutation, and attached-server session continuity without live model
   credentials;
+- the attached OpenCode permission bridge now cancels cleanly while waiting
+  for Entangle approval callbacks, preventing a cancelled node turn from
+  staying stuck on a stale permission wait;
 - the same attached fake OpenCode proof now has shorter root commands:
   `pnpm ops:smoke-federated-process-runner:fake-opencode` for the
   non-interactive smoke and `pnpm ops:demo-user-node-runtime:fake-opencode`

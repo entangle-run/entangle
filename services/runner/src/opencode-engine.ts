@@ -1475,6 +1475,74 @@ function mapEnginePermissionResponseToOpenCodeReply(
   return response.decision === "approved" ? "once" : "reject";
 }
 
+function buildOpenCodePermissionCancellationError(input: {
+  nodeId: string;
+  permissionId: string;
+}): AgentEngineExecutionError {
+  return new AgentEngineExecutionError(
+    `OpenCode permission request '${input.permissionId}' was cancelled for node '${input.nodeId}'.`,
+    {
+      classification: "cancelled"
+    }
+  );
+}
+
+async function waitForOpenCodePermissionResponse(input: {
+  abortSignal?: AbortSignal | undefined;
+  nodeId: string;
+  permissionId: string;
+  responsePromise: Promise<AgentEnginePermissionResponse>;
+}): Promise<AgentEnginePermissionResponse> {
+  if (!input.abortSignal) {
+    return input.responsePromise;
+  }
+
+  if (input.abortSignal.aborted) {
+    throw buildOpenCodePermissionCancellationError({
+      nodeId: input.nodeId,
+      permissionId: input.permissionId
+    });
+  }
+
+  const abortSignal = input.abortSignal;
+
+  return new Promise((resolve, reject) => {
+    const abortHandler = (): void => {
+      abortSignal.removeEventListener("abort", abortHandler);
+      reject(
+        buildOpenCodePermissionCancellationError({
+          nodeId: input.nodeId,
+          permissionId: input.permissionId
+        })
+      );
+    };
+    const settle = (
+      callback: () => void
+    ): void => {
+      abortSignal.removeEventListener("abort", abortHandler);
+      callback();
+    };
+
+    abortSignal.addEventListener("abort", abortHandler, { once: true });
+    input.responsePromise.then(
+      (response) => {
+        settle(() => resolve(response));
+      },
+      (error: unknown) => {
+        settle(() =>
+          reject(
+            error instanceof Error
+              ? error
+              : new Error(
+                  `OpenCode permission requester failed with a non-error rejection: ${String(error)}`
+                )
+          )
+        );
+      }
+    );
+  });
+}
+
 async function answerOpenCodePermission(input: {
   baseUrl: string;
   env: NodeJS.ProcessEnv;
@@ -1563,17 +1631,24 @@ async function resolveOpenCodePermission(input: {
     reason
   });
 
-  const response = await input.turnOptions.requestPermission({
-    ...(isRecord(input.permissionRequest.metadata)
-      ? { metadata: input.permissionRequest.metadata }
+  const response = await waitForOpenCodePermissionResponse({
+    ...(input.turnOptions.abortSignal
+      ? { abortSignal: input.turnOptions.abortSignal }
       : {}),
-    operation,
-    patterns: input.permissionRequest.patterns,
-    permission: input.permissionRequest.permission,
-    reason,
-    ...(typeof input.permissionRequest.tool?.callID === "string"
-      ? { toolCallId: input.permissionRequest.tool.callID }
-      : {})
+    nodeId: input.context.binding.node.nodeId,
+    permissionId: input.permissionRequest.id,
+    responsePromise: input.turnOptions.requestPermission({
+      ...(isRecord(input.permissionRequest.metadata)
+        ? { metadata: input.permissionRequest.metadata }
+        : {}),
+      operation,
+      patterns: input.permissionRequest.patterns,
+      permission: input.permissionRequest.permission,
+      reason,
+      ...(typeof input.permissionRequest.tool?.callID === "string"
+        ? { toolCallId: input.permissionRequest.tool.callID }
+        : {})
+    })
   });
   input.output.permissionObservations.push({
     decision: response.decision === "approved" ? "allowed" : "rejected",

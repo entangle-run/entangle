@@ -6144,3 +6144,13 @@ Workload categories as the React User Client from the same projected state.
 This keeps a running User Node's minimal browser client useful even when the
 dedicated React bundle is unavailable, without changing protocols, Host
 authority, or signed participant action routes.
+
+## [2026-05-05] runner | Hardened OpenCode permission cancellation
+
+Added `references/523-opencode-permission-cancellation-slice.md`. The attached
+OpenCode adapter now races pending Entangle permission approval callbacks
+against the active turn abort signal.
+
+If a session is cancelled while OpenCode is waiting for an Entangle approval
+decision, the adapter raises a typed cancelled engine error and does not send a
+stale permission reply back to OpenCode.

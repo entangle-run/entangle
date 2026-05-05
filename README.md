@@ -188,7 +188,9 @@ That mode starts the deterministic fake OpenCode HTTP/SSE server, configures it
 as the builder node's default `opencode_server` profile, approves OpenCode
 permission requests through the running User Client as the assigned User Node,
 verifies source workspace mutation, and proves attached-server session
-continuity without live model credentials.
+continuity without live model credentials. The attached-server permission
+bridge is also abort-aware while waiting for Entangle approval callbacks, so a
+cancelled session does not leave a node turn stuck on a stale permission wait.
 
 For manual no-credential provider plumbing tests, start the deterministic
 OpenAI-compatible development server:
