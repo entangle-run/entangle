@@ -1183,6 +1183,10 @@ This repository currently contains:
   peer, lifecycle, response-policy, follow-up, artifact-count, and last-message
   metadata, so delegated sessions can resume from typed coordination context
   instead of model prose alone;
+- an inbound-message working-context refinement where the synthesis prompt and
+  durable `working-context.md` page now carry the triggering A2A event id,
+  message type, from/to nodes, signer, response policy, and attached-artifact
+  count without copying peer transcripts into memory;
 - an owner-aware session-memory refinement where bounded synthesis prompts and
   the durable `working-context.md` page now carry session owner,
   originating-node, entrypoint-node, last-message, and active-route metadata so

@@ -313,6 +313,7 @@ same-machine slice records.
 - [510-distributed-proof-external-user-client-url-slice.md](510-distributed-proof-external-user-client-url-slice.md)
 - [511-distributed-proof-user-client-basic-auth-slice.md](511-distributed-proof-user-client-basic-auth-slice.md)
 - [512-cli-user-client-health-check-slice.md](512-cli-user-client-health-check-slice.md)
+- [513-inbound-message-working-context-memory-slice.md](513-inbound-message-working-context-memory-slice.md)
 
 ## Audited Scope
 
@@ -1020,7 +1021,11 @@ evidence without copying peer conversations or logs into memory.
 It now carries a runner-owned `Conversation Routes` section with active
 conversation ids and bounded peer/status/response-policy/follow-up/artifact
 metadata, preserving deterministic delegated-session coordination context
-without copying peer transcripts.
+without copying peer transcripts. It now also carries a deterministic
+`Inbound Message Context` section with the triggering A2A event id, received
+time, message type, from/to nodes, conversation, optional parent, signer,
+response policy, approval-before-action flag, and attached-artifact count,
+preserving bounded coordination provenance without copying peer transcripts.
 Host status now also exposes the active bootstrap operator security mode
 without exposing secrets: tokenless deployments report `none`, while
 token-protected deployments report normalized bootstrap operator attribution

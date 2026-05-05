@@ -637,6 +637,15 @@ describe("model-guided memory synthesis", () => {
       "Current session snapshot:"
     );
     expect(capturedRequest?.interactionPromptParts.join("\n")).toContain(
+      "Current inbound message context:"
+    );
+    expect(capturedRequest?.interactionPromptParts.join("\n")).toContain(
+      "- Message type: `task.request`"
+    );
+    expect(capturedRequest?.interactionPromptParts.join("\n")).toContain(
+      "- From node: `reviewer-it`"
+    );
+    expect(capturedRequest?.interactionPromptParts.join("\n")).toContain(
       "Current turn engine outcome:"
     );
     expect(capturedRequest?.interactionPromptParts.join("\n")).toContain(
@@ -779,6 +788,16 @@ describe("model-guided memory synthesis", () => {
     expect(workingContextPage).toContain("## Current Focus");
     expect(workingContextPage).toContain(
       "Keep the recovery follow-up aligned with the relay-runtime work."
+    );
+    expect(workingContextPage).toContain("## Inbound Message Context");
+    expect(workingContextPage).toContain(
+      "- Event id: `aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa`"
+    );
+    expect(workingContextPage).toContain("- Message type: `task.request`");
+    expect(workingContextPage).toContain("- From node: `reviewer-it`");
+    expect(workingContextPage).toContain("- To node: `worker-it`");
+    expect(workingContextPage).toContain(
+      "- Response policy: responseRequired=true closeOnResult=true maxFollowups=1"
     );
     expect(workingContextPage).toContain("## Session Context");
     expect(workingContextPage).toContain("- Session status: `active`");

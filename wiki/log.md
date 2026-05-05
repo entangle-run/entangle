@@ -6037,3 +6037,14 @@ Host-projected User Client `/health` endpoints from the operator machine.
 The command keeps Host projection as the topology source and serializes probe
 success, missing URL, HTTP failure, or connection failure into each
 `clientHealth` summary without mutating Host, runner, or User Node state.
+
+## [2026-05-05] memory | Added inbound message working-context provenance
+
+Added `references/513-inbound-message-working-context-memory-slice.md`. Runner
+model-guided memory synthesis now includes a bounded inbound-message context
+block in both the prompt and durable `working-context.md`.
+
+The block records the triggering A2A event id, received time, message type,
+from/to nodes, conversation, optional parent, turn id, signer, response policy,
+approval-before-action flag, and attached-artifact count without copying peer
+transcripts or artifact payloads into node memory.

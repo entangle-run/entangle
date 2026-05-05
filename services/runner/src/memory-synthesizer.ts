@@ -218,6 +218,40 @@ function renderCurrentHandoffContextForPrompt(
   ].join("\n");
 }
 
+function renderInboundMessageContextLines(envelope: RunnerInboundEnvelope): string[] {
+  const { message } = envelope;
+  const signerMismatch =
+    envelope.signerPubkey !== undefined &&
+    envelope.signerPubkey !== message.fromPubkey;
+
+  return [
+    `- Event id: \`${envelope.eventId}\``,
+    `- Received at: \`${envelope.receivedAt}\``,
+    `- Message type: \`${message.messageType}\``,
+    `- From node: \`${message.fromNodeId}\``,
+    `- To node: \`${message.toNodeId}\``,
+    `- Conversation: \`${message.conversationId}\``,
+    ...(message.parentMessageId
+      ? [`- Parent message: \`${message.parentMessageId}\``]
+      : []),
+    `- Turn id: \`${message.turnId}\``,
+    `- Signer pubkey: \`${envelope.signerPubkey ?? "unknown"}\`${signerMismatch ? " (mismatch)" : ""}`,
+    `- From pubkey: \`${message.fromPubkey}\``,
+    `- Response policy: responseRequired=${message.responsePolicy.responseRequired} closeOnResult=${message.responsePolicy.closeOnResult} maxFollowups=${message.responsePolicy.maxFollowups}`,
+    `- Approval required before action: ${message.constraints.approvalRequiredBeforeAction}`,
+    `- Attached artifact refs: ${message.work.artifactRefs.length}`
+  ];
+}
+
+function renderInboundMessageContextForPrompt(
+  envelope: RunnerInboundEnvelope
+): string {
+  return [
+    "Current inbound message context:",
+    ...renderInboundMessageContextLines(envelope)
+  ].join("\n");
+}
+
 function coerceNonEmptyString(value: unknown): string | undefined {
   if (typeof value !== "string") {
     return undefined;
@@ -1990,6 +2024,7 @@ export async function buildModelGuidedMemorySynthesisTurnRequest(
           ? input.producedArtifactIds.join(", ")
           : "none"
       }`,
+      renderInboundMessageContextForPrompt(input.envelope),
       renderFocusedRegisterBaselineForPrompt(
         focusedRegisterContext.promptBaseline
       ),
@@ -2199,6 +2234,7 @@ function buildWorkingContextSummaryContent(input: {
   artifactInsights: string[];
   consumedArtifactIds: string[];
   decisions: string[];
+  envelope: RunnerInboundEnvelope;
   executionInsights: string[];
   focus: string;
   producedArtifactIds: string[];
@@ -2238,6 +2274,10 @@ function buildWorkingContextSummaryContent(input: {
     "## Summary",
     "",
     input.summary,
+    "",
+    "## Inbound Message Context",
+    "",
+    ...renderInboundMessageContextLines(input.envelope),
     "",
     "## Session Context",
     "",
@@ -2847,6 +2887,7 @@ function createWorkingContextSummaryToolExecutor(input: {
         artifactInsights: normalizedInput.artifactInsights,
         consumedArtifactIds: input.synthesis.consumedArtifactIds,
         decisions: normalizedInput.decisions,
+        envelope: input.synthesis.envelope,
         executionInsights: normalizedInput.executionInsights,
         focus: normalizedInput.focus,
         nextActions: reconciledLifecycleRegisters.nextActions,
