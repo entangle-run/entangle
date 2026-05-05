@@ -325,6 +325,7 @@ same-machine slice records.
 - [522-user-client-fallback-workload-summary-slice.md](522-user-client-fallback-workload-summary-slice.md)
 - [523-opencode-permission-cancellation-slice.md](523-opencode-permission-cancellation-slice.md)
 - [524-host-event-audit-bundle-offline-verify-slice.md](524-host-event-audit-bundle-offline-verify-slice.md)
+- [525-host-event-audit-bundle-signature-verify-slice.md](525-host-event-audit-bundle-signature-verify-slice.md)
 
 ## Audited Scope
 
@@ -1143,7 +1144,9 @@ repeatable external-retention handoff for the full signed bundle while keeping
 terminal output compact. The CLI can also verify a saved audit bundle offline
 with `entangle host events audit-bundle-verify <file>` by recomputing event
 count, canonical event JSONL hash, signed report content/hash consistency, and
-outer bundle hash before support handoff or archival. Runner-owned session
+outer bundle hash before support handoff or archival; that offline verifier now
+also reconstructs and verifies the embedded Nostr signed report event, including
+event id, signature, and Host Authority signer match. Runner-owned session
 memory now also
 carries owner, originating-node, entrypoint-node, last-message, and active-route
 metadata in both the model-guided memory prompt and deterministic

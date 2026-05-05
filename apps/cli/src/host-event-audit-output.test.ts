@@ -4,6 +4,7 @@ import type {
   HostEventAuditBundleResponse,
   HostEventRecord
 } from "@entangle/types";
+import { finalizeEvent, generateSecretKey, getPublicKey } from "nostr-tools";
 import {
   projectHostEventAuditBundleSummary,
   verifyHostEventAuditBundle
@@ -38,6 +39,8 @@ describe("host event audit output helpers", () => {
   }
 
   function buildBundle(): HostEventAuditBundleResponse {
+    const hostAuthoritySecretKey = generateSecretKey();
+    const hostAuthorityPubkey = getPublicKey(hostAuthoritySecretKey);
     const events: HostEventRecord[] = [
       {
         catalogId: "catalog-main",
@@ -61,7 +64,7 @@ describe("host event audit output helpers", () => {
     ];
     const signedReportPayload = {
       generatedAt: "2026-05-05T00:00:02.000Z",
-      hostAuthorityPubkey: "a".repeat(64),
+      hostAuthorityPubkey,
       integrity: {
         checkedEventCount: 2,
         genesisHash: "b".repeat(64),
@@ -76,18 +79,32 @@ describe("host event audit output helpers", () => {
     const signedContent = JSON.stringify(
       canonicalizeForHashForTest(signedReportPayload)
     );
+    const reportHash = sha256HexForTest(signedContent);
+    const signedEvent = finalizeEvent(
+      {
+        content: signedContent,
+        created_at: 1777939202,
+        kind: 33333,
+        tags: [
+          ["report", "host_event_integrity"],
+          ["report_hash", reportHash]
+        ]
+      },
+      hostAuthoritySecretKey
+    );
     const signedIntegrityReport = {
       ...signedReportPayload,
-      reportHash: sha256HexForTest(signedContent),
+      hostAuthorityPubkey,
+      reportHash,
       signedContent,
       signedEvent: {
         createdAt: "2026-05-05T00:00:02.000Z",
         createdAtUnix: 1777939202,
-        eventId: "1".repeat(64),
-        kind: 30078,
-        signature: "2".repeat(128),
-        signerPubkey: "a".repeat(64),
-        tags: [["report", "host_event_integrity"]]
+        eventId: signedEvent.id,
+        kind: signedEvent.kind,
+        signature: signedEvent.sig,
+        signerPubkey: signedEvent.pubkey,
+        tags: signedEvent.tags
       }
     } satisfies HostEventAuditBundleResponse["signedIntegrityReport"];
     const bundlePayload = {
@@ -117,7 +134,7 @@ describe("host event audit output helpers", () => {
       eventCount: 2,
       eventsJsonlSha256: bundle.eventsJsonlSha256,
       generatedAt: "2026-05-05T00:00:02.000Z",
-      hostAuthorityPubkey: "a".repeat(64),
+      hostAuthorityPubkey: bundle.signedIntegrityReport.hostAuthorityPubkey,
       integrityReportHash: bundle.signedIntegrityReport.reportHash,
       integrityStatus: "valid"
     });
@@ -138,6 +155,12 @@ describe("host event audit output helpers", () => {
       },
       integrityReportHash: {
         matches: true
+      },
+      integrityReportSignature: {
+        eventIdMatches: true,
+        matches: true,
+        signatureValid: true,
+        signerMatches: true
       },
       schemaValid: true,
       signedContentMatchesReport: true,
@@ -179,6 +202,33 @@ describe("host event audit output helpers", () => {
     });
     expect(verification.issues).toContain(
       "Bundle eventCount does not match the number of embedded events."
+    );
+  });
+
+  it("reports invalid signed integrity report signature evidence", () => {
+    const bundle = buildBundle();
+    const verification = verifyHostEventAuditBundle({
+      ...bundle,
+      signedIntegrityReport: {
+        ...bundle.signedIntegrityReport,
+        signedEvent: {
+          ...bundle.signedIntegrityReport.signedEvent,
+          signature: "f".repeat(128)
+        }
+      }
+    });
+
+    expect(verification).toMatchObject({
+      integrityReportSignature: {
+        matches: false,
+        signatureValid: false,
+        signerMatches: true
+      },
+      schemaValid: true,
+      status: "failed"
+    });
+    expect(verification.issues).toContain(
+      "Signed integrity report Nostr event is not valid for the Host Authority."
     );
   });
 

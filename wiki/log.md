@@ -1,5 +1,20 @@
 # Entangle Wiki Log
 
+## [2026-05-05] cli | Added Host audit-bundle signature verification
+
+Added `references/525-host-event-audit-bundle-signature-verify-slice.md`.
+`entangle host events audit-bundle-verify <file>` now reconstructs and verifies
+the embedded Nostr signed report event in saved Host event audit bundles.
+
+The verifier now checks event id, signature validity, and Host Authority signer
+match in addition to the saved bundle schema and hash envelope.
+
+Targeted checks passed:
+
+- `pnpm --filter @entangle/cli test -- src/host-event-audit-output.test.ts`
+- `pnpm --filter @entangle/cli typecheck`
+- `pnpm --filter @entangle/cli lint`
+
 ## [2026-05-05] cli | Added offline Host event audit bundle verification
 
 Added `references/524-host-event-audit-bundle-offline-verify-slice.md`.

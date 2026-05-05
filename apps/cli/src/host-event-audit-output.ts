@@ -1,6 +1,7 @@
 import { createHash } from "node:crypto";
 import type { HostEventAuditBundleResponse } from "@entangle/types";
 import { hostEventAuditBundleResponseSchema } from "@entangle/types";
+import { getEventHash, verifyEvent, type NostrEvent } from "nostr-tools";
 
 export interface HostEventAuditBundleCliSummary {
   bundleHash: string;
@@ -25,6 +26,17 @@ type CountVerification = {
   matches: boolean;
 };
 
+type SignatureVerification = {
+  actualEventId: string | undefined;
+  actualSignerPubkey: string;
+  eventIdMatches: boolean;
+  expectedEventId: string;
+  expectedSignerPubkey: string;
+  matches: boolean;
+  signatureValid: boolean;
+  signerMatches: boolean;
+};
+
 export type HostEventAuditBundleVerification =
   | {
       issues: string[];
@@ -36,6 +48,7 @@ export type HostEventAuditBundleVerification =
       eventCount: CountVerification;
       eventsJsonlSha256: HashVerification;
       integrityReportHash: HashVerification;
+      integrityReportSignature: SignatureVerification;
       integrityStatus: HostEventAuditBundleResponse["signedIntegrityReport"]["integrity"]["status"];
       issues: string[];
       schemaValid: true;
@@ -103,6 +116,46 @@ function buildHashVerification(input: {
   };
 }
 
+function verifySignedIntegrityReportSignature(
+  signedReport: HostEventAuditBundleResponse["signedIntegrityReport"]
+): SignatureVerification {
+  const signedEvent = signedReport.signedEvent;
+  const event: NostrEvent = {
+    content: signedReport.signedContent,
+    created_at: signedEvent.createdAtUnix,
+    id: signedEvent.eventId,
+    kind: signedEvent.kind,
+    pubkey: signedEvent.signerPubkey,
+    sig: signedEvent.signature,
+    tags: signedEvent.tags
+  };
+  let actualEventId: string | undefined;
+  let signatureValid: boolean;
+
+  try {
+    actualEventId = getEventHash(event);
+    signatureValid = verifyEvent(event);
+  } catch {
+    actualEventId = undefined;
+    signatureValid = false;
+  }
+
+  const signerMatches =
+    signedEvent.signerPubkey === signedReport.hostAuthorityPubkey;
+  const eventIdMatches = actualEventId === signedEvent.eventId;
+
+  return {
+    actualEventId,
+    actualSignerPubkey: signedEvent.signerPubkey,
+    eventIdMatches,
+    expectedEventId: signedEvent.eventId,
+    expectedSignerPubkey: signedReport.hostAuthorityPubkey,
+    matches: signerMatches && eventIdMatches && signatureValid,
+    signatureValid,
+    signerMatches
+  };
+}
+
 export function verifyHostEventAuditBundle(
   rawBundle: unknown
 ): HostEventAuditBundleVerification {
@@ -156,6 +209,8 @@ export function verifyHostEventAuditBundle(
       actual: sha256Hex(signedReport.signedContent),
       expected: signedReport.reportHash
     }),
+    integrityReportSignature:
+      verifySignedIntegrityReportSignature(signedReport),
     integrityStatus: signedReport.integrity.status,
     signedContentMatchesReport:
       signedReport.signedContent === canonicalSignedContent
@@ -173,6 +228,9 @@ export function verifyHostEventAuditBundle(
     verification.signedContentMatchesReport
       ? undefined
       : "Signed integrity report content does not match reported integrity fields.",
+    verification.integrityReportSignature.matches
+      ? undefined
+      : "Signed integrity report Nostr event is not valid for the Host Authority.",
     verification.bundleHash.matches
       ? undefined
       : "Bundle hash does not match the canonical bundle payload."

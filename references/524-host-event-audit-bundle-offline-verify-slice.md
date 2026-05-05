@@ -19,9 +19,9 @@ contacting Host. This gives operators and support reviewers a deterministic
 first check over retained audit evidence before handoff, archiving, or deeper
 investigation.
 
-The verifier validates the persisted envelope and hash consistency. It does
-not replace live Host event integrity inspection and does not yet perform full
-Nostr signature validation inside the CLI package.
+This slice introduced persisted envelope and hash consistency validation. The
+follow-up signature-verification slice extends the same offline verifier with
+Nostr signed-event validation for the embedded Host Authority report.
 
 ## Impacted Modules And Files
 
@@ -73,9 +73,9 @@ evidence-retention check, not a repair command.
 ## Risks And Mitigations
 
 - Risk: operators could treat hash-envelope verification as proof of full
-  cryptographic validity. Mitigation: docs explicitly state that this command
-  verifies saved envelope consistency and does not replace signature-aware Host
-  integrity inspection.
+  cryptographic validity. Mitigation: the follow-up signature-verification
+  slice adds Nostr signed-event validation for the embedded Host Authority
+  report.
 - Risk: canonical serialization drift could make valid saved files fail in the
   future. Mitigation: the verifier uses the same sorted-key canonical JSON
   shape already used by the export bundle hash logic and the tests compute the
@@ -86,9 +86,9 @@ evidence-retention check, not a repair command.
 
 ## Open Questions
 
-Future work can move full signature verification into a shared verifier package
-or add the required dependency to the CLI. This slice keeps the change bounded
-to saved bundle schema and hash-envelope verification.
+Future work can move the full verifier into a shared package so Host, CLI, and
+support tooling can reuse one implementation. This slice kept the initial
+change bounded to saved bundle schema and hash-envelope verification.
 
 ## Verification
 

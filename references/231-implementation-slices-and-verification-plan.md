@@ -1465,7 +1465,8 @@ Current status:
   signed bundle with `--output <file>` while printing a compact hash/provenance
   summary, and `entangle host events audit-bundle-verify <file>` can now verify
   saved bundle files offline by recomputing event count, canonical event JSONL
-  hash, signed integrity report content/hash consistency, and outer bundle hash;
+  hash, signed integrity report content/hash consistency, outer bundle hash, and
+  the embedded Nostr signed report event id/signature/signer;
 - runner-owned session memory now carries owner, originating-node,
   entrypoint-node, last-message, and active-route metadata in both the bounded
   synthesis prompt and deterministic working-context wiki page, giving

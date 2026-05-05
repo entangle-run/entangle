@@ -1336,8 +1336,8 @@ This repository currently contains:
   typed events plus bundle hashes and the signed integrity report, with
   `--output <file>` for explicit retention handoff and `--summary` for bounded
   terminal output, saved audit bundles can be checked offline with
-  `host events audit-bundle-verify <file>`, and Studio consumes the live host
-  event stream to inspect
+  `host events audit-bundle-verify <file>` including embedded Nostr report
+  signature validation, and Studio consumes the live host event stream to inspect
   runtime recovery policy,
   controller state, recovery history, and live recovery events without
   introducing a client-owned recovery model, with
