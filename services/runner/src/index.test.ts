@@ -45,6 +45,7 @@ afterEach(async () => {
   }
 
   delete process.env.ENTANGLE_NOSTR_SECRET_KEY;
+  delete process.env.ENTANGLE_RUNTIME_CONTEXT_PATH;
   delete process.env.ENTANGLE_RUNNER_JOIN_CONFIG_JSON;
   delete process.env.ENTANGLE_RUNNER_JOIN_CONFIG_PATH;
   delete process.env.ENTANGLE_RUNNER_NOSTR_SECRET_KEY;
@@ -3288,6 +3289,30 @@ describe("runner runtime context", () => {
       mode: "runtime-context",
       runtimeContextPath: "/tmp/context.json"
     });
+    expect(
+      parseRunnerCliMode(["runtime-context", "--context", "/tmp/context.json"])
+    ).toEqual({
+      mode: "runtime-context",
+      runtimeContextPath: "/tmp/context.json"
+    });
+    expect(parseRunnerCliMode(["run", "/tmp/context.json"])).toEqual({
+      mode: "runtime-context",
+      runtimeContextPath: "/tmp/context.json"
+    });
+  });
+
+  it("rejects unconfigured runner startup instead of guessing a context path", () => {
+    expect(() => parseRunnerCliMode([], {})).toThrow(
+      "Runner startup requires an explicit mode"
+    );
+    expect(() => parseRunnerCliMode(["unknown"], {})).toThrow(
+      "Unknown runner command 'unknown'"
+    );
+    expect(() =>
+      parseRunnerCliMode(["unknown"], {
+        ENTANGLE_RUNNER_JOIN_CONFIG_PATH: "/tmp/join.json"
+      })
+    ).toThrow("Unknown runner command 'unknown'");
   });
 
   it("starts generic federated join without runtime context", async () => {

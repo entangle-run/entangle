@@ -758,7 +758,9 @@ This repository currently contains:
   env, and the federated dev Compose profile launches managed Docker runners in
   join mode with Host API bundle retrieval instead of path-mounted join config
   delivery; Docker join bootstrap is now the launcher default, while direct
-  runtime-context startup is explicit compatibility/debug behavior;
+  runtime-context startup is explicit compatibility/debug behavior; runner
+  process startup also now fails fast unless `join`, join config env, or an
+  explicit runtime-context path is provided;
 - observed activity projection now preserves signed remote session activity
   during same-workstation compatibility synchronization, and Host session
   listing plus bounded session detail can surface projected remote sessions

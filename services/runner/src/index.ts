@@ -108,6 +108,15 @@ export function parseRunnerCliMode(
     };
   }
 
+  if (command !== undefined) {
+    throw new Error(
+      [
+        `Unknown runner command '${command}'.`,
+        "Use 'join' for federated operation or 'runtime-context' for compatibility/debug startup."
+      ].join(" ")
+    );
+  }
+
   if (env.ENTANGLE_RUNNER_JOIN_CONFIG_PATH || env[runnerJoinConfigJsonEnvVar]) {
     return {
       ...(env.ENTANGLE_RUNNER_JOIN_CONFIG_PATH
@@ -117,12 +126,21 @@ export function parseRunnerCliMode(
     };
   }
 
-  return {
-    mode: "runtime-context",
-    ...(env.ENTANGLE_RUNTIME_CONTEXT_PATH
-      ? { runtimeContextPath: env.ENTANGLE_RUNTIME_CONTEXT_PATH }
-      : {})
-  };
+  if (env.ENTANGLE_RUNTIME_CONTEXT_PATH) {
+    return {
+      mode: "runtime-context",
+      runtimeContextPath: env.ENTANGLE_RUNTIME_CONTEXT_PATH
+    };
+  }
+
+  throw new Error(
+    [
+      "Runner startup requires an explicit mode.",
+      "Use 'entangle-runner join --config <path>' for federated operation,",
+      "set ENTANGLE_RUNNER_JOIN_CONFIG_JSON/ENTANGLE_RUNNER_JOIN_CONFIG_PATH,",
+      "or use 'entangle-runner runtime-context --context <path>' for compatibility/debug startup."
+    ].join(" ")
+  );
 }
 
 function waitForAbortSignal(abortSignal: AbortSignal | undefined): Promise<void> {

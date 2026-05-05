@@ -421,7 +421,9 @@ read `runner-join.json`. Join mode is also the Docker launcher default. Direct
 runtime-context compatibility remains available only when explicitly requested
 with `ENTANGLE_DOCKER_RUNNER_BOOTSTRAP=runtime-context`, and should be treated
 as a local launcher/debug path rather than the target federated execution
-model.
+model. The runner binary follows the same rule: a process without `join`,
+join-config environment, or an explicit runtime-context path fails fast instead
+of guessing an injected context file.
 
 Do not delete these volumes unless you intentionally want to reset host state,
 runtime identities, imported packages, and secret material.

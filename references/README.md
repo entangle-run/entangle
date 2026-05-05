@@ -199,8 +199,10 @@ generic HTTP engine boundary through real Host assignment, User Node review,
 projected artifacts/source/wiki evidence, and multi-user Human Interface
 Runtime behavior. Docker managed runners now default to generic join bootstrap;
 direct runtime-context Docker startup is explicit compatibility/debug
-behavior. Active agent engine kind validation now exposes only runner-executable kinds:
-`opencode_server`, `external_process`, and `external_http`.
+behavior, and an unconfigured runner process now fails fast instead of
+guessing an injected context file. Active agent engine kind validation now
+exposes only runner-executable kinds: `opencode_server`, `external_process`,
+and `external_http`.
 Historical slice notes no longer preserve literal old product-name strings in
 local-assumption audit command examples; they now refer generically to old
 product identity markers while active naming remains guarded by
@@ -810,6 +812,7 @@ files are the active federated redesign pack.
 482. [481-fake-external-http-agent-engine-harness-slice.md](481-fake-external-http-agent-engine-harness-slice.md)
 483. [482-federated-process-smoke-fake-external-http-slice.md](482-federated-process-smoke-fake-external-http-slice.md)
 484. [483-docker-runner-join-default-slice.md](483-docker-runner-join-default-slice.md)
+485. [484-runner-startup-explicit-mode-slice.md](484-runner-startup-explicit-mode-slice.md)
 
 ## Role of this corpus
 

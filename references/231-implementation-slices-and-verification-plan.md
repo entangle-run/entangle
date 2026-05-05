@@ -895,6 +895,9 @@ Implementation record:
 - [483-docker-runner-join-default-slice.md](483-docker-runner-join-default-slice.md)
   makes Docker managed runners default to generic join bootstrap and keeps
   direct runtime-context startup explicit.
+- [484-runner-startup-explicit-mode-slice.md](484-runner-startup-explicit-mode-slice.md)
+  makes unconfigured runner process startup fail fast instead of guessing an
+  injected context file.
 - [465-cli-agent-engine-profile-upsert-slice.md](465-cli-agent-engine-profile-upsert-slice.md)
   adds a Host-backed CLI catalog command for creating and updating typed agent
   engine profiles, including attached OpenCode profiles, permission mode,
@@ -1353,6 +1356,8 @@ Current status:
 - runtime-context runner startup and the Human Interface Runtime now support
   mounted-file identity secret delivery as well as env-var delivery, matching
   generic runner join behavior;
+- runner process startup now requires explicit `join`, join-config env, or an
+  explicit runtime-context path instead of guessing a default injected context;
 - the remaining distributed proof hardening is infrastructure-backed
   orchestration that can provision multiple machines or VM/container boundaries
   around the verifier.

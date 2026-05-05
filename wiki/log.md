@@ -1,5 +1,13 @@
 # Entangle Wiki Log
 
+## [2026-05-05] runner | Required explicit runner startup mode
+
+Added `references/484-runner-startup-explicit-mode-slice.md`. The runner now
+fails fast when started without `join`, join-config environment, or an explicit
+runtime-context path, keeping compatibility/debug runtime-context startup
+available without letting unconfigured processes guess an injected context
+file.
+
 ## [2026-05-05] host | Made Docker managed runners default to join bootstrap
 
 Added `references/483-docker-runner-join-default-slice.md`. The Docker runtime

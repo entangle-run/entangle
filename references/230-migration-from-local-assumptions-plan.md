@@ -12,7 +12,8 @@ The repo still has local deployment assumptions in implementation:
   compatibility/debug behavior; the Docker launcher default is now generic
   join mode, and the federated dev profile no longer advertises shared
   Host/runner state or secret mount env defaults for managed join-mode
-  containers;
+  containers; runner process startup now fails fast unless `join`, join-config
+  env, or an explicit runtime-context path is provided;
 - Host file reads from runner `runtimeRoot`;
 - Host approval and cancellation writes into runner runtime state;
 - local deployment CLI backup/restore/repair/doctor;
@@ -104,7 +105,8 @@ Classified results:
     projection;
   - Host approval decisions writing local approval records directly;
   - runner bootstrap requiring `effective-runtime-context.json` for canonical
-    startup.
+    startup: fixed for process startup by
+    [484-runner-startup-explicit-mode-slice.md](484-runner-startup-explicit-mode-slice.md).
   - Docker managed runners needing Host volume access for join config delivery:
     fixed for join mode by
     [317-docker-join-config-env-slice.md](317-docker-join-config-env-slice.md),

@@ -69,7 +69,8 @@ gateway API that triggers the send, so the remaining gap is full inbox/chat and
 approval workflow migration onto User Node A2A surfaces.
 
 `services/runner` is a real node-local service with a generic `join` startup
-mode, but canonical execution still falls back to injected same-machine context:
+mode. Process startup is now explicit: unconfigured no-command startup fails
+instead of guessing an injected same-machine context:
 
 - bootstrap can resolve `ENTANGLE_RUNNER_JOIN_CONFIG_PATH` and emit signed
   `runner.hello`/assignment receipts;

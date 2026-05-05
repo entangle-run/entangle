@@ -284,6 +284,7 @@ same-machine slice records.
 - [481-fake-external-http-agent-engine-harness-slice.md](481-fake-external-http-agent-engine-harness-slice.md)
 - [482-federated-process-smoke-fake-external-http-slice.md](482-federated-process-smoke-fake-external-http-slice.md)
 - [483-docker-runner-join-default-slice.md](483-docker-runner-join-default-slice.md)
+- [484-runner-startup-explicit-mode-slice.md](484-runner-startup-explicit-mode-slice.md)
 
 ## Audited Scope
 
@@ -334,7 +335,8 @@ The repository is not fully federated:
   behavior, while the Docker launcher adapter now defaults to generic join
   bootstrap and the federated dev profile no longer advertises shared
   Host/runner state or secret mount env defaults for managed join-mode
-  containers;
+  containers; the runner process also fails fast when started without `join`,
+  join-config env, or an explicit runtime-context path;
 - Host can publish signed assignment control payloads, signed runtime
   start/stop/restart commands for accepted assignments, and project
   runner-signed runtime status observations; node runtime lifecycle now uses
