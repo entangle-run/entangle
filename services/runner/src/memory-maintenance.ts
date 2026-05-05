@@ -2,7 +2,9 @@ import { mkdir, readFile, readdir, stat, writeFile } from "node:fs/promises";
 import path from "node:path";
 import type {
   AgentEngineTurnResult,
-  EffectiveRuntimeContext
+  EffectiveRuntimeContext,
+  RunnerTurnRecord,
+  SourceChangeSummary
 } from "@entangle/types";
 import type { RunnerInboundEnvelope } from "./transport.js";
 
@@ -12,6 +14,7 @@ type PostTurnMemoryUpdateInput = {
   envelope: RunnerInboundEnvelope;
   producedArtifactIds: string[];
   result: AgentEngineTurnResult;
+  turnRecord?: RunnerTurnRecord | undefined;
   turnId: string;
 };
 
@@ -101,6 +104,43 @@ function renderToolExecutionLines(
         ...(toolExecution.message ? [`message="${toolExecution.message}"`] : [])
       ].join(" ")
     )
+  ];
+}
+
+function renderSourceChangeCandidateLine(
+  turnRecord: RunnerTurnRecord | undefined
+): string {
+  const candidateIds = turnRecord?.sourceChangeCandidateIds ?? [];
+
+  return candidateIds.length > 0
+    ? `- Candidate ids: ${candidateIds.map((candidateId) => `\`${candidateId}\``).join(", ")}`
+    : "- Candidate ids: none";
+}
+
+function renderSourceChangeSummaryLines(
+  summary: SourceChangeSummary | undefined
+): string[] {
+  if (!summary) {
+    return ["- Source changes: none recorded for this turn"];
+  }
+
+  const changedFiles =
+    summary.files.length > 0
+      ? [
+          "- Changed files:",
+          ...summary.files.map(
+            (file) =>
+              `  - ${file.status} \`${file.path}\` +${file.additions} -${file.deletions}`
+          )
+        ]
+      : ["- Changed files: none"];
+
+  return [
+    `- Source changes: \`${summary.status}\``,
+    `- Totals: files=${summary.fileCount} additions=${summary.additions} deletions=${summary.deletions}${summary.truncated ? " truncated" : ""}`,
+    `- Diff excerpt: ${summary.diffExcerpt ? "available" : "unavailable"}`,
+    ...(summary.failureReason ? [`- Failure reason: ${summary.failureReason}`] : []),
+    ...changedFiles
   ];
 }
 
@@ -202,6 +242,7 @@ function buildTaskPageContent(input: {
   producedArtifactIds: string[];
   result: AgentEngineTurnResult;
   taskPageTitle: string;
+  turnRecord?: RunnerTurnRecord | undefined;
 }): string {
   const assistantSummary =
     input.result.assistantMessages.join("\n").trim() ||
@@ -252,6 +293,11 @@ function buildTaskPageContent(input: {
       input.producedArtifactIds,
       "- No durable turn artifacts were produced."
     ),
+    "",
+    "## Source Changes",
+    "",
+    renderSourceChangeCandidateLine(input.turnRecord),
+    ...renderSourceChangeSummaryLines(input.turnRecord?.sourceChangeSummary),
     ""
   ].join("\n");
 }
@@ -409,6 +455,45 @@ function extractTaskPageOutcome(content: string): {
   };
 }
 
+function extractTaskPageSourceChange(content: string): string | undefined {
+  const lines = content.split("\n");
+  const headingIndex = lines.findIndex(
+    (line) => line.trim() === "## Source Changes"
+  );
+
+  if (headingIndex === -1) {
+    return undefined;
+  }
+
+  const sourceChangeLines: string[] = [];
+
+  for (const line of lines.slice(headingIndex + 1)) {
+    if (line.trim().startsWith("## ")) {
+      break;
+    }
+
+    const trimmedLine = line.trim();
+
+    if (
+      trimmedLine.startsWith("- Candidate ids:") ||
+      trimmedLine.startsWith("- Source changes:") ||
+      trimmedLine.startsWith("- Totals:") ||
+      trimmedLine.startsWith("- Diff excerpt:") ||
+      trimmedLine.startsWith("- Failure reason:") ||
+      trimmedLine.startsWith("- Changed files:") ||
+      /^- (added|modified|deleted|renamed|copied|type_changed|unknown) `/.test(
+        trimmedLine
+      )
+    ) {
+      sourceChangeLines.push(trimmedLine);
+    }
+  }
+
+  return sourceChangeLines.length > 0
+    ? sourceChangeLines.join("\n")
+    : undefined;
+}
+
 async function buildRecentWorkSummaryContent(input: {
   wikiRoot: string;
 }): Promise<string> {
@@ -442,6 +527,7 @@ async function buildRecentWorkSummaryContent(input: {
       path.basename(entry.relativePath, ".md")
     );
     const outcome = extractTaskPageOutcome(entry.content);
+    const sourceChangeSummary = extractTaskPageSourceChange(entry.content);
 
     contentLines.push(
       `### ${title}`,
@@ -460,6 +546,9 @@ async function buildRecentWorkSummaryContent(input: {
         outcome.toolExecutionCount > 0 ? outcome.toolExecutionCount : "none"
       }`,
       `- Task page: [${title}](${entry.relativePath})`,
+      ...(sourceChangeSummary
+        ? ["", "Source-change memory:", sourceChangeSummary]
+        : []),
       "",
       outcome.assistantSummary,
       ""
@@ -494,7 +583,8 @@ export async function performPostTurnMemoryUpdate(
     envelope: input.envelope,
     producedArtifactIds: input.producedArtifactIds,
     result: input.result,
-    taskPageTitle
+    taskPageTitle,
+    turnRecord: input.turnRecord
   });
 
   const [currentIndex, currentLog] = await Promise.all([

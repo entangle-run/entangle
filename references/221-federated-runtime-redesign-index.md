@@ -348,6 +348,7 @@ same-machine slice records.
 - [545-user-client-wiki-patch-set-slice.md](545-user-client-wiki-patch-set-slice.md)
 - [546-process-smoke-user-client-wiki-patch-set-slice.md](546-process-smoke-user-client-wiki-patch-set-slice.md)
 - [547-user-client-wiki-patch-set-ui-slice.md](547-user-client-wiki-patch-set-ui-slice.md)
+- [548-source-change-task-memory-slice.md](548-source-change-task-memory-slice.md)
 
 ## Audited Scope
 
@@ -1246,6 +1247,10 @@ content.
 The React User Client now also exposes that capability from the wiki resource
 panel with a small queued patch-set draft list, per-entry removal, and a
 request action over the same Human Interface Runtime boundary.
+Deterministic runner task memory now also preserves bounded source-change
+candidate ids, status, totals, diff availability, and changed-file summaries
+from the live turn record, and the derived recent-work summary surfaces the
+same code-change memory for future turns.
 The highest-value remaining implementation areas are richer model-guided
 memory maintenance, deeper delegated-session semantics beyond the current
 controlled handoff path and first owner-aware memory projection, participant

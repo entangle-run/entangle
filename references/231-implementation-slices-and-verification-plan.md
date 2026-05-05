@@ -642,6 +642,10 @@ Current status:
 - the React User Client now exposes the same participant patch-set request path
   in the wiki resource panel through a queued page draft list and request
   action;
+- deterministic runner task memory now records source-change candidate ids,
+  status, totals, diff availability, and changed-file summaries from the live
+  turn record, and recent-work summaries surface that compact code-change
+  memory for future turns;
 - model-guided runner memory synthesis now writes
   `summaries/coordination-map.md` as a focused graph-relation memory page,
   carrying local node relation, inbound message provenance, active peer

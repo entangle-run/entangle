@@ -6516,3 +6516,14 @@ Added `references/547-user-client-wiki-patch-set-ui-slice.md`. The React User
 Client wiki resource panel now lets a running User Node queue wiki page drafts
 as patch-set pages, remove queued entries, and request the runner-owned
 patch-set through the Human Interface Runtime.
+
+## [2026-05-05] runner | Added source-change task memory
+
+Added `references/548-source-change-task-memory-slice.md`. Deterministic runner
+task pages now include a source-change section with candidate ids, status,
+totals, diff availability, and changed-file summaries from the live turn
+record.
+
+The derived recent-work summary also surfaces that compact code-change memory,
+so future turns can see recent source-change shape even when model-guided
+synthesis is disabled or fails.

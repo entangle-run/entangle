@@ -264,6 +264,9 @@ The most accurate current description is:
   and updated projected wiki preview content;
 - the React User Client now exposes visible wiki patch-set requests from the
   wiki resource panel through a queued page draft list and request action;
+- deterministic task memory now preserves bounded source-change candidate ids,
+  status, totals, diff availability, and changed-file summaries from the live
+  turn record, and recent-work memory surfaces that code-change context;
 - the process-runner smoke now proves that patch mode through the running
   User Client JSON API, including expected-base hash forwarding, completed
   command receipt projection, and projected patched wiki preview content;

@@ -48,15 +48,45 @@ describe("post-turn memory maintenance", () => {
           outputTokens: 5
         }
       },
+      turnRecord: {
+        graphId: context.binding.graphId,
+        nodeId: context.binding.node.nodeId,
+        phase: "persisting",
+        sourceChangeCandidateIds: ["source-change-parser"],
+        sourceChangeSummary: {
+          additions: 3,
+          checkedAt: "2026-04-26T12:00:00.000Z",
+          deletions: 1,
+          diffExcerpt: "diff --git a/src/parser.ts b/src/parser.ts\n+next\n-old\n",
+          fileCount: 1,
+          filePreviews: [],
+          files: [
+            {
+              additions: 3,
+              deletions: 1,
+              path: "src/parser.ts",
+              status: "modified"
+            }
+          ],
+          status: "changed",
+          truncated: false
+        },
+        startedAt: "2026-04-26T12:00:00.000Z",
+        triggerKind: "message",
+        turnId: "turn-memory-001",
+        updatedAt: "2026-04-26T12:01:00.000Z"
+      },
       turnId: "turn-memory-001"
     });
 
-    const [taskPage, logPage, indexPage, turnRequest] = await Promise.all([
-      readFile(memoryUpdate.taskPagePath, "utf8"),
-      readFile(memoryUpdate.logPath, "utf8"),
-      readFile(memoryUpdate.indexPath, "utf8"),
-      buildAgentEngineTurnRequest(context)
-    ]);
+    const [taskPage, logPage, indexPage, summaryPage, turnRequest] =
+      await Promise.all([
+        readFile(memoryUpdate.taskPagePath, "utf8"),
+        readFile(memoryUpdate.logPath, "utf8"),
+        readFile(memoryUpdate.indexPath, "utf8"),
+        readFile(memoryUpdate.summaryPagePath, "utf8"),
+        buildAgentEngineTurnRequest(context)
+      ]);
 
     expect(taskPage).toContain("# Task Memory session-alpha / turn-memory-001");
     expect(taskPage).toContain("Reviewed the parser patch and found no blockers.");
@@ -67,6 +97,16 @@ describe("post-turn memory maintenance", () => {
     expect(taskPage).toContain("- Tool executions:");
     expect(taskPage).toContain("#1 inspect_session_state [success]");
     expect(taskPage).toContain("#2 inspect_artifact_input [success]");
+    expect(taskPage).toContain("## Source Changes");
+    expect(taskPage).toContain("- Candidate ids: `source-change-parser`");
+    expect(taskPage).toContain("- Source changes: `changed`");
+    expect(taskPage).toContain("- Totals: files=1 additions=3 deletions=1");
+    expect(taskPage).toContain("- Diff excerpt: available");
+    expect(taskPage).toContain("- modified `src/parser.ts` +3 -1");
+    expect(summaryPage).toContain("Source-change memory:");
+    expect(summaryPage).toContain("- Candidate ids: `source-change-parser`");
+    expect(summaryPage).toContain("- Totals: files=1 additions=3 deletions=1");
+    expect(summaryPage).toContain("- modified `src/parser.ts` +3 -1");
     expect(logPage).toContain("runner turn | session-alpha / turn-memory-001");
     expect(indexPage).toContain(
       "[session-alpha / turn-memory-001](tasks/session-alpha/turn-memory-001.md)"

@@ -1571,7 +1571,8 @@ The highest-value remaining gaps are:
 - richer model-guided memory maintenance on top of the now stronger
   session-aware, artifact-aware/artifact-carrying, engine-outcome-aware,
   execution-insight-carrying, source-change-aware, owner-aware, and
-  coordination-map-aware bounded runtime inspection surface;
+  coordination-map-aware bounded runtime inspection surface plus deterministic
+  task-page source-change memory;
 - deeper delegated-session runtime semantics beyond the current controlled
   autonomous handoff and runner-local active-conversation reconciliation path,
   especially formal cross-runtime relation modeling, richer participant-aware

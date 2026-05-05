@@ -4596,6 +4596,7 @@ export class RunnerService {
         envelope,
         producedArtifactIds,
         result,
+        turnRecord,
         turnId: turnRecord.turnId
       });
       const memorySynthesisInput = {
