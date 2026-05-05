@@ -635,6 +635,10 @@ Current status:
   visible in the selected User Node conversation; the runtime forwards
   `requestedBy` as the stable User Node id and derives expected base hashes
   from complete projected wiki previews when needed;
+- the process-runner smoke now proves that User Client patch-set path through
+  the running Human Interface Runtime, Host signed control delivery, completed
+  runner command receipt projection, and updated projected wiki preview
+  content;
 - model-guided runner memory synthesis now writes
   `summaries/coordination-map.md` as a focused graph-relation memory page,
   carrying local node relation, inbound message provenance, active peer

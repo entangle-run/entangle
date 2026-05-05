@@ -53,6 +53,7 @@ import {
   runtimeTurnInspectionResponseSchema,
   runtimeTurnListResponseSchema,
   runtimeWikiPublishResponseSchema,
+  runtimeWikiPatchSetResponseSchema,
   runtimeWikiUpsertPageResponseSchema,
   sessionInspectionResponseSchema,
   sessionListResponseSchema,
@@ -4232,6 +4233,119 @@ async function main(): Promise<void> {
       () => `\nstdout:\n${runnerStdout}\nstderr:\n${runnerStderr}`
     );
     printPass("projected-user-client-wiki-page-patch-ref", userClientWikiPagePath);
+
+    const userClientWikiPatchSetAppend =
+      "Process runner smoke patch-set append through the User Client.";
+    const userClientWikiPatchSetContent =
+      `${userClientWikiPagePatchedContent.trimEnd()}\n\n` +
+      `${userClientWikiPatchSetAppend}\n`;
+    const userClientWikiPatchSetResponse = await fetch(
+      new URL("/api/wiki/pages/patch-set", userClientUrl),
+      {
+        body: JSON.stringify({
+          conversationId: userMessage.conversationId,
+          nodeId: "builder",
+          pages: [
+            {
+              content: userClientWikiPatchSetAppend,
+              expectedCurrentSha256: sha256Hex(userClientWikiPagePatchedContent),
+              mode: "append",
+              path: userClientWikiPagePath
+            }
+          ],
+          reason:
+            "Process runner smoke requested a wiki patch-set from the User Client."
+        }),
+        headers: {
+          "content-type": "application/json"
+        },
+        method: "POST"
+      }
+    );
+    await assertResponseOk(
+      userClientWikiPatchSetResponse,
+      "User Client JSON wiki patch-set"
+    );
+    const userClientWikiPatchSetRaw =
+      (await userClientWikiPatchSetResponse.json()) as {
+        pageCount?: number;
+        source?: string;
+        userNodeId?: string;
+      };
+    const userClientWikiPatchSetRequest =
+      runtimeWikiPatchSetResponseSchema.parse(userClientWikiPatchSetRaw);
+    assertCondition(
+      userClientWikiPatchSetRaw.source === "runtime" &&
+        userClientWikiPatchSetRaw.userNodeId === "user" &&
+        userClientWikiPatchSetRequest.pageCount === 1 &&
+        userClientWikiPatchSetRequest.pages[0]?.mode === "append" &&
+        userClientWikiPatchSetRequest.pages[0]?.expectedCurrentSha256 ===
+          sha256Hex(userClientWikiPagePatchedContent) &&
+        userClientWikiPatchSetRequest.pages[0]?.path === userClientWikiPagePath,
+      "User Client wiki patch-set response must identify runtime source, User Node, page count, append mode, expected hash, and normalized page path."
+    );
+    printPass(
+      "user-client-wiki-patch-set-request",
+      `command=${userClientWikiPatchSetRequest.commandId}; ` +
+        `pages=${userClientWikiPatchSetRequest.pageCount}`
+    );
+
+    const projectedUserClientWikiPatchSetReceipt = await waitFor(
+      "Host projected User Client wiki patch-set command receipt",
+      async () => {
+        const projection = hostProjectionSnapshotSchema.parse(
+          await hostRequest({
+            baseUrl: hostBaseUrl,
+            path: "/v1/projection"
+          })
+        );
+
+        return projection.runtimeCommandReceipts.find(
+          (receipt) =>
+            receipt.commandId === userClientWikiPatchSetRequest.commandId &&
+            receipt.commandEventType === "runtime.wiki.patch_set" &&
+            receipt.receiptStatus !== "received"
+        );
+      },
+      () => `\nstdout:\n${runnerStdout}\nstderr:\n${runnerStderr}`
+    );
+    assertCondition(
+      projectedUserClientWikiPatchSetReceipt.receiptStatus === "completed" &&
+        projectedUserClientWikiPatchSetReceipt.wikiPageCount === 1,
+      `User Client wiki patch-set command must complete; got ` +
+        `${projectedUserClientWikiPatchSetReceipt.receiptStatus}: ` +
+        `${projectedUserClientWikiPatchSetReceipt.receiptMessage ?? "no receipt message"}`
+    );
+    printPass(
+      "projected-user-client-wiki-patch-set-command-receipt",
+      `command=${projectedUserClientWikiPatchSetReceipt.commandId}; ` +
+        `pages=${projectedUserClientWikiPatchSetReceipt.wikiPageCount ?? 0}`
+    );
+
+    await waitFor(
+      "Host projected User Client patch-set wiki page ref",
+      async () => {
+        const projection = hostProjectionSnapshotSchema.parse(
+          await hostRequest({
+            baseUrl: hostBaseUrl,
+            path: "/v1/projection"
+          })
+        );
+
+        return projection.wikiRefs.find(
+          (ref) =>
+            ref.nodeId === "builder" &&
+            ref.artifactRef.locator.path === `/${userClientWikiPagePath}` &&
+            ref.artifactPreview?.available === true &&
+            ref.artifactPreview.content === userClientWikiPatchSetContent
+        );
+      },
+      () => `\nstdout:\n${runnerStdout}\nstderr:\n${runnerStderr}`
+    );
+    printPass(
+      "projected-user-client-wiki-patch-set-ref",
+      userClientWikiPagePath
+    );
 
     const syntheticAgentMessageId = await publishSyntheticA2AMessage({
       message: {

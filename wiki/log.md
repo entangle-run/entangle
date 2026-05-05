@@ -6502,3 +6502,10 @@ conversation.
 The runtime forwards the command through Host with `requestedBy` set to the
 stable User Node id and derives expected page hashes from projected previews
 when the client does not supply them.
+
+## [2026-05-05] smoke | Proved User Client wiki patch-set path
+
+Added `references/546-process-smoke-user-client-wiki-patch-set-slice.md`. The
+process-runner smoke now requests a wiki patch-set from the running User
+Client, waits for the completed `runtime.wiki.patch_set` receipt, and verifies
+the updated projected wiki preview content.

@@ -1592,7 +1592,8 @@ The highest-value remaining gaps are:
   projected-preview draft prefill with automatic expected-hash population,
   bounded operator batch requests for multiple existing page-upsert commands,
   signed runner-owned multi-page wiki patch-set commands plus User Client
-  participant JSON requests for visible wiki patch-sets,
+  participant JSON requests for visible wiki patch-sets with process-smoke
+  proof,
   User Client local wiki draft diff preview plus stale-edit conflict receipt
   summaries in the browser, CLI, and fallback Human Interface Runtime,
   approval-response turn correlation, richer collaborative wiki merge UI, and

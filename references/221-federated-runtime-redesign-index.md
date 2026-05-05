@@ -346,6 +346,7 @@ same-machine slice records.
 - [543-deployment-repair-previous-service-volume-slice.md](543-deployment-repair-previous-service-volume-slice.md)
 - [544-runtime-wiki-patch-set-slice.md](544-runtime-wiki-patch-set-slice.md)
 - [545-user-client-wiki-patch-set-slice.md](545-user-client-wiki-patch-set-slice.md)
+- [546-process-smoke-user-client-wiki-patch-set-slice.md](546-process-smoke-user-client-wiki-patch-set-slice.md)
 
 ## Audited Scope
 
@@ -1237,6 +1238,10 @@ The running User Client can now request the same patch-set command through its
 Human Interface Runtime JSON API when every page is visible in the selected User
 Node conversation; the runtime derives base hashes from projected page previews
 when needed and forwards the request with the stable User Node id.
+The process-runner smoke now proves that participant path end to end by
+requesting a User Client wiki patch-set, observing the completed
+`runtime.wiki.patch_set` receipt, and checking the projected wiki preview
+content.
 The highest-value remaining implementation areas are richer model-guided
 memory maintenance, deeper delegated-session semantics beyond the current
 controlled handoff path and first owner-aware memory projection, participant

@@ -905,6 +905,7 @@ files are the active federated redesign pack.
 544. [543-deployment-repair-previous-service-volume-slice.md](543-deployment-repair-previous-service-volume-slice.md)
 545. [544-runtime-wiki-patch-set-slice.md](544-runtime-wiki-patch-set-slice.md)
 546. [545-user-client-wiki-patch-set-slice.md](545-user-client-wiki-patch-set-slice.md)
+547. [546-process-smoke-user-client-wiki-patch-set-slice.md](546-process-smoke-user-client-wiki-patch-set-slice.md)
 
 ## Role of this corpus
 
