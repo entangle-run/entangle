@@ -100,6 +100,10 @@ Recently added:
   own projected runtime status: assignment, backend, runner, desired/observed
   lifecycle state, restart generation, last-seen time, status message, and
   projected client URL.
+- The React User Client and fallback HTML now render detailed participant
+  command receipt lines for assignment, artifact/source/wiki ids, target paths,
+  replay/restore/proposal ids, session ids, and shortened wiki hash
+  transitions.
 - CLI now exposes `entangle user-nodes assign <nodeId> --runner <runnerId>`,
   including optional `--revoke-existing`, as a User Node-focused wrapper around
   the Host assignment boundary.
@@ -265,8 +269,9 @@ Node.
   with runtime-diff fallback, artifact-ref rendering, bounded artifact preview,
   projected wiki-ref rendering, projected wiki preview rendering,
   wiki-scoped approval context rendering, scoped command receipt visibility,
-  participant workload summary, own runtime status projection, and local
-  read-state updates plus signed read receipts; a dedicated bundled
+  participant command receipt detail, participant workload summary, own runtime
+  status projection, and local read-state updates plus signed read receipts; a
+  dedicated bundled
   `apps/user-client` app now exists and richer participant-side source/wiki
   review flows beyond scoped source-diff and source-file preview remain open.
 - Replace user-facing approval/session launch behavior with signed user-node

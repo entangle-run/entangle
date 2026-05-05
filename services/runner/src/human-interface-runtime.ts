@@ -3260,6 +3260,43 @@ function renderWikiRefsForPeer(input: {
   );
 }
 
+function shortCommandReceiptHash(value: string): string {
+  return value.slice(0, 12);
+}
+
+function formatRuntimeCommandReceiptDetailLines(
+  receipt: RuntimeCommandReceiptProjectionRecord
+): string[] {
+  return [
+    `node ${receipt.nodeId}`,
+    `runner ${receipt.runnerId}`,
+    receipt.assignmentId ? `assignment ${receipt.assignmentId}` : undefined,
+    `observed ${receipt.observedAt}`,
+    receipt.receiptMessage,
+    receipt.artifactId ? `artifact ${receipt.artifactId}` : undefined,
+    receipt.sourceHistoryId
+      ? `source history ${receipt.sourceHistoryId}`
+      : undefined,
+    receipt.candidateId ? `candidate ${receipt.candidateId}` : undefined,
+    receipt.proposalId ? `proposal ${receipt.proposalId}` : undefined,
+    receipt.restoreId ? `restore ${receipt.restoreId}` : undefined,
+    receipt.replayId ? `replay ${receipt.replayId}` : undefined,
+    receipt.targetPath ? `target ${receipt.targetPath}` : undefined,
+    receipt.wikiArtifactId ? `wiki artifact ${receipt.wikiArtifactId}` : undefined,
+    receipt.wikiPagePath ? `wiki page ${receipt.wikiPagePath}` : undefined,
+    receipt.wikiPageExpectedSha256
+      ? `wiki expected ${shortCommandReceiptHash(receipt.wikiPageExpectedSha256)}`
+      : undefined,
+    receipt.wikiPagePreviousSha256
+      ? `wiki previous ${shortCommandReceiptHash(receipt.wikiPagePreviousSha256)}`
+      : undefined,
+    receipt.wikiPageNextSha256
+      ? `wiki next ${shortCommandReceiptHash(receipt.wikiPageNextSha256)}`
+      : undefined,
+    receipt.sessionId ? `session ${receipt.sessionId}` : undefined
+  ].filter((line): line is string => Boolean(line));
+}
+
 function renderRuntimeCommandReceipts(
   receipts: RuntimeCommandReceiptProjectionRecord[]
 ): string {
@@ -3275,32 +3312,9 @@ function renderRuntimeCommandReceipts(
           `<article class="command-receipt">
             <div class="message-meta">${escapeHtml(receipt.receiptStatus)} - ${escapeHtml(receipt.commandEventType)} - ${escapeHtml(receipt.observedAt)}</div>
             <strong>${escapeHtml(receipt.commandId)}</strong>
-            <div class="message-meta">node ${escapeHtml(receipt.nodeId)} - runner ${escapeHtml(receipt.runnerId)}</div>
-            ${
-              receipt.receiptMessage
-                ? `<div>${escapeHtml(receipt.receiptMessage)}</div>`
-                : ""
-            }
-            ${
-              receipt.artifactId
-                ? `<div class="message-meta">artifact ${escapeHtml(receipt.artifactId)}</div>`
-                : ""
-            }
-            ${
-              receipt.sourceHistoryId
-                ? `<div class="message-meta">source history ${escapeHtml(receipt.sourceHistoryId)}</div>`
-                : ""
-            }
-            ${
-              receipt.wikiArtifactId
-                ? `<div class="message-meta">wiki artifact ${escapeHtml(receipt.wikiArtifactId)}</div>`
-                : ""
-            }
-            ${
-              receipt.wikiPagePath
-                ? `<div class="message-meta">wiki page ${escapeHtml(receipt.wikiPagePath)}</div>`
-                : ""
-            }
+            ${formatRuntimeCommandReceiptDetailLines(receipt)
+              .map((line) => `<div class="message-meta">${escapeHtml(line)}</div>`)
+              .join("")}
           </article>`
       )
       .join("")}

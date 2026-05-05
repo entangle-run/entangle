@@ -5981,3 +5981,14 @@ Node-focused wrapper over the Host assignment API, with optional
 Studio User Node runtime rows now expose operator actions to prepare the Host
 assignment form for that User Node and to open the projected assignment
 timeline when an assignment id is known.
+
+## [2026-05-05] user-client | Added command receipt detail lines
+
+Added `references/508-user-client-command-receipt-detail-slice.md`. The React
+User Client and Human Interface Runtime fallback HTML now render bounded
+participant command receipt detail lines for assignment ids, artifact/source/
+wiki ids, target paths, proposal/restore/replay ids, session ids, and shortened
+wiki hash transitions.
+
+This keeps participant command closure visible inside the running User Client
+without requiring raw projection JSON or Studio for basic receipt inspection.

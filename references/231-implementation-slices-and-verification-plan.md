@@ -1057,6 +1057,9 @@ assignments, and Studio User Node runtime rows can prepare the Host assignment
 form and open the current assignment timeline. Remaining reassignment work is
 now focused on richer participant-aware workflow guidance without violating
 Host authority and participant-side source/wiki review depth.
+The React User Client and fallback HTML now render detailed participant command
+receipt evidence for assignment, artifact/source/wiki ids, target paths,
+replay/restore/proposal ids, session ids, and shortened wiki hash transitions.
 The canonical surface and authority specs were repaired in
 [506-canonical-user-node-surface-spec-repair.md](506-canonical-user-node-surface-spec-repair.md)
 so they classify these shipped behaviors as current baseline rather than open
@@ -1445,6 +1448,9 @@ Current status:
 - CLI and Studio now expose User Node-focused assignment/reassignment entry
   points on top of the same Host assignment API instead of requiring operators
   to discover the generic graph-node assignment surface;
+- User Client command receipt cards now expose bounded command closure evidence
+  beyond command id/status, including wiki hash transitions and operation
+  target ids;
 - the remaining distributed proof hardening is infrastructure-backed
   orchestration that can provision multiple machines or VM/container boundaries
   around the verifier.

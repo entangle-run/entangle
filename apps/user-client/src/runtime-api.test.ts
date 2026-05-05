@@ -9,6 +9,7 @@ import {
   fetchSourceChangeDiff,
   fetchSourceChangeFilePreview,
   formatDeliveryLabel,
+  formatRuntimeCommandReceiptDetailLines,
   formatSignerLabel,
   markConversationRead,
   normalizeApiBaseUrl,
@@ -102,6 +103,50 @@ describe("user client runtime API helpers", () => {
           "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
       } as Parameters<typeof formatSignerLabel>[0])
     ).toBeUndefined();
+  });
+
+  it("formats participant command receipt detail lines", () => {
+    expect(
+      formatRuntimeCommandReceiptDetailLines({
+        assignmentId: "assignment-alpha",
+        commandEventType: "runtime.wiki.upsert_page",
+        commandId: "cmd-wiki-page",
+        graphId: "graph-alpha",
+        hostAuthorityPubkey:
+          "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        nodeId: "worker-it",
+        observedAt: "2026-05-05T12:00:00.000Z",
+        projection: {
+          source: "observation_event",
+          updatedAt: "2026-05-05T12:00:00.000Z"
+        },
+        receiptStatus: "completed",
+        requestedBy: "user-main",
+        runnerId: "runner-alpha",
+        runnerPubkey:
+          "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+        targetPath: "wiki/summaries/working-context.md",
+        wikiArtifactId: "wiki-alpha",
+        wikiPageExpectedSha256:
+          "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+        wikiPageNextSha256:
+          "dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd",
+        wikiPagePath: "wiki/summaries/working-context.md",
+        wikiPagePreviousSha256:
+          "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee"
+      })
+    ).toEqual([
+      "node worker-it",
+      "runner runner-alpha",
+      "assignment assignment-alpha",
+      "observed 2026-05-05T12:00:00.000Z",
+      "target wiki/summaries/working-context.md",
+      "wiki artifact wiki-alpha",
+      "wiki page wiki/summaries/working-context.md",
+      "wiki expected cccccccccccc",
+      "wiki previous eeeeeeeeeeee",
+      "wiki next dddddddddddd"
+    ]);
   });
 
   it("preserves turn correlation when publishing approval responses", async () => {

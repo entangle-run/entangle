@@ -1106,6 +1106,9 @@ receipt, workload, and own-runtime status behavior as missing baseline work.
 User Node runtime placement now also has a focused CLI assignment command and
 Studio roster actions that prepare the Host assignment form or open the current
 assignment timeline while preserving Host as the only assignment authority.
+User Client command receipt cards now also expose bounded participant command
+closure details, including target ids and shortened wiki hash transitions, in
+both the bundled React app and fallback HTML.
 The highest-value remaining implementation areas are richer model-guided
 memory maintenance, deeper delegated-session semantics beyond the current
 controlled handoff path and first owner-aware memory projection, participant

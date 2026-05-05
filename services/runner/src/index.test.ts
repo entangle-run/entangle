@@ -1168,7 +1168,12 @@ describe("runner runtime context", () => {
                   requestedBy: "user-main",
                   runnerId: "runner-alpha",
                   runnerPubkey: remotePublicKey,
-                  wikiArtifactId: "wiki-alpha"
+                  wikiArtifactId: "wiki-alpha",
+                  wikiPageNextSha256:
+                    "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+                  wikiPagePath: "wiki/summaries/working-context.md",
+                  wikiPagePreviousSha256:
+                    "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"
                 },
                 {
                   assignmentId: "assignment-alpha",
@@ -1407,7 +1412,12 @@ describe("runner runtime context", () => {
                   requestedBy: "user-main",
                   runnerId: "runner-alpha",
                   runnerPubkey: remotePublicKey,
-                  wikiArtifactId: "wiki-alpha"
+                  wikiArtifactId: "wiki-alpha",
+                  wikiPageNextSha256:
+                    "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+                  wikiPagePath: "wiki/summaries/working-context.md",
+                  wikiPagePreviousSha256:
+                    "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"
                 }
               ],
               userNodeId: "user-main"
@@ -2115,7 +2125,12 @@ describe("runner runtime context", () => {
           {
             commandId: "cmd-user-wiki-publish-alpha",
             requestedBy: "user-main",
-            wikiArtifactId: "wiki-alpha"
+            wikiArtifactId: "wiki-alpha",
+            wikiPageNextSha256:
+              "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+            wikiPagePath: "wiki/summaries/working-context.md",
+            wikiPagePreviousSha256:
+              "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"
           }
         ],
         targets: [
@@ -2864,6 +2879,8 @@ describe("runner runtime context", () => {
       expect(pageBody).toContain("Accept candidate");
       expect(pageBody).toContain("Reject candidate");
       expect(pageBody).toContain("Approve");
+      expect(pageBody).toContain("wiki previous bbbbbbbbbbbb");
+      expect(pageBody).toContain("wiki next cccccccccccc");
 
       const jsonReadResponse = await fetch(
         new URL("/api/conversations/conversation-alpha/read", handle.clientUrl),

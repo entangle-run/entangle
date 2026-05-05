@@ -677,6 +677,43 @@ export function formatSignerLabel(
   return `signed ${message.signerPubkey.slice(0, 8)}`;
 }
 
+function shortHash(value: string): string {
+  return value.slice(0, 12);
+}
+
+export function formatRuntimeCommandReceiptDetailLines(
+  receipt: RuntimeCommandReceiptProjectionRecord
+): string[] {
+  return [
+    `node ${receipt.nodeId}`,
+    `runner ${receipt.runnerId}`,
+    receipt.assignmentId ? `assignment ${receipt.assignmentId}` : undefined,
+    `observed ${receipt.observedAt}`,
+    receipt.receiptMessage,
+    receipt.artifactId ? `artifact ${receipt.artifactId}` : undefined,
+    receipt.sourceHistoryId
+      ? `source history ${receipt.sourceHistoryId}`
+      : undefined,
+    receipt.candidateId ? `candidate ${receipt.candidateId}` : undefined,
+    receipt.proposalId ? `proposal ${receipt.proposalId}` : undefined,
+    receipt.restoreId ? `restore ${receipt.restoreId}` : undefined,
+    receipt.replayId ? `replay ${receipt.replayId}` : undefined,
+    receipt.targetPath ? `target ${receipt.targetPath}` : undefined,
+    receipt.wikiArtifactId ? `wiki artifact ${receipt.wikiArtifactId}` : undefined,
+    receipt.wikiPagePath ? `wiki page ${receipt.wikiPagePath}` : undefined,
+    receipt.wikiPageExpectedSha256
+      ? `wiki expected ${shortHash(receipt.wikiPageExpectedSha256)}`
+      : undefined,
+    receipt.wikiPagePreviousSha256
+      ? `wiki previous ${shortHash(receipt.wikiPagePreviousSha256)}`
+      : undefined,
+    receipt.wikiPageNextSha256
+      ? `wiki next ${shortHash(receipt.wikiPageNextSha256)}`
+      : undefined,
+    receipt.sessionId ? `session ${receipt.sessionId}` : undefined
+  ].filter((line): line is string => Boolean(line));
+}
+
 export function renderArtifactLocator(ref: ArtifactRef): string {
   switch (ref.backend) {
     case "git":

@@ -95,7 +95,10 @@ User nodes are now partially runtime-capable:
 - Runtime command receipts preserve optional `requestedBy` attribution. Host
   exposes `GET /v1/user-nodes/:nodeId/command-receipts`, and Human Interface
   Runtime uses that scoped route for the running User Client's participant
-  command receipt list.
+  command receipt list. The React User Client and fallback HTML render bounded
+  receipt details, including assignment, artifact/source/wiki ids, target
+  paths, replay/restore/proposal ids, session ids, and shortened wiki hash
+  transitions when available.
 - The User Client renders bounded artifact refs attached to message records,
   including backend, kind, summary, and locator details, and now exposes a
   server-side artifact preview page that renders bounded content without
@@ -128,8 +131,8 @@ Still missing:
   preview, signed source-change review, approval response, artifact preview,
   artifact history/diff, artifact restore, artifact source-change proposal,
   source-history publication/reconcile, wiki publication, wiki page upsert,
-  stale-edit detection, patch mode, participant command receipt visibility, and
-  read-only runtime status projection;
+  stale-edit detection, patch mode, detailed participant command receipt
+  visibility, and read-only runtime status projection;
 - production-grade User Node key custody beyond the current Host-provisioned
   development key backend.
 

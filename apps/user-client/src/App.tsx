@@ -23,6 +23,7 @@ import {
   fetchUserClientState,
   formatConversationTimestamp,
   formatDeliveryLabel,
+  formatRuntimeCommandReceiptDetailLines,
   formatSignerLabel,
   markConversationRead,
   normalizeApiBaseUrl,
@@ -1059,20 +1060,9 @@ function RuntimeCommandReceiptList({
             <span>{receipt.commandEventType}</span>
           </header>
           <strong>{receipt.commandId}</strong>
-          <span>
-            {receipt.nodeId} · {receipt.observedAt}
-          </span>
-          {receipt.receiptMessage ? <p>{receipt.receiptMessage}</p> : null}
-          {receipt.artifactId ? <span>artifact {receipt.artifactId}</span> : null}
-          {receipt.sourceHistoryId ? (
-            <span>source history {receipt.sourceHistoryId}</span>
-          ) : null}
-          {receipt.wikiArtifactId ? (
-            <span>wiki artifact {receipt.wikiArtifactId}</span>
-          ) : null}
-          {receipt.wikiPagePath ? (
-            <span>wiki page {receipt.wikiPagePath}</span>
-          ) : null}
+          {formatRuntimeCommandReceiptDetailLines(receipt).map((line) => (
+            <span key={line}>{line}</span>
+          ))}
         </article>
       ))}
     </div>
