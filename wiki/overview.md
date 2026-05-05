@@ -167,6 +167,11 @@ The most accurate current description is:
 - joined agent runners can now execute `external_http` profiles through a
   minimal JSON HTTP adapter that POSTs the same turn payload to the configured
   endpoint and validates the shared turn result response;
+- operators can now start a deterministic fake external HTTP agent-engine
+  endpoint with `pnpm ops:fake-agent-engine-http`, and
+  `pnpm ops:smoke-fake-agent-engine-http` verifies no-credential health, turn
+  response, optional workspace mutation, and debug-state plumbing for
+  `external_http` profiles;
 - active agent engine kinds now expose only runner-executable options:
   `opencode_server`, `external_process`, and `external_http`; native Claude
   support should be reintroduced only with a real runner adapter, while

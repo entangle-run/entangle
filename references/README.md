@@ -188,8 +188,12 @@ turn contract without bypassing Entangle identity, policy, projection, or
 artifact handling. Shared catalog validation now requires those
 external-process profiles to declare an executable. The runner now also
 executes `external_http` profiles by POSTing the same shared turn payload to
-the configured endpoint and validating the shared turn result response. Active
-agent engine kind validation now exposes only runner-executable kinds:
+the configured endpoint and validating the shared turn result response. A root
+`pnpm ops:fake-agent-engine-http` command now starts a deterministic
+no-credential external HTTP agent-engine fixture for manual custom-engine
+plumbing tests, and `pnpm ops:smoke-fake-agent-engine-http` verifies that
+fixture's health, turn response, optional workspace mutation, and debug-state
+route. Active agent engine kind validation now exposes only runner-executable kinds:
 `opencode_server`, `external_process`, and `external_http`.
 Historical slice notes no longer preserve literal old product-name strings in
 local-assumption audit command examples; they now refer generically to old
@@ -797,6 +801,7 @@ files are the active federated redesign pack.
 479. [478-active-agent-engine-kind-contract-slice.md](478-active-agent-engine-kind-contract-slice.md)
 480. [479-legacy-product-name-residue-cleanup-slice.md](479-legacy-product-name-residue-cleanup-slice.md)
 481. [480-distributed-proof-custom-agent-engine-setup-slice.md](480-distributed-proof-custom-agent-engine-setup-slice.md)
+482. [481-fake-external-http-agent-engine-harness-slice.md](481-fake-external-http-agent-engine-harness-slice.md)
 
 ## Role of this corpus
 

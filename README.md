@@ -243,6 +243,37 @@ Basic-authenticated health, session creation, SSE permission delivery,
 permission reply, deterministic assistant output, optional workspace mutation
 through `x-opencode-directory`, and idle status.
 
+For manual custom `external_http` agent-engine plumbing tests without real
+model credentials, start the deterministic fake external HTTP engine:
+
+```bash
+pnpm ops:fake-agent-engine-http -- --port 18082 --write-file src/fake-external-http-generated.ts
+```
+
+Point an `external_http` engine profile at `http://127.0.0.1:18082/turn`:
+
+```bash
+pnpm --filter @entangle/cli dev host catalog agent-engine upsert external-http-fake \
+  --kind external_http \
+  --base-url http://127.0.0.1:18082/turn \
+  --set-default \
+  --summary
+```
+
+The fixture accepts the shared turn payload, returns a deterministic
+`AgentEngineTurnResult`, and can write a bounded file inside the runner source
+workspace. This validates protocol, catalog, runner-adapter, and workspace
+plumbing; it does not validate real model behavior.
+
+The fake external HTTP engine has its own no-credential smoke:
+
+```bash
+pnpm ops:smoke-fake-agent-engine-http
+```
+
+That smoke starts the endpoint on an ephemeral port and verifies health, turn
+execution, response shape, optional workspace mutation, and debug state.
+
 Active product naming is also guarded:
 
 ```bash
@@ -345,7 +376,9 @@ For generic custom-engine checks, pass
 `--external-process-engine-executable <cmd>` or
 `--external-http-engine-url <url>`. The kit infers the matching active engine
 kind when `--agent-engine-kind` is omitted, upserts the profile through Host,
-and binds the agent node before assignment.
+and binds the agent node before assignment. For no-credential `external_http`
+proof setup, start `pnpm ops:fake-agent-engine-http` on a machine reachable
+from the agent runner and pass its `/turn` URL.
 Pass `--check-relay-health` with at least one `--relay-url` when the generated
 operator command should also probe relay WebSocket reachability from the
 operator machine.

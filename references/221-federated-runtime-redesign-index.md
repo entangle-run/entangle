@@ -281,6 +281,7 @@ same-machine slice records.
 - [478-active-agent-engine-kind-contract-slice.md](478-active-agent-engine-kind-contract-slice.md)
 - [479-legacy-product-name-residue-cleanup-slice.md](479-legacy-product-name-residue-cleanup-slice.md)
 - [480-distributed-proof-custom-agent-engine-setup-slice.md](480-distributed-proof-custom-agent-engine-setup-slice.md)
+- [481-fake-external-http-agent-engine-harness-slice.md](481-fake-external-http-agent-engine-harness-slice.md)
 
 ## Audited Scope
 
@@ -650,6 +651,11 @@ The repository is not fully federated:
   POSTing the shared turn request and bounded runtime metadata to the
   configured endpoint and validating a shared turn result JSON object from the
   response body;
+- operators can now start a deterministic fake external HTTP agent engine with
+  `pnpm ops:fake-agent-engine-http`, point an `external_http` profile at its
+  `/turn` endpoint, and use `pnpm ops:smoke-fake-agent-engine-http` to verify
+  no-credential health, shared turn execution, optional workspace mutation, and
+  debug-state plumbing;
 - the active agent engine kind contract now exposes only runner-executable
   kinds: `opencode_server`, `external_process`, and `external_http`;
 - the distributed proof kit can now generate Host operator setup for

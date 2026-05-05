@@ -1,5 +1,14 @@
 # Entangle Wiki Log
 
+## [2026-05-05] tooling | Added fake external HTTP agent-engine harness
+
+Added `references/481-fake-external-http-agent-engine-harness-slice.md`.
+`pnpm ops:fake-agent-engine-http` starts a deterministic no-credential
+`external_http` agent-engine endpoint that accepts Entangle's shared turn
+payload and can optionally write inside the source workspace. The companion
+`pnpm ops:smoke-fake-agent-engine-http` smoke verifies health, turn response,
+workspace mutation, and debug-state plumbing without live model credentials.
+
 ## [2026-05-05] ops | Added custom engine setup to distributed proof kit
 
 Added `references/480-distributed-proof-custom-agent-engine-setup-slice.md`.

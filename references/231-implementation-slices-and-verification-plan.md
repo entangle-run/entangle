@@ -266,6 +266,11 @@ Current status:
   on an ephemeral port and verifies Basic-authenticated health, session
   creation, SSE permission delivery, permission reply, deterministic assistant
   output, and idle status.
+- `pnpm ops:fake-agent-engine-http` now starts a deterministic external HTTP
+  agent-engine fixture that implements the shared turn contract, and
+  `pnpm ops:smoke-fake-agent-engine-http` verifies health, turn execution,
+  response shape, optional workspace mutation, and debug state without live
+  model credentials.
 - `pnpm ops:smoke-federated-process-runner` can now run with
   `--use-fake-opencode-server` to configure the builder node with that attached
   fake OpenCode server, approve OpenCode permission requests through the
@@ -874,6 +879,9 @@ Implementation record:
 - [480-distributed-proof-custom-agent-engine-setup-slice.md](480-distributed-proof-custom-agent-engine-setup-slice.md)
   teaches the distributed proof kit to upsert and bind `external_process` and
   `external_http` profiles through generated Host operator commands.
+- [481-fake-external-http-agent-engine-harness-slice.md](481-fake-external-http-agent-engine-harness-slice.md)
+  adds a deterministic no-credential HTTP endpoint plus smoke coverage for
+  custom `external_http` agent-engine plumbing.
 - [465-cli-agent-engine-profile-upsert-slice.md](465-cli-agent-engine-profile-upsert-slice.md)
   adds a Host-backed CLI catalog command for creating and updating typed agent
   engine profiles, including attached OpenCode profiles, permission mode,
