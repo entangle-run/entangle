@@ -1,5 +1,22 @@
 # Entangle Wiki Log
 
+## [2026-05-05] user-client | Added expected wiki draft hashes
+
+Added `references/526-user-client-wiki-draft-stale-hash-slice.md`.
+When a projected wiki page preview is loaded into the User Client edit form,
+the client now computes the preview's UTF-8 SHA-256 and populates the expected
+current hash field.
+
+This makes participant wiki page updates use runner-enforced stale-edit
+protection by default while preserving manual override through the existing
+field.
+
+Targeted checks passed:
+
+- `pnpm --filter @entangle/user-client test -- src/runtime-api.test.ts`
+- `pnpm --filter @entangle/user-client typecheck`
+- `pnpm --filter @entangle/user-client lint`
+
 ## [2026-05-05] cli | Added Host audit-bundle signature verification
 
 Added `references/525-host-event-audit-bundle-signature-verify-slice.md`.

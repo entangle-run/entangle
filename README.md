@@ -1549,8 +1549,8 @@ The highest-value remaining gaps are:
   explicit runner-owned artifact/source/wiki command completion receipts,
   first operator and participant-scoped runner-owned wiki page upsert support
   with runner-enforced stale-edit detection, single-page patch mode, and
-  projected-preview draft prefill, User Client approval-response turn
-  correlation, richer
+  projected-preview draft prefill with automatic expected-hash population, User
+  Client approval-response turn correlation, richer
   collaborative wiki merge UI and repository lifecycle behavior beyond
   explicit target publication, and replicated fallback paths;
 - production identity and authorization beyond the bootstrap operator-token

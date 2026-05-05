@@ -175,6 +175,17 @@ export function normalizeApiBaseUrl(value: string | undefined): string {
   return trimmed.endsWith("/") ? trimmed.slice(0, -1) : trimmed;
 }
 
+export async function computeUtf8Sha256Hex(content: string): Promise<string> {
+  const digest = await globalThis.crypto.subtle.digest(
+    "SHA-256",
+    new TextEncoder().encode(content)
+  );
+
+  return [...new Uint8Array(digest)]
+    .map((byte) => byte.toString(16).padStart(2, "0"))
+    .join("");
+}
+
 export function buildRuntimeApiUrl(pathname: string, baseUrl = ""): string {
   if (!baseUrl) {
     return pathname;

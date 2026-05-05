@@ -864,6 +864,7 @@ files are the active federated redesign pack.
 524. [523-opencode-permission-cancellation-slice.md](523-opencode-permission-cancellation-slice.md)
 525. [524-host-event-audit-bundle-offline-verify-slice.md](524-host-event-audit-bundle-offline-verify-slice.md)
 526. [525-host-event-audit-bundle-signature-verify-slice.md](525-host-event-audit-bundle-signature-verify-slice.md)
+527. [526-user-client-wiki-draft-stale-hash-slice.md](526-user-client-wiki-draft-stale-hash-slice.md)
 
 ## Role of this corpus
 

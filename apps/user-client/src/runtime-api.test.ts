@@ -7,6 +7,7 @@ import {
   buildWikiPageDraftFromProjection,
   buildRuntimeApiUrl,
   chooseConversationId,
+  computeUtf8Sha256Hex,
   fetchArtifactDiff,
   fetchArtifactHistory,
   fetchArtifactPreview,
@@ -318,6 +319,12 @@ describe("user client runtime API helpers", () => {
         }
       })
     ).toBeUndefined();
+  });
+
+  it("computes UTF-8 SHA-256 hashes for wiki page stale-edit guards", async () => {
+    await expect(computeUtf8Sha256Hex("Current.")).resolves.toBe(
+      "9bc87a3384e31a6c677862caf16d000f2fbd80613d8a6b7b3c70c9909c448f8a"
+    );
   });
 
   it("preserves turn correlation when publishing approval responses", async () => {

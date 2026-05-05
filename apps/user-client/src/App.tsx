@@ -15,6 +15,7 @@ import type {
 import {
   buildWikiPageDraftFromProjection,
   chooseConversationId,
+  computeUtf8Sha256Hex,
   fetchArtifactDiff,
   fetchArtifactHistory,
   fetchArtifactPreview,
@@ -915,10 +916,16 @@ function WikiResourceCards({
               <button
                 onClick={() => {
                   setPageContent(draft.content);
-                  setPageExpectedSha256("");
                   setPageMode("replace");
                   setPagePath(draft.path);
                   setStatus(`draft loaded ${draft.path}`);
+                  void computeUtf8Sha256Hex(draft.content)
+                    .then((sha256) => {
+                      setPageExpectedSha256(sha256);
+                    })
+                    .catch(() => {
+                      setPageExpectedSha256("");
+                    });
                 }}
                 type="button"
               >

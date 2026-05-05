@@ -1471,6 +1471,9 @@ Current status:
   entrypoint-node, last-message, and active-route metadata in both the bounded
   synthesis prompt and deterministic working-context wiki page, giving
   delegated sessions owner-aware continuation context;
+- the User Client now computes the SHA-256 of projected wiki page previews when
+  loading page drafts, so participant wiki page updates carry stale-edit
+  protection by default instead of relying on manual hash entry;
 - focused-register lifecycle transition history now writes an indexed wiki
   summary page and future memory ref, so closures, completions, replacements,
   consolidations, and exact-overlap retirements are visible through the node
