@@ -1,5 +1,26 @@
 # Entangle Wiki Log
 
+## [2026-05-05] ops | Added distributed proof runner Compose generation
+
+Added `references/540-distributed-proof-runner-compose-slice.md`.
+`pnpm ops:distributed-proof-kit --write-runner-compose` can now add a
+runner-only `docker-compose.runners.yml` and per-runner `start-container.sh`
+entrypoints to generated proof kits.
+
+This gives operators a same-machine container-boundary rehearsal path for the
+three generated runners while preserving the federated requirement that Host,
+relay, and git are reached over network URLs rather than shared runner
+filesystems.
+
+Targeted checks passed:
+
+- `node --check scripts/federated-distributed-proof-kit.mjs`
+- `node --check scripts/smoke-distributed-proof-tools.mjs`
+- runner Compose proof-kit dry-run with custom image and external network
+- `pnpm ops:smoke-distributed-proof-tools`
+- local-assumption marker audit classified new `Docker` hits as valid
+  runner-container proof tooling/docs
+
 ## [2026-05-05] deploy | Stabilized federated dev service volume names
 
 Added `references/539-federated-dev-explicit-service-volumes-slice.md`.

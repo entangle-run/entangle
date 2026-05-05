@@ -236,6 +236,13 @@ machine.
 Copy each runner directory to its intended machine and set
 `ENTANGLE_REPO_ROOT` there; no generated runner command should require Host
 filesystem access.
+For a same-machine rehearsal that still isolates runners behind container
+boundaries, generate the kit with `--write-runner-compose`. The generated
+`docker-compose.runners.yml` starts the three runner directories in separate
+runner-image containers; use Host and relay URLs reachable from those
+containers, or attach the services to an existing proof network with
+`--runner-compose-network <network>` and
+`--runner-compose-external-network`.
 
 After those runners are started and the operator commands have run, verify the
 proof through Host and User Client HTTP surfaces:

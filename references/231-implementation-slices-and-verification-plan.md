@@ -1540,6 +1540,11 @@ Current status:
 - CLI User Client health probes now use a default bounded timeout and expose
   `--health-timeout-ms`, so unreachable participant endpoints cannot hold the
   operator command open indefinitely;
+- generated distributed proof kits can now optionally include
+  `docker-compose.runners.yml` plus per-runner container entrypoints with
+  `--write-runner-compose`, giving operators a same-machine container-boundary
+  rehearsal path while preserving Host/runner communication through reachable
+  Host and relay URLs;
 - the remaining distributed proof hardening is infrastructure-backed
   orchestration that can provision multiple machines or VM/container boundaries
   around the verifier.

@@ -192,6 +192,30 @@ try {
     mustContain: "[dry-run] would write runner env/start scripts"
   });
 
+  runStep("proof kit runner-compose dry-run", [
+    "scripts/federated-distributed-proof-kit.mjs",
+    "--dry-run",
+    "--write-runner-compose",
+    "--runner-compose-image",
+    "entangle-runner:test",
+    "--runner-compose-network",
+    "entangle",
+    "--runner-compose-external-network",
+    "--output",
+    "/tmp/entangle-distributed-proof-ci-runner-compose",
+    "--host-url",
+    "http://host.example:7071",
+    "--relay-url",
+    "ws://relay.example:7777",
+    "--host-token",
+    "dev-token"
+  ], {
+    mustContain: [
+      "runner compose: docker-compose.runners.yml (entangle-runner:test, network entangle, external)",
+      "would write runner env/start scripts, runner compose files"
+    ]
+  });
+
   runStep("proof kit custom-engine dry-run", [
     "scripts/federated-distributed-proof-kit.mjs",
     "--dry-run",

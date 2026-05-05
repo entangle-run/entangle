@@ -340,6 +340,7 @@ same-machine slice records.
 - [537-bootstrap-operator-config-validation-slice.md](537-bootstrap-operator-config-validation-slice.md)
 - [538-root-test-gate-package-level-slice.md](538-root-test-gate-package-level-slice.md)
 - [539-federated-dev-explicit-service-volumes-slice.md](539-federated-dev-explicit-service-volumes-slice.md)
+- [540-distributed-proof-runner-compose-slice.md](540-distributed-proof-runner-compose-slice.md)
 
 ## Audited Scope
 

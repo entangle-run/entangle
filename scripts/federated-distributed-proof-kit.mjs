@@ -43,6 +43,12 @@ const userClientBasicAuthEnvVar =
   readFlagValue("--user-client-basic-auth-env-var") ??
   "ENTANGLE_HUMAN_INTERFACE_BASIC_AUTH";
 const userClientBasicAuthPlaceholder = "REPLACE_WITH_USERNAME_PASSWORD";
+const writeRunnerCompose = hasFlag("--write-runner-compose");
+const runnerComposeImage =
+  readFlagValue("--runner-compose-image") ?? "entangle-runner:federated-dev";
+const runnerComposeNetwork =
+  readFlagValue("--runner-compose-network") ?? "entangle-proof";
+const runnerComposeExternalNetwork = hasFlag("--runner-compose-external-network");
 const heartbeatIntervalMs = readFlagValue("--heartbeat-interval-ms") ?? "1000";
 const requestedAgentEngineKinds = splitRepeatedValues(
   readFlagValues("--agent-engine-kind")
@@ -149,6 +155,11 @@ Options:
   --require-user-client-basic-auth  Add a required Human Interface Runtime Basic Auth env placeholder to generated User Node runner env files.
   --user-client-basic-auth-env-var <envVar>
                                     Source env var for generated User Client Basic Auth placeholders. Default: ENTANGLE_HUMAN_INTERFACE_BASIC_AUTH
+  --write-runner-compose           Write docker-compose.runners.yml and container-native runner start scripts for same-machine container-boundary proofs.
+  --runner-compose-image <image>   Runner image for generated runner Compose services. Default: entangle-runner:federated-dev
+  --runner-compose-network <name>  Network name for generated runner Compose services. Default: entangle-proof
+  --runner-compose-external-network
+                                    Treat --runner-compose-network as an already-created external Docker network.
   --heartbeat-interval-ms <ms>      Runner heartbeat interval in generated configs. Default: 1000
   --runner-secret-env-var <envVar>  Env var runners will read for their Nostr secret. Default: ENTANGLE_RUNNER_NOSTR_SECRET_KEY
   --agent-engine-kind <kind>         Agent runner engine kind. May be repeated or comma-separated. Default: opencode_server
@@ -402,6 +413,29 @@ exec pnpm --filter @entangle/runner exec tsx src/index.ts join --config "$SCRIPT
 `;
 }
 
+function buildRunnerContainerStartScript(profile) {
+  return `#!/usr/bin/env sh
+set -eu
+
+SCRIPT_DIR="$(CDPATH= cd -- "$(dirname -- "$0")" && pwd)"
+
+set -a
+# shellcheck disable=SC1091
+. "$SCRIPT_DIR/runner.env"
+set +a
+
+${hostTokenEnvVar ? `if [ "\${${hostTokenEnvVar}:-}" = "REPLACE_WITH_HOST_TOKEN" ]; then
+  echo "Set ${hostTokenEnvVar} in $SCRIPT_DIR/runner.env or the container environment before starting this runner." >&2
+  exit 1
+fi` : "# Host bearer-token env is not configured for this no-auth proof kit."}
+${buildUserClientBasicAuthStartCheck(profile)}
+
+export ENTANGLE_RUNNER_STATE_ROOT="\${ENTANGLE_RUNNER_STATE_ROOT:-$SCRIPT_DIR/state}"
+
+exec node /app/dist/index.js join --config "$SCRIPT_DIR/runner-join.json"
+`;
+}
+
 function buildOperatorEnvContent() {
   const hostTokenValue =
     writeHostToken && hostToken ? hostToken : "REPLACE_WITH_HOST_TOKEN";
@@ -471,6 +505,47 @@ function buildOperatorCommandsScript() {
   );
 
   return `${lines.join("\n")}\n`;
+}
+
+function buildRunnerComposeServiceName(profile) {
+  return profile.directory.replace(/[^a-zA-Z0-9_-]/gu, "-");
+}
+
+function buildRunnerComposeYaml() {
+  const services = runnerProfiles
+    .map((profile) => {
+      const serviceName = buildRunnerComposeServiceName(profile);
+      return [
+        `  ${serviceName}:`,
+        `    image: ${runnerComposeImage}`,
+        "    command:",
+        "      - /bin/sh",
+        `      - /proof/${profile.directory}/start-container.sh`,
+        "    volumes:",
+        `      - ./${profile.directory}:/proof/${profile.directory}`,
+        "    extra_hosts:",
+        "      - host.docker.internal:host-gateway",
+        "    networks:",
+        "      - proof"
+      ].join("\n");
+    })
+    .join("\n\n");
+  const network = runnerComposeExternalNetwork
+    ? [
+        "  proof:",
+        `    name: ${runnerComposeNetwork}`,
+        "    external: true"
+      ].join("\n")
+    : ["  proof:", `    name: ${runnerComposeNetwork}`].join("\n");
+
+  return [
+    "services:",
+    services,
+    "",
+    "networks:",
+    network,
+    ""
+  ].join("\n");
 }
 
 function buildAgentEngineProfileOperatorCommands() {
@@ -722,6 +797,8 @@ Set \`ENTANGLE_PROOF_JUNIT_DIR\` before running \`operator/verify-topology.sh\`
 or \`operator/verify-artifacts.sh\` to persist JUnit XML reports named
 \`topology.xml\` and \`artifacts.xml\` in that directory.
 
+${buildRunnerComposeReadmeSection()}
+
 ## Files
 
 - \`agent-runner/runner-join.json\`: generic agent runner join config for the configured engine kind(s).
@@ -737,10 +814,40 @@ or \`operator/verify-artifacts.sh\` to persist JUnit XML reports named
 - \`operator/commands.sh\`: operator commands for trust, assignment, user message, projection, and verification.
 - \`operator/verify-topology.sh\`: repeatable topology, runtime, conversation, and optional relay/git verification.
 - \`operator/verify-artifacts.sh\`: post-work verifier requiring projected artifact/source/wiki evidence and published git artifact evidence from the agent node.
+${writeRunnerCompose ? "- `docker-compose.runners.yml`: optional same-machine runner-container proof boundary for the three generated runner directories.\n- `*/start-container.sh`: container-native runner entrypoint used by `docker-compose.runners.yml`.\n" : ""}
 
 The generated runner join configs use the same generic \`entangle-runner join\`
 path as local process and Docker proofs. If this kit only works when copied to
 the Host machine, the proof has failed.
+`;
+}
+
+function buildRunnerComposeReadmeSection() {
+  if (!writeRunnerCompose) {
+    return "";
+  }
+
+  const networkMode = runnerComposeExternalNetwork
+    ? `external Docker network \`${runnerComposeNetwork}\``
+    : `generated Docker network \`${runnerComposeNetwork}\``;
+
+  return `## Optional Runner Compose Boundary
+
+This kit also includes \`docker-compose.runners.yml\` for a same-machine proof
+that still puts each runner behind a container boundary. Build or pull
+\`${runnerComposeImage}\`, make sure the generated Host and relay URLs are
+reachable from containers, then run:
+
+\`\`\`bash
+docker compose -f docker-compose.runners.yml up
+\`\`\`
+
+The generated runner services use the ${networkMode}. If Host, relay, or git
+are already running in another Docker network, generate the kit with
+\`--runner-compose-network <network>\` and
+\`--runner-compose-external-network\`, or use Host/relay URLs reachable through
+\`host.docker.internal\`.
+
 `;
 }
 
@@ -843,6 +950,11 @@ async function writeKit() {
         `[dry-run] ${authEnvSummary}`
       );
     }
+    if (writeRunnerCompose) {
+      console.log(
+        `[dry-run] runner compose: docker-compose.runners.yml (${runnerComposeImage}, network ${runnerComposeNetwork}${runnerComposeExternalNetwork ? ", external" : ""})`
+      );
+    }
     console.log(
       "[dry-run] operator client health command: run_cli user-nodes clients --summary --check-health"
     );
@@ -865,7 +977,9 @@ async function writeKit() {
       )}`
     );
     console.log(
-      "[dry-run] would write runner env/start scripts, operator commands, verifier scripts, and README."
+      `[dry-run] would write runner env/start scripts${
+        writeRunnerCompose ? ", runner compose files" : ""
+      }, operator commands, verifier scripts, and README.`
     );
     return;
   }
@@ -882,6 +996,12 @@ async function writeKit() {
       "utf8"
     );
     await writeExecutable(path.join(profileDir, "start.sh"), buildRunnerStartScript(profile));
+    if (writeRunnerCompose) {
+      await writeExecutable(
+        path.join(profileDir, "start-container.sh"),
+        buildRunnerContainerStartScript(profile)
+      );
+    }
   }
 
   const operatorDir = path.join(outputDir, "operator");
@@ -919,6 +1039,13 @@ async function writeKit() {
     })
   );
   await writeFile(path.join(outputDir, "README.md"), buildReadme(), "utf8");
+  if (writeRunnerCompose) {
+    await writeFile(
+      path.join(outputDir, "docker-compose.runners.yml"),
+      buildRunnerComposeYaml(),
+      "utf8"
+    );
+  }
   console.log(`[kit] Wrote distributed proof kit to ${outputDir}`);
 }
 

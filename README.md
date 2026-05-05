@@ -437,6 +437,13 @@ User Clients start. Use `--user-client-basic-auth-env-var <envVar>` if the
 operator machines should source the placeholder from a different environment
 variable. Generated `start.sh` scripts fail fast until the placeholder is
 replaced with `username:password`.
+Pass `--write-runner-compose` to add a runner-only
+`docker-compose.runners.yml` and container-native `start-container.sh` scripts
+to the generated kit. This is useful for a same-machine rehearsal where each
+runner has its own container boundary; generate Host and relay URLs that are
+reachable from those containers, or pass `--runner-compose-network <network>`
+with `--runner-compose-external-network` to attach the runner services to an
+existing proof network.
 Operators can also inspect and probe projected User Client endpoints from the
 Host-facing CLI:
 

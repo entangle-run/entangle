@@ -318,6 +318,11 @@ required-artifact-evidence success/failure paths, before an operator attempts
 the real distributed proof. It also proves relay-health success and missing
 relay failure paths plus git-backend-health success, file-backed-git rejection,
 and missing-git-service rejection.
+`pnpm ops:distributed-proof-kit --write-runner-compose` can now add a
+runner-only `docker-compose.runners.yml` plus per-runner container entrypoints
+to the generated proof kit. This gives operators a same-machine
+container-boundary rehearsal path while keeping Host, relay, and git as
+network-reachable services instead of shared runner filesystems.
 The root `pnpm test` gate now runs every test-bearing workspace through a
 bounded runner that invokes package-equivalent Vitest commands directly. The
 Host suite is split per test file to avoid a multi-file startup stall while
@@ -884,6 +889,7 @@ files are the active federated redesign pack.
 538. [537-bootstrap-operator-config-validation-slice.md](537-bootstrap-operator-config-validation-slice.md)
 539. [538-root-test-gate-package-level-slice.md](538-root-test-gate-package-level-slice.md)
 540. [539-federated-dev-explicit-service-volumes-slice.md](539-federated-dev-explicit-service-volumes-slice.md)
+541. [540-distributed-proof-runner-compose-slice.md](540-distributed-proof-runner-compose-slice.md)
 
 ## Role of this corpus
 
