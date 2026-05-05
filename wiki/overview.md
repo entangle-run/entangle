@@ -253,10 +253,10 @@ The most accurate current description is:
   CLI, and Studio can inspect grouped assignment progress, including recent
   command receipt rows in Studio, compact CLI projection output, and a
   dedicated CLI command receipt list with assignment, node, runner, command
-  type, status, and limit filters, plus a Studio assignment timeline drilldown
-  over the same Host endpoint with related navigation to runtime, runner,
-  source-history, and command receipt panels, without scanning generic events
-  or reading runner-local state;
+  type, status, requester, and limit filters, plus a Studio assignment timeline
+  drilldown over the same Host endpoint with related navigation to runtime,
+  runner, source-history, and command receipt panels, without scanning generic
+  events or reading runner-local state;
 - artifact source-change proposal requests are now exposed through CLI and
   Studio artifact inspection surfaces, using the same Host-signed runner
   control path while completion returns as both projected source-change
@@ -297,6 +297,9 @@ The most accurate current description is:
 - artifact restore, source-history publication/replay, and wiki publication
   now emit the same signed command receipt model, correlated with restore,
   source-history, replay, or wiki artifact result ids where available;
+- runtime command receipts now preserve optional requester attribution, and the
+  running User Client state shows only receipts requested by the current User
+  Node while Studio and CLI retain full operator projection access;
 - the running User Client can now request runner-owned artifact restore for
   artifacts visible in the selected User Node conversation, and the
   process-runner smoke proves that path through a completed projected

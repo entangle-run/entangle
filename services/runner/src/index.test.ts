@@ -1128,6 +1128,45 @@ describe("runner runtime context", () => {
               ],
               generatedAt: "2026-04-26T12:02:00.000Z",
               hostAuthorityPubkey: hostPublicKey,
+              runtimeCommandReceipts: [
+                {
+                  assignmentId: "assignment-alpha",
+                  commandEventType: "runtime.wiki.publish",
+                  commandId: "cmd-user-wiki-publish-alpha",
+                  graphId: "graph-alpha",
+                  hostAuthorityPubkey: hostPublicKey,
+                  nodeId: "worker-it",
+                  observedAt: "2026-04-26T12:04:00.000Z",
+                  projection: {
+                    source: "observation_event",
+                    updatedAt: "2026-04-26T12:04:00.000Z"
+                  },
+                  receiptMessage: "Wiki publication completed.",
+                  receiptStatus: "completed",
+                  requestedBy: "user-main",
+                  runnerId: "runner-alpha",
+                  runnerPubkey: remotePublicKey,
+                  wikiArtifactId: "wiki-alpha"
+                },
+                {
+                  assignmentId: "assignment-alpha",
+                  commandEventType: "runtime.wiki.publish",
+                  commandId: "cmd-operator-wiki-publish-alpha",
+                  graphId: "graph-alpha",
+                  hostAuthorityPubkey: hostPublicKey,
+                  nodeId: "worker-it",
+                  observedAt: "2026-04-26T12:03:30.000Z",
+                  projection: {
+                    source: "observation_event",
+                    updatedAt: "2026-04-26T12:03:30.000Z"
+                  },
+                  receiptStatus: "completed",
+                  requestedBy: "operator-main",
+                  runnerId: "runner-alpha",
+                  runnerPubkey: remotePublicKey,
+                  wikiArtifactId: "wiki-operator"
+                }
+              ],
               schemaVersion: "1",
               sourceChangeRefs: [
                 {
@@ -2014,6 +2053,13 @@ describe("runner runtime context", () => {
           {
             nodeId: "worker-it",
             sourceHistoryId: "source-history-turn-alpha"
+          }
+        ],
+        runtimeCommandReceipts: [
+          {
+            commandId: "cmd-user-wiki-publish-alpha",
+            requestedBy: "user-main",
+            wikiArtifactId: "wiki-alpha"
           }
         ],
         targets: [
@@ -3755,6 +3801,7 @@ describe("runner runtime context", () => {
         assignmentId: "assignment-alpha",
         commandEventType: "runtime.artifact.propose_source_change",
         proposalId: "artifact-proposal-alpha",
+        requestedBy: "operator-main",
         status: "received",
         targetPath: "proposals/report.md"
       }),
@@ -3764,6 +3811,7 @@ describe("runner runtime context", () => {
         candidateId: "artifact-proposal-alpha",
         commandEventType: "runtime.artifact.propose_source_change",
         proposalId: "artifact-proposal-alpha",
+        requestedBy: "operator-main",
         status: "completed",
         targetPath: "proposals/report.md"
       })
@@ -3800,18 +3848,21 @@ describe("runner runtime context", () => {
           artifactId: "artifact-alpha",
           commandEventType: "runtime.artifact.restore",
           commandId: "cmd-artifact-restore-alpha",
+          requestedBy: "operator-main",
           restoreId: "restore-alpha",
           status: "completed"
         }),
         expect.objectContaining({
           commandEventType: "runtime.source_history.publish",
           commandId: "cmd-source-history-publish-alpha",
+          requestedBy: "operator-main",
           sourceHistoryId: "source-history-alpha",
           status: "completed"
         }),
         expect.objectContaining({
           commandEventType: "runtime.source_history.replay",
           commandId: "cmd-source-history-replay-alpha",
+          requestedBy: "operator-main",
           replayId: "replay-source-history-alpha",
           sourceHistoryId: "source-history-alpha",
           status: "completed"
@@ -3819,6 +3870,7 @@ describe("runner runtime context", () => {
         expect.objectContaining({
           commandEventType: "runtime.source_history.reconcile",
           commandId: "cmd-source-history-reconcile-alpha",
+          requestedBy: "operator-main",
           replayId: "reconcile-source-history-alpha",
           sourceHistoryId: "source-history-alpha",
           status: "completed"
@@ -3826,12 +3878,14 @@ describe("runner runtime context", () => {
         expect.objectContaining({
           commandEventType: "runtime.wiki.publish",
           commandId: "cmd-wiki-publish-alpha",
+          requestedBy: "operator-main",
           status: "completed",
           wikiArtifactId: "wiki-worker-it-abc123"
         }),
         expect.objectContaining({
           commandEventType: "runtime.wiki.upsert_page",
           commandId: "cmd-wiki-upsert-page-alpha",
+          requestedBy: "operator-main",
           status: "completed",
           wikiPageExpectedSha256:
             "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",

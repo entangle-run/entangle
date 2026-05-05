@@ -31,6 +31,24 @@ type RuntimeCommandControlPayload = Extract<
   { commandId: string; graphId: string; nodeId: string }
 >;
 
+function resolveRuntimeCommandRequestedBy(
+  payload: RuntimeCommandControlPayload
+): string | undefined {
+  if ("requestedBy" in payload && payload.requestedBy) {
+    return payload.requestedBy;
+  }
+
+  if ("replayedBy" in payload && payload.replayedBy) {
+    return payload.replayedBy;
+  }
+
+  if ("cancellation" in payload && payload.cancellation.requestedBy) {
+    return payload.cancellation.requestedBy;
+  }
+
+  return undefined;
+}
+
 const defaultHeartbeatIntervalMs = 30_000;
 
 export type RunnerJoinTransport = {
@@ -620,6 +638,8 @@ export class RunnerJoinService {
       };
     };
   }> {
+    const requestedBy = resolveRuntimeCommandRequestedBy(input.payload);
+
     return this.publishObservation({
       ...(input.receipt?.artifactId
         ? { artifactId: input.receipt.artifactId }
@@ -642,6 +662,7 @@ export class RunnerJoinService {
         ? { proposalId: input.receipt.proposalId }
         : {}),
       ...(input.receipt?.replayId ? { replayId: input.receipt.replayId } : {}),
+      ...(requestedBy ? { requestedBy } : {}),
       ...(input.receipt?.restoreId
         ? { restoreId: input.receipt.restoreId }
         : {}),

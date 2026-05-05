@@ -661,6 +661,7 @@ describe("federated runtime contracts", () => {
       observedAt,
       proposalId: "artifact-proposal-alpha",
       protocol: "entangle.observe.v1",
+      requestedBy: "user-main",
       runnerId: "runner-alpha",
       runnerPubkey,
       sessionId: "session-alpha",
@@ -696,6 +697,7 @@ describe("federated runtime contracts", () => {
         proposalId: receipt.proposalId,
         receiptMessage: receipt.message,
         receiptStatus: receipt.status,
+        requestedBy: receipt.requestedBy,
         runnerId: receipt.runnerId,
         runnerPubkey: receipt.runnerPubkey,
         sessionId: receipt.sessionId,
@@ -3420,6 +3422,7 @@ describe("host event contracts", () => {
       proposalId: "artifact-proposal-alpha",
       receiptMessage: "Artifact produced a source-change proposal.",
       receiptStatus: "completed",
+      requestedBy: "user-main",
       runnerId: "runner-alpha",
       runnerPubkey,
       schemaVersion: "1",
@@ -3438,6 +3441,7 @@ describe("host event contracts", () => {
 
     expect(result.type).toBe("runtime.command.receipt");
     expect(result.receiptStatus).toBe("completed");
+    expect(result.requestedBy).toBe("user-main");
     expect(result.sessionId).toBe("session-alpha");
     expect(result.candidateId).toBe("artifact-proposal-alpha");
     expect(result.wikiPagePreviousSha256).toBe(

@@ -909,6 +909,7 @@ hostCommand
   .command("command-receipts")
   .option("--assignment-id <assignmentId>", "Filter to one runtime assignment.")
   .option("--node-id <nodeId>", "Filter to one graph node.")
+  .option("--requested-by <nodeId>", "Filter to commands requested by one node.")
   .option("--runner-id <runnerId>", "Filter to one joined runner.")
   .option("--type <commandEventType>", "Filter to one runtime command event type.")
   .option(
@@ -924,6 +925,7 @@ hostCommand
         assignmentId?: string;
         limit: string;
         nodeId?: string;
+        requestedBy?: string;
         runnerId?: string;
         status?: string;
         summary?: boolean;
@@ -944,6 +946,7 @@ hostCommand
             ? { assignmentId: options.assignmentId }
             : {}),
           ...(options.nodeId ? { nodeId: options.nodeId } : {}),
+          ...(options.requestedBy ? { requestedBy: options.requestedBy } : {}),
           ...(options.runnerId ? { runnerId: options.runnerId } : {}),
           ...(receiptStatus ? { receiptStatus } : {}),
           ...(options.type ? { commandEventType: options.type } : {})

@@ -5899,3 +5899,15 @@ exports compact Host Authority-signed event integrity reports through
 host-client exposes the same route, and `entangle host events integrity
 --signed` prints the signed report with exact signed content, report hash, and
 Nostr signature metadata.
+
+## [2026-05-05] user-client | Added participant command receipt visibility
+
+Added `references/500-user-client-command-receipt-visibility-slice.md`.
+Runtime command receipt observations, Host event records, and Host projection
+records now preserve optional `requestedBy` attribution.
+
+Joined runners copy User Node/operator attribution from accepted runtime
+commands into received/completed/failed command receipts. The running User
+Client now exposes and renders only receipts requested by its own User Node,
+while CLI and Studio retain operator access to the full projected receipt set;
+CLI command receipt inspection also supports `--requested-by`.

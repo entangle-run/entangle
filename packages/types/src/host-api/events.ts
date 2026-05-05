@@ -291,6 +291,7 @@ export const runtimeCommandReceiptEventSchema = hostEventBaseSchema.extend({
   receiptMessage: nonEmptyStringSchema.optional(),
   receiptStatus: hostRuntimeCommandReceiptStatusSchema,
   replayId: identifierSchema.optional(),
+  requestedBy: identifierSchema.optional(),
   restoreId: identifierSchema.optional(),
   runnerId: identifierSchema,
   runnerPubkey: nostrPublicKeySchema,

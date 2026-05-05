@@ -41,6 +41,7 @@ export type RuntimeCommandReceiptCliSummary = {
   nodeId: string;
   observedAt: string;
   receiptStatus: string;
+  requestedBy?: string;
   runnerId: string;
   wikiPageExpectedSha256?: string;
   wikiPageNextSha256?: string;
@@ -53,6 +54,7 @@ export type RuntimeCommandReceiptCliFilters = {
   commandEventType?: string;
   nodeId?: string;
   receiptStatus?: RuntimeCommandReceiptProjectionRecord["receiptStatus"];
+  requestedBy?: string;
   runnerId?: string;
 };
 
@@ -146,6 +148,13 @@ export function filterRuntimeCommandReceiptsForCli(
       return false;
     }
 
+    if (
+      filters.requestedBy !== undefined &&
+      receipt.requestedBy !== filters.requestedBy
+    ) {
+      return false;
+    }
+
     if (filters.runnerId !== undefined && receipt.runnerId !== filters.runnerId) {
       return false;
     }
@@ -174,6 +183,7 @@ export function projectRuntimeCommandReceiptSummary(
       ? { wikiPagePreviousSha256: receipt.wikiPagePreviousSha256 }
       : {}),
     receiptStatus: receipt.receiptStatus,
+    ...(receipt.requestedBy ? { requestedBy: receipt.requestedBy } : {}),
     runnerId: receipt.runnerId
   };
 }

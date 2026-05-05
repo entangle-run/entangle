@@ -137,6 +137,7 @@ const projection: HostProjectionSnapshot = {
         updatedAt: "2026-04-26T12:02:00.000Z"
       },
       receiptStatus: "completed",
+      requestedBy: "user-main",
       runnerId: "runner-alpha",
       runnerPubkey:
         "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"
@@ -420,6 +421,9 @@ describe("Studio federation inspection helpers", () => {
     );
     expect(formatRuntimeCommandReceiptDetail(receipts[0]!)).toContain(
       "command cmd-start-alpha"
+    );
+    expect(formatRuntimeCommandReceiptDetail(receipts[0]!)).toContain(
+      "requested by user-main"
     );
     expect(
       summarizeAssignmentCommandReceiptsForStudio({

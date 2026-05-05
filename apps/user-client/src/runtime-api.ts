@@ -5,6 +5,7 @@ import type {
   RuntimeArtifactHistoryResponse,
   RuntimeArtifactRestoreResponse,
   RuntimeArtifactSourceChangeProposalResponse,
+  RuntimeCommandReceiptProjectionRecord,
   RuntimeSourceChangeCandidateFilePreviewResponse,
   RuntimeSourceChangeCandidateInspectionResponse,
   RuntimeSourceHistoryPublishResponse,
@@ -45,6 +46,7 @@ export type UserClientState = {
   };
   sourceChangeRefs: SourceChangeRefProjectionRecord[];
   sourceHistoryRefs: SourceHistoryRefProjectionRecord[];
+  runtimeCommandReceipts: RuntimeCommandReceiptProjectionRecord[];
   targets: UserClientTarget[];
   userNodeId: string;
   wikiRefs: WikiRefProjectionRecord[];

@@ -617,7 +617,7 @@ Current status:
   signed `runtime.command.receipt` observations, with session cancellation
   receipts carrying cancellation/session correlation ids;
 - CLI can list runtime command receipts directly from Host projection using
-  assignment, node, runner, command type, status, and limit filters;
+  assignment, node, runner, command type, status, requester, and limit filters;
 - Studio can inspect per-assignment timeline entries through the Host
   assignment timeline endpoint, keeping operator drilldown aligned with CLI;
 - richer collaborative wiki merge UI and multi-page patch-set behavior still
@@ -1188,6 +1188,10 @@ Current status:
   `source_history` resource, calls the running User Client reconcile JSON
   route, and waits for the completed projected
   `runtime.source_history.reconcile` command receipt;
+- runtime command receipt observations, Host events, and Host projection
+  records now preserve optional `requestedBy` attribution. The running User
+  Client exposes only receipts requested by its own User Node, while Studio and
+  CLI keep operator access to the full Host projection.
 - Host-generated artifact source-change proposal ids now derive from the
   command id when omitted by callers and are returned in the response
   acknowledgement as the runner candidate id to follow;

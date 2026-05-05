@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import type {
   ArtifactRef,
   GitRepositoryTargetSelector,
+  RuntimeCommandReceiptProjectionRecord,
   SourceChangeRefProjectionRecord,
   SourceHistoryPublicationTarget,
   SourceHistoryRefProjectionRecord,
@@ -1012,6 +1013,44 @@ function RuntimeStatus({ state }: { state: UserClientState }) {
   );
 }
 
+function RuntimeCommandReceiptList({
+  receipts
+}: {
+  receipts: RuntimeCommandReceiptProjectionRecord[];
+}) {
+  if (receipts.length === 0) {
+    return <p className="empty">No command receipts</p>;
+  }
+
+  return (
+    <div className="receipt-list">
+      {receipts.slice(0, 6).map((receipt) => (
+        <article className="receipt-card" key={receipt.commandId}>
+          <header>
+            <span>{receipt.receiptStatus}</span>
+            <span>{receipt.commandEventType}</span>
+          </header>
+          <strong>{receipt.commandId}</strong>
+          <span>
+            {receipt.nodeId} · {receipt.observedAt}
+          </span>
+          {receipt.receiptMessage ? <p>{receipt.receiptMessage}</p> : null}
+          {receipt.artifactId ? <span>artifact {receipt.artifactId}</span> : null}
+          {receipt.sourceHistoryId ? (
+            <span>source history {receipt.sourceHistoryId}</span>
+          ) : null}
+          {receipt.wikiArtifactId ? (
+            <span>wiki artifact {receipt.wikiArtifactId}</span>
+          ) : null}
+          {receipt.wikiPagePath ? (
+            <span>wiki page {receipt.wikiPagePath}</span>
+          ) : null}
+        </article>
+      ))}
+    </div>
+  );
+}
+
 function ConversationList({
   conversations,
   selectedConversationId,
@@ -1470,6 +1509,9 @@ export function App() {
           {state ? (
             <>
               <RuntimeStatus state={state} />
+              <RuntimeCommandReceiptList
+                receipts={state.runtimeCommandReceipts}
+              />
               <ConversationList
                 conversations={state.conversations}
                 onSelect={setSelectedConversationId}

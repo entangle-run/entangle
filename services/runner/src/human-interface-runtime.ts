@@ -16,6 +16,7 @@ import type {
   RuntimeArtifactPreviewResponse,
   RuntimeArtifactRestoreResponse,
   RuntimeArtifactSourceChangeProposalResponse,
+  RuntimeCommandReceiptProjectionRecord,
   RuntimeSourceChangeCandidateDiffResponse,
   RuntimeSourceChangeCandidateFilePreviewResponse,
   RuntimeSourceChangeCandidateInspectionResponse,
@@ -96,6 +97,7 @@ type UserClientState = {
   };
   sourceChangeRefs: SourceChangeRefProjectionRecord[];
   sourceHistoryRefs: SourceHistoryRefProjectionRecord[];
+  runtimeCommandReceipts: RuntimeCommandReceiptProjectionRecord[];
   targets: UserClientTarget[];
   userNodeId: string;
   wikiRefs: WikiRefProjectionRecord[];
@@ -641,6 +643,12 @@ function buildUserClientStateFingerprint(state: UserClientState): string {
       ref.sourceHistoryId,
       ref.projection.updatedAt
     ]),
+    runtimeCommandReceipts: state.runtimeCommandReceipts.map((receipt) => [
+      receipt.commandId,
+      receipt.commandEventType,
+      receipt.receiptStatus,
+      receipt.projection.updatedAt
+    ]),
     wikiRefs: state.wikiRefs.map((ref) => [
       ref.nodeId,
       ref.artifactId,
@@ -712,6 +720,16 @@ async function buildUserClientState(input: {
   const projection = await fetchHostProjection({
     hostApi: input.hostApi
   });
+  const runtimeCommandReceipts = (
+    projection.detail?.runtimeCommandReceipts ?? []
+  )
+    .filter((receipt) => receipt.requestedBy === userNodeId)
+    .sort((left, right) => {
+      const timeOrder = right.observedAt.localeCompare(left.observedAt);
+      return timeOrder !== 0
+        ? timeOrder
+        : left.commandId.localeCompare(right.commandId);
+    });
 
   return {
     conversations: inbox.conversations,
@@ -737,6 +755,7 @@ async function buildUserClientState(input: {
     },
     sourceChangeRefs: projection.detail?.sourceChangeRefs ?? [],
     sourceHistoryRefs: projection.detail?.sourceHistoryRefs ?? [],
+    runtimeCommandReceipts,
     targets: listTargetNodes(input.context),
     userNodeId,
     wikiRefs: projection.detail?.wikiRefs ?? []
@@ -3142,6 +3161,53 @@ function renderWikiRefsForPeer(input: {
   );
 }
 
+function renderRuntimeCommandReceipts(
+  receipts: RuntimeCommandReceiptProjectionRecord[]
+): string {
+  if (receipts.length === 0) {
+    return `<p class="empty">No participant command receipts yet.</p>`;
+  }
+
+  return `<div class="command-receipt-list">
+    ${receipts
+      .slice(0, 8)
+      .map(
+        (receipt) =>
+          `<article class="command-receipt">
+            <div class="message-meta">${escapeHtml(receipt.receiptStatus)} - ${escapeHtml(receipt.commandEventType)} - ${escapeHtml(receipt.observedAt)}</div>
+            <strong>${escapeHtml(receipt.commandId)}</strong>
+            <div class="message-meta">node ${escapeHtml(receipt.nodeId)} - runner ${escapeHtml(receipt.runnerId)}</div>
+            ${
+              receipt.receiptMessage
+                ? `<div>${escapeHtml(receipt.receiptMessage)}</div>`
+                : ""
+            }
+            ${
+              receipt.artifactId
+                ? `<div class="message-meta">artifact ${escapeHtml(receipt.artifactId)}</div>`
+                : ""
+            }
+            ${
+              receipt.sourceHistoryId
+                ? `<div class="message-meta">source history ${escapeHtml(receipt.sourceHistoryId)}</div>`
+                : ""
+            }
+            ${
+              receipt.wikiArtifactId
+                ? `<div class="message-meta">wiki artifact ${escapeHtml(receipt.wikiArtifactId)}</div>`
+                : ""
+            }
+            ${
+              receipt.wikiPagePath
+                ? `<div class="message-meta">wiki page ${escapeHtml(receipt.wikiPagePath)}</div>`
+                : ""
+            }
+          </article>`
+      )
+      .join("")}
+  </div>`;
+}
+
 function renderMessageDelivery(message: UserNodeMessageRecord): string {
   if (message.direction === "inbound") {
     return `<div class="message-meta">delivery received by User Client</div>`;
@@ -3363,6 +3429,12 @@ async function renderHome(input: {
             ref.sourceHistoryId,
             ref.projection?.updatedAt
           ]),
+          runtimeCommandReceipts: (state.runtimeCommandReceipts || []).map((receipt) => [
+            receipt.commandId,
+            receipt.commandEventType,
+            receipt.receiptStatus,
+            receipt.projection?.updatedAt
+          ]),
           wikiRefs: (state.wikiRefs || []).map((ref) => [
             ref.nodeId,
             ref.artifactId,
@@ -3451,6 +3523,8 @@ async function renderHome(input: {
       .artifact-action { color: var(--accent); font-weight: 700; text-decoration: none; width: fit-content; }
       .source-summary { border: 1px solid var(--line); border-radius: 6px; display: grid; gap: 4px; padding: 8px; }
       .source-summary ul { margin: 0; padding-left: 18px; }
+      .command-receipt-list { display: grid; gap: 8px; }
+      .command-receipt { border: 1px solid var(--line); border-radius: 6px; display: grid; gap: 4px; padding: 8px; }
       .wiki-preview { background: #f4f6f8; border-radius: 6px; margin: 0; max-height: 220px; overflow: auto; padding: 8px; white-space: pre-wrap; word-break: break-word; }
       .detail-list { display: grid; gap: 10px; margin: 12px 0 0; }
       .detail-list div { display: grid; grid-template-columns: 120px 1fr; gap: 10px; }
@@ -3496,6 +3570,10 @@ async function renderHome(input: {
               <div><dt>Relays</dt><dd>${escapeHtml(relayList)}</dd></div>
               <div><dt>Targets</dt><dd>${escapeHtml(state.targets.map((target) => target.nodeId).join(", ") || "none")}</dd></div>
             </dl>
+          </section>
+          <section>
+            <h2>Command Receipts</h2>
+            ${renderRuntimeCommandReceipts(state.runtimeCommandReceipts)}
           </section>
           <section>
             <h2>Wiki</h2>

@@ -300,6 +300,7 @@ same-machine slice records.
 - [497-deployment-diagnostics-audit-bundle-skip-slice.md](497-deployment-diagnostics-audit-bundle-skip-slice.md)
 - [498-focused-register-transition-history-wiki-slice.md](498-focused-register-transition-history-wiki-slice.md)
 - [499-host-event-audit-bundle-cli-retention-slice.md](499-host-event-audit-bundle-cli-retention-slice.md)
+- [500-user-client-command-receipt-visibility-slice.md](500-user-client-command-receipt-visibility-slice.md)
 
 ## Audited Scope
 
@@ -614,8 +615,10 @@ The repository is not fully federated:
   command receipt summaries under projected assignment rows while Studio and
   CLI compact projection summaries list recent command receipts from Host
   projection. CLI also exposes a dedicated `entangle host command-receipts`
-  command with assignment, node, runner, command type, status, and limit filters
-  over the same Host projection. Studio can fetch the same Host assignment
+  command with assignment, node, runner, command type, status, requester, and
+  limit filters over the same Host projection. Runtime command receipts now
+  also preserve optional `requestedBy` attribution for participant-originated
+  commands. Studio can fetch the same Host assignment
   timeline endpoint per projected assignment and render lifecycle, assignment
   receipt, and runtime command receipt entries without direct runner access;
 - User Client source-candidate accept/reject now publishes signed
@@ -935,7 +938,9 @@ The running User Client can now request that same page upsert path for visible
 `wiki_page` resources in the selected User Node conversation; the Human
 Interface Runtime normalizes the page path, forwards through Host with
 `requestedBy` set to the User Node id, and the process-runner smoke validates
-the projected receipt plus page `wiki.ref`.
+the projected receipt plus page `wiki.ref`. The running User Client state now
+also exposes a participant-scoped command receipt list filtered to receipts
+whose `requestedBy` matches the current User Node id.
 Studio's Runtime Memory panel now exposes the same Host/runner control path
 for operators through `host-client.upsertRuntimeWikiPage`.
 Per-assignment

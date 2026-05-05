@@ -254,6 +254,7 @@ export function formatRuntimeCommandReceiptDetail(
     receipt.wikiPageNextSha256
       ? `wiki next ${receipt.wikiPageNextSha256.slice(0, 12)}`
       : undefined,
+    receipt.requestedBy ? `requested by ${receipt.requestedBy}` : undefined,
     receipt.artifactId ? `artifact ${receipt.artifactId}` : undefined
   ].filter((part): part is string => Boolean(part)).join(" · ");
 }

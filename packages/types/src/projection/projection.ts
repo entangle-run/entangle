@@ -183,6 +183,7 @@ export const runtimeCommandReceiptProjectionRecordSchema =
     receiptMessage: nonEmptyStringSchema.optional(),
     receiptStatus: z.enum(["received", "completed", "failed"]),
     replayId: identifierSchema.optional(),
+    requestedBy: identifierSchema.optional(),
     restoreId: identifierSchema.optional(),
     sessionId: identifierSchema.optional(),
     sourceHistoryId: identifierSchema.optional(),

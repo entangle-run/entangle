@@ -120,6 +120,7 @@ export const runtimeCommandReceiptPayloadSchema =
     nodeId: identifierSchema,
     proposalId: identifierSchema.optional(),
     replayId: identifierSchema.optional(),
+    requestedBy: identifierSchema.optional(),
     restoreId: identifierSchema.optional(),
     sessionId: identifierSchema.optional(),
     sourceHistoryId: identifierSchema.optional(),

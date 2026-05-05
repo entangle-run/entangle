@@ -2127,6 +2127,7 @@ describe("buildHostServer", () => {
         nodeId: "worker-it",
         observedAt: new Date().toISOString(),
         protocol: "entangle.observe.v1",
+        requestedBy: "user-main",
         runnerId,
         runnerPubkey,
         status: "completed"
@@ -2147,6 +2148,7 @@ describe("buildHostServer", () => {
       expect(timeline.commandReceipts[0]).toMatchObject({
         assignmentId: "assignment-alpha",
         commandEventType: "runtime.start",
+        requestedBy: "user-main",
         receiptStatus: "completed"
       });
       expect(timeline.timeline.map((entry) => entry.entryKind)).toContain(
@@ -2631,6 +2633,7 @@ describe("buildHostServer", () => {
         observedAt,
         proposalId: "candidate-alpha",
         protocol: "entangle.observe.v1",
+        requestedBy: "user-main",
         runnerId: "runner-alpha",
         runnerPubkey,
         status: "completed",
@@ -2752,6 +2755,7 @@ describe("buildHostServer", () => {
         commandId: "cmd-artifact-proposal-alpha",
         nodeId: "worker-it",
         receiptStatus: "completed",
+        requestedBy: "user-main",
         runnerId: "runner-alpha"
       });
       expect(projection.sourceHistoryRefs[0]).toMatchObject({

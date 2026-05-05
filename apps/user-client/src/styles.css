@@ -145,6 +145,40 @@ textarea {
   font-weight: 700;
 }
 
+.receipt-list {
+  display: grid;
+  gap: 8px;
+  margin-bottom: 16px;
+}
+
+.receipt-card {
+  display: grid;
+  gap: 4px;
+  border: 1px solid #d7dde5;
+  border-radius: 7px;
+  background: #ffffff;
+  padding: 9px;
+}
+
+.receipt-card header,
+.receipt-card span {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  color: #68717c;
+  font-size: 12px;
+  overflow-wrap: anywhere;
+}
+
+.receipt-card strong {
+  overflow-wrap: anywhere;
+}
+
+.receipt-card p {
+  margin: 0;
+  overflow-wrap: anywhere;
+}
+
 .conversation-list {
   display: grid;
   gap: 8px;

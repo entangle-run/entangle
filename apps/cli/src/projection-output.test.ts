@@ -85,6 +85,7 @@ const projection: HostProjectionSnapshot = {
         updatedAt: "2026-04-26T12:02:00.000Z"
       },
       receiptStatus: "completed",
+      requestedBy: "user-main",
       runnerId: "runner-alpha",
       runnerPubkey:
         "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"
@@ -121,6 +122,7 @@ const projection: HostProjectionSnapshot = {
         updatedAt: "2026-04-26T12:03:00.000Z"
       },
       receiptStatus: "received",
+      requestedBy: "user-main",
       runnerId: "runner-beta",
       runnerPubkey:
         "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc"
@@ -179,12 +181,14 @@ describe("projection CLI output", () => {
         {
           commandEventType: "runtime.source_history.publish",
           commandId: "cmd-publish-beta",
-          receiptStatus: "received"
+          receiptStatus: "received",
+          requestedBy: "user-main"
         },
         {
           commandEventType: "runtime.start",
           commandId: "cmd-start-alpha",
-          receiptStatus: "completed"
+          receiptStatus: "completed",
+          requestedBy: "user-main"
         },
         {
           commandEventType: "runtime.stop",
@@ -238,6 +242,11 @@ describe("projection CLI output", () => {
         runnerId: "runner-alpha"
       }
     ]);
+    expect(
+      filterRuntimeCommandReceiptsForCli(projection.runtimeCommandReceipts, {
+        requestedBy: "user-main"
+      }).map((receipt) => receipt.commandId)
+    ).toEqual(["cmd-start-alpha", "cmd-publish-beta"]);
   });
 
   it("validates runtime command receipt status options", () => {
