@@ -79,7 +79,8 @@ behavior.
 
 ## Open Questions
 
-- Should the next audit export slice include the event JSONL bundle and an
-  integrity report in one archive?
+- `495-host-event-audit-bundle-slice.md` adds a typed Host API/CLI bundle with
+  events, a canonical event JSONL hash, the signed integrity report, and a
+  bundle hash. It is an API response, not an archive file or retention store.
 - Should signed audit reports be periodically written to a separate artifact
   backend instead of only returned through Host API?

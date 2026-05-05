@@ -35,6 +35,7 @@ import {
   hostAuthorityImportResponseSchema,
   hostAuthorityInspectionResponseSchema,
   hostArtifactBackendCacheClearResponseSchema,
+  hostEventAuditBundleResponseSchema,
   hostEventIntegrityResponseSchema,
   hostEventIntegritySignedReportResponseSchema,
   hostEventListResponseSchema,
@@ -3578,6 +3579,27 @@ describe("buildHostServer", () => {
         "report_hash",
         signedReport.reportHash
       ]);
+
+      const auditBundleResponse = await server.inject({
+        headers: {
+          authorization: "Bearer host-secret"
+        },
+        method: "GET",
+        url: "/v1/events/audit-bundle"
+      });
+      const auditBundle = hostEventAuditBundleResponseSchema.parse(
+        auditBundleResponse.json()
+      );
+
+      expect(auditBundle.bundleKind).toBe("host_event_audit_bundle");
+      expect(auditBundle.eventCount).toBe(auditBundle.events.length);
+      expect(auditBundle.eventCount).toBeGreaterThanOrEqual(events.length);
+      expect(auditBundle.eventsJsonlSha256).toMatch(/^[a-f0-9]{64}$/);
+      expect(auditBundle.bundleHash).toMatch(/^[a-f0-9]{64}$/);
+      expect(auditBundle.signedIntegrityReport.integrity.status).toBe("valid");
+      expect(
+        auditBundle.signedIntegrityReport.signedEvent.signerPubkey
+      ).toBe(auditBundle.signedIntegrityReport.hostAuthorityPubkey);
 
       expect(events).toEqual(
         expect.arrayContaining([

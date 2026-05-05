@@ -845,6 +845,74 @@ describe("createHostClient", () => {
     ]);
   });
 
+  it("parses host event audit bundle responses from the host surface", async () => {
+    const requests: string[] = [];
+    const client = createHostClient({
+      baseUrl: "http://entangle-host.test",
+      fetchImpl: (url) => {
+        requests.push(url);
+        return Promise.resolve(
+          createMockResponse({
+            body: JSON.stringify({
+              bundleHash:
+                "ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff",
+              bundleKind: "host_event_audit_bundle",
+              eventCount: 0,
+              events: [],
+              eventsJsonlSha256:
+                "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+              generatedAt: "2026-05-05T00:00:00.000Z",
+              schemaVersion: "1",
+              signedIntegrityReport: {
+                generatedAt: "2026-05-05T00:00:00.000Z",
+                hostAuthorityPubkey:
+                  "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+                integrity: {
+                  checkedEventCount: 0,
+                  genesisHash:
+                    "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+                  schemaVersion: "1",
+                  status: "valid",
+                  unverifiableEventCount: 0
+                },
+                reportHash:
+                  "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+                reportKind: "host_event_integrity",
+                schemaVersion: "1",
+                signedContent: "{\"reportKind\":\"host_event_integrity\"}",
+                signedEvent: {
+                  createdAt: "2026-05-05T00:00:00.000Z",
+                  createdAtUnix: 1777939200,
+                  eventId:
+                    "dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd",
+                  kind: 30078,
+                  signature:
+                    "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+                  signerPubkey:
+                    "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+                  tags: [["report", "host_event_integrity"]]
+                }
+              }
+            }),
+            ok: true,
+            status: 200
+          })
+        );
+      }
+    });
+
+    await expect(client.exportHostEventAuditBundle()).resolves.toMatchObject({
+      bundleKind: "host_event_audit_bundle",
+      eventCount: 0,
+      signedIntegrityReport: {
+        reportKind: "host_event_integrity"
+      }
+    });
+    expect(requests).toEqual([
+      "http://entangle-host.test/v1/events/audit-bundle"
+    ]);
+  });
+
   it("calls Host Authority inspect, export, and import surfaces", async () => {
     const authority = {
       authorityId: "authority-main",

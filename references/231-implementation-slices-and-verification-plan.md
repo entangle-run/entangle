@@ -1391,7 +1391,10 @@ Current status:
   expose an event-integrity inspection surface that reports valid, broken, or
   partially unverifiable event chains, and Studio renders the same Host-owned
   event-integrity summary in Host Status; Host and CLI can also export a Host
-  Authority-signed integrity report for compact audit provenance;
+  Authority-signed integrity report for compact audit provenance; Host,
+  host-client, and CLI now also export a typed event audit bundle containing
+  typed events, a canonical event JSONL hash, the signed integrity report, and
+  a bundle hash;
 - runner-owned session memory now carries owner, originating-node,
   entrypoint-node, last-message, and active-route metadata in both the bounded
   synthesis prompt and deterministic working-context wiki page, giving

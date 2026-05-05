@@ -100,5 +100,7 @@ continues the chain from that point.
   command that verifies the full event chain and reports the first broken or
   unverifiable event.
 - `493-signed-host-event-integrity-report-slice.md` signs compact integrity
-  reports with Host Authority; production bundle export and Operator Identity
-  co-signing remain future work.
+  reports with Host Authority.
+- `495-host-event-audit-bundle-slice.md` adds typed API/CLI bundle export;
+  production external retention and Operator Identity co-signing remain future
+  work.

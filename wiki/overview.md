@@ -898,10 +898,12 @@ The repository now also contains the first real implementation baseline:
   flows with recovery-oriented filtering plus `host events integrity` for
   Host-side event hash-chain verification, Studio renders the same Host-owned
   integrity summary in Host Status, `host events integrity --signed` exports a
-  compact Host Authority-signed integrity report, and Studio consumes the live
-  host event stream to inspect runtime recovery policy, controller state,
-  recovery history, and live recovery events without introducing a client-owned
-  recovery model, with shared recovery presentation helpers and compact
+  compact Host Authority-signed integrity report, `host events audit-bundle`
+  exports typed events plus bundle hashes and the signed integrity report, and
+  Studio consumes the live host event stream to inspect runtime recovery
+  policy, controller state, recovery history, and live recovery events without
+  introducing a client-owned recovery model, with shared recovery presentation
+  helpers and compact
   `host runtimes recovery --summary` output now keeping Studio and CLI
   vocabulary aligned;
 - a broader host-owned trace-event slice where `entangle-host` now derives and
@@ -1287,10 +1289,11 @@ The current implementation-truth audit now lives in
   implemented;
 - deepen the bootstrap host operator-token boundary, multi-token request audit,
   status reporting, server-filterable event inspection, route-level bootstrap
-  permissions, coarse read-only `viewer` enforcement, and Host event hash-chain
-  tamper evidence into real production identity, authorization, and full audit
-  bundle retention/export only through explicit contracts, tests, policy
-  decisions, enforced roles, and operator-visible attribution;
+  permissions, coarse read-only `viewer` enforcement, Host event hash-chain
+  tamper evidence, and typed audit-bundle export into real production
+  identity, authorization, and external audit retention only through explicit
+  contracts, tests, policy decisions, enforced roles, and operator-visible
+  attribution;
 - continue broadening normalized provider metadata and bounded failure
   reporting only where later provider adapters justify new canonical fields,
   and otherwise deepen model-guided memory maintenance on top of the now

@@ -42,6 +42,7 @@ import {
   hostAuthorityInspectionResponseSchema,
   identifierSchema,
   nostrEventIdSchema,
+  hostEventAuditBundleResponseSchema,
   hostEventIntegrityResponseSchema,
   hostEventIntegritySignedReportResponseSchema,
   hostEventListQuerySchema,
@@ -178,6 +179,7 @@ import {
   listHostEvents,
   inspectHostEventIntegrity,
   exportSignedHostEventIntegrityReport,
+  exportHostEventAuditBundle,
   getCatalogInspection,
   getGraphInspection,
   getGraphRevision,
@@ -1906,6 +1908,10 @@ export async function buildHostServer(options: HostServerOptions = {}) {
     hostEventIntegritySignedReportResponseSchema.parse(
       await exportSignedHostEventIntegrityReport()
     )
+  );
+
+  server.get("/v1/events/audit-bundle", async () =>
+    hostEventAuditBundleResponseSchema.parse(await exportHostEventAuditBundle())
   );
 
   server.route({

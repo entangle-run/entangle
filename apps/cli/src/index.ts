@@ -2225,6 +2225,14 @@ hostEventsCommand
   });
 
 hostEventsCommand
+  .command("audit-bundle")
+  .description("Export Host events with a signed integrity report and bundle hashes.")
+  .action(async (_options: Record<string, never>, command: Command) => {
+    const client = createCliHostClient(command);
+    printJson(await client.exportHostEventAuditBundle());
+  });
+
+hostEventsCommand
   .command("watch")
   .option("--replay <n>", "Replay the last N persisted events before streaming.", "20")
   .option("--category <category>", "Filter by host event category.")

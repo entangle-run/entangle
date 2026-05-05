@@ -35,6 +35,7 @@ import {
   graphRevisionInspectionResponseSchema,
   graphRevisionListResponseSchema,
   graphRevisionRecordSchema,
+  hostEventAuditBundleResponseSchema,
   hostEventListResponseSchema,
   hostEventRecordSchema,
   hostSessionConsistencyFindingSchema,
@@ -62,6 +63,7 @@ import {
   type EffectiveNodeBinding,
   type HostEventListQuery,
   type HostEventListResponse,
+  type HostEventAuditBundleResponse,
   type HostEventIntegrityResponse,
   type HostEventIntegritySignedReportResponse,
   type HostEventRecord,
@@ -5171,11 +5173,9 @@ export async function listHostEvents(
   });
 }
 
-export async function inspectHostEventIntegrity(): Promise<HostEventIntegrityResponse> {
-  await hostEventAppendQueue;
-  await initializeHostState();
-
-  const events = await readPersistedHostEvents();
+function inspectHostEventIntegrityForEvents(
+  events: HostEventRecord[]
+): HostEventIntegrityResponse {
   let expectedPreviousHash = hostEventAuditGenesisHash;
   let lastAuditRecordHash: string | undefined;
   let lastEventId: string | undefined;
@@ -5259,9 +5259,17 @@ export async function inspectHostEventIntegrity(): Promise<HostEventIntegrityRes
   });
 }
 
-export async function exportSignedHostEventIntegrityReport(): Promise<HostEventIntegritySignedReportResponse> {
+export async function inspectHostEventIntegrity(): Promise<HostEventIntegrityResponse> {
+  await hostEventAppendQueue;
+  await initializeHostState();
+
+  return inspectHostEventIntegrityForEvents(await readPersistedHostEvents());
+}
+
+async function signHostEventIntegrityReport(
+  integrity: HostEventIntegrityResponse
+): Promise<HostEventIntegritySignedReportResponse> {
   const { authority, secretKey } = await readAvailableHostAuthoritySecret();
-  const integrity = await inspectHostEventIntegrity();
   const generatedAt = nowIsoString();
   const reportPayload = {
     generatedAt,
@@ -5307,6 +5315,52 @@ export async function exportSignedHostEventIntegrityReport(): Promise<HostEventI
       signerPubkey: signedEvent.pubkey,
       tags: signedEvent.tags
     }
+  });
+}
+
+export async function exportSignedHostEventIntegrityReport(): Promise<HostEventIntegritySignedReportResponse> {
+  return signHostEventIntegrityReport(await inspectHostEventIntegrity());
+}
+
+function serializeHostEventsAsCanonicalJsonl(events: HostEventRecord[]): string {
+  if (events.length === 0) {
+    return "";
+  }
+
+  return `${events
+    .map((event) => JSON.stringify(canonicalizeForHash(event)))
+    .join("\n")}\n`;
+}
+
+export async function exportHostEventAuditBundle(): Promise<HostEventAuditBundleResponse> {
+  await hostEventAppendQueue;
+  await initializeHostState();
+
+  const events = await readPersistedHostEvents();
+  const signedIntegrityReport = await signHostEventIntegrityReport(
+    inspectHostEventIntegrityForEvents(events)
+  );
+  const eventsJsonl = serializeHostEventsAsCanonicalJsonl(events);
+  const eventsJsonlSha256 = createHash("sha256")
+    .update(eventsJsonl, "utf8")
+    .digest("hex");
+  const generatedAt = nowIsoString();
+  const bundlePayload = {
+    bundleKind: "host_event_audit_bundle",
+    eventCount: events.length,
+    events,
+    eventsJsonlSha256,
+    generatedAt,
+    schemaVersion: "1",
+    signedIntegrityReport
+  };
+  const bundleHash = createHash("sha256")
+    .update(JSON.stringify(canonicalizeForHash(bundlePayload)), "utf8")
+    .digest("hex");
+
+  return hostEventAuditBundleResponseSchema.parse({
+    ...bundlePayload,
+    bundleHash
   });
 }
 

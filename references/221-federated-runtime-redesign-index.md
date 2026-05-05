@@ -295,6 +295,7 @@ same-machine slice records.
 - [492-studio-host-event-integrity-slice.md](492-studio-host-event-integrity-slice.md)
 - [493-signed-host-event-integrity-report-slice.md](493-signed-host-event-integrity-report-slice.md)
 - [494-owner-aware-session-memory-slice.md](494-owner-aware-session-memory-slice.md)
+- [495-host-event-audit-bundle-slice.md](495-host-event-audit-bundle-slice.md)
 
 ## Audited Scope
 
@@ -1053,7 +1054,11 @@ summary for operator visibility. Host can also export the same integrity result
 as a Host Authority-signed report through `GET /v1/events/integrity/signed`
 and `entangle host events integrity --signed`. This is tamper evidence and
 signed provenance for the Host trace, not final production retention or durable
-operator identity. Runner-owned session memory now also carries owner,
+operator identity. Host can now also export a typed event audit bundle through
+`GET /v1/events/audit-bundle`, host-client, and
+`entangle host events audit-bundle`, including typed events, a canonical event
+JSONL hash, the signed integrity report, and a bundle hash. Runner-owned
+session memory now also carries owner,
 originating-node, entrypoint-node, last-message, and active-route metadata in
 both the model-guided memory prompt and deterministic working-context wiki
 page, giving delegated sessions a stronger owner-aware continuation basis.
@@ -1064,5 +1069,5 @@ collaborative wiki merge UI and multi-page
 patch-set semantics on top of the participant-scoped page upsert command,
 repository lifecycle and replicated/fallback artifact behavior,
 infrastructure-backed multi-machine proof execution, non-disposable upgrade
-behavior, full audit bundle export/retention, and deeper production
-identity/authorization beyond the scoped bootstrap-token boundary.
+behavior, external audit retention, and deeper production identity and
+authorization beyond the scoped bootstrap-token boundary.

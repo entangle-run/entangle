@@ -84,10 +84,11 @@ continue from pre-hash event traces while still exposing the trust gap.
 
 ## Open Questions
 
-- Should the next slice add signed Host Authority export of an integrity
-  report and event bundle?
+- Signed report and typed bundle export are now implemented in later slices;
+  external retention remains future hardening.
 - `492-studio-host-event-integrity-slice.md` adds the Host Status panel
   surface for the same Host-owned event-integrity response.
 - `493-signed-host-event-integrity-report-slice.md` adds compact Host
-  Authority-signed integrity report export; full event-bundle export remains
-  open.
+  Authority-signed integrity report export.
+- `495-host-event-audit-bundle-slice.md` adds typed API/CLI event-bundle
+  export; external retention remains open.

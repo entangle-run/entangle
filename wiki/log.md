@@ -1,5 +1,16 @@
 # Entangle Wiki Log
 
+## [2026-05-05] host | Added Host event audit bundle export
+
+Added `references/495-host-event-audit-bundle-slice.md`. Host now exposes
+`GET /v1/events/audit-bundle`, host-client parses it, and CLI exposes
+`entangle host events audit-bundle`.
+
+The bundle includes typed Host events, a canonical event JSONL hash, the Host
+Authority-signed integrity report computed from the same event set, and a
+bundle hash. External retention and production Operator Identity remain future
+hardening.
+
 ## [2026-05-05] runner | Added owner-aware session memory
 
 Added `references/494-owner-aware-session-memory-slice.md`. Runner session
