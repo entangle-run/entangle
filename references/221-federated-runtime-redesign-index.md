@@ -276,6 +276,7 @@ same-machine slice records.
 - [473-fake-opencode-demo-command-slice.md](473-fake-opencode-demo-command-slice.md)
 - [474-federated-pivot-remaining-gap-audit.md](474-federated-pivot-remaining-gap-audit.md)
 - [475-distributed-proof-kit-fake-opencode-slice.md](475-distributed-proof-kit-fake-opencode-slice.md)
+- [476-external-process-agent-engine-adapter-slice.md](476-external-process-agent-engine-adapter-slice.md)
 
 ## Audited Scope
 
@@ -636,6 +637,11 @@ The repository is not fully federated:
   signed source-candidate review, approval, and session read APIs against signed
   observations from the real joined runner process without requiring live model
   credentials;
+- joined agent runners can now execute `external_process` engine profiles by
+  spawning the configured executable, sending the shared turn request as JSON
+  on stdin, and validating a shared turn result JSON object from stdout, while
+  shared catalog validation now requires those profiles to declare an
+  executable;
 - joined runners now publish session/conversation observations after outbound
   handoff writes, coordination close/result transitions, approval request and
   response transitions, session completion, and failure/cancellation paths, so

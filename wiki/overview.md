@@ -159,6 +159,11 @@ The most accurate current description is:
 - the same Studio panel can now create or update catalog agent engine profiles
   through Host's focused profile upsert route, including attached OpenCode base
   URLs and default-profile selection;
+- joined agent runners can now execute `external_process` profiles through a
+  minimal JSON stdin/stdout adapter, letting custom node engines use the shared
+  turn contract while Entangle still owns graph identity, policy, projection,
+  and artifacts; shared catalog validation requires those profiles to declare
+  an executable;
 - CLI uses the same focused Host profile upsert route for real
   `host catalog agent-engine upsert` mutations, while dry-run prints the
   request payload before mutation;

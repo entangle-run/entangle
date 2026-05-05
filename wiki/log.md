@@ -1,5 +1,16 @@
 # Entangle Wiki Log
 
+## [2026-05-05] runner | Added external process agent engine adapter
+
+Added `references/476-external-process-agent-engine-adapter-slice.md`.
+Joined agent runners can now execute `external_process` engine profiles by
+spawning the configured executable, sending a shared turn request JSON payload
+on stdin, and validating the shared turn result JSON from stdout. OpenCode
+remains the default engine, while custom process engines now use the same
+runner turn contract instead of a separate orchestration path. Shared catalog
+validation now also rejects `external_process` profiles that omit an
+executable.
+
 ## [2026-05-05] tooling | Added fake OpenCode distributed proof kit support
 
 Added `references/475-distributed-proof-kit-fake-opencode-slice.md`.

@@ -143,18 +143,23 @@ export const agentEngineProfileSchema = z
     stateScope: z.enum(["node", "shared"]).default("node")
   })
   .superRefine((value, context) => {
-    if (
-      value.kind === "opencode_server" ||
-      value.kind === "external_process"
-    ) {
+    if (value.kind === "opencode_server") {
       if (!value.executable && !value.baseUrl) {
         context.addIssue({
           code: z.ZodIssueCode.custom,
           message:
-            "Process-backed agent engine profiles must declare an executable or a base URL.",
+            "OpenCode agent engine profiles must declare an executable or a base URL.",
           path: ["executable"]
         });
       }
+    }
+
+    if (value.kind === "external_process" && !value.executable) {
+      context.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: "External process agent engine profiles must declare an executable.",
+        path: ["executable"]
+      });
     }
 
     if (value.kind === "external_http" && !value.baseUrl) {

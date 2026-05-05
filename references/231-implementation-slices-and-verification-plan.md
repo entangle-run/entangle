@@ -858,6 +858,11 @@ Implementation record:
   adds shorter root smoke and interactive demo commands for the attached fake
   OpenCode path while keeping the fake server as a deterministic fixture over
   the normal federated runtime path.
+- [476-external-process-agent-engine-adapter-slice.md](476-external-process-agent-engine-adapter-slice.md)
+  adds a minimal runner adapter for `external_process` profiles: the runner
+  spawns the configured executable, sends the shared turn request JSON on
+  stdin, validates the shared turn result JSON from stdout, and tightens shared
+  catalog validation so external-process profiles require an executable.
 - [465-cli-agent-engine-profile-upsert-slice.md](465-cli-agent-engine-profile-upsert-slice.md)
   adds a Host-backed CLI catalog command for creating and updating typed agent
   engine profiles, including attached OpenCode profiles, permission mode,

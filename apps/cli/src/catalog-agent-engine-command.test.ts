@@ -133,6 +133,15 @@ describe("catalog agent-engine command helpers", () => {
         kind: "external_http"
       })
     ).toThrow("HTTP agent engine profiles must declare a base URL.");
+
+    expect(() =>
+      buildAgentEngineProfileUpsertCatalog(buildCatalog(), "process-engine", {
+        baseUrl: "http://127.0.0.1:18082",
+        kind: "external_process"
+      })
+    ).toThrow(
+      "External process agent engine profiles must declare an executable."
+    );
   });
 
   it("projects compact upsert summaries", () => {

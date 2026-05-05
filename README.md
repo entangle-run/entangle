@@ -546,7 +546,12 @@ This repository currently contains:
   state scope, last engine version/session, last permission decision, last turn,
   bounded failure evidence, and generic workspace-health status for
   source/artifact/engine-state/wiki surfaces through the shared host-client,
-  CLI, and Studio surfaces, with runner-owned source workspace change
+  CLI, and Studio surfaces, and with a minimal `external_process` adapter that
+  starts a configured executable, sends an `AgentEngineTurnRequest` JSON
+  payload on stdin, validates an `AgentEngineTurnResult` JSON object from
+  stdout, and keeps custom engines behind the same runner turn contract as
+  OpenCode. Shared catalog validation now requires `external_process` profiles
+  to declare an executable, with runner-owned source workspace change
   harvesting now recording bounded changed-file and diff summaries on turns,
   host events, runtime inspection, CLI output, and Studio details, plus
   durable pending source-change candidate records with host, CLI, and Studio

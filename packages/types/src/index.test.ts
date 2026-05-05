@@ -4935,7 +4935,7 @@ describe("agent runtime contracts", () => {
     ).toBe(false);
   });
 
-  it("rejects process-backed agent engine profiles without an endpoint", () => {
+  it("rejects OpenCode agent engine profiles without an endpoint", () => {
     expect(
       agentEngineProfileSchema.safeParse({
         id: "opencode-default",
@@ -4943,6 +4943,19 @@ describe("agent runtime contracts", () => {
         kind: "opencode_server"
       }).success
     ).toBe(false);
+  });
+
+  it("rejects external process agent engine profiles without an executable", () => {
+    expect(() =>
+      agentEngineProfileSchema.parse({
+        id: "external-process",
+        displayName: "External Process",
+        kind: "external_process",
+        baseUrl: "http://127.0.0.1:18082"
+      })
+    ).toThrow(
+      "External process agent engine profiles must declare an executable."
+    );
   });
 
   it("resolves node agent runtime from graph and catalog defaults", () => {

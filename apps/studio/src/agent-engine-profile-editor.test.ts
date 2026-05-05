@@ -127,6 +127,18 @@ describe("agent engine profile editor helpers", () => {
         profileId: "external-http"
       })
     ).toThrow("HTTP agent engine profiles must declare a base URL.");
+
+    expect(() =>
+      buildAgentEngineProfileCatalogMutation(buildCatalog(), {
+        ...createEmptyAgentEngineProfileEditorDraft(),
+        baseUrl: "http://127.0.0.1:18082",
+        executable: "",
+        kind: "external_process",
+        profileId: "external-process"
+      })
+    ).toThrow(
+      "External process agent engine profiles must declare an executable."
+    );
   });
 
   it("disables save until a profile id is present", () => {

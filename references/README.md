@@ -182,6 +182,11 @@ Studio now also renders the active agent engine profiles in the graph editor
 with the default marker and compact kind/scope/permission/endpoint details.
 That same Studio panel can now create or update profiles through Host catalog
 apply, including attached OpenCode base URLs and default-profile selection.
+The runner now also executes `external_process` engine profiles through a
+minimal JSON stdin/stdout adapter, so custom node engines can use the shared
+turn contract without bypassing Entangle identity, policy, projection, or
+artifact handling. Shared catalog validation now requires those
+external-process profiles to declare an executable.
 `pnpm ops:check-product-naming` now guards active product surfaces against old
 local product/profile labels. Runner-owned source-history publication commands
 can now carry an approval id plus explicit git target selectors, allowing
@@ -776,6 +781,7 @@ files are the active federated redesign pack.
 474. [473-fake-opencode-demo-command-slice.md](473-fake-opencode-demo-command-slice.md)
 475. [474-federated-pivot-remaining-gap-audit.md](474-federated-pivot-remaining-gap-audit.md)
 476. [475-distributed-proof-kit-fake-opencode-slice.md](475-distributed-proof-kit-fake-opencode-slice.md)
+477. [476-external-process-agent-engine-adapter-slice.md](476-external-process-agent-engine-adapter-slice.md)
 
 ## Role of this corpus
 
