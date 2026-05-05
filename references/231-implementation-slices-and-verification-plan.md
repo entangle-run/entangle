@@ -272,6 +272,10 @@ Current status:
   running User Client as the assigned User Node, verify source workspace
   mutation, and prove attached-server session continuity without live model
   credentials.
+- The process-runner smoke now also requests source-history reconcile through
+  the running User Client for a visible plain `source_history` resource and
+  verifies the completed Host-projected `runtime.source_history.reconcile`
+  command receipt.
 - CLI can now configure active catalog agent engine profiles with
   `host catalog agent-engine upsert`, so an attached OpenCode or fake OpenCode
   profile can be created, made default, and then assigned to a node without
@@ -553,7 +557,9 @@ Current status:
   for visible plain `source_history` resources, forwarding the visible
   `approvalId` when present and deliberately rejecting
   `source_history_publication` resources for reconcile so publication approval
-  cannot authorize source workspace mutation;
+  cannot authorize source workspace mutation; the process-runner smoke now
+  proves the policy-permissive participant reconcile path through a completed
+  runner command receipt;
 - Host now returns an effective proposal id for every artifact source-change
   proposal request and sends that same id to the runner, so request
   acknowledgements identify the candidate id to follow;
@@ -773,6 +779,7 @@ Implementation record:
 - [341-studio-source-history-replay-control-slice.md](341-studio-source-history-replay-control-slice.md)
 - [342-projected-source-history-replay-read-model-slice.md](342-projected-source-history-replay-read-model-slice.md)
 - [450-source-history-reconcile-control-slice.md](450-source-history-reconcile-control-slice.md)
+- [472-process-smoke-user-client-source-history-reconcile-slice.md](472-process-smoke-user-client-source-history-reconcile-slice.md)
 - [346-runner-owned-wiki-publication-control-slice.md](346-runner-owned-wiki-publication-control-slice.md)
 - [347-studio-wiki-publication-control-slice.md](347-studio-wiki-publication-control-slice.md)
 - [379-runner-owned-source-history-target-publication-slice.md](379-runner-owned-source-history-target-publication-slice.md)
@@ -1113,10 +1120,11 @@ Current status:
   JSON route with the target encoded by the visible
   `source_history_publication` resource, and waits for the completed projected
   `runtime.source_history.publish` command receipt;
-- User Client source-history reconcile is covered at the Human Interface
-  Runtime boundary with JSON and fallback HTML tests; the full process proof
-  should add that path once it can drive an agent-emitted `source_history`
-  approval record and an approved User Node response before reconcile;
+- User Client source-history reconcile is now covered by the full process proof
+  in the policy-permissive graph path: it publishes a visible
+  `source_history` resource, calls the running User Client reconcile JSON
+  route, and waits for the completed projected
+  `runtime.source_history.reconcile` command receipt;
 - Host-generated artifact source-change proposal ids now derive from the
   command id when omitted by callers and are returned in the response
   acknowledgement as the runner candidate id to follow;

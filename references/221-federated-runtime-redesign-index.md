@@ -272,6 +272,7 @@ same-machine slice records.
 - [469-host-agent-engine-profile-upsert-api-slice.md](469-host-agent-engine-profile-upsert-api-slice.md)
 - [470-fake-opencode-server-workspace-write-slice.md](470-fake-opencode-server-workspace-write-slice.md)
 - [471-process-smoke-attached-fake-opencode-slice.md](471-process-smoke-attached-fake-opencode-slice.md)
+- [472-process-smoke-user-client-source-history-reconcile-slice.md](472-process-smoke-user-client-source-history-reconcile-slice.md)
 
 ## Audited Scope
 
@@ -413,6 +414,10 @@ The repository is not fully federated:
   approve real OpenCode permission requests through the running User Client as
   the assigned User Node, verify workspace mutation, and prove attached-server
   session continuity without live model credentials;
+- the process-runner smoke now also proves the running User Client can request
+  source-history reconcile for a visible plain `source_history` resource and
+  observe a completed runner-signed `runtime.source_history.reconcile` command
+  receipt through Host projection;
 - CLI can now upsert active catalog agent engine profiles through
   `host catalog agent-engine upsert`, including attached OpenCode base URLs,
   permission mode, state scope, default-agent notes, default-profile selection,

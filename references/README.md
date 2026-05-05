@@ -219,7 +219,9 @@ requests now require the selected conversation to contain a matching
 `source_history_publication` resource. The running User Client can now also
 request source-history reconcile for visible plain `source_history` resources;
 publication-target resources are intentionally not accepted for reconcile
-because reconcile can mutate the runner-owned source workspace. Host now
+because reconcile can mutate the runner-owned source workspace, and the
+process-runner smoke now proves that path with a completed projected
+`runtime.source_history.reconcile` command receipt. Host now
 returns an effective proposal id even when callers omit one, and sends that
 same id in the runner control payload so acknowledgements can be followed to
 the projected candidate. The running User Client can now also request
@@ -762,6 +764,7 @@ files are the active federated redesign pack.
 470. [469-host-agent-engine-profile-upsert-api-slice.md](469-host-agent-engine-profile-upsert-api-slice.md)
 471. [470-fake-opencode-server-workspace-write-slice.md](470-fake-opencode-server-workspace-write-slice.md)
 472. [471-process-smoke-attached-fake-opencode-slice.md](471-process-smoke-attached-fake-opencode-slice.md)
+473. [472-process-smoke-user-client-source-history-reconcile-slice.md](472-process-smoke-user-client-source-history-reconcile-slice.md)
 
 ## Role of this corpus
 

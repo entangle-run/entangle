@@ -256,9 +256,12 @@ The most accurate current description is:
   `source_history_publication` resource in that conversation;
 - the running User Client can now request runner-owned source-history
   reconcile for visible plain `source_history` resources in the selected User
-  Node conversation, forwarding `approvalId` when present; target-specific
-  `source_history_publication` resources are intentionally not accepted for
-  reconcile because reconcile can mutate the runner-owned source workspace;
+  Node conversation, forwarding `approvalId` when present, and the
+  process-runner smoke now proves that participant path through a completed
+  projected `runtime.source_history.reconcile` command receipt;
+  target-specific `source_history_publication` resources are intentionally not
+  accepted for reconcile because reconcile can mutate the runner-owned source
+  workspace;
 - Host now returns an effective proposal id for every artifact source-change
   proposal acknowledgement and sends that same id to the runner as the
   candidate id to create;

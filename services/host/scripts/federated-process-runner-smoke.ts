@@ -49,6 +49,7 @@ import {
   runtimeSourceHistoryInspectionResponseSchema,
   runtimeSourceHistoryListResponseSchema,
   runtimeSourceHistoryPublishResponseSchema,
+  runtimeSourceHistoryReconcileResponseSchema,
   runtimeTurnInspectionResponseSchema,
   runtimeTurnListResponseSchema,
   runtimeWikiPublishResponseSchema,
@@ -4464,6 +4465,177 @@ async function main(): Promise<void> {
       "projected-user-client-source-history-publication-command-receipt",
       `command=${projectedUserClientSourceHistoryPublicationReceipt.commandId}; ` +
         `status=${projectedUserClientSourceHistoryPublicationReceipt.receiptStatus}`
+    );
+
+    const sourceHistoryReconcileApprovalId =
+      `approval-source-history-reconcile-${runId}`;
+    const syntheticSourceHistoryReconcileApprovalRequestMessageId =
+      await publishSyntheticA2AMessage({
+        message: {
+          constraints: {
+            approvalRequiredBeforeAction: false
+          },
+          conversationId: userMessage.conversationId,
+          fromNodeId: "builder",
+          fromPubkey: materializedContext.identityContext.publicKey,
+          graphId: materializedContext.binding.graphId,
+          intent: "Request User Node review for source-history reconcile.",
+          messageType: "approval.request",
+          parentMessageId: userMessage.eventId,
+          protocol: "entangle.a2a.v1",
+          responsePolicy: {
+            closeOnResult: false,
+            maxFollowups: 1,
+            responseRequired: true
+          },
+          sessionId: userMessage.sessionId,
+          toNodeId: "user",
+          toPubkey: materializedUserContext.identityContext.publicKey,
+          turnId: `${turnId}-source-history-reconcile-approval-request`,
+          work: {
+            artifactRefs: [sourceHistoryArtifactRef],
+            metadata: {
+              approval: {
+                approvalId: sourceHistoryReconcileApprovalId,
+                approverNodeIds: ["user"],
+                operation: "source_application",
+                resource: {
+                  id: projectedBuilderSourceHistory.sourceHistoryId,
+                  kind: "source_history",
+                  label: projectedBuilderSourceHistory.sourceHistoryId
+                }
+              }
+            },
+            summary:
+              "Process runner smoke: approve builder source-history reconcile."
+          }
+        },
+        relayUrls,
+        senderSecretKeyHex: builderIdentitySecret.secretKey
+      });
+    const sourceHistoryReconcileApprovalConversationDetail = await waitFor(
+      "Host User Node inbound source-history reconcile approval request",
+      async () => {
+        const detail = userNodeConversationResponseSchema.parse(
+          await hostRequest({
+            baseUrl: hostBaseUrl,
+            path: `/v1/user-nodes/user/inbox/${userMessage.conversationId}`
+          })
+        );
+
+        return detail.messages.some(
+          (message) =>
+            message.messageType === "approval.request" &&
+            message.approval?.approvalId ===
+              sourceHistoryReconcileApprovalId &&
+            message.approval.resource?.kind === "source_history"
+        )
+          ? detail
+          : undefined;
+      },
+      () => `\nstdout:\n${userRunnerStdout}\nstderr:\n${userRunnerStderr}`
+    );
+    const sourceHistoryReconcileApprovalRecord =
+      sourceHistoryReconcileApprovalConversationDetail.messages.find(
+        (message) =>
+          message.eventId ===
+            syntheticSourceHistoryReconcileApprovalRequestMessageId &&
+          message.approval?.approvalId === sourceHistoryReconcileApprovalId
+      );
+    if (!sourceHistoryReconcileApprovalRecord) {
+      throw new Error(
+        "User Node conversation detail must include the inbound source-history reconcile approval request."
+      );
+    }
+    assertSignerMatchesFromPubkey(
+      sourceHistoryReconcileApprovalRecord,
+      "Host User Node source-history reconcile approval request record"
+    );
+    assertCondition(
+      sourceHistoryReconcileApprovalRecord.signerPubkey ===
+        materializedContext.identityContext.publicKey,
+      "Host User Node source-history reconcile approval request must preserve the builder signer."
+    );
+    printPass(
+      "user-node-source-history-reconcile-approval-request",
+      sourceHistoryReconcileApprovalId
+    );
+
+    const sourceHistoryReconcileReplayId = `reconcile-${runId}`;
+    const userClientSourceHistoryReconcileResponse = await fetch(
+      new URL("/api/source-history/reconcile", userClientUrl),
+      {
+        body: JSON.stringify({
+          conversationId: userMessage.conversationId,
+          nodeId: "builder",
+          reason:
+            "Process runner smoke requested source-history reconcile from the User Client.",
+          replayId: sourceHistoryReconcileReplayId,
+          sourceHistoryId: projectedBuilderSourceHistory.sourceHistoryId
+        }),
+        headers: {
+          "content-type": "application/json"
+        },
+        method: "POST"
+      }
+    );
+    await assertResponseOk(
+      userClientSourceHistoryReconcileResponse,
+      "User Client JSON source-history reconcile"
+    );
+    const userClientSourceHistoryReconcileRaw =
+      (await userClientSourceHistoryReconcileResponse.json()) as {
+        source?: string;
+        sourceHistoryRefs?: Array<{ nodeId?: string; sourceHistoryId?: string }>;
+        userNodeId?: string;
+      };
+    const userClientSourceHistoryReconcileRequest =
+      runtimeSourceHistoryReconcileResponseSchema.parse(
+        userClientSourceHistoryReconcileRaw
+      );
+    assertCondition(
+      userClientSourceHistoryReconcileRaw.source === "runtime" &&
+        userClientSourceHistoryReconcileRaw.userNodeId === "user" &&
+        userClientSourceHistoryReconcileRaw.sourceHistoryRefs?.some(
+          (ref) =>
+            ref.nodeId === "builder" &&
+            ref.sourceHistoryId ===
+              projectedBuilderSourceHistory.sourceHistoryId
+        ),
+      "User Client source-history reconcile response must identify runtime source, User Node, and visible source-history refs."
+    );
+    printPass(
+      "user-client-source-history-reconcile-request",
+      `command=${userClientSourceHistoryReconcileRequest.commandId}; ` +
+        `sourceHistory=${projectedBuilderSourceHistory.sourceHistoryId}`
+    );
+
+    const projectedUserClientSourceHistoryReconcileReceipt = await waitFor(
+      "Host projected User Client source-history reconcile command receipt",
+      async () => {
+        const projection = hostProjectionSnapshotSchema.parse(
+          await hostRequest({
+            baseUrl: hostBaseUrl,
+            path: "/v1/projection"
+          })
+        );
+
+        return projection.runtimeCommandReceipts.find(
+          (receipt) =>
+            receipt.commandId === userClientSourceHistoryReconcileRequest.commandId &&
+            receipt.commandEventType === "runtime.source_history.reconcile" &&
+            receipt.receiptStatus === "completed" &&
+            receipt.replayId === sourceHistoryReconcileReplayId &&
+            receipt.sourceHistoryId ===
+              projectedBuilderSourceHistory.sourceHistoryId
+        );
+      },
+      () => `\nstdout:\n${runnerStdout}\nstderr:\n${runnerStderr}`
+    );
+    printPass(
+      "projected-user-client-source-history-reconcile-command-receipt",
+      `command=${projectedUserClientSourceHistoryReconcileReceipt.commandId}; ` +
+        `status=${projectedUserClientSourceHistoryReconcileReceipt.receiptStatus}`
     );
 
     const approvalId = `approval-${runId}`;

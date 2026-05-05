@@ -5614,3 +5614,18 @@ User Client signs approval responses as the assigned User Node, the fake server
 writes into the runner-owned source workspace after approval, and the same
 attached OpenCode session id is reused on a continuation turn. The default
 fast smoke still uses the temporary fake executable.
+
+## [2026-05-05] verification | Added User Client source-history reconcile process proof
+
+Added
+`references/472-process-smoke-user-client-source-history-reconcile-slice.md`.
+The federated process-runner smoke now publishes a builder-originated
+`source_history` approval resource to the User Node, calls the running User
+Client `/api/source-history/reconcile` JSON route for that visible source
+history, and waits for the completed Host-projected
+`runtime.source_history.reconcile` command receipt from the joined runner.
+
+This closes the policy-permissive participant reconcile smoke gap. Approved
+source-history replay with `applyRequiresApproval: true` remains a separate
+end-to-end scenario; lower-level runner and Human Interface Runtime tests still
+cover forwarded `approvalId` handling.

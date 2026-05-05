@@ -121,8 +121,7 @@ publication" because the same resolver backs publication and reconcile.
 
 ## Open Questions
 
-- The process-runner smoke does not yet include the participant reconcile path
-  because a realistic end-to-end reconcile requires an agent-emitted
-  `source_history` approval record and then an approved User Node response
-  before the command. The lower-level runner reconcile command and the Human
-  Interface Runtime forwarding path are covered separately.
+- The process-runner smoke now covers the policy-permissive participant
+  reconcile path through a visible `source_history` resource and completed
+  runner command receipt. A graph with `applyRequiresApproval: true` still
+  needs a separate end-to-end scenario for approved source-history replay.
