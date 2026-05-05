@@ -164,6 +164,9 @@ The most accurate current description is:
   turn contract while Entangle still owns graph identity, policy, projection,
   and artifacts; shared catalog validation requires those profiles to declare
   an executable;
+- joined agent runners can now execute `external_http` profiles through a
+  minimal JSON HTTP adapter that POSTs the same turn payload to the configured
+  endpoint and validates the shared turn result response;
 - CLI uses the same focused Host profile upsert route for real
   `host catalog agent-engine upsert` mutations, while dry-run prints the
   request payload before mutation;

@@ -551,7 +551,9 @@ This repository currently contains:
   payload on stdin, validates an `AgentEngineTurnResult` JSON object from
   stdout, and keeps custom engines behind the same runner turn contract as
   OpenCode. Shared catalog validation now requires `external_process` profiles
-  to declare an executable, with runner-owned source workspace change
+  to declare an executable. The runner also executes `external_http` profiles
+  by POSTing the same turn payload to the configured endpoint and validating the
+  shared turn result response, with runner-owned source workspace change
   harvesting now recording bounded changed-file and diff summaries on turns,
   host events, runtime inspection, CLI output, and Studio details, plus
   durable pending source-change candidate records with host, CLI, and Studio

@@ -863,6 +863,10 @@ Implementation record:
   spawns the configured executable, sends the shared turn request JSON on
   stdin, validates the shared turn result JSON from stdout, and tightens shared
   catalog validation so external-process profiles require an executable.
+- [477-external-http-agent-engine-adapter-slice.md](477-external-http-agent-engine-adapter-slice.md)
+  adds a minimal runner adapter for `external_http` profiles: the runner POSTs
+  the shared turn request JSON to the configured endpoint and validates the
+  shared turn result JSON response.
 - [465-cli-agent-engine-profile-upsert-slice.md](465-cli-agent-engine-profile-upsert-slice.md)
   adds a Host-backed CLI catalog command for creating and updating typed agent
   engine profiles, including attached OpenCode profiles, permission mode,

@@ -1,5 +1,15 @@
 # Entangle Wiki Log
 
+## [2026-05-05] runner | Added external HTTP agent engine adapter
+
+Added `references/477-external-http-agent-engine-adapter-slice.md`.
+Joined agent runners can now execute `external_http` engine profiles by
+POSTing the shared turn request and bounded runtime metadata to the configured
+profile endpoint, then validating a shared turn result JSON response before
+recording turn side effects. OpenCode remains the default engine; custom HTTP
+engines now use Entangle's runner-owned graph, policy, projection, and artifact
+boundaries instead of bypassing them.
+
 ## [2026-05-05] runner | Added external process agent engine adapter
 
 Added `references/476-external-process-agent-engine-adapter-slice.md`.

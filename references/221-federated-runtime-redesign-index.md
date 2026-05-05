@@ -277,6 +277,7 @@ same-machine slice records.
 - [474-federated-pivot-remaining-gap-audit.md](474-federated-pivot-remaining-gap-audit.md)
 - [475-distributed-proof-kit-fake-opencode-slice.md](475-distributed-proof-kit-fake-opencode-slice.md)
 - [476-external-process-agent-engine-adapter-slice.md](476-external-process-agent-engine-adapter-slice.md)
+- [477-external-http-agent-engine-adapter-slice.md](477-external-http-agent-engine-adapter-slice.md)
 
 ## Audited Scope
 
@@ -642,6 +643,10 @@ The repository is not fully federated:
   on stdin, and validating a shared turn result JSON object from stdout, while
   shared catalog validation now requires those profiles to declare an
   executable;
+- joined agent runners can now execute `external_http` engine profiles by
+  POSTing the shared turn request and bounded runtime metadata to the
+  configured endpoint and validating a shared turn result JSON object from the
+  response body;
 - joined runners now publish session/conversation observations after outbound
   handoff writes, coordination close/result transitions, approval request and
   response transitions, session completion, and failure/cancellation paths, so

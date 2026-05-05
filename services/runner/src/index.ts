@@ -39,6 +39,7 @@ import {
 import type { RunnerTransport } from "./transport.js";
 import { createOpenCodeAgentEngine } from "./opencode-engine.js";
 import { createExternalProcessAgentEngine } from "./external-process-engine.js";
+import { createExternalHttpAgentEngine } from "./external-http-engine.js";
 import { createFileSystemAssignmentMaterializer } from "./assignment-materializer.js";
 import { startHumanInterfaceRuntime } from "./human-interface-runtime.js";
 
@@ -179,8 +180,14 @@ function createAgentEngineForRuntimeContext(input: {
     });
   }
 
+  if (agentRuntime.engineProfile.kind === "external_http") {
+    return createExternalHttpAgentEngine({
+      runtimeContext
+    });
+  }
+
   throw new Error(
-    `Runner for node '${runtimeContext.binding.node.nodeId}' is configured for agent engine '${agentRuntime.engineProfileRef}' (${agentRuntime.engineProfile.kind}), but this runner build only has OpenCode and external-process adapters wired.`
+    `Runner for node '${runtimeContext.binding.node.nodeId}' is configured for agent engine '${agentRuntime.engineProfileRef}' (${agentRuntime.engineProfile.kind}), but this runner build only has OpenCode, external-process, and external-HTTP adapters wired.`
   );
 }
 

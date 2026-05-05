@@ -71,8 +71,9 @@ The external process protocol is intentionally narrow:
 
 No existing OpenCode behavior changes. `external_process` profiles now become
 real executable profiles and are rejected by shared catalog validation unless
-they declare `executable`. `claude_agent_sdk` and `external_http` remain
-explicit future adapters unless implemented separately.
+they declare `executable`. `claude_agent_sdk` remains an explicit future
+adapter unless implemented separately; `external_http` is handled by the
+separate HTTP adapter slice.
 
 ## Risks And Mitigations
 
