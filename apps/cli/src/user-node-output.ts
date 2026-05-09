@@ -210,6 +210,29 @@ export function listCurrentUserNodeAssignmentsForCli(input: {
   );
 }
 
+export function filterUserNodeAssignmentsForCli(input: {
+  assignments: RuntimeAssignmentRecord[];
+  currentOnly?: boolean | undefined;
+  nodeId: string;
+}): RuntimeAssignmentRecord[] {
+  return sortUserNodeRuntimeAssignmentsForCli(
+    input.assignments.filter((assignment) => {
+      if (assignment.nodeId !== input.nodeId) {
+        return false;
+      }
+
+      if (
+        input.currentOnly === true &&
+        !["active", "accepted", "offered"].includes(assignment.status)
+      ) {
+        return false;
+      }
+
+      return true;
+    })
+  );
+}
+
 export function sortUserNodeClientSummariesForCli(
   summaries: UserNodeClientCliSummary[]
 ): UserNodeClientCliSummary[] {

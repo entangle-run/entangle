@@ -1,5 +1,12 @@
 # Entangle Wiki Log
 
+## [2026-05-09] cli | Added User Node assignment roster
+
+Added `references/563-cli-user-node-assignment-roster-slice.md`.
+`entangle user-nodes assignments <nodeId>` now lists assignment records for one
+User Node, with `--current-only` matching the active/accepted/offered set that
+`user-nodes assign --revoke-existing` can revoke before reassignment.
+
 ## [2026-05-09] cli | Added source review request inbox
 
 Added `references/562-cli-inbox-source-review-requests-slice.md`.

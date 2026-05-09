@@ -363,6 +363,7 @@ same-machine slice records.
 - [560-cli-inbox-message-filter-slice.md](560-cli-inbox-message-filter-slice.md)
 - [561-cli-inbox-approval-requests-slice.md](561-cli-inbox-approval-requests-slice.md)
 - [562-cli-inbox-source-review-requests-slice.md](562-cli-inbox-source-review-requests-slice.md)
+- [563-cli-user-node-assignment-roster-slice.md](563-cli-user-node-assignment-roster-slice.md)
 
 ## Audited Scope
 
@@ -1306,6 +1307,9 @@ event ids for the existing signed approve/reject response commands.
 CLI inbox source-reviews now expose the same discovery path narrowed to
 source-change candidate approval resources, aligning headless participant
 inspection with signed source-review decisions.
+CLI User Node assignment rosters now expose all or current assignment records
+for one human participant before reassignment, reducing the need to infer
+placement from generic assignment lists.
 Deterministic runner task memory now also preserves bounded source-change
 candidate ids, status, totals, diff availability, and changed-file summaries
 from the live turn record, and the derived recent-work summary surfaces the

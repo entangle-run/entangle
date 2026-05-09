@@ -10,6 +10,7 @@ import type {
 import {
   attachUserNodeClientHealthForCli,
   buildUserNodeClientSummariesForCli,
+  filterUserNodeAssignmentsForCli,
   filterUserConversationsForCli,
   filterUserNodeApprovalMessagesForCli,
   filterUserNodeMessagesForCli,
@@ -452,6 +453,27 @@ describe("user node CLI output", () => {
     expect(
       listCurrentUserNodeAssignmentsForCli({
         assignments,
+        nodeId: "user-a"
+      }).map((assignment) => assignment.assignmentId)
+    ).toEqual(["assignment-active", "assignment-offered"]);
+  });
+
+  it("filters User Node assignments for focused reassignment inspection", () => {
+    expect(
+      filterUserNodeAssignmentsForCli({
+        assignments,
+        nodeId: "user-a"
+      }).map((assignment) => assignment.assignmentId)
+    ).toEqual([
+      "assignment-active",
+      "assignment-offered",
+      "assignment-revoked"
+    ]);
+
+    expect(
+      filterUserNodeAssignmentsForCli({
+        assignments,
+        currentOnly: true,
         nodeId: "user-a"
       }).map((assignment) => assignment.assignmentId)
     ).toEqual(["assignment-active", "assignment-offered"]);

@@ -326,6 +326,9 @@ The most accurate current description is:
   that same recorded-message substrate to approval requests whose resource kind
   is `source_change_candidate`, matching signed
   `review-source-candidate --from-message` decisions;
+- the headless `entangle user-nodes assignments <nodeId>` operator surface now
+  lists all or only current assignments for one human participant, giving
+  reassignment a focused read-only inspection step before mutation;
 - the process-runner smoke now proves that User Client wiki publication path
   through a signed builder wiki approval request, the running User Client JSON
   route, a completed projected `runtime.wiki.publish` command receipt, a

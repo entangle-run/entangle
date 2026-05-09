@@ -112,6 +112,7 @@ import {
 import {
   attachUserNodeClientHealthForCli,
   buildUserNodeClientSummariesForCli,
+  filterUserNodeAssignmentsForCli,
   filterUserConversationsForCli,
   filterUserNodeApprovalMessagesForCli,
   filterUserNodeClientSummariesForCli,
@@ -1552,6 +1553,38 @@ userNodesCommand
       options.summary
         ? { clients: clientsWithHealth }
         : { generatedAt: projection.generatedAt, clients: clientsWithHealth }
+    );
+  });
+
+userNodesCommand
+  .command("assignments")
+  .argument("<nodeId>", "User Node identifier.")
+  .option(
+    "--current-only",
+    "Only include active, accepted, or offered assignments."
+  )
+  .option("--summary", "Print compact assignment summaries.")
+  .description("List runtime assignments for one User Node.")
+  .action(async (
+    nodeId: string,
+    options: { currentOnly?: boolean; summary?: boolean },
+    command: Command
+  ) => {
+    const client = createCliHostClient(command);
+    const response = await client.listAssignments();
+    const assignments = filterUserNodeAssignmentsForCli({
+      assignments: response.assignments,
+      currentOnly: options.currentOnly === true,
+      nodeId
+    });
+
+    printJson(
+      options.summary
+        ? {
+            assignments: assignments.map(projectRuntimeAssignmentSummary),
+            returned: assignments.length
+          }
+        : { assignments, returned: assignments.length }
     );
   });
 

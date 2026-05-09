@@ -126,6 +126,9 @@ Recently added:
 - CLI now exposes `entangle user-nodes assign <nodeId> --runner <runnerId>`,
   including optional `--revoke-existing`, as a User Node-focused wrapper around
   the Host assignment boundary.
+- CLI now exposes `entangle user-nodes assignments <nodeId>`, a read-only
+  focused roster for all or current assignment records of one User Node before
+  reassignment.
 - Studio User Node runtime rows can prepare the Host assignment form for that
   User Node and open the projected assignment timeline when an assignment id is
   known.
@@ -209,6 +212,7 @@ CLI has matching headless surfaces:
 - `entangle inbox approvals --user-node <nodeId>`
 - `entangle inbox source-reviews --user-node <nodeId>`
 - `entangle user-nodes clients`
+- `entangle user-nodes assignments <nodeId> --current-only`
 - `entangle user-nodes assign <nodeId> --runner <runnerId> --revoke-existing`
 - `entangle reply <messageId> "..." --user-node <nodeId>`
 - `entangle approve --user-node <nodeId> --from-message <eventId>`

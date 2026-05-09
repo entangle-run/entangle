@@ -1628,6 +1628,8 @@ Current status:
   `source_change_candidate` resources, giving headless User Node participants a
   read-only source-review queue before signed
   `review-source-candidate --from-message` decisions;
+- CLI User Node assignments now has a focused read-only roster for all or
+  current assignment records of one human participant before reassignment;
 - generated distributed proof kits can now optionally include
   `docker-compose.runners.yml` plus per-runner container entrypoints with
   `--write-runner-compose`, giving operators a same-machine container-boundary

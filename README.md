@@ -168,9 +168,11 @@ state, last-seen timestamp, projected client URL, restart generation, and
 status message. The headless `entangle user-nodes clients` roster now also
 adds per-User-Node conversation, unread, pending approval, latest message, and
 participant-command receipt counts, and `--node <nodeId>` narrows the roster
-and optional health probe to one human participant. Studio's User Node roster
-shows the same participant-command receipt and failed receipt counts next to
-its existing conversation and Human Interface Runtime placement summary.
+and optional health probe to one human participant. The headless
+`entangle user-nodes assignments <nodeId>` roster lists all or current
+assignments for one human participant before reassignment. Studio's User Node
+roster shows the same participant-command receipt and failed receipt counts
+next to its existing conversation and Human Interface Runtime placement summary.
 The running React User Client also shows a compact participant Workload panel
 for conversations, open work, unread messages, unique pending approvals,
 pending source reviews, command receipt statuses, source-history/wiki refs,
@@ -678,7 +680,8 @@ This repository currently contains:
   direction, exact message type, and bounded result counts, plus CLI approval
   inbox discovery over recorded inbound `approval.request` messages, plus CLI
   source-review inbox discovery for `source_change_candidate` approval
-  resources, and CLI
+  resources, and CLI User Node assignment rosters able to show all or current
+  assignments for one human participant before reassignment, and CLI
   approve/reject commands able to derive that context directly from
   Host-recorded inbound approval-request messages through direct User Node
   message lookup;

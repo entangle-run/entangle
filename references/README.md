@@ -922,6 +922,7 @@ files are the active federated redesign pack.
 561. [560-cli-inbox-message-filter-slice.md](560-cli-inbox-message-filter-slice.md)
 562. [561-cli-inbox-approval-requests-slice.md](561-cli-inbox-approval-requests-slice.md)
 563. [562-cli-inbox-source-review-requests-slice.md](562-cli-inbox-source-review-requests-slice.md)
+564. [563-cli-user-node-assignment-roster-slice.md](563-cli-user-node-assignment-roster-slice.md)
 
 ## Role of this corpus
 
