@@ -332,6 +332,10 @@ The most accurate current description is:
 - the headless `entangle user-nodes assignments <nodeId>` operator surface now
   lists all or only current assignments for one human participant, giving
   reassignment a focused read-only inspection step before mutation;
+- the headless `entangle user-nodes runner-candidates <nodeId>` operator
+  surface now lists health-aware `human_interface` runner candidates with
+  trust, liveness, operational state, current placement, capacity after
+  explicit User Node revocation, and exclusion reasons before reassignment;
 - the process-runner smoke now proves that User Client wiki publication path
   through a signed builder wiki approval request, the running User Client JSON
   route, a completed projected `runtime.wiki.publish` command receipt, a

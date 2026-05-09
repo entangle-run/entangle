@@ -1,5 +1,6 @@
 import type {
   HostProjectionSnapshot,
+  RunnerRegistryEntry,
   RuntimeAssignmentRecord,
   RuntimeCommandReceiptProjectionRecord,
   RuntimeProjectionRecord,
@@ -135,6 +136,22 @@ export type UserNodeCommandReceiptCliSummary = {
   wikiPagePath?: string;
 };
 
+export type UserNodeRunnerCandidateCliSummary = {
+  activeAssignmentIds: string[];
+  availableCapacity: number;
+  availableCapacityAfterUserNodeRevocation: number;
+  currentUserAssignmentIds: string[];
+  exclusionReasons: string[];
+  isCurrentRunner: boolean;
+  lastSeenAt?: string;
+  liveness: string;
+  maxAssignments: number;
+  operationalState: string;
+  recommended: boolean;
+  runnerId: string;
+  trustState: string;
+};
+
 function projectSignerAudit(input: {
   fromPubkey: string;
   signerPubkey?: string | undefined;
@@ -231,6 +248,166 @@ export function filterUserNodeAssignmentsForCli(input: {
       return true;
     })
   );
+}
+
+function computeRunnerCandidateExclusionReasons(input: {
+  availableCapacityAfterUserNodeRevocation: number;
+  liveness: RunnerRegistryEntry["liveness"];
+  operationalState: string;
+  trustState: RunnerRegistryEntry["registration"]["trustState"];
+}): string[] {
+  const reasons: string[] = [];
+
+  if (input.trustState !== "trusted") {
+    reasons.push(`runner_trust_${input.trustState}`);
+  }
+
+  if (input.liveness !== "online") {
+    reasons.push(`runner_liveness_${input.liveness}`);
+  }
+
+  if (
+    input.operationalState !== "ready" &&
+    input.operationalState !== "busy"
+  ) {
+    reasons.push(`runner_operational_${input.operationalState}`);
+  }
+
+  if (input.availableCapacityAfterUserNodeRevocation <= 0) {
+    reasons.push("no_capacity_after_user_node_revocation");
+  }
+
+  return reasons;
+}
+
+function userNodeRunnerCandidateSortPriority(
+  candidate: UserNodeRunnerCandidateCliSummary
+): number {
+  if (candidate.recommended && candidate.isCurrentRunner) {
+    return 0;
+  }
+
+  if (candidate.recommended) {
+    return 1;
+  }
+
+  if (candidate.isCurrentRunner) {
+    return 2;
+  }
+
+  return 3;
+}
+
+function userNodeRunnerCandidateLivenessPriority(
+  candidate: UserNodeRunnerCandidateCliSummary
+): number {
+  switch (candidate.liveness) {
+    case "online":
+      return 0;
+    case "stale":
+      return 1;
+    case "offline":
+      return 2;
+    case "unknown":
+      return 3;
+    default:
+      return 4;
+  }
+}
+
+export function buildUserNodeRunnerCandidateSummariesForCli(input: {
+  assignments: RuntimeAssignmentRecord[];
+  nodeId: string;
+  recommendedOnly?: boolean | undefined;
+  runners: RunnerRegistryEntry[];
+}): UserNodeRunnerCandidateCliSummary[] {
+  const currentAssignments = listCurrentUserNodeAssignmentsForCli({
+    assignments: input.assignments,
+    nodeId: input.nodeId
+  });
+  const currentAssignmentIds = new Set(
+    currentAssignments.map((assignment) => assignment.assignmentId)
+  );
+
+  const candidates = input.runners
+    .filter((runner) =>
+      runner.registration.capabilities.runtimeKinds.includes("human_interface")
+    )
+    .map((runner) => {
+      const activeAssignmentIds = runner.heartbeat?.assignmentIds ?? [];
+      const currentUserAssignmentIds = activeAssignmentIds.filter(
+        (assignmentId) => currentAssignmentIds.has(assignmentId)
+      );
+      const maxAssignments = runner.registration.capabilities.maxAssignments;
+      const activeAssignmentCount = activeAssignmentIds.length;
+      const activeAssignmentCountAfterUserNodeRevocation =
+        activeAssignmentCount - currentUserAssignmentIds.length;
+      const availableCapacity = Math.max(
+        0,
+        maxAssignments - activeAssignmentCount
+      );
+      const availableCapacityAfterUserNodeRevocation = Math.max(
+        0,
+        maxAssignments - activeAssignmentCountAfterUserNodeRevocation
+      );
+      const operationalState =
+        runner.heartbeat?.operationalState ?? "unknown";
+      const lastSeenAt =
+        runner.heartbeat?.lastHeartbeatAt ?? runner.registration.lastSeenAt;
+      const exclusionReasons = computeRunnerCandidateExclusionReasons({
+        availableCapacityAfterUserNodeRevocation,
+        liveness: runner.liveness,
+        operationalState,
+        trustState: runner.registration.trustState
+      });
+
+      return {
+        activeAssignmentIds,
+        availableCapacity,
+        availableCapacityAfterUserNodeRevocation,
+        currentUserAssignmentIds,
+        exclusionReasons,
+        isCurrentRunner: currentUserAssignmentIds.length > 0,
+        ...(lastSeenAt ? { lastSeenAt } : {}),
+        liveness: runner.liveness,
+        maxAssignments,
+        operationalState,
+        recommended: exclusionReasons.length === 0,
+        runnerId: runner.registration.runnerId,
+        trustState: runner.registration.trustState
+      };
+    })
+    .filter((candidate) =>
+      input.recommendedOnly === true ? candidate.recommended : true
+    );
+
+  return [...candidates].sort((left, right) => {
+    const priority =
+      userNodeRunnerCandidateSortPriority(left) -
+      userNodeRunnerCandidateSortPriority(right);
+
+    if (priority !== 0) {
+      return priority;
+    }
+
+    const livenessOrder =
+      userNodeRunnerCandidateLivenessPriority(left) -
+      userNodeRunnerCandidateLivenessPriority(right);
+
+    if (livenessOrder !== 0) {
+      return livenessOrder;
+    }
+
+    const capacityOrder =
+      right.availableCapacityAfterUserNodeRevocation -
+      left.availableCapacityAfterUserNodeRevocation;
+
+    if (capacityOrder !== 0) {
+      return capacityOrder;
+    }
+
+    return left.runnerId.localeCompare(right.runnerId);
+  });
 }
 
 export function sortUserNodeClientSummariesForCli(

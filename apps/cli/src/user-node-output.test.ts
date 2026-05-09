@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import type {
   HostProjectionSnapshot,
+  RunnerRegistryEntry,
   RuntimeAssignmentRecord,
   RuntimeCommandReceiptProjectionRecord,
   UserConversationProjectionRecord,
@@ -9,6 +10,7 @@ import type {
 } from "@entangle/types";
 import {
   attachUserNodeClientHealthForCli,
+  buildUserNodeRunnerCandidateSummariesForCli,
   buildUserNodeClientSummariesForCli,
   filterUserNodeAssignmentsForCli,
   filterUserConversationsForCli,
@@ -273,6 +275,187 @@ const assignments: RuntimeAssignmentRecord[] = [
   }
 ];
 
+const runnerEntries: RunnerRegistryEntry[] = [
+  {
+    heartbeat: {
+      assignmentIds: ["assignment-active"],
+      hostAuthorityPubkey:
+        "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+      lastHeartbeatAt: "2026-04-26T12:06:00.000Z",
+      operationalState: "busy",
+      runnerId: "runner-human-current",
+      runnerPubkey:
+        "dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd",
+      schemaVersion: "1",
+      updatedAt: "2026-04-26T12:06:00.000Z"
+    },
+    liveness: "online",
+    offlineAfterSeconds: 90,
+    projectedAt: "2026-04-26T12:06:30.000Z",
+    registration: {
+      capabilities: {
+        agentEngineKinds: [],
+        labels: ["human"],
+        maxAssignments: 1,
+        runtimeKinds: ["human_interface"],
+        supportsLocalWorkspace: true,
+        supportsNip59: true
+      },
+      firstSeenAt: "2026-04-26T11:55:00.000Z",
+      hostAuthorityPubkey:
+        "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+      lastSeenAt: "2026-04-26T12:06:00.000Z",
+      publicKey:
+        "dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd",
+      runnerId: "runner-human-current",
+      schemaVersion: "1",
+      trustState: "trusted",
+      updatedAt: "2026-04-26T12:06:00.000Z"
+    },
+    staleAfterSeconds: 30
+  },
+  {
+    heartbeat: {
+      assignmentIds: [],
+      hostAuthorityPubkey:
+        "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+      lastHeartbeatAt: "2026-04-26T12:06:15.000Z",
+      operationalState: "ready",
+      runnerId: "runner-human-ready",
+      runnerPubkey:
+        "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+      schemaVersion: "1",
+      updatedAt: "2026-04-26T12:06:15.000Z"
+    },
+    liveness: "online",
+    offlineAfterSeconds: 90,
+    projectedAt: "2026-04-26T12:06:30.000Z",
+    registration: {
+      capabilities: {
+        agentEngineKinds: [],
+        labels: ["human"],
+        maxAssignments: 1,
+        runtimeKinds: ["human_interface"],
+        supportsLocalWorkspace: true,
+        supportsNip59: true
+      },
+      firstSeenAt: "2026-04-26T11:56:00.000Z",
+      hostAuthorityPubkey:
+        "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+      lastSeenAt: "2026-04-26T12:06:15.000Z",
+      publicKey:
+        "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+      runnerId: "runner-human-ready",
+      schemaVersion: "1",
+      trustState: "trusted",
+      updatedAt: "2026-04-26T12:06:15.000Z"
+    },
+    staleAfterSeconds: 30
+  },
+  {
+    heartbeat: {
+      assignmentIds: ["assignment-worker"],
+      hostAuthorityPubkey:
+        "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+      lastHeartbeatAt: "2026-04-26T12:05:00.000Z",
+      operationalState: "busy",
+      runnerId: "runner-human-full",
+      runnerPubkey:
+        "ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff",
+      schemaVersion: "1",
+      updatedAt: "2026-04-26T12:05:00.000Z"
+    },
+    liveness: "online",
+    offlineAfterSeconds: 90,
+    projectedAt: "2026-04-26T12:06:30.000Z",
+    registration: {
+      capabilities: {
+        agentEngineKinds: [],
+        labels: ["human"],
+        maxAssignments: 1,
+        runtimeKinds: ["human_interface"],
+        supportsLocalWorkspace: true,
+        supportsNip59: true
+      },
+      firstSeenAt: "2026-04-26T11:57:00.000Z",
+      hostAuthorityPubkey:
+        "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+      lastSeenAt: "2026-04-26T12:05:00.000Z",
+      publicKey:
+        "ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff",
+      runnerId: "runner-human-full",
+      schemaVersion: "1",
+      trustState: "trusted",
+      updatedAt: "2026-04-26T12:05:00.000Z"
+    },
+    staleAfterSeconds: 30
+  },
+  {
+    liveness: "stale",
+    offlineAfterSeconds: 90,
+    projectedAt: "2026-04-26T12:06:30.000Z",
+    registration: {
+      capabilities: {
+        agentEngineKinds: [],
+        labels: ["human"],
+        maxAssignments: 1,
+        runtimeKinds: ["human_interface"],
+        supportsLocalWorkspace: true,
+        supportsNip59: true
+      },
+      firstSeenAt: "2026-04-26T11:58:00.000Z",
+      hostAuthorityPubkey:
+        "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+      lastSeenAt: "2026-04-26T11:58:30.000Z",
+      publicKey:
+        "9999999999999999999999999999999999999999999999999999999999999999",
+      runnerId: "runner-human-stale",
+      schemaVersion: "1",
+      trustState: "trusted",
+      updatedAt: "2026-04-26T11:58:30.000Z"
+    },
+    staleAfterSeconds: 30
+  },
+  {
+    heartbeat: {
+      assignmentIds: [],
+      hostAuthorityPubkey:
+        "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+      lastHeartbeatAt: "2026-04-26T12:06:20.000Z",
+      operationalState: "ready",
+      runnerId: "runner-agent-only",
+      runnerPubkey:
+        "8888888888888888888888888888888888888888888888888888888888888888",
+      schemaVersion: "1",
+      updatedAt: "2026-04-26T12:06:20.000Z"
+    },
+    liveness: "online",
+    offlineAfterSeconds: 90,
+    projectedAt: "2026-04-26T12:06:30.000Z",
+    registration: {
+      capabilities: {
+        agentEngineKinds: ["opencode"],
+        labels: ["agent"],
+        maxAssignments: 1,
+        runtimeKinds: ["agent_runner"],
+        supportsLocalWorkspace: true,
+        supportsNip59: true
+      },
+      firstSeenAt: "2026-04-26T11:59:00.000Z",
+      hostAuthorityPubkey:
+        "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+      lastSeenAt: "2026-04-26T12:06:20.000Z",
+      publicKey:
+        "8888888888888888888888888888888888888888888888888888888888888888",
+      runnerId: "runner-agent-only",
+      schemaVersion: "1",
+      trustState: "trusted",
+      updatedAt: "2026-04-26T12:06:20.000Z"
+    },
+    staleAfterSeconds: 30
+  }
+];
+
 describe("user node CLI output", () => {
   it("sorts and projects User Node conversation projection records", () => {
     expect(
@@ -477,6 +660,57 @@ describe("user node CLI output", () => {
         nodeId: "user-a"
       }).map((assignment) => assignment.assignmentId)
     ).toEqual(["assignment-active", "assignment-offered"]);
+  });
+
+  it("summarizes health-aware User Node runner candidates", () => {
+    const candidates = buildUserNodeRunnerCandidateSummariesForCli({
+      assignments,
+      nodeId: "user-a",
+      runners: runnerEntries
+    });
+
+    expect(candidates.map((candidate) => candidate.runnerId)).toEqual([
+      "runner-human-current",
+      "runner-human-ready",
+      "runner-human-full",
+      "runner-human-stale"
+    ]);
+    expect(candidates[0]).toMatchObject({
+      activeAssignmentIds: ["assignment-active"],
+      availableCapacity: 0,
+      availableCapacityAfterUserNodeRevocation: 1,
+      currentUserAssignmentIds: ["assignment-active"],
+      isCurrentRunner: true,
+      recommended: true,
+      runnerId: "runner-human-current"
+    });
+    expect(candidates[1]).toMatchObject({
+      availableCapacity: 1,
+      availableCapacityAfterUserNodeRevocation: 1,
+      currentUserAssignmentIds: [],
+      isCurrentRunner: false,
+      recommended: true,
+      runnerId: "runner-human-ready"
+    });
+    expect(candidates[2]).toMatchObject({
+      availableCapacityAfterUserNodeRevocation: 0,
+      exclusionReasons: ["no_capacity_after_user_node_revocation"],
+      recommended: false,
+      runnerId: "runner-human-full"
+    });
+    expect(candidates[3]).toMatchObject({
+      exclusionReasons: ["runner_liveness_stale", "runner_operational_unknown"],
+      recommended: false,
+      runnerId: "runner-human-stale"
+    });
+    expect(
+      buildUserNodeRunnerCandidateSummariesForCli({
+        assignments,
+        nodeId: "user-a",
+        recommendedOnly: true,
+        runners: runnerEntries
+      }).map((candidate) => candidate.runnerId)
+    ).toEqual(["runner-human-current", "runner-human-ready"]);
   });
 
   it("filters projected command receipts to one User Node requester", () => {

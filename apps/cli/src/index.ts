@@ -112,6 +112,7 @@ import {
 import {
   attachUserNodeClientHealthForCli,
   buildUserNodeClientSummariesForCli,
+  buildUserNodeRunnerCandidateSummariesForCli,
   filterUserNodeAssignmentsForCli,
   filterUserConversationsForCli,
   filterUserNodeApprovalMessagesForCli,
@@ -1589,6 +1590,46 @@ userNodesCommand
   });
 
 userNodesCommand
+  .command("runner-candidates")
+  .argument("<nodeId>", "User Node identifier.")
+  .option("--recommended-only", "Only include currently recommended runners.")
+  .description("List health-aware runner candidates for one User Node.")
+  .action(async (
+    nodeId: string,
+    options: { recommendedOnly?: boolean },
+    command: Command
+  ) => {
+    const client = createCliHostClient(command);
+    const [userNodes, assignments, runners] = await Promise.all([
+      client.listUserNodes(),
+      client.listAssignments(),
+      client.listRunners()
+    ]);
+    const userNode = userNodes.userNodes.find(
+      (candidate) => candidate.nodeId === nodeId
+    );
+
+    if (!userNode) {
+      throw new Error(`User Node ${nodeId} is not active or does not exist.`);
+    }
+
+    const runnerCandidates = buildUserNodeRunnerCandidateSummariesForCli({
+      assignments: assignments.assignments,
+      nodeId,
+      recommendedOnly: options.recommendedOnly === true,
+      runners: runners.runners
+    });
+
+    printJson({
+      recommended: runnerCandidates.filter((candidate) => candidate.recommended)
+        .length,
+      returned: runnerCandidates.length,
+      runnerCandidates,
+      userNode: projectUserNodeIdentitySummary(userNode)
+    });
+  });
+
+userNodesCommand
   .command("assign")
   .argument("<nodeId>", "User Node identifier.")
   .requiredOption(
@@ -1610,6 +1651,10 @@ userNodesCommand
     "Revoke current offered/accepted/active assignments for this User Node before offering the new assignment."
   )
   .option(
+    "--require-recommended-runner",
+    "Fail before mutation unless the selected runner is a health-aware recommended User Node candidate."
+  )
+  .option(
     "--revoke-reason <reason>",
     "Reason used when revoking existing assignments.",
     "User Node reassignment"
@@ -1627,6 +1672,7 @@ userNodesCommand
       assignmentId?: string;
       leaseDurationSeconds: string;
       policyRevisionId?: string;
+      requireRecommendedRunner?: boolean;
       revokeExisting?: boolean;
       revokeReason: string;
       revokedBy: string;
@@ -1658,13 +1704,39 @@ userNodesCommand
     }
 
     const revokedAssignments: RuntimeAssignmentRecord[] = [];
+    let selectedRunnerCandidate:
+      | ReturnType<typeof buildUserNodeRunnerCandidateSummariesForCli>[number]
+      | undefined;
 
-    if (options.revokeExisting) {
-      const assignments = await client.listAssignments();
-      const currentAssignments = listCurrentUserNodeAssignmentsForCli({
+    if (options.revokeExisting || options.requireRecommendedRunner) {
+      const [assignments, runners] = await Promise.all([
+        client.listAssignments(),
+        client.listRunners()
+      ]);
+      const currentAssignments = options.revokeExisting
+        ? listCurrentUserNodeAssignmentsForCli({
+            assignments: assignments.assignments,
+            nodeId
+          })
+        : [];
+      const runnerCandidates = buildUserNodeRunnerCandidateSummariesForCli({
         assignments: assignments.assignments,
-        nodeId
+        nodeId,
+        runners: runners.runners
       });
+      selectedRunnerCandidate = runnerCandidates.find(
+        (candidate) => candidate.runnerId === options.runner
+      );
+
+      if (
+        options.requireRecommendedRunner &&
+        selectedRunnerCandidate?.recommended !== true
+      ) {
+        throw new Error(
+          `Runner ${options.runner} is not a recommended User Node candidate. ` +
+            "Run 'entangle user-nodes runner-candidates <nodeId>' for health-aware options."
+        );
+      }
 
       for (const assignment of currentAssignments) {
         const response = await client.revokeAssignment(assignment.assignmentId, {
@@ -1684,11 +1756,17 @@ userNodesCommand
             revokedAssignments: revokedAssignments.map(
               projectRuntimeAssignmentSummary
             ),
+            ...(selectedRunnerCandidate
+              ? { runnerCandidate: selectedRunnerCandidate }
+              : {}),
             userNode: projectUserNodeIdentitySummary(userNode)
           }
         : {
             assignment: response.assignment,
             revokedAssignments,
+            ...(selectedRunnerCandidate
+              ? { runnerCandidate: selectedRunnerCandidate }
+              : {}),
             userNode
           }
     );

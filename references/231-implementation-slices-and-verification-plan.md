@@ -1634,6 +1634,10 @@ Current status:
   `review-source-candidate --from-message` decisions;
 - CLI User Node assignments now has a focused read-only roster for all or
   current assignment records of one human participant before reassignment;
+- CLI User Node runner candidates now summarize trusted `human_interface`
+  runners with liveness, operational state, capacity, current User Node
+  placement, capacity after explicit User Node revocation, and exclusion
+  reasons before assignment mutation;
 - deterministic runner task memory now records bounded approval-request
   directives, rebuilds `summaries/approval-ledger.md`, and feeds the ledger
   into future turn `memoryRefs` plus bounded memory briefs;

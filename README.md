@@ -170,9 +170,13 @@ adds per-User-Node conversation, unread, pending approval, latest message, and
 participant-command receipt counts, and `--node <nodeId>` narrows the roster
 and optional health probe to one human participant. The headless
 `entangle user-nodes assignments <nodeId>` roster lists all or current
-assignments for one human participant before reassignment. Studio's User Node
-roster shows the same participant-command receipt and failed receipt counts
-next to its existing conversation and Human Interface Runtime placement summary.
+assignments for one human participant before reassignment. The headless
+`entangle user-nodes runner-candidates <nodeId>` roster lists health-aware
+`human_interface` runner candidates with trust, liveness, operational state,
+capacity, current placement, capacity after explicit User Node revocation, and
+exclusion reasons before reassignment. Studio's User Node roster shows the
+same participant-command receipt and failed receipt counts next to its
+existing conversation and Human Interface Runtime placement summary.
 The running React User Client also shows a compact participant Workload panel
 for conversations, open work, unread messages, unique pending approvals,
 pending source reviews, command receipt statuses, source-history/wiki refs,

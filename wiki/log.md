@@ -1,5 +1,17 @@
 # Entangle Wiki Log
 
+## [2026-05-09] cli | Added User Node runner candidates
+
+Added `references/565-cli-user-node-runner-candidates-slice.md`.
+`entangle user-nodes runner-candidates <nodeId>` now lists health-aware
+`human_interface` runner candidates before reassignment, including trust,
+liveness, operational state, active assignments, current User Node placement,
+capacity after explicit User Node revocation, and bounded exclusion reasons.
+
+`entangle user-nodes assign` also accepts `--require-recommended-runner` to
+fail before mutation when the selected runner is not currently recommended by
+the same candidate logic.
+
 ## [2026-05-09] runner | Added approval ledger memory
 
 Added `references/564-approval-ledger-memory-slice.md`. Deterministic runner
