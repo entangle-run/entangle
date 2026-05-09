@@ -1,5 +1,16 @@
 # Entangle Wiki Log
 
+## [2026-05-09] user-client | Added participant review queue
+
+Added `references/567-user-client-review-queue-slice.md`. The running React
+User Client now derives a grouped Review Queue from projected pending approval
+ids and pending source-change refs.
+
+The queue deduplicates approval ids, keeps the newest projected conversation
+context, includes source-change file/addition/deletion counts when available,
+and navigates to the related User Node conversation without creating a second
+approval or source-review mutation path.
+
 ## [2026-05-09] studio | Added User Node runner candidates
 
 Added `references/566-studio-user-node-runner-candidates-slice.md`. Studio

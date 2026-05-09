@@ -339,6 +339,9 @@ The most accurate current description is:
 - Studio User Node runtime rows now render the same runner-candidate reasoning
   and can prepare the existing Host assignment form with a recommended runner
   without mutating assignment state directly from the row;
+- the running React User Client now renders a grouped participant Review Queue
+  from projected pending approval ids and pending source-change refs, with
+  conversation navigation when projection context is available;
 - the process-runner smoke now proves that User Client wiki publication path
   through a signed builder wiki approval request, the running User Client JSON
   route, a completed projected `runtime.wiki.publish` command receipt, a
@@ -401,7 +404,8 @@ The most accurate current description is:
 - the largest remaining gaps are richer collaborative wiki merge UI beyond
   conflict-base recovery, repository lifecycle and fallback/replication
   behavior, infrastructure-backed multi-machine proof execution, production
-  identity/authorization, and deeper delegated-session runtime semantics.
+  identity/authorization, richer participant review batching, and deeper
+  delegated-session runtime semantics.
 
 The Human Interface Runtime now has a first usable running User Client for
 human graph participants. It can inspect projected inbox state, publish
@@ -1450,7 +1454,8 @@ The current implementation-truth audit now lives in
   preview plus stale-edit conflict receipt summaries in the browser, CLI, and
   fallback Human Interface Runtime plus User Client conflict-base recovery into
   the visible page editor plus
-  approval-response turn correlation;
+  approval-response turn correlation plus the first grouped User Client review
+  queue;
   the next git gaps are richer collaborative wiki merge UI, repository
   lifecycle behavior, and explicit fallback or replication behavior,
   while the next deployment-grade gap is

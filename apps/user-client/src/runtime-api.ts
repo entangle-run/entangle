@@ -804,6 +804,31 @@ export type UserClientWorkloadSummary = {
   wikiRefCount: number;
 };
 
+export type UserClientReviewQueueItem =
+  | {
+      approvalId: string;
+      conversationId: string;
+      id: string;
+      kind: "approval";
+      peerNodeId: string;
+      status: UserConversationProjectionRecord["status"];
+      unreadCount: number;
+      updatedAt: string;
+    }
+  | {
+      additions?: number | undefined;
+      candidateId: string;
+      conversationId?: string | undefined;
+      deletions?: number | undefined;
+      fileCount?: number | undefined;
+      id: string;
+      kind: "source_change";
+      nodeId: string;
+      peerNodeId?: string | undefined;
+      status: SourceChangeRefProjectionRecord["status"];
+      updatedAt: string;
+    };
+
 const openConversationStatuses = new Set([
   "acknowledged",
   "awaiting_approval",
@@ -864,6 +889,138 @@ export function formatUserClientWorkloadLines(
     `${summary.sourceHistoryRefCount} source histories, ${summary.wikiRefCount} wiki refs`,
     `${summary.targetCount} reachable targets`
   ];
+}
+
+function conversationUpdatedAt(
+  conversation: UserConversationProjectionRecord
+): string {
+  return conversation.lastMessageAt ?? conversation.projection.updatedAt;
+}
+
+function sortConversationsByRecency(
+  conversations: UserConversationProjectionRecord[]
+): UserConversationProjectionRecord[] {
+  return [...conversations].sort((left, right) => {
+    const updatedOrder = conversationUpdatedAt(right).localeCompare(
+      conversationUpdatedAt(left)
+    );
+
+    if (updatedOrder !== 0) {
+      return updatedOrder;
+    }
+
+    return left.conversationId.localeCompare(right.conversationId);
+  });
+}
+
+function sortSourceChangeReviewItems(
+  items: Extract<UserClientReviewQueueItem, { kind: "source_change" }>[]
+): Extract<UserClientReviewQueueItem, { kind: "source_change" }>[] {
+  return items.sort((left, right) => {
+    const updatedOrder = right.updatedAt.localeCompare(left.updatedAt);
+
+    if (updatedOrder !== 0) {
+      return updatedOrder;
+    }
+
+    return left.candidateId.localeCompare(right.candidateId);
+  });
+}
+
+export function buildUserClientReviewQueue(
+  state: UserClientState
+): UserClientReviewQueueItem[] {
+  const conversationsById = new Map(
+    state.conversations.map((conversation) => [
+      conversation.conversationId,
+      conversation
+    ])
+  );
+  const seenApprovalIds = new Set<string>();
+  const approvalItems: UserClientReviewQueueItem[] = [];
+
+  for (const conversation of sortConversationsByRecency(state.conversations)) {
+    for (const approvalId of conversation.pendingApprovalIds) {
+      if (seenApprovalIds.has(approvalId)) {
+        continue;
+      }
+
+      seenApprovalIds.add(approvalId);
+      approvalItems.push({
+        approvalId,
+        conversationId: conversation.conversationId,
+        id: `approval:${approvalId}`,
+        kind: "approval",
+        peerNodeId: conversation.peerNodeId,
+        status: conversation.status,
+        unreadCount: conversation.unreadCount,
+        updatedAt: conversationUpdatedAt(conversation)
+      });
+    }
+  }
+
+  const sourceChangeItems = sortSourceChangeReviewItems(
+    state.sourceChangeRefs
+      .filter((ref) => ref.status === "pending_review")
+      .map((ref) => {
+        const summary = ref.sourceChangeSummary ?? ref.candidate?.sourceChangeSummary;
+        const conversationId = ref.candidate?.conversationId;
+        const conversation = conversationId
+          ? conversationsById.get(conversationId)
+          : undefined;
+
+        return {
+          ...(summary
+            ? {
+                additions: summary.additions,
+                deletions: summary.deletions,
+                fileCount: summary.fileCount
+              }
+            : {}),
+          candidateId: ref.candidateId,
+          ...(conversationId ? { conversationId } : {}),
+          id: `source_change:${ref.candidateId}`,
+          kind: "source_change" as const,
+          nodeId: ref.nodeId,
+          ...(conversation?.peerNodeId
+            ? { peerNodeId: conversation.peerNodeId }
+            : {}),
+          status: ref.status,
+          updatedAt: ref.candidate?.updatedAt ?? ref.projection.updatedAt
+        };
+      })
+  );
+
+  return [...approvalItems, ...sourceChangeItems];
+}
+
+function formatFileCount(fileCount: number): string {
+  return `${fileCount} ${fileCount === 1 ? "file" : "files"}`;
+}
+
+export function formatUserClientReviewQueueItem(
+  item: UserClientReviewQueueItem
+): string {
+  if (item.kind === "approval") {
+    return [
+      `approval ${item.approvalId}`,
+      item.peerNodeId,
+      `${item.unreadCount} unread`,
+      item.status,
+      item.conversationId
+    ].join(" · ");
+  }
+
+  return [
+    `source change ${item.candidateId}`,
+    item.nodeId,
+    item.fileCount !== undefined &&
+    item.additions !== undefined &&
+    item.deletions !== undefined
+      ? `${formatFileCount(item.fileCount)} +${item.additions} -${item.deletions}`
+      : item.status,
+    item.conversationId ?? "no conversation"
+  ].join(" · ");
 }
 
 export function formatDeliveryLabel(message: UserNodeMessageRecord): string {

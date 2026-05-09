@@ -17,6 +17,7 @@ import {
   buildWikiPageConflictSummary,
   buildWikiPageDraftFromProjection,
   buildWikiPageNextContentPreview,
+  buildUserClientReviewQueue,
   chooseConversationId,
   computeUtf8Sha256Hex,
   fetchArtifactDiff,
@@ -32,6 +33,7 @@ import {
   formatRuntimeCommandReceiptDetailLines,
   formatSignerLabel,
   formatUserClientWorkloadLines,
+  formatUserClientReviewQueueItem,
   formatWikiPageConflictSummaryLines,
   markConversationRead,
   normalizeApiBaseUrl,
@@ -1271,6 +1273,44 @@ function RuntimeWorkloadSummary({ state }: { state: UserClientState }) {
   );
 }
 
+function ReviewQueueCard({
+  onSelectConversation,
+  state
+}: {
+  onSelectConversation: (conversationId: string) => void;
+  state: UserClientState;
+}) {
+  const queue = buildUserClientReviewQueue(state);
+
+  return (
+    <section className="review-queue-card" aria-label="Review queue">
+      <h2>Review Queue</h2>
+      {queue.length > 0 ? (
+        <div className="review-queue-list">
+          {queue.slice(0, 8).map((item) => (
+            <button
+              className="review-queue-item"
+              disabled={!item.conversationId}
+              key={item.id}
+              onClick={() => {
+                if (item.conversationId) {
+                  onSelectConversation(item.conversationId);
+                }
+              }}
+              type="button"
+            >
+              <span>{item.kind === "approval" ? "Approval" : "Source Change"}</span>
+              <strong>{formatUserClientReviewQueueItem(item)}</strong>
+            </button>
+          ))}
+        </div>
+      ) : (
+        <p className="empty">No pending reviews</p>
+      )}
+    </section>
+  );
+}
+
 function RuntimeCommandReceiptList({
   receipts
 }: {
@@ -1769,6 +1809,10 @@ export function App() {
             <>
               <RuntimeStatus state={state} />
               <RuntimeWorkloadSummary state={state} />
+              <ReviewQueueCard
+                onSelectConversation={setSelectedConversationId}
+                state={state}
+              />
               <RuntimeCommandReceiptList
                 receipts={state.runtimeCommandReceipts}
               />

@@ -9,6 +9,7 @@ import {
   buildWikiPageConflictSummary,
   buildWikiPageDraftFromProjection,
   buildWikiPageNextContentPreview,
+  buildUserClientReviewQueue,
   buildRuntimeApiUrl,
   chooseConversationId,
   computeUtf8Sha256Hex,
@@ -21,6 +22,7 @@ import {
   formatDeliveryLabel,
   formatRuntimeCommandReceiptDetailLines,
   formatSignerLabel,
+  formatUserClientReviewQueueItem,
   formatUserClientWorkloadLines,
   formatWikiPageConflictSummaryLines,
   markConversationRead,
@@ -393,6 +395,100 @@ describe("user client runtime API helpers", () => {
     );
     expect(formatUserClientWorkloadLines(summary)).toContain(
       "1 received, 1 completed, 1 failed commands"
+    );
+  });
+
+  it("builds a grouped participant review queue from projected state", () => {
+    const state = {
+      conversations: [
+        {
+          conversationId: "conversation-old",
+          lastMessageAt: "2026-05-05T12:01:00.000Z",
+          peerNodeId: "reviewer-it",
+          pendingApprovalIds: ["approval-shared", "approval-old"],
+          projection: {
+            source: "observation_event",
+            updatedAt: "2026-05-05T12:01:00.000Z"
+          },
+          status: "awaiting_approval",
+          unreadCount: 1
+        },
+        {
+          conversationId: "conversation-new",
+          lastMessageAt: "2026-05-05T12:03:00.000Z",
+          peerNodeId: "worker-it",
+          pendingApprovalIds: ["approval-new", "approval-shared"],
+          projection: {
+            source: "observation_event",
+            updatedAt: "2026-05-05T12:03:00.000Z"
+          },
+          status: "working",
+          unreadCount: 2
+        }
+      ],
+      runtimeCommandReceipts: [],
+      sourceChangeRefs: [
+        {
+          candidate: {
+            candidateId: "candidate-alpha",
+            conversationId: "conversation-old",
+            createdAt: "2026-05-05T12:00:00.000Z",
+            graphId: "graph-alpha",
+            nodeId: "worker-it",
+            sourceChangeSummary: {
+              additions: 8,
+              deletions: 2,
+              fileCount: 2,
+              files: []
+            },
+            status: "pending_review",
+            turnId: "turn-alpha",
+            updatedAt: "2026-05-05T12:02:00.000Z"
+          },
+          candidateId: "candidate-alpha",
+          nodeId: "worker-it",
+          projection: {
+            source: "observation_event",
+            updatedAt: "2026-05-05T12:02:00.000Z"
+          },
+          sourceChangeSummary: {
+            additions: 8,
+            deletions: 2,
+            fileCount: 2,
+            files: []
+          },
+          status: "pending_review"
+        },
+        {
+          candidateId: "candidate-done",
+          nodeId: "worker-it",
+          projection: {
+            source: "observation_event",
+            updatedAt: "2026-05-05T12:04:00.000Z"
+          },
+          status: "accepted"
+        }
+      ],
+      sourceHistoryRefs: [],
+      targets: [],
+      wikiRefs: []
+    } as unknown as UserClientState;
+    const queue = buildUserClientReviewQueue(state);
+
+    expect(queue.map((item) => item.id)).toEqual([
+      "approval:approval-new",
+      "approval:approval-shared",
+      "approval:approval-old",
+      "source_change:candidate-alpha"
+    ]);
+    expect(queue[1]).toMatchObject({
+      approvalId: "approval-shared",
+      conversationId: "conversation-new",
+      kind: "approval",
+      peerNodeId: "worker-it"
+    });
+    expect(formatUserClientReviewQueueItem(queue[3]!)).toBe(
+      "source change candidate-alpha · worker-it · 2 files +8 -2 · conversation-old"
     );
   });
 

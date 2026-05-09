@@ -367,6 +367,7 @@ same-machine slice records.
 - [564-approval-ledger-memory-slice.md](564-approval-ledger-memory-slice.md)
 - [565-cli-user-node-runner-candidates-slice.md](565-cli-user-node-runner-candidates-slice.md)
 - [566-studio-user-node-runner-candidates-slice.md](566-studio-user-node-runner-candidates-slice.md)
+- [567-user-client-review-queue-slice.md](567-user-client-review-queue-slice.md)
 
 ## Audited Scope
 
@@ -1322,6 +1323,10 @@ bounded exclusion reasons before a headless operator offers a reassignment.
 Studio User Node runtime rows now show the same candidate reasoning and can
 prepare the existing Host assignment form with a recommended runner without
 mutating assignment state directly from the row.
+The running User Client now derives a grouped participant Review Queue from
+projected pending approval ids and pending source-change refs, deduplicating
+approval ids and navigating to the related User Node conversation when
+projection context is available.
 Deterministic runner task memory now also preserves bounded source-change
 candidate ids, status, totals, diff availability, and changed-file summaries
 from the live turn record, and the derived recent-work summary surfaces the
@@ -1343,8 +1348,9 @@ The highest-value remaining implementation areas are richer model-guided
 memory maintenance, deeper delegated-session semantics beyond the current
 controlled handoff path and deterministic owner/coordination/delegation memory
 projection, deeper reassignment workflows beyond current CLI/Studio candidate
-preflight, collaborative wiki merge UI on top of the participant-scoped
-page upsert and patch-set commands,
+preflight, participant review batching beyond the first User Client review
+queue, collaborative wiki merge UI on top of the participant-scoped page
+upsert and patch-set commands,
 repository lifecycle and replicated/fallback artifact behavior,
 infrastructure-backed multi-machine proof execution, non-disposable upgrade
 behavior, external audit retention, and deeper production identity and

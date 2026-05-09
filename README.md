@@ -182,7 +182,9 @@ placement summary.
 The running React User Client also shows a compact participant Workload panel
 for conversations, open work, unread messages, unique pending approvals,
 pending source reviews, command receipt statuses, source-history/wiki refs,
-and reachable targets.
+and reachable targets, plus a grouped Review Queue that jumps from pending
+approval and source-change items to the related User Node conversation when
+projection context is available.
 The Human Interface Runtime fallback HTML client renders the same workload
 categories when the React bundle is not available.
 The fallback HTML client can also request visible wiki page updates and
@@ -1663,6 +1665,7 @@ The highest-value remaining gaps are:
   autonomous handoff and runner-local active-conversation reconciliation path,
   especially formal cross-runtime relation modeling, richer participant-aware
   reassignment workflows beyond the first CLI/Studio assignment entry points,
+  richer participant review batching beyond the first User Client review queue,
   and automated repair workflows beyond the first owner-aware memory
   projection;
 - advanced git widening beyond the current locator-specific handoff,
