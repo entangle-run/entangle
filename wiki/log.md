@@ -19,6 +19,10 @@ context, includes source-change file/addition/deletion counts when available,
 and navigates to the related User Node conversation without creating a second
 approval or source-review mutation path.
 
+Follow-up in the same surface: source-change rows now infer a unique peer
+conversation from the source-change node id when the candidate projection does
+not carry an explicit conversation id.
+
 ## [2026-05-09] studio | Added User Node runner candidates
 
 Added `references/566-studio-user-node-runner-candidates-slice.md`. Studio

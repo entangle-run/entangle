@@ -927,15 +927,27 @@ function sortSourceChangeReviewItems(
   });
 }
 
+function inferSourceChangeConversation(input: {
+  conversationId?: string | undefined;
+  conversations: UserConversationProjectionRecord[];
+  nodeId: string;
+}): UserConversationProjectionRecord | undefined {
+  if (input.conversationId) {
+    return input.conversations.find(
+      (conversation) => conversation.conversationId === input.conversationId
+    );
+  }
+
+  const peerMatches = input.conversations.filter(
+    (conversation) => conversation.peerNodeId === input.nodeId
+  );
+
+  return peerMatches.length === 1 ? peerMatches[0] : undefined;
+}
+
 export function buildUserClientReviewQueue(
   state: UserClientState
 ): UserClientReviewQueueItem[] {
-  const conversationsById = new Map(
-    state.conversations.map((conversation) => [
-      conversation.conversationId,
-      conversation
-    ])
-  );
   const seenApprovalIds = new Set<string>();
   const approvalItems: UserClientReviewQueueItem[] = [];
 
@@ -964,10 +976,11 @@ export function buildUserClientReviewQueue(
       .filter((ref) => ref.status === "pending_review")
       .map((ref) => {
         const summary = ref.sourceChangeSummary ?? ref.candidate?.sourceChangeSummary;
-        const conversationId = ref.candidate?.conversationId;
-        const conversation = conversationId
-          ? conversationsById.get(conversationId)
-          : undefined;
+        const conversation = inferSourceChangeConversation({
+          conversationId: ref.candidate?.conversationId,
+          conversations: state.conversations,
+          nodeId: ref.nodeId
+        });
 
         return {
           ...(summary
@@ -978,7 +991,9 @@ export function buildUserClientReviewQueue(
               }
             : {}),
           candidateId: ref.candidateId,
-          ...(conversationId ? { conversationId } : {}),
+          ...(conversation?.conversationId
+            ? { conversationId: conversation.conversationId }
+            : {}),
           id: `source_change:${ref.candidateId}`,
           kind: "source_change" as const,
           nodeId: ref.nodeId,

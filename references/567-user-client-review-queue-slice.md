@@ -39,7 +39,8 @@ actions rather than inventing a second mutation path.
   context.
 - Include source-change summary counts when available.
 - Render a running User Client sidebar review queue that jumps to the related
-  conversation when projected.
+  conversation when projected or when a unique peer conversation can be
+  inferred from the source-change node id.
 - Keep approval/source-change decisions on the existing message timeline
   controls, preserving the signed User Node message path.
 
@@ -58,8 +59,9 @@ actions rather than inventing a second mutation path.
 
 No data migration is required. The queue derives from existing `/api/state`
 projection fields and existing source-change refs. If older state lacks
-optional source-change candidate conversation ids, those rows remain visible
-but do not navigate until conversation context is projected.
+optional source-change candidate conversation ids, those rows remain visible.
+They still navigate when a unique peer conversation can be inferred from the
+source-change node id.
 
 ## Risks And Mitigations
 
@@ -69,9 +71,9 @@ but do not navigate until conversation context is projected.
 - Risk: duplicate approval ids across stale conversation projections create
   noise. Mitigation: the helper deduplicates approval ids and keeps the newest
   conversation context.
-- Risk: source-change refs without candidate conversation context cannot jump
-  to a thread. Mitigation: the item remains visible and disabled until
-  projection carries a conversation id.
+- Risk: source-change refs without candidate conversation context cannot always
+  jump to a thread. Mitigation: the item uses a unique peer conversation when
+  one exists and otherwise remains visible without navigation.
 
 ## Open Questions
 

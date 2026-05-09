@@ -431,7 +431,6 @@ describe("user client runtime API helpers", () => {
         {
           candidate: {
             candidateId: "candidate-alpha",
-            conversationId: "conversation-old",
             createdAt: "2026-05-05T12:00:00.000Z",
             graphId: "graph-alpha",
             nodeId: "worker-it",
@@ -488,7 +487,7 @@ describe("user client runtime API helpers", () => {
       peerNodeId: "worker-it"
     });
     expect(formatUserClientReviewQueueItem(queue[3]!)).toBe(
-      "source change candidate-alpha · worker-it · 2 files +8 -2 · conversation-old"
+      "source change candidate-alpha · worker-it · 2 files +8 -2 · conversation-new"
     );
   });
 
