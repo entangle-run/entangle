@@ -461,6 +461,24 @@ try {
   );
 
   runFailureStep(
+    "proof kit fake-opencode credentialed-url dry-run",
+    [
+      "scripts/federated-distributed-proof-kit.mjs",
+      "--dry-run",
+      "--output",
+      "/tmp/entangle-distributed-proof-ci-fake-opencode-credentialed-url",
+      "--host-url",
+      "http://host.example:7071",
+      "--fake-opencode-server-url",
+      "http://engine-user:engine-secret@agent-engine.example:18081"
+    ],
+    {
+      mustContain:
+        "--fake-opencode-server-url must not include URL credentials; use --fake-opencode-username and --fake-opencode-password instead."
+    }
+  );
+
+  runFailureStep(
     "proof kit invalid user-client auth env var dry-run",
     [
       "scripts/federated-distributed-proof-kit.mjs",
@@ -861,6 +879,29 @@ try {
     ]
   );
   verifySelfTestJson(externalAgentEngineUrlJson);
+
+  const credentialedAgentEngineUrlJson = runStep(
+    "proof verifier credentialed-agent-engine-url self-test",
+    [
+      "scripts/federated-distributed-proof-verify.mjs",
+      "--self-test",
+      "--json",
+      "--require-external-agent-engine-urls",
+      "--self-test-credentialed-agent-engine-url"
+    ],
+    {
+      mustContain: "http://***@agent-engine.example:18081"
+    }
+  );
+  if (
+    credentialedAgentEngineUrlJson.includes("engine-secret") ||
+    credentialedAgentEngineUrlJson.includes("engine-user")
+  ) {
+    throw new Error(
+      "Verifier credentialed agent-engine self-test leaked URL credentials."
+    );
+  }
+  verifySelfTestJson(credentialedAgentEngineUrlJson);
 
   const missingGitServiceJson = runFailureStep(
     "proof verifier missing-git-service self-test",

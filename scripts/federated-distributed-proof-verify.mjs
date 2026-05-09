@@ -72,6 +72,9 @@ const selfTestLoopbackGitUrl = hasFlag("--self-test-loopback-git-url");
 const selfTestLoopbackAgentEngineUrl = hasFlag(
   "--self-test-loopback-agent-engine-url"
 );
+const selfTestCredentialedAgentEngineUrl = hasFlag(
+  "--self-test-credentialed-agent-engine-url"
+);
 const selfTestWithoutArtifactEvidence = hasFlag(
   "--self-test-without-artifact-evidence"
 );
@@ -187,6 +190,8 @@ Options:
   --self-test-loopback-git-url      Use loopback git service URLs in the self-test fixture.
   --self-test-loopback-agent-engine-url
                                   Use a loopback URL-backed agent engine profile in the self-test fixture.
+  --self-test-credentialed-agent-engine-url
+                                  Use a credentialed URL-backed agent engine profile in the self-test fixture.
   --self-test-without-artifact-evidence
                                   Omit projected artifact/source/wiki evidence from the self-test fixture.
   --self-test-wrong-runtime-kind   Make the agent runner advertise the wrong runtime kind.
@@ -566,9 +571,7 @@ function buildSelfTestSnapshot() {
             baseUrl:
               agentEngineKind === "external_process"
                 ? undefined
-                : selfTestLoopbackAgentEngineUrl
-                  ? "http://127.0.0.1:18081"
-                  : "http://agent-engine.example:18081",
+                : buildSelfTestAgentEngineBaseUrl(),
             displayName: "Self-test Agent Engine",
             executable:
               agentEngineKind === "external_process"
@@ -684,6 +687,18 @@ function buildSelfTestSnapshot() {
       status: "ok"
     }
   };
+}
+
+function buildSelfTestAgentEngineBaseUrl() {
+  if (selfTestCredentialedAgentEngineUrl) {
+    return "http://engine-user:engine-secret@agent-engine.example:18081";
+  }
+
+  if (selfTestLoopbackAgentEngineUrl) {
+    return "http://127.0.0.1:18081";
+  }
+
+  return "http://agent-engine.example:18081";
 }
 
 function findRunnerEntry(snapshot, runnerId) {
@@ -874,8 +889,8 @@ function redactUrlCredentials(value) {
   try {
     const parsed = new URL(value);
     if (parsed.username || parsed.password) {
-      parsed.username = parsed.username ? "***" : "";
-      parsed.password = parsed.password ? "***" : "";
+      parsed.username = "***";
+      parsed.password = "";
     }
     return parsed.toString();
   } catch {
@@ -1234,27 +1249,30 @@ async function evaluateSnapshot(snapshot) {
 
     if (agentEngineProfileRef) {
       const profile = findAgentEngineProfile(catalog, agentEngineProfileRef);
+      const profileBaseUrl =
+        typeof profile?.baseUrl === "string"
+          ? redactUrlCredentials(profile.baseUrl)
+          : "not configured";
       addCheck(
         checks,
         `agent engine ${agentEngineProfileRef} exists`,
         Boolean(profile),
         profile
-          ? `kind=${profile.kind ?? "unknown"}; baseUrl=${
-              profile.baseUrl ?? "not configured"
-            }`
+          ? `kind=${profile.kind ?? "unknown"}; baseUrl=${profileBaseUrl}`
           : "missing agent engine profile"
       );
 
       if (profile) {
         const baseUrl =
           typeof profile.baseUrl === "string" ? profile.baseUrl : "";
+        const safeBaseUrl = redactUrlCredentials(baseUrl);
         const hasUrl = baseUrl.length > 0;
         addCheck(
           checks,
           `agent engine ${agentEngineProfileRef} external url`,
           hasUrl ? isExternalHttpUrl(baseUrl) : true,
           hasUrl
-            ? `kind=${profile.kind ?? "unknown"}; baseUrl=${baseUrl}`
+            ? `kind=${profile.kind ?? "unknown"}; baseUrl=${safeBaseUrl}`
             : `kind=${profile.kind ?? "unknown"}; baseUrl=not required; executable=${
                 profile.executable ?? "not configured"
               }`

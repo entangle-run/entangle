@@ -557,6 +557,9 @@ For attached OpenCode or `external_http` proof runs,
 `--require-external-agent-engine-urls` can require the selected URL-backed
 agent engine profile to be non-loopback and non-wildcard without probing the
 endpoint.
+Distributed proof tooling now also rejects credentials embedded in attached
+OpenCode or `external_http` engine URLs, and verifier agent-engine diagnostics
+redact any credentialed catalog URL before printing checks.
 `pnpm ops:smoke-distributed-proof-tools` now gives CI a deterministic
 no-infrastructure check for proof-kit syntax/help/dry-run paths and verifier
 self-test JSON, including non-running runtime rejection and duplicated User

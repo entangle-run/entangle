@@ -6810,3 +6810,14 @@ both the proof kit generator and verifier expose
 The proof kit fails fast when attached OpenCode or `external_http` proof setup
 uses a loopback engine URL under that guard, and the verifier rejects loopback
 or wildcard URL-backed default agent engine profiles in Host catalog state.
+
+## [2026-05-09] proof | Hardened agent-engine proof URL credentials
+
+Added `references/580-agent-engine-proof-url-credential-hardening-slice.md`.
+The distributed proof kit now rejects credentials embedded in attached
+OpenCode or `external_http` engine URLs before writing or printing proof
+material.
+
+Verifier agent-engine catalog diagnostics now redact URL credentials with a
+single `***@` marker, and the deterministic proof-tool smoke covers both the
+generation rejection and verifier redaction path.

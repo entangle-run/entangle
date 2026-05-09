@@ -1645,6 +1645,9 @@ Current status:
   `--require-external-agent-engine-urls`, keeping physical attached OpenCode
   and `external_http` proof runs from silently accepting local-only engine
   endpoints;
+- proof kit generation now rejects credentials embedded in attached OpenCode
+  and `external_http` engine URLs, while verifier diagnostics redact
+  agent-engine URL credentials before emitting check details;
 - generated proof kits can now require User Client Basic Auth placeholders and
   fail-fast start checks for User Node runner machines, keeping credentials out
   of the kit command line while hardening physical proof endpoints;

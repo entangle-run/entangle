@@ -593,6 +593,10 @@ Add `--require-external-agent-engine-urls` when attached OpenCode or
 `external_http` engine URLs should be topology-checked for physical proof
 runs. The proof kit also fails fast if the supplied fake OpenCode or external
 HTTP engine URL is local-only while this guard is enabled.
+The same proof tooling rejects credentials embedded in agent-engine URLs:
+use `--fake-opencode-username` and `--fake-opencode-password` for fake
+OpenCode, and keep generic `external_http` authentication outside the URL
+until a typed credential binding exists.
 Generate the kit with `--check-published-git-ref` when the operator machine
 should also run `git ls-remote` against projected post-work git artifact refs.
 
@@ -613,9 +617,10 @@ missing relay URLs, file-backed git services, or missing git service refs fail
 when explicitly required. It also checks loopback User Client URL rejection
 when physical proof mode requests external URLs, loopback git service URL
 rejection when external git URLs are required, loopback attached-engine URL
-rejection when external agent engine URLs are required, generated User Client
-Basic Auth placeholders for User Node runner machines, custom assignment ids
-from proof profiles, and the generated post-work artifact verifier command. It
+rejection when external agent engine URLs are required, credential rejection
+and verifier redaction for agent-engine URLs, generated User Client Basic Auth
+placeholders for User Node runner machines, custom assignment ids from proof
+profiles, and the generated post-work artifact verifier command. It
 does not replace the real distributed proof above.
 
 Managed Docker runners in the federated dev profile use the same join path.

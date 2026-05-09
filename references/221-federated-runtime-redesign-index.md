@@ -1345,6 +1345,10 @@ non-loopback and non-wildcard with
 `--require-external-agent-engine-urls`, catching local-only attached OpenCode
 or `external_http` engine endpoints before a physical proof is treated as
 portable across machines.
+The proof tooling now also rejects credentials embedded in attached OpenCode
+and `external_http` engine URLs before generating proof material, and verifier
+agent-engine catalog diagnostics redact URL credentials to a single `***@`
+marker.
 CLI inbox detail can now filter Host-recorded User Node conversation messages
 by direction, exact message type, and bounded result count, matching the
 participant-oriented inbox list filters while preserving Host as the projection

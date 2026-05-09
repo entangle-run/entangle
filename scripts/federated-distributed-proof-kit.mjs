@@ -278,6 +278,16 @@ function isExternalHttpUrl(value) {
   return isExternalNetworkUrl(value, ["http:", "https:"]);
 }
 
+function hasUrlCredentials(value) {
+  try {
+    const parsed = new URL(value);
+
+    return parsed.username.length > 0 || parsed.password.length > 0;
+  } catch {
+    return false;
+  }
+}
+
 function isExternalWebSocketUrl(value) {
   return isExternalNetworkUrl(value, ["ws:", "wss:"]);
 }
@@ -1148,6 +1158,12 @@ try {
     );
   }
 
+  if (fakeOpenCodeServerUrl && hasUrlCredentials(fakeOpenCodeServerUrl)) {
+    throw new Error(
+      "--fake-opencode-server-url must not include URL credentials; use --fake-opencode-username and --fake-opencode-password instead."
+    );
+  }
+
   if (
     requireExternalAgentEngineUrls &&
     externalHttpEngineUrl &&
@@ -1155,6 +1171,12 @@ try {
   ) {
     throw new Error(
       "--require-external-agent-engine-urls requires --external-http-engine-url to be a non-loopback http(s) URL reachable from runner machines."
+    );
+  }
+
+  if (externalHttpEngineUrl && hasUrlCredentials(externalHttpEngineUrl)) {
+    throw new Error(
+      "--external-http-engine-url must not include URL credentials; configure agent engine authentication outside the URL."
     );
   }
 
