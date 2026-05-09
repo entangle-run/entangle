@@ -382,6 +382,7 @@ try {
     "--check-published-git-ref",
     "--require-external-host-url",
     "--require-external-relay-urls",
+    "--require-external-git-urls",
     "--require-external-user-client-urls",
     "--require-user-client-basic-auth",
     "--user-client-basic-auth-env-var",
@@ -408,6 +409,7 @@ try {
       "--check-relay-health",
       "--require-external-host-url",
       "--require-external-relay-urls",
+      "--require-external-git-urls",
       "--require-external-user-client-urls",
       "--require-artifact-evidence",
       '"agentRunnerId":"proof-agent-runner"',
@@ -424,6 +426,7 @@ try {
       '"gitServiceRefs":["gitea"]',
       '"requireExternalHostUrl":true',
       '"requireExternalRelayUrls":true',
+      '"requireExternalGitUrls":true',
       '"requireExternalUserClientUrls":true',
       '"requireConversation":true',
       '"requirePublishedGitArtifact":true',
@@ -784,6 +787,29 @@ try {
     }
   );
   verifySelfTestFailureJson(fileGitBackendJson, "non-file remote");
+
+  const loopbackGitUrlJson = runFailureStep(
+    "proof verifier loopback-git-url self-test",
+    [
+      "scripts/federated-distributed-proof-verify.mjs",
+      "--self-test",
+      "--json",
+      "--require-external-git-urls",
+      "--self-test-loopback-git-url"
+    ],
+    {
+      mustContain: '"ok": false'
+    }
+  );
+  verifySelfTestFailureJson(loopbackGitUrlJson, "git service gitea external url");
+
+  const externalGitUrlJson = runStep("proof verifier external-git-url self-test", [
+    "scripts/federated-distributed-proof-verify.mjs",
+    "--self-test",
+    "--json",
+    "--require-external-git-urls"
+  ]);
+  verifySelfTestJson(externalGitUrlJson);
 
   const missingGitServiceJson = runFailureStep(
     "proof verifier missing-git-service self-test",

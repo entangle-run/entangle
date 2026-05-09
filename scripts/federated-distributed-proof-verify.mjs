@@ -49,6 +49,9 @@ const requireExternalHostUrl =
 const requireExternalRelayUrls =
   hasFlag("--require-external-relay-urls") ||
   readProofProfileBoolean("requireExternalRelayUrls");
+const requireExternalGitUrls =
+  hasFlag("--require-external-git-urls") ||
+  readProofProfileBoolean("requireExternalGitUrls");
 const requireConversation =
   hasFlag("--require-conversation") ||
   readProofProfileBoolean("requireConversation");
@@ -62,6 +65,7 @@ const selfTestRuntimeState =
   (readFlagValue("--self-test-runtime-state") ?? "running").trim() || "running";
 const selfTestSharedUserClientUrl = hasFlag("--self-test-shared-user-client-url");
 const selfTestFileGitBackend = hasFlag("--self-test-file-git-backend");
+const selfTestLoopbackGitUrl = hasFlag("--self-test-loopback-git-url");
 const selfTestWithoutArtifactEvidence = hasFlag(
   "--self-test-without-artifact-evidence"
 );
@@ -153,6 +157,7 @@ Options:
                                   Reject loopback or wildcard User Client URLs. Defaults to profile requireExternalUserClientUrls.
   --require-external-host-url     Reject loopback or wildcard Host API URLs. Defaults to profile requireExternalHostUrl.
   --require-external-relay-urls   Reject loopback or wildcard relay URLs. Defaults to profile requireExternalRelayUrls.
+  --require-external-git-urls     Reject loopback, wildcard, or file-backed git service URLs. Defaults to profile requireExternalGitUrls.
   --require-conversation          Require a projected conversation from the primary User Node to the agent node. Defaults to profile requireConversation.
   --require-artifact-evidence     Require projected artifact/source/wiki evidence from the agent node.
   --require-published-git-artifact
@@ -171,6 +176,7 @@ Options:
   --self-test-shared-user-client-url
                                   Use one User Client URL for both Human Interface Runtime fixtures.
   --self-test-file-git-backend     Use a file-backed git service in the self-test fixture.
+  --self-test-loopback-git-url      Use loopback git service URLs in the self-test fixture.
   --self-test-without-artifact-evidence
                                   Omit projected artifact/source/wiki evidence from the self-test fixture.
   --self-test-wrong-runtime-kind   Make the agent runner advertise the wrong runtime kind.
@@ -422,7 +428,7 @@ async function fetchSnapshot() {
     fetchJson("/v1/projection")
   ]);
   const catalog =
-    checkGitBackendHealth || checkPublishedGitRefHealth
+    checkGitBackendHealth || checkPublishedGitRefHealth || requireExternalGitUrls
       ? await fetchJson("/v1/catalog")
       : undefined;
 
@@ -544,7 +550,9 @@ function buildSelfTestSnapshot() {
         gitServices: [
           {
             authMode: "ssh_key",
-            baseUrl: "http://gitea.example:3000",
+            baseUrl: selfTestLoopbackGitUrl
+              ? "http://127.0.0.1:3000"
+              : "http://gitea.example:3000",
             defaultNamespace: "team-alpha",
             displayName: "Self-test Gitea",
             id: "gitea",
@@ -553,7 +561,9 @@ function buildSelfTestSnapshot() {
             },
             remoteBase: selfTestFileGitBackend
               ? "file:///tmp/entangle-proof"
-              : "ssh://git@gitea.example:22",
+              : selfTestLoopbackGitUrl
+                ? "ssh://git@127.0.0.1:22"
+                : "ssh://git@gitea.example:22",
             transportKind: selfTestFileGitBackend ? "file" : "ssh"
           }
         ],
@@ -723,6 +733,10 @@ function isExternalHttpUrl(value) {
 
 function isExternalWebSocketUrl(value) {
   return isExternalNetworkUrl(value, ["ws:", "wss:"]);
+}
+
+function isExternalGitRemoteUrl(value) {
+  return isExternalNetworkUrl(value, ["git:", "http:", "https:", "ssh:"]);
 }
 
 function countNodeProjectionRecords(snapshot, key, nodeId) {
@@ -1069,7 +1083,7 @@ async function evaluateSnapshot(snapshot) {
     }
   }
 
-  if (checkGitBackendHealth) {
+  if (checkGitBackendHealth || requireExternalGitUrls) {
     const catalog = getCatalog(snapshot);
     addCheck(
       checks,
@@ -1113,21 +1127,37 @@ async function evaluateSnapshot(snapshot) {
           }`
         );
 
-        if (typeof gitService.baseUrl === "string" && gitService.baseUrl.length > 0) {
-          const health = await checkGitServiceBaseUrl(gitService);
+        if (requireExternalGitUrls) {
+          const baseUrl = String(gitService.baseUrl ?? "");
+          const baseExternal = isExternalHttpUrl(baseUrl);
+          const remoteExternal = isExternalGitRemoteUrl(remoteBase);
           addCheck(
             checks,
-            `git service ${gitServiceRef} base url health`,
-            health.ok,
-            health.detail
+            `git service ${gitServiceRef} external url`,
+            baseExternal && remoteExternal,
+            `baseUrl=${baseUrl || "missing"}; remoteBase=${
+              remoteBase || "missing"
+            }`
           );
-        } else {
-          addCheck(
-            checks,
-            `git service ${gitServiceRef} base url health`,
-            false,
-            "missing baseUrl"
-          );
+        }
+
+        if (checkGitBackendHealth) {
+          if (typeof gitService.baseUrl === "string" && gitService.baseUrl.length > 0) {
+            const health = await checkGitServiceBaseUrl(gitService);
+            addCheck(
+              checks,
+              `git service ${gitServiceRef} base url health`,
+              health.ok,
+              health.detail
+            );
+          } else {
+            addCheck(
+              checks,
+              `git service ${gitServiceRef} base url health`,
+              false,
+              "missing baseUrl"
+            );
+          }
         }
       }
     }

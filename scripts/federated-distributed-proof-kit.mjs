@@ -39,6 +39,7 @@ const requireExternalUserClientUrls = hasFlag(
 );
 const requireExternalHostUrl = hasFlag("--require-external-host-url");
 const requireExternalRelayUrls = hasFlag("--require-external-relay-urls");
+const requireExternalGitUrls = hasFlag("--require-external-git-urls");
 const requireUserClientBasicAuth = hasFlag("--require-user-client-basic-auth");
 const userClientBasicAuthEnvVar =
   readFlagValue("--user-client-basic-auth-env-var") ??
@@ -154,6 +155,7 @@ Options:
                                     Include verifier checks that reject loopback or wildcard User Client URLs.
   --require-external-host-url       Include verifier checks that reject loopback or wildcard Host API URLs.
   --require-external-relay-urls     Include verifier checks that reject loopback or wildcard relay URLs.
+  --require-external-git-urls       Include verifier checks that reject loopback, wildcard, or file-backed git service URLs.
   --require-user-client-basic-auth  Add a required Human Interface Runtime Basic Auth env placeholder to generated User Node runner env files.
   --user-client-basic-auth-env-var <envVar>
                                     Source env var for generated User Client Basic Auth placeholders. Default: ENTANGLE_HUMAN_INTERFACE_BASIC_AUTH
@@ -695,6 +697,10 @@ function buildVerifierCommand(options = {}) {
     args.push("--require-external-relay-urls");
   }
 
+  if (requireExternalGitUrls) {
+    args.push("--require-external-git-urls");
+  }
+
   if (options.requireArtifactEvidence) {
     args.push("--require-artifact-evidence");
     args.push("--require-published-git-artifact");
@@ -755,6 +761,7 @@ function buildProofProfile(options = {}) {
     checkUserClientHealth: true,
     ...(requireExternalHostUrl ? { requireExternalHostUrl: true } : {}),
     ...(requireExternalRelayUrls ? { requireExternalRelayUrls: true } : {}),
+    ...(requireExternalGitUrls ? { requireExternalGitUrls: true } : {}),
     ...(requireExternalUserClientUrls
       ? { requireExternalUserClientUrls: true }
       : {}),

@@ -494,6 +494,11 @@ Pass `--require-external-relay-urls` when that same proof should reject relay
 URLs on `localhost`, loopback, or wildcard addresses. This guard checks URL
 shape and is separate from `--check-relay-health`, which opens the relay
 WebSocket from the operator machine.
+Pass `--require-external-git-urls` when that same proof should reject Host
+catalog git service URLs on `localhost`, loopback, wildcard, or file-backed
+coordinates. This guard checks `baseUrl` and `remoteBase` shape and is
+separate from `--check-git-backend-health`, which probes the selected git
+service base URL from the operator machine.
 Pass `--require-user-client-basic-auth` when generated User Node runner
 directories should require `ENTANGLE_HUMAN_INTERFACE_BASIC_AUTH` before their
 User Clients start. Use `--user-client-basic-auth-env-var <envVar>` if the
@@ -530,6 +535,9 @@ machine. With the external Host requirement enabled, the verifier also rejects
 a loopback or wildcard Host API URL before accepting the topology proof. With
 the external relay requirement enabled, the verifier also rejects loopback or
 wildcard WebSocket relay URLs before accepting the topology proof.
+With the external git requirement enabled, the verifier also rejects loopback,
+wildcard, or file-backed git service coordinates before accepting the topology
+proof.
 
 After the runner directories are running and assignments have been offered, the
 operator machine can verify the proof through Host and User Client HTTP
@@ -570,6 +578,9 @@ uses relay URLs from `--relay-url` or the generated proof profile.
 Add `--check-git-backend-health` to require the Host catalog's selected or
 default git service to be present, non-file-backed, and reachable at its public
 `baseUrl`. Pass `--git-service-ref <id>` to verify a specific git service.
+Add `--require-external-git-urls` when the proof should validate git service
+URL shape without opening the service, or combine both flags when the operator
+needs shape and live base URL checks.
 Generate the kit with `--check-published-git-ref` when the operator machine
 should also run `git ls-remote` against projected post-work git artifact refs.
 
@@ -588,10 +599,11 @@ JUnit report paths, that malformed proof
 profiles fail before Host inspection, and that missing artifact evidence,
 missing relay URLs, file-backed git services, or missing git service refs fail
 when explicitly required. It also checks loopback User Client URL rejection
-when physical proof mode requests external URLs, generated User Client Basic
-Auth placeholders for User Node runner machines, custom assignment ids from
-proof profiles, and the generated post-work artifact verifier command. It does
-not replace the real distributed proof above.
+when physical proof mode requests external URLs, loopback git service URL
+rejection when external git URLs are required, generated User Client Basic Auth
+placeholders for User Node runner machines, custom assignment ids from proof
+profiles, and the generated post-work artifact verifier command. It does not
+replace the real distributed proof above.
 
 Managed Docker runners in the federated dev profile use the same join path.
 The Host passes inline join config JSON to the runner container and the runner

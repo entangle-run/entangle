@@ -231,6 +231,12 @@ Historical slice notes no longer preserve literal old product-name strings in
 local-assumption audit command examples; they now refer generically to old
 product identity markers while active naming remains guarded by
 `pnpm ops:check-product-naming`.
+Distributed proof profiles, generated verifier commands, and proof kit
+generation can now require Host catalog git service coordinates to be
+non-loopback, non-wildcard, and non-file-backed with
+`--require-external-git-urls`, keeping physical proof topology checks from
+accepting local-only artifact handoff URLs while leaving live git service
+probing behind `--check-git-backend-health`.
 The distributed proof kit can now configure generic custom agent engines:
 `--external-process-engine-executable` and `--external-http-engine-url`
 generate Host profile upsert plus node-binding commands for the agent node.
@@ -322,7 +328,9 @@ artifact/source/wiki evidence from the agent node after work is produced or
 relay WebSocket health for configured proof relays. The verifier can also
 optionally check the Host catalog's selected git services for distributed-proof
 suitability by rejecting missing or file-backed git services and probing the
-public service base URL from the operator machine.
+public service base URL from the operator machine. Generated proof profiles
+can also require external git service URLs, rejecting loopback, wildcard, or
+file-backed `baseUrl` and `remoteBase` coordinates without opening the service.
 `pnpm ops:smoke-distributed-proof-tools` now gives CI a deterministic
 no-infrastructure smoke over proof-kit help/dry-run paths and verifier
 self-test JSON, including non-running runtime rejection and duplicate User
@@ -331,7 +339,7 @@ plus custom proof-kit and verifier agent-engine/profile manifest paths and
 required-artifact-evidence success/failure paths, before an operator attempts
 the real distributed proof. It also proves relay-health success and missing
 relay failure paths plus git-backend-health success, file-backed-git rejection,
-and missing-git-service rejection.
+missing-git-service rejection, and loopback-git-service URL rejection.
 `pnpm ops:distributed-proof-kit --write-runner-compose` can now add a
 runner-only `docker-compose.runners.yml` plus per-runner container entrypoints
 to the generated proof kit. This gives operators a same-machine
@@ -941,6 +949,7 @@ files are the active federated redesign pack.
 576. [575-user-client-wiki-conflict-patch-draft-slice.md](575-user-client-wiki-conflict-patch-draft-slice.md)
 577. [576-memory-brief-resolutions-context-slice.md](576-memory-brief-resolutions-context-slice.md)
 578. [577-fake-opencode-permission-rejection-smoke-slice.md](577-fake-opencode-permission-rejection-smoke-slice.md)
+579. [578-distributed-proof-external-git-url-slice.md](578-distributed-proof-external-git-url-slice.md)
 
 ## Role of this corpus
 

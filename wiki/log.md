@@ -6788,3 +6788,13 @@ Added `references/577-fake-opencode-permission-rejection-smoke-slice.md`.
 OpenCode session that rejects the permission request and verifies
 `session.error`, idle status, and debug-state rejection persistence without
 live model credentials.
+
+## [2026-05-09] proof | Added external git URL proof guard
+
+Added `references/578-distributed-proof-external-git-url-slice.md`.
+Distributed proof profiles now support `requireExternalGitUrls`, and both the
+proof kit generator and verifier expose `--require-external-git-urls`.
+
+The verifier rejects loopback, wildcard, or file-backed Host catalog git
+service coordinates when physical proof topology requests external git URLs,
+while live service probing remains behind `--check-git-backend-health`.

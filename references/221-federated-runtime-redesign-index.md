@@ -378,6 +378,7 @@ same-machine slice records.
 - [575-user-client-wiki-conflict-patch-draft-slice.md](575-user-client-wiki-conflict-patch-draft-slice.md)
 - [576-memory-brief-resolutions-context-slice.md](576-memory-brief-resolutions-context-slice.md)
 - [577-fake-opencode-permission-rejection-smoke-slice.md](577-fake-opencode-permission-rejection-smoke-slice.md)
+- [578-distributed-proof-external-git-url-slice.md](578-distributed-proof-external-git-url-slice.md)
 
 ## Audited Scope
 
@@ -1333,6 +1334,11 @@ Distributed proof profiles, generated verifier commands, and proof kit
 generation can now also require relay WebSocket URLs to be non-loopback and
 non-wildcard with `--require-external-relay-urls`, keeping physical proof
 topology checks from silently accepting local-only relay coordinates.
+They can now also require Host catalog git service coordinates to be
+non-loopback, non-wildcard, and non-file-backed with
+`--require-external-git-urls`, keeping physical proof topology checks from
+silently accepting local-only artifact handoff coordinates while leaving live
+git service probing behind `--check-git-backend-health`.
 CLI inbox detail can now filter Host-recorded User Node conversation messages
 by direction, exact message type, and bounded result count, matching the
 participant-oriented inbox list filters while preserving Host as the projection

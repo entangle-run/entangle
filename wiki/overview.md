@@ -522,6 +522,12 @@ wildcard relay WebSocket URLs for physical proof runs. This is separate from
 relay health probing: external relay URL checks validate proof topology shape,
 while `--check-relay-health` opens the configured WebSocket from the operator
 machine.
+They can also opt into `requireExternalGitUrls`, which rejects loopback,
+wildcard, malformed, or file-backed git service coordinates for physical proof
+runs. This is separate from git backend health probing: external git URL
+checks validate Host catalog `baseUrl` and `remoteBase` shape, while
+`--check-git-backend-health` opens the selected service base URL from the
+operator machine.
 When a proof profile carries explicit assignments, the verifier now uses those
 manifest assignment ids rather than deriving ids from runner ids.
 Generated proof profiles now also carry primary User Node conversation and
@@ -540,6 +546,9 @@ It can additionally check configured relay WebSocket reachability with
 It can also check Host catalog git backend suitability with
 `--check-git-backend-health`, rejecting missing or file-backed git services and
 probing the selected public git service `baseUrl` from the operator machine.
+For faster topology-shape checks, `--require-external-git-urls` can require
+the same catalog service coordinates to be non-loopback, non-wildcard, and
+non-file without probing the endpoint.
 `pnpm ops:smoke-distributed-proof-tools` now gives CI a deterministic
 no-infrastructure check for proof-kit syntax/help/dry-run paths and verifier
 self-test JSON, including non-running runtime rejection and duplicated User
@@ -549,11 +558,11 @@ paths, invalid proof-profile failure paths, proof-kit relay-health generation
 paths, generated post-work artifact-verifier paths, required-artifact-evidence
 success/failure paths, published-git-artifact success/failure paths,
 published-git-ref success/failure paths, loopback User Client URL rejection,
-custom proof-profile assignment ids, and relay-health
-success/failure paths plus git-backend-health success/failure paths before a
-real distributed proof is attempted. The verifier can also write JUnit XML with
-one testcase per check for CI retention, and generated proof-kit verifier
-scripts expose that path through `ENTANGLE_PROOF_JUNIT_DIR`.
+loopback git service URL rejection, custom proof-profile assignment ids, and
+relay-health success/failure paths plus git-backend-health success/failure
+paths before a real distributed proof is attempted. The verifier can also write
+JUnit XML with one testcase per check for CI retention, and generated proof-kit
+verifier scripts expose that path through `ENTANGLE_PROOF_JUNIT_DIR`.
 Generated proof kits can also require User Client Basic Auth placeholders and
 start-script checks for User Node runner machines, so physical proofs can avoid
 publishing participant clients without at least runtime-local browser auth.

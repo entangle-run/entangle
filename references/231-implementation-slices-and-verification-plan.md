@@ -1489,8 +1489,9 @@ Current status:
   agent engine kind while OpenCode remains the default, and operators can
   optionally require projected artifact/source/wiki evidence from the agent
   node after work is produced plus relay WebSocket health for configured proof
-  relays and Host catalog git backend health for selected or default git
-  services; generated proof profiles now also carry the primary User Node
+  relays, Host catalog git backend health for selected or default git
+  services, and external git service URL shape for physical proof runs;
+  generated proof profiles now also carry the primary User Node
   conversation and projected User Client health requirements so invoking the
   verifier with only `--profile` keeps the generated proof strength;
 - `pnpm ops:smoke-distributed-proof-tools` now runs a deterministic
@@ -1524,7 +1525,9 @@ Current status:
   paths. When generated with `--check-published-git-ref`, proof kits now also
   encode a post-work verifier check that runs `git ls-remote` from the operator
   machine against projected published git artifact locators and checks the
-  advertised branch commit;
+  advertised branch commit; when generated with `--require-external-git-urls`,
+  proof kits now also encode a topology check that selected Host catalog git
+  service coordinates are non-loopback, non-wildcard, and non-file-backed;
 - runtime-context runner startup and the Human Interface Runtime now support
   mounted-file identity secret delivery as well as env-var delivery, matching
   generic runner join behavior;
@@ -1626,6 +1629,12 @@ Current status:
   generation can now require relay WebSocket URLs to be non-loopback and
   non-wildcard with `--require-external-relay-urls`, keeping physical proof
   topology checks from silently accepting local-only relay coordinates;
+- distributed proof profiles, generated verifier commands, and proof kit
+  generation can now require Host catalog git service coordinates to be
+  non-loopback, non-wildcard, and non-file-backed with
+  `--require-external-git-urls`, keeping physical proof topology checks from
+  silently accepting local-only artifact handoff coordinates while leaving live
+  health probing behind `--check-git-backend-health`;
 - generated proof kits can now require User Client Basic Auth placeholders and
   fail-fast start checks for User Node runner machines, keeping credentials out
   of the kit command line while hardening physical proof endpoints;
