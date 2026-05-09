@@ -375,6 +375,7 @@ same-machine slice records.
 - [572-user-client-workload-review-total-slice.md](572-user-client-workload-review-total-slice.md)
 - [573-fake-openai-tool-call-smoke-slice.md](573-fake-openai-tool-call-smoke-slice.md)
 - [574-handoff-response-policy-prompt-slice.md](574-handoff-response-policy-prompt-slice.md)
+- [575-user-client-wiki-conflict-patch-draft-slice.md](575-user-client-wiki-conflict-patch-draft-slice.md)
 
 ## Audited Scope
 
@@ -1307,7 +1308,10 @@ when the form leaves them blank.
 The React User Client now also places matching stale-edit wiki conflict
 receipts beside the visible page editor and can load the current projected page
 as a retry draft with the current hash prefilled as the next
-`expectedCurrentSha256` guard.
+`expectedCurrentSha256` guard. When the participant editor still holds a stale
+draft, the same conflict block can now build a runner-compatible unified patch
+draft against the current projected page, switch the form into patch mode, and
+prefill the current page hash as the stale-edit guard.
 Source-history commits and published source-history artifact commits now use
 the node's resolved primary git principal attribution, matching wiki repository
 commit behavior and keeping git-facing contribution metadata aligned with the
@@ -1383,8 +1387,9 @@ memory maintenance, deeper delegated-session semantics beyond the current
 controlled handoff path and deterministic owner/coordination/delegation memory
 projection, deeper reassignment workflows beyond current CLI/Studio candidate
 preflight, participant review batching beyond the first User Client review
-queue, collaborative wiki merge UI on top of the participant-scoped page
-upsert and patch-set commands,
+queue, richer collaborative wiki merge UI beyond the first conflict-to-patch
+draft recovery path on top of the participant-scoped page upsert and patch-set
+commands,
 repository lifecycle and replicated/fallback artifact behavior,
 infrastructure-backed multi-machine proof execution, non-disposable upgrade
 behavior, external audit retention, and deeper production identity and

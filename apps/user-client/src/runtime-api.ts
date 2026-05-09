@@ -292,6 +292,80 @@ export function buildWikiPageChangePreview(input: {
   return `${output.join("\n")}\n`;
 }
 
+export function buildWikiPageConflictPatchDraft(input: {
+  currentContent: string;
+  draftContent: string;
+  path: string;
+}): string {
+  const currentLines = splitPreviewLines(input.currentContent);
+  const draftLines = splitPreviewLines(input.draftContent);
+
+  if (
+    currentLines.length === draftLines.length &&
+    currentLines.every((line, index) => line === draftLines[index])
+  ) {
+    return "";
+  }
+
+  const lengths = Array.from({ length: currentLines.length + 1 }, () =>
+    Array(draftLines.length + 1).fill(0) as number[]
+  );
+
+  for (let currentIndex = currentLines.length - 1; currentIndex >= 0; currentIndex -= 1) {
+    for (let draftIndex = draftLines.length - 1; draftIndex >= 0; draftIndex -= 1) {
+      lengths[currentIndex]![draftIndex] =
+        currentLines[currentIndex] === draftLines[draftIndex]
+          ? lengths[currentIndex + 1]![draftIndex + 1]! + 1
+          : Math.max(
+              lengths[currentIndex + 1]![draftIndex]!,
+              lengths[currentIndex]![draftIndex + 1]!
+            );
+    }
+  }
+
+  const normalizedPath = input.path.trim().replace(/^\/+/, "") || "page.md";
+  const oldStart = currentLines.length > 0 ? 1 : 0;
+  const newStart = draftLines.length > 0 ? 1 : 0;
+  const output = [
+    `--- a/${normalizedPath}`,
+    `+++ b/${normalizedPath}`,
+    `@@ -${oldStart},${currentLines.length} +${newStart},${draftLines.length} @@`
+  ];
+  let currentIndex = 0;
+  let draftIndex = 0;
+
+  while (currentIndex < currentLines.length || draftIndex < draftLines.length) {
+    if (
+      currentIndex < currentLines.length &&
+      draftIndex < draftLines.length &&
+      currentLines[currentIndex] === draftLines[draftIndex]
+    ) {
+      output.push(` ${currentLines[currentIndex]}`);
+      currentIndex += 1;
+      draftIndex += 1;
+      continue;
+    }
+
+    if (
+      draftIndex < draftLines.length &&
+      (currentIndex >= currentLines.length ||
+        lengths[currentIndex]![draftIndex + 1]! >
+          lengths[currentIndex + 1]![draftIndex]!)
+    ) {
+      output.push(`+${draftLines[draftIndex]}`);
+      draftIndex += 1;
+      continue;
+    }
+
+    if (currentIndex < currentLines.length) {
+      output.push(`-${currentLines[currentIndex]}`);
+      currentIndex += 1;
+    }
+  }
+
+  return `${output.join("\n")}\n`;
+}
+
 export function buildRuntimeApiUrl(pathname: string, baseUrl = ""): string {
   if (!baseUrl) {
     return pathname;

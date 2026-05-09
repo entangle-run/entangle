@@ -14,6 +14,7 @@ import type {
 } from "@entangle/types";
 import {
   buildWikiPageChangePreview,
+  buildWikiPageConflictPatchDraft,
   buildWikiPageConflictSummary,
   buildWikiPageDraftFromProjection,
   buildWikiPageNextContentPreview,
@@ -920,6 +921,30 @@ function WikiResourceCards({
       });
   }
 
+  function buildConflictPatchDraft(): void {
+    if (!latestConflictDraft || !latestWikiConflict) {
+      return;
+    }
+
+    const patchDraft = buildWikiPageConflictPatchDraft({
+      currentContent: latestConflictDraft.content,
+      draftContent: pageContent,
+      path: latestConflictDraft.path
+    });
+
+    if (!patchDraft) {
+      setStatus(`no patch changes for ${latestConflictDraft.path}`);
+      return;
+    }
+
+    setPageBaseContent(latestConflictDraft.content);
+    setPageContent(patchDraft);
+    setPageExpectedSha256(latestWikiConflict.currentSha256);
+    setPageMode("patch");
+    setPagePath(latestConflictDraft.path);
+    setStatus(`patch draft loaded ${latestConflictDraft.path}`);
+  }
+
   async function requestPublication(
     target?: GitRepositoryTargetSelector
   ): Promise<void> {
@@ -1108,18 +1133,26 @@ function WikiResourceCards({
                   )
                 )}
                 {latestConflictDraft ? (
-                  <button
-                    onClick={() => {
-                      loadWikiPageDraft({
-                        draft: latestConflictDraft,
-                        expectedSha256: latestWikiConflict.currentSha256,
-                        status: `current draft loaded ${latestConflictDraft.path}`
-                      });
-                    }}
-                    type="button"
-                  >
-                    Load Current Page
-                  </button>
+                  <>
+                    {pageContent.trim().length > 0 &&
+                    pageContent !== latestConflictDraft.content ? (
+                      <button onClick={buildConflictPatchDraft} type="button">
+                        Build Patch Draft
+                      </button>
+                    ) : null}
+                    <button
+                      onClick={() => {
+                        loadWikiPageDraft({
+                          draft: latestConflictDraft,
+                          expectedSha256: latestWikiConflict.currentSha256,
+                          status: `current draft loaded ${latestConflictDraft.path}`
+                        });
+                      }}
+                      type="button"
+                    >
+                      Load Current Page
+                    </button>
+                  </>
                 ) : null}
               </div>
             ) : null}

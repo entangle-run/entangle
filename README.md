@@ -193,7 +193,9 @@ single-page wiki patch-sets through the same participant-scoped Host control
 path as the React User Client.
 The React User Client can now recover from visible wiki stale-edit conflicts by
 loading the current projected page as a retry draft with the current hash
-prefilled as the next edit guard.
+prefilled as the next edit guard, or by converting the participant's stale
+editor content into a runner-compatible patch draft against the current
+projected page.
 The smoke still runs without live model credentials. Live OpenCode
 behavior and real-provider credentials remain manual/operator validation, but
 the fake OpenCode path now proves same-session `--session` continuity through a
@@ -864,7 +866,8 @@ This repository currently contains:
   same conflict block in participant command receipt cards. The running User
   Client also surfaces matching stale-edit conflicts beside the visible page
   editor and can load the current projected page as a retry draft with the
-  current hash prefilled.
+  current hash prefilled, or build a runner-compatible patch draft from the
+  participant's stale editor content against that current page.
   Source-history commits and published source-history artifact commits now use
   the resolved primary git principal attribution when available, so node code
   contributions carry the configured git-facing profile instead of the fallback
@@ -1707,7 +1710,8 @@ The highest-value remaining gaps are:
   proof and a browser queue/request UI,
   User Client local wiki draft diff preview plus stale-edit conflict receipt
   summaries in the browser, CLI, and fallback Human Interface Runtime,
-  approval-response turn correlation, richer collaborative wiki merge UI, and
+  React conflict-to-patch draft recovery, approval-response turn correlation,
+  richer collaborative wiki merge UI beyond that first recovery path, and
   repository lifecycle behavior beyond
   explicit target publication, and replicated fallback paths;
 - production identity and authorization beyond the bootstrap operator-token

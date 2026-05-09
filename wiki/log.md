@@ -6766,3 +6766,10 @@ non-HTTP(S) Host URLs when `--require-external-host-url` is requested.
 
 This catches obvious physical-proof configuration mistakes before writing
 runner/operator material that the verifier would reject later.
+
+## [2026-05-09] user-client | Added wiki conflict patch drafts
+
+Added `references/575-user-client-wiki-conflict-patch-draft-slice.md`. The
+React User Client wiki conflict block can now convert the participant's stale
+editor content into a runner-compatible unified patch draft against the current
+projected page and prefill the current hash as the next stale-edit guard.

@@ -6,6 +6,7 @@ import type {
 } from "@entangle/types";
 import {
   buildWikiPageChangePreview,
+  buildWikiPageConflictPatchDraft,
   buildWikiPageConflictSummary,
   buildWikiPageDraftFromProjection,
   buildWikiPageNextContentPreview,
@@ -587,6 +588,26 @@ describe("user client runtime API helpers", () => {
         nextContent: "# Notes\n\nNew\n"
       })
     ).toBe("--- current\n+++ draft\n # Notes\n \n-Old\n+New\n");
+  });
+
+  it("builds runner-compatible wiki patch drafts from conflict recovery content", () => {
+    expect(
+      buildWikiPageConflictPatchDraft({
+        currentContent: "# Notes\n\nOld\n",
+        draftContent: "# Notes\n\nNew\n\nFollow-up\n",
+        path: "wiki/notes.md"
+      })
+    ).toBe(
+      "--- a/wiki/notes.md\n" +
+        "+++ b/wiki/notes.md\n" +
+        "@@ -1,3 +1,5 @@\n" +
+        " # Notes\n" +
+        " \n" +
+        "-Old\n" +
+        "+New\n" +
+        "+\n" +
+        "+Follow-up\n"
+    );
   });
 
   it("builds wiki append previews with runner-compatible spacing", () => {

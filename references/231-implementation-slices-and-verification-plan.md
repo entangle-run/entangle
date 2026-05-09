@@ -651,7 +651,9 @@ Current status:
   previews when omitted;
 - the React User Client now surfaces matching stale-edit wiki conflict receipts
   next to the visible page editor and can load the current projected page as a
-  retry draft with the current hash installed as the next stale-edit guard;
+  retry draft with the current hash installed as the next stale-edit guard, or
+  convert the participant's stale editor content into a runner-compatible
+  unified patch draft against the current projected page;
 - source-history commits and published source-history artifact commits now use
   resolved primary git principal attribution, so git-facing contribution
   metadata matches the configured per-node profile instead of the deterministic
@@ -686,10 +688,10 @@ Current status:
   assignment, node, runner, command type, status, requester, and limit filters;
 - Studio can inspect per-assignment timeline entries through the Host
   assignment timeline endpoint, keeping operator drilldown aligned with CLI;
-- richer collaborative wiki merge UI still needs product work on top of the
-  participant-scoped wiki page upsert and patch-set commands,
-  runner-enforced stale-edit guard, single-page patch mode, and non-atomic
-  operator batch requests.
+- richer collaborative wiki merge UI still needs product work beyond the first
+  conflict-to-patch draft recovery path on top of the participant-scoped wiki
+  page upsert and patch-set commands, runner-enforced stale-edit guard,
+  single-page patch mode, and non-atomic operator batch requests.
 
 ### Slice 9: User Node Runtime
 
@@ -1580,6 +1582,9 @@ Current status:
   for global projection and User Node command receipt summaries;
 - the Human Interface Runtime fallback HTML client now renders the same wiki
   conflict block inside participant command receipt cards;
+- the React User Client can now convert stale wiki draft content into a
+  runner-compatible unified patch draft from the conflict block, with the
+  current projected page hash installed as the next stale-edit guard;
 - focused-register lifecycle transition history now writes an indexed wiki
   summary page and future memory ref, so closures, completions, replacements,
   consolidations, and exact-overlap retirements are visible through the node

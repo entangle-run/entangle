@@ -286,6 +286,9 @@ The most accurate current description is:
   global projection and User Node command receipt summaries;
 - the Human Interface Runtime fallback HTML client renders the same conflict
   block inside participant command receipt cards;
+- the React User Client can now convert stale wiki editor content into a
+  runner-compatible patch draft against the current projected page from the
+  conflict block, with the current page hash installed as the next guard;
 - the Human Interface Runtime fallback HTML client now exposes visible wiki
   page update and single-page patch-set forms over the same participant-scoped
   Host control path as the React User Client;
@@ -407,7 +410,7 @@ The most accurate current description is:
   resolved primary git principal attribution when available, aligning
   git-facing contribution metadata with each node's configured profile;
 - the largest remaining gaps are richer collaborative wiki merge UI beyond
-  conflict-base recovery, repository lifecycle and fallback/replication
+  conflict-base and patch-draft recovery, repository lifecycle and fallback/replication
   behavior, infrastructure-backed multi-machine proof execution, production
   identity/authorization, richer participant review batching, and deeper
   delegated-session runtime semantics.
@@ -1475,10 +1478,11 @@ The current implementation-truth audit now lives in
   process-smoke proof plus browser queue/request UI plus local wiki draft diff
   preview plus stale-edit conflict receipt summaries in the browser, CLI, and
   fallback Human Interface Runtime plus User Client conflict-base recovery into
-  the visible page editor plus
+  the visible page editor plus React conflict-to-patch draft recovery plus
   approval-response turn correlation plus the first grouped React and fallback
   User Client review queues;
-  the next git gaps are richer collaborative wiki merge UI, repository
+  the next git gaps are richer collaborative wiki merge UI beyond the first
+  conflict recovery paths, repository
   lifecycle behavior, and explicit fallback or replication behavior,
   while the next deployment-grade gap is
   non-disposable profile upgrade behavior for older Gitea volumes;
