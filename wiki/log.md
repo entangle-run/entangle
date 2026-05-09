@@ -6845,3 +6845,14 @@ Host default catalog seeding can also store
 `ENTANGLE_DEFAULT_AGENT_ENGINE_HTTP_BEARER_TOKEN_ENV_VAR` as the
 `external_http` profile auth reference, keeping token values out of Host state
 while allowing process-runner smokes to exercise the runner auth path.
+
+## [2026-05-09] host | Added operator token file configuration
+
+Added `references/583-operator-token-file-configuration-slice.md`. Host
+operator bootstrap auth can now load the same multi-token record array from
+`ENTANGLE_HOST_OPERATOR_TOKENS_FILE` that was already accepted through
+`ENTANGLE_HOST_OPERATOR_TOKENS_JSON`.
+
+This keeps existing env-token behavior intact while allowing service managers
+or secret mounts to provide durable token records without putting large JSON
+documents directly in the process environment.

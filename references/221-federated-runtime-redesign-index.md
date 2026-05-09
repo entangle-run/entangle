@@ -383,6 +383,7 @@ same-machine slice records.
 - [580-agent-engine-proof-url-credential-hardening-slice.md](580-agent-engine-proof-url-credential-hardening-slice.md)
 - [581-external-http-agent-engine-auth-binding-slice.md](581-external-http-agent-engine-auth-binding-slice.md)
 - [582-fake-external-http-bearer-smoke-slice.md](582-fake-external-http-bearer-smoke-slice.md)
+- [583-operator-token-file-configuration-slice.md](583-operator-token-file-configuration-slice.md)
 
 ## Audited Scope
 
@@ -1149,6 +1150,9 @@ records can now also carry expiration timestamps; expired tokens no longer
 authorize Host API or WebSocket operator requests, and Host status reports
 non-secret expiry metadata. Explicit bootstrap operator ids and roles now fail
 fast when malformed, while omitted fields still use the bootstrap defaults.
+Hosts can now also load the same multi-token record array from
+`ENTANGLE_HOST_OPERATOR_TOKENS_FILE`, which is better suited to secret mounts
+and service-managed deployments than large JSON environment values.
 This remains bootstrap authorization, not final production RBAC. Host event
 listing now also applies category, node,
 operator, status-code, and type-prefix filters before limit slicing, so CLI and

@@ -670,7 +670,8 @@ This repository currently contains:
   graph state under `.entangle/host`;
 - an optional bootstrap host operator-token boundary through
   `ENTANGLE_HOST_OPERATOR_TOKEN` or multiple records in
-  `ENTANGLE_HOST_OPERATOR_TOKENS_JSON`; multi-operator records may carry raw
+  `ENTANGLE_HOST_OPERATOR_TOKENS_JSON` or
+  `ENTANGLE_HOST_OPERATOR_TOKENS_FILE`; multi-operator records may carry raw
   `token` values or `tokenSha256` hashes and may opt into explicit
   route-level Host permissions, with bearer-token propagation through the
   shared host client, CLI, and Studio for same-machine profiles that should not
@@ -684,7 +685,9 @@ This repository currently contains:
   expiration timestamps, expired tokens no longer authorize Host API or
   WebSocket operator requests, and Host status reports non-secret expiry
   metadata; explicit bootstrap operator ids and roles now fail fast when
-  malformed while omitted fields still use bootstrap defaults; host-client and
+  malformed while omitted fields still use bootstrap defaults; file-backed
+  token records use the same shape as the JSON env var and are useful for
+  service-manager secret mounts; host-client and
   CLI event summaries now render those audit events
   with operator id, role, method, path, status, and auth mode, and Host
   event listing now applies audit filters server-side before limit slicing;

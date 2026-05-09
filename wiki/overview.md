@@ -616,10 +616,11 @@ projection state. Studio renders the same summary in the Host Status panel.
 Host status now also reports the active bootstrap operator security posture:
 tokenless deployments report `none`, single-token
 `ENTANGLE_HOST_OPERATOR_TOKEN` deployments report normalized operator id and
-bootstrap role, and `ENTANGLE_HOST_OPERATOR_TOKENS_JSON` deployments report a
-tokenless list of bootstrap operator ids and roles. Multi-token records can
-use `tokenSha256` instead of raw token values and can opt into explicit Host
-permissions for scoped bootstrap access. Bootstrap token records can now also
+bootstrap role, and `ENTANGLE_HOST_OPERATOR_TOKENS_JSON` or
+`ENTANGLE_HOST_OPERATOR_TOKENS_FILE` deployments report a tokenless list of
+bootstrap operator ids and roles. Multi-token records can use `tokenSha256`
+instead of raw token values and can opt into explicit Host permissions for
+scoped bootstrap access. Bootstrap token records can now also
 carry expiration timestamps; expired tokens do not authorize Host API or
 WebSocket operator requests, and Host status reports only non-secret expiry
 metadata. Explicit bootstrap operator ids and roles now fail fast when

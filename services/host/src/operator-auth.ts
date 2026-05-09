@@ -1,4 +1,5 @@
 import { createHash } from "node:crypto";
+import { readFileSync } from "node:fs";
 import {
   identifierSchema,
   operatorPermissionSchema,
@@ -71,6 +72,7 @@ function normalizeOperatorExpiresAt(input: {
 function resolveTokenHashFromRecord(input: {
   index: number;
   record: HostOperatorTokenRecord;
+  source: string;
 }): string {
   const hasConfiguredTokenHash = Object.prototype.hasOwnProperty.call(
     input.record,
@@ -85,13 +87,13 @@ function resolveTokenHashFromRecord(input: {
 
   if (hasConfiguredTokenHash && !configuredTokenHash) {
     throw new Error(
-      `ENTANGLE_HOST_OPERATOR_TOKENS_JSON record ${input.index} tokenSha256 must be a 64-character SHA-256 hex digest.`
+      `${input.source} record ${input.index} tokenSha256 must be a 64-character SHA-256 hex digest.`
     );
   }
 
   if (!tokenHash && !configuredTokenHash) {
     throw new Error(
-      `ENTANGLE_HOST_OPERATOR_TOKENS_JSON record ${input.index} must include a non-empty token or a 64-character tokenSha256.`
+      `${input.source} record ${input.index} must include a non-empty token or a 64-character tokenSha256.`
     );
   }
 
@@ -101,7 +103,7 @@ function resolveTokenHashFromRecord(input: {
     tokenHash !== configuredTokenHash
   ) {
     throw new Error(
-      `ENTANGLE_HOST_OPERATOR_TOKENS_JSON record ${input.index} token does not match tokenSha256.`
+      `${input.source} record ${input.index} token does not match tokenSha256.`
     );
   }
 
@@ -209,7 +211,8 @@ function buildHostOperatorPrincipal(input: {
 }
 
 function parseOperatorTokenRecords(
-  rawRecords: string | undefined
+  rawRecords: string | undefined,
+  source = "ENTANGLE_HOST_OPERATOR_TOKENS_JSON"
 ): HostOperatorPrincipal[] {
   const normalizedRecords = rawRecords?.trim();
 
@@ -223,33 +226,33 @@ function parseOperatorTokenRecords(
     parsedRecords = JSON.parse(normalizedRecords) as unknown;
   } catch (error) {
     throw new Error(
-      "ENTANGLE_HOST_OPERATOR_TOKENS_JSON must be valid JSON.",
+      `${source} must be valid JSON.`,
       { cause: error }
     );
   }
 
   if (!Array.isArray(parsedRecords)) {
     throw new Error(
-      "ENTANGLE_HOST_OPERATOR_TOKENS_JSON must be a JSON array of operator token records."
+      `${source} must be a JSON array of operator token records.`
     );
   }
 
   return parsedRecords.map((record, index) => {
     if (typeof record !== "object" || record === null) {
       throw new Error(
-        `ENTANGLE_HOST_OPERATOR_TOKENS_JSON record ${index} must be an object.`
+        `${source} record ${index} must be an object.`
       );
     }
 
     const tokenRecord = record as HostOperatorTokenRecord;
     const operatorPermissions = normalizeOperatorPermissions({
       permissions: tokenRecord.permissions ?? tokenRecord.scopes,
-      source: `ENTANGLE_HOST_OPERATOR_TOKENS_JSON record ${index}`
+      source: `${source} record ${index}`
     });
     const operatorExpiresAt =
       tokenRecord.expiresAt !== undefined && tokenRecord.expiresAt !== null
         ? normalizeOperatorExpiresAt({
-            source: `ENTANGLE_HOST_OPERATOR_TOKENS_JSON record ${index} expiresAt`,
+            source: `${source} record ${index} expiresAt`,
             value: tokenRecord.expiresAt
           })
         : undefined;
@@ -259,19 +262,39 @@ function parseOperatorTokenRecords(
       operatorId: normalizeOperatorId({
         defaultOperatorId: "bootstrap-operator",
         operatorId: tokenRecord.operatorId,
-        source: `ENTANGLE_HOST_OPERATOR_TOKENS_JSON record ${index} operatorId`
+        source: `${source} record ${index} operatorId`
       }),
       ...(operatorPermissions ? { operatorPermissions } : {}),
       operatorRole: normalizeOperatorRole({
         operatorRole: tokenRecord.operatorRole ?? tokenRecord.role,
-        source: `ENTANGLE_HOST_OPERATOR_TOKENS_JSON record ${index} operatorRole`
+        source: `${source} record ${index} operatorRole`
       }),
       tokenHash: resolveTokenHashFromRecord({
         index,
-        record: tokenRecord
+        record: tokenRecord,
+        source
       })
     });
   });
+}
+
+function readOperatorTokenRecordsFile(pathValue: string | undefined): string | undefined {
+  const normalizedPath = pathValue?.trim();
+
+  if (!normalizedPath) {
+    return undefined;
+  }
+
+  try {
+    return readFileSync(normalizedPath, "utf8");
+  } catch (error) {
+    throw new Error(
+      `ENTANGLE_HOST_OPERATOR_TOKENS_FILE could not be read: ${
+        error instanceof Error ? error.message : String(error)
+      }`,
+      { cause: error }
+    );
+  }
 }
 
 function assertUniqueOperatorTokens(principals: HostOperatorPrincipal[]) {
@@ -324,6 +347,12 @@ export function resolveHostOperatorPrincipalsFromEnv(
 
   principals.push(
     ...parseOperatorTokenRecords(env.ENTANGLE_HOST_OPERATOR_TOKENS_JSON)
+  );
+  principals.push(
+    ...parseOperatorTokenRecords(
+      readOperatorTokenRecordsFile(env.ENTANGLE_HOST_OPERATOR_TOKENS_FILE),
+      "ENTANGLE_HOST_OPERATOR_TOKENS_FILE"
+    )
   );
 
   assertUniqueOperatorTokens(principals);

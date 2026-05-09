@@ -1338,7 +1338,10 @@ Current status:
   operator tokens, can compare hash-only token records, can enforce explicit
   route-level bootstrap permissions when configured, can reject expired token
   records while reporting non-secret expiry status, and record matched operator
-  identity/role/permissions on protected mutation audit events; explicit
+  identity/role/permissions on protected mutation audit events; Hosts can now
+  load the same token-record array from
+  `ENTANGLE_HOST_OPERATOR_TOKENS_FILE` for service-manager secret mounts;
+  explicit
   bootstrap operator ids and roles now fail fast when malformed while omitted
   fields still use bootstrap defaults, with
   production identity/authorization still tracked as an
