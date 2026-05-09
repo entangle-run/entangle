@@ -181,10 +181,10 @@ receipt counts next to its existing conversation and Human Interface Runtime
 placement summary.
 The running React User Client also shows a compact participant Workload panel
 for conversations, open work, unread messages, unique pending approvals,
-pending source reviews, command receipt statuses, source-history/wiki refs,
-and reachable targets, plus a grouped Review Queue that jumps from pending
-approval and source-change items to the related User Node conversation when
-projection context is available.
+pending review totals, pending source reviews, command receipt statuses,
+source-history/wiki refs, and reachable targets, plus a grouped Review Queue
+that jumps from pending approval and source-change items to the related User
+Node conversation when projection context is available.
 The Human Interface Runtime fallback HTML client renders the same workload
 categories and a matching grouped Review Queue when the React bundle is not
 available.
@@ -1664,6 +1664,9 @@ This repository currently contains:
 - a CLI review-queue slice where `entangle inbox review-queue --user-node
   <nodeId>` provides the same grouped headless triage view over approval and
   source-change review requests;
+- a User Client workload review-total slice where the running React client and
+  fallback Human Interface Runtime derive one total pending review count from
+  the same Review Queue model;
 
 The highest-value remaining gaps are:
 

@@ -935,6 +935,7 @@ files are the active federated redesign pack.
 570. [569-memory-synthesis-brief-context-slice.md](569-memory-synthesis-brief-context-slice.md)
 571. [570-participant-review-queue-batching-slice.md](570-participant-review-queue-batching-slice.md)
 572. [571-cli-review-queue-slice.md](571-cli-review-queue-slice.md)
+573. [572-user-client-workload-review-total-slice.md](572-user-client-workload-review-total-slice.md)
 
 ## Role of this corpus
 

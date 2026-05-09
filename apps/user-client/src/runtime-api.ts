@@ -797,6 +797,7 @@ export type UserClientWorkloadSummary = {
   conversationCount: number;
   openConversationCount: number;
   pendingApprovalCount: number;
+  pendingReviewCount: number;
   pendingSourceChangeCount: number;
   sourceHistoryRefCount: number;
   targetCount: number;
@@ -875,6 +876,7 @@ export function summarizeUserClientWorkload(
       openConversationStatuses.has(conversation.status)
     ).length,
     pendingApprovalCount: pendingApprovalIds.size,
+    pendingReviewCount: buildUserClientReviewQueue(state).length,
     pendingSourceChangeCount: state.sourceChangeRefs.filter(
       (ref) => ref.status === "pending_review"
     ).length,
@@ -895,6 +897,7 @@ export function formatUserClientWorkloadLines(
     `${summary.conversationCount} conversations, ${summary.openConversationCount} open`,
     `${summary.unreadCount} unread messages`,
     `${summary.pendingApprovalCount} pending approvals`,
+    `${summary.pendingReviewCount} total pending reviews`,
     `${summary.pendingSourceChangeCount} source changes awaiting review`,
     `${summary.commandReceipts.received} received, ${summary.commandReceipts.completed} completed, ${summary.commandReceipts.failed} failed commands`,
     `${summary.sourceHistoryRefCount} source histories, ${summary.wikiRefCount} wiki refs`,
@@ -936,6 +939,10 @@ function sortSourceChangeReviewItems(
 
     return left.candidateId.localeCompare(right.candidateId);
   });
+}
+
+function sourceChangeReviewUpdatedAt(ref: SourceChangeRefProjectionRecord): string {
+  return ref.candidate?.updatedAt ?? ref.projection?.updatedAt ?? "";
 }
 
 function inferSourceChangeConversation(input: {
@@ -1012,7 +1019,7 @@ export function buildUserClientReviewQueue(
             ? { peerNodeId: conversation.peerNodeId }
             : {}),
           status: ref.status,
-          updatedAt: ref.candidate?.updatedAt ?? ref.projection.updatedAt
+          updatedAt: sourceChangeReviewUpdatedAt(ref)
         };
       })
   );

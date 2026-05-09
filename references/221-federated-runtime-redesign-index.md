@@ -372,6 +372,7 @@ same-machine slice records.
 - [569-memory-synthesis-brief-context-slice.md](569-memory-synthesis-brief-context-slice.md)
 - [570-participant-review-queue-batching-slice.md](570-participant-review-queue-batching-slice.md)
 - [571-cli-review-queue-slice.md](571-cli-review-queue-slice.md)
+- [572-user-client-workload-review-total-slice.md](572-user-client-workload-review-total-slice.md)
 
 ## Audited Scope
 
@@ -1346,6 +1347,10 @@ projection context is available.
 The Human Interface Runtime fallback HTML client now renders the same grouped
 Review Queue, including pending source-change rows when only projection state
 is available and conversation links when context can be inferred.
+The React User Client and fallback Workload summaries now also expose a total
+pending review count derived from the same Review Queue model, so participant
+triage starts from one queue-aligned number before the detailed queue is
+opened.
 Deterministic runner task memory now also preserves bounded source-change
 candidate ids, status, totals, diff availability, and changed-file summaries
 from the live turn record, and the derived recent-work summary surfaces the

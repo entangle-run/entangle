@@ -386,6 +386,7 @@ describe("user client runtime API helpers", () => {
       conversationCount: 2,
       openConversationCount: 1,
       pendingApprovalCount: 2,
+      pendingReviewCount: 3,
       pendingSourceChangeCount: 1,
       sourceHistoryRefCount: 1,
       targetCount: 1,
@@ -394,6 +395,9 @@ describe("user client runtime API helpers", () => {
     });
     expect(formatUserClientWorkloadLines(summary)).toContain(
       "2 pending approvals"
+    );
+    expect(formatUserClientWorkloadLines(summary)).toContain(
+      "3 total pending reviews"
     );
     expect(formatUserClientWorkloadLines(summary)).toContain(
       "1 received, 1 completed, 1 failed commands"

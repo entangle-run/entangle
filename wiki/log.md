@@ -1,5 +1,12 @@
 # Entangle Wiki Log
 
+## [2026-05-09] user-client | Added workload review totals
+
+Added `references/572-user-client-workload-review-total-slice.md`. The
+running React User Client and fallback Human Interface Runtime Workload panels
+now show one total pending review count derived from the same Review Queue
+model used by the detailed participant triage queue.
+
 ## [2026-05-09] cli | Added headless review queue
 
 Added `references/571-cli-review-queue-slice.md`. The CLI now exposes

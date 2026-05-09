@@ -345,6 +345,8 @@ The most accurate current description is:
 - the Human Interface Runtime fallback HTML client now renders the same grouped
   Review Queue, including pending source-change rows from projection state and
   conversation links when context can be inferred;
+- the React User Client and fallback Workload panels now also show one total
+  pending review count derived from the same Review Queue model;
 - the process-runner smoke now proves that User Client wiki publication path
   through a signed builder wiki approval request, the running User Client JSON
   route, a completed projected `runtime.wiki.publish` command receipt, a
@@ -948,6 +950,9 @@ The repository now also contains the first real implementation baseline:
 - a CLI review-queue refinement where `entangle inbox review-queue --user-node
   <nodeId>` exposes the same grouped headless triage view over inbound approval
   and source-change review requests;
+- a User Client workload review-total refinement where the running React client
+  and fallback Human Interface Runtime show one total pending review count
+  derived from the same Review Queue model;
 - a coordination-map memory refinement where successful model-guided synthesis
   now writes `memory/wiki/summaries/coordination-map.md` with local node
   relation, owner/origin/entrypoint, inbound message provenance, active peer

@@ -3085,6 +3085,7 @@ describe("runner runtime context", () => {
       expect(pageBody).toContain("Workload");
       expect(pageBody).toContain("1 conversations, 1 open");
       expect(pageBody).toContain("0 unread messages");
+      expect(pageBody).toContain("1 total pending reviews");
       expect(pageBody).toContain("1 source changes awaiting review");
       expect(pageBody).toContain("0 received, 1 completed, 1 failed commands");
       expect(pageBody).toContain("1 source histories, 2 wiki refs");

@@ -1659,6 +1659,9 @@ Current status:
 - the Human Interface Runtime fallback HTML client now renders the same grouped
   Review Queue, including pending source-change rows from projection state and
   conversation links when context can be inferred;
+- the React User Client and fallback Human Interface Runtime Workload panels
+  now include a total pending review count derived from the same Review Queue
+  model used by the detailed participant queue;
 - deterministic runner task memory now records bounded approval-request
   directives, rebuilds `summaries/approval-ledger.md`, and feeds the ledger
   into future turn `memoryRefs` plus bounded memory briefs;
