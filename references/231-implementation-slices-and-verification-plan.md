@@ -1616,6 +1616,10 @@ Current status:
 - CLI inbox listing now supports `--unread-only`, `--peer-node <nodeId>`, and
   `--limit <n>`, giving headless User Node participants a bounded conversation
   inbox over Host projection;
+- CLI inbox detail now supports `--direction <inbound|outbound>`,
+  `--message-type <type>`, and `--limit <n>`, giving headless User Node
+  participants bounded recorded-message inspection over Host conversation
+  detail;
 - generated distributed proof kits can now optionally include
   `docker-compose.runners.yml` plus per-runner container entrypoints with
   `--write-runner-compose`, giving operators a same-machine container-boundary

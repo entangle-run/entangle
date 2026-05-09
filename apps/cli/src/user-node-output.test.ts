@@ -11,6 +11,7 @@ import {
   attachUserNodeClientHealthForCli,
   buildUserNodeClientSummariesForCli,
   filterUserConversationsForCli,
+  filterUserNodeMessagesForCli,
   filterUserNodeClientSummariesForCli,
   filterUserNodeCommandReceiptsForCli,
   listCurrentUserNodeAssignmentsForCli,
@@ -584,6 +585,98 @@ describe("user node CLI output", () => {
       signerPubkey:
         "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee"
     });
+  });
+
+  it("filters recorded User Node messages for CLI conversation detail", () => {
+    const messages: UserNodeMessageRecord[] = [
+      {
+        artifactRefs: [],
+        conversationId: "conversation-alpha",
+        createdAt: "2026-04-26T12:00:00.000Z",
+        direction: "outbound",
+        eventId:
+          "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        fromNodeId: "user-a",
+        fromPubkey:
+          "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+        messageType: "answer",
+        peerNodeId: "worker-it",
+        publishedRelays: [],
+        relayUrls: [],
+        schemaVersion: "1",
+        sessionId: "session-alpha",
+        summary: "Reply.",
+        toNodeId: "worker-it",
+        toPubkey:
+          "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+        turnId: "turn-alpha",
+        userNodeId: "user-a"
+      },
+      {
+        artifactRefs: [],
+        conversationId: "conversation-alpha",
+        createdAt: "2026-04-26T12:02:00.000Z",
+        direction: "inbound",
+        eventId:
+          "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+        fromNodeId: "worker-it",
+        fromPubkey:
+          "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+        messageType: "task.result",
+        peerNodeId: "worker-it",
+        publishedRelays: [],
+        relayUrls: [],
+        schemaVersion: "1",
+        sessionId: "session-alpha",
+        summary: "Done.",
+        toNodeId: "user-a",
+        toPubkey:
+          "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+        turnId: "turn-alpha",
+        userNodeId: "user-a"
+      },
+      {
+        artifactRefs: [],
+        conversationId: "conversation-alpha",
+        createdAt: "2026-04-26T12:01:00.000Z",
+        direction: "inbound",
+        eventId:
+          "dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd",
+        fromNodeId: "worker-it",
+        fromPubkey:
+          "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+        messageType: "approval.request",
+        peerNodeId: "worker-it",
+        publishedRelays: [],
+        relayUrls: [],
+        schemaVersion: "1",
+        sessionId: "session-alpha",
+        summary: "Please approve.",
+        toNodeId: "user-a",
+        toPubkey:
+          "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+        turnId: "turn-alpha",
+        userNodeId: "user-a"
+      }
+    ];
+
+    expect(
+      filterUserNodeMessagesForCli({
+        direction: "inbound",
+        limit: 1,
+        messages
+      }).map((message) => message.eventId)
+    ).toEqual([
+      "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"
+    ]);
+    expect(
+      filterUserNodeMessagesForCli({
+        messageType: "approval.request",
+        messages
+      }).map((message) => message.eventId)
+    ).toEqual([
+      "dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd"
+    ]);
   });
 
   it("builds scoped approval response metadata from CLI options", () => {

@@ -49,7 +49,9 @@ Recently added:
   publishing.
 - Host exposes User Node conversation detail with recorded inbound/outbound
   messages, CLI `inbox show` uses that detail endpoint, and the User Client
-  renders recorded messages for the selected thread.
+  renders recorded messages for the selected thread. CLI `inbox show` can now
+  filter recorded messages by inbound/outbound direction, exact message type,
+  and a bounded result count without changing Host state.
 - User Client approval controls now render from inbound `approval.request`
   message metadata and publish signed `approval.response` messages through the
   Host User Node gateway.
@@ -195,6 +197,7 @@ CLI has matching headless surfaces:
 - `entangle assignments revoke <assignmentId>`
 - `entangle inbox list --user-node <nodeId>`
 - `entangle inbox show <conversationId> --user-node <nodeId>`
+  with optional direction, message-type, and limit filters
 - `entangle user-nodes clients`
 - `entangle user-nodes assign <nodeId> --runner <runnerId> --revoke-existing`
 - `entangle reply <messageId> "..." --user-node <nodeId>`

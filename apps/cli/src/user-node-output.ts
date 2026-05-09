@@ -298,6 +298,43 @@ export function filterUserNodeCommandReceiptsForCli(input: {
   );
 }
 
+export function sortUserNodeMessagesForCli(
+  messages: UserNodeMessageRecord[]
+): UserNodeMessageRecord[] {
+  return [...messages].sort((left, right) => {
+    const timeOrder = right.createdAt.localeCompare(left.createdAt);
+    return timeOrder !== 0
+      ? timeOrder
+      : left.eventId.localeCompare(right.eventId);
+  });
+}
+
+export function filterUserNodeMessagesForCli(input: {
+  direction?: UserNodeMessageRecord["direction"] | undefined;
+  limit?: number | undefined;
+  messages: UserNodeMessageRecord[];
+  messageType?: string | undefined;
+}): UserNodeMessageRecord[] {
+  const messages = sortUserNodeMessagesForCli(
+    input.messages.filter((message) => {
+      if (input.direction !== undefined && message.direction !== input.direction) {
+        return false;
+      }
+
+      if (
+        input.messageType !== undefined &&
+        message.messageType !== input.messageType
+      ) {
+        return false;
+      }
+
+      return true;
+    })
+  );
+
+  return input.limit === undefined ? messages : messages.slice(0, input.limit);
+}
+
 export function projectUserNodeCommandReceiptSummary(
   receipt: RuntimeCommandReceiptProjectionRecord
 ): UserNodeCommandReceiptCliSummary {

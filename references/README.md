@@ -919,6 +919,7 @@ files are the active federated redesign pack.
 558. [557-distributed-proof-external-relay-url-slice.md](557-distributed-proof-external-relay-url-slice.md)
 559. [558-cli-user-node-client-filter-slice.md](558-cli-user-node-client-filter-slice.md)
 560. [559-cli-inbox-filter-slice.md](559-cli-inbox-filter-slice.md)
+561. [560-cli-inbox-message-filter-slice.md](560-cli-inbox-message-filter-slice.md)
 
 ## Role of this corpus
 

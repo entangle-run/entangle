@@ -1,5 +1,14 @@
 # Entangle Wiki Log
 
+## [2026-05-09] cli | Added inbox message filters
+
+Added `references/560-cli-inbox-message-filter-slice.md`.
+`entangle inbox show` now accepts `--direction <inbound|outbound>`,
+`--message-type <type>`, and `--limit <n>`, returning `returned` and
+`totalMatched` counts over Host-recorded User Node conversation messages. This
+gives headless human graph nodes a focused thread-inspection path without
+changing Host state or adding runner-local reads.
+
 ## [2026-05-09] cli | Added bounded inbox filters
 
 Added `references/559-cli-inbox-filter-slice.md`.

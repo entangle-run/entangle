@@ -154,7 +154,9 @@ participant surfaces read Host's scoped
 `/v1/user-nodes/:nodeId/command-receipts` route, while operator surfaces retain
 the full Host projection. The headless `entangle inbox list` surface now also
 supports `--unread-only`, `--peer-node <nodeId>`, and `--limit <n>` so one User
-Node can inspect a bounded participant inbox without changing Host state. The
+Node can inspect a bounded participant inbox without changing Host state, while
+`entangle inbox show` can filter recorded conversation messages by direction,
+message type, and limit for focused thread inspection. The
 running User Client state also shows its own
 Host-projected `human_interface` runtime assignment, runner, desired/observed
 state, last-seen timestamp, projected client URL, restart generation, and
@@ -667,7 +669,8 @@ This repository currently contains:
   commands able to
   carry scoped approval-response operation/resource/reason context, and CLI
   inbox listing able to filter unread conversations, one peer node, and bounded
-  result counts, and CLI
+  result counts, plus CLI inbox detail able to filter recorded messages by
+  direction, exact message type, and bounded result counts, and CLI
   approve/reject commands able to derive that context directly from
   Host-recorded inbound approval-request messages through direct User Node
   message lookup;

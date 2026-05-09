@@ -115,6 +115,7 @@ import {
   filterUserConversationsForCli,
   filterUserNodeClientSummariesForCli,
   filterUserNodeCommandReceiptsForCli,
+  filterUserNodeMessagesForCli,
   listCurrentUserNodeAssignmentsForCli,
   projectUserNodeCommandReceiptSummary,
   projectUserConversationSummary,
@@ -330,6 +331,22 @@ function parsePositiveIntegerOption(value: string, optionName: string): number {
   }
 
   return Number.parseInt(value, 10);
+}
+
+function parseOptionalEnumOption<const T extends readonly string[]>(
+  value: string | undefined,
+  optionName: string,
+  values: T
+): T[number] | undefined {
+  if (value === undefined) {
+    return undefined;
+  }
+
+  if (!(values as readonly string[]).includes(value)) {
+    throw new Error(`${optionName} must be one of: ${values.join(", ")}.`);
+  }
+
+  return value;
 }
 
 function sleep(ms: number): Promise<void> {
@@ -1898,13 +1915,31 @@ inboxCommand
   .command("show")
   .argument("<conversationId>", "Projected conversation identifier.")
   .requiredOption("--user-node <nodeId>", "User Node identifier.")
+  .option(
+    "--direction <direction>",
+    "Filter messages by direction: inbound or outbound."
+  )
+  .option("--message-type <type>", "Filter messages by exact message type.")
+  .option("--limit <n>", "Maximum number of messages to return.", "50")
   .option("--summary", "Print a compact conversation summary.")
   .description("Inspect one projected User Node conversation.")
   .action(async (
     conversationId: string,
-    options: { summary?: boolean; userNode: string },
+    options: {
+      direction?: string;
+      limit: string;
+      messageType?: string;
+      summary?: boolean;
+      userNode: string;
+    },
     command: Command
   ) => {
+    const limit = parsePositiveIntegerOption(options.limit, "--limit");
+    const direction = parseOptionalEnumOption(
+      options.direction,
+      "--direction",
+      ["inbound", "outbound"] as const
+    );
     const client = createCliHostClient(command);
     const detail = await client.getUserNodeConversation(
       options.userNode,
@@ -1918,16 +1953,27 @@ inboxCommand
       );
     }
 
+    const allMatchedMessages = filterUserNodeMessagesForCli({
+      ...(direction ? { direction } : {}),
+      messages: detail.messages,
+      ...(options.messageType ? { messageType: options.messageType } : {})
+    });
+    const messages = allMatchedMessages.slice(0, limit);
+
     printJson(
       options.summary
         ? {
             conversation: projectUserConversationSummary(conversation),
-            messageCount: detail.messages.length,
-            messages: detail.messages.map(projectUserNodeMessageSummary)
+            messageCount: allMatchedMessages.length,
+            messages: messages.map(projectUserNodeMessageSummary),
+            returned: messages.length,
+            totalMatched: allMatchedMessages.length
           }
         : {
             conversation,
-            messages: detail.messages
+            messages,
+            returned: messages.length,
+            totalMatched: allMatchedMessages.length
           }
     );
   });

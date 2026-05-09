@@ -351,6 +351,16 @@ same-machine slice records.
 - [548-source-change-task-memory-slice.md](548-source-change-task-memory-slice.md)
 - [549-source-change-ledger-memory-slice.md](549-source-change-ledger-memory-slice.md)
 - [550-human-runtime-fallback-wiki-controls-slice.md](550-human-runtime-fallback-wiki-controls-slice.md)
+- [551-delegation-ledger-memory-slice.md](551-delegation-ledger-memory-slice.md)
+- [552-user-client-wiki-conflict-recovery-slice.md](552-user-client-wiki-conflict-recovery-slice.md)
+- [553-source-history-git-attribution-slice.md](553-source-history-git-attribution-slice.md)
+- [554-demo-studio-launch-slice.md](554-demo-studio-launch-slice.md)
+- [555-demo-tooling-smoke-slice.md](555-demo-tooling-smoke-slice.md)
+- [556-distributed-proof-kit-external-host-generation-guard-slice.md](556-distributed-proof-kit-external-host-generation-guard-slice.md)
+- [557-distributed-proof-external-relay-url-slice.md](557-distributed-proof-external-relay-url-slice.md)
+- [558-cli-user-node-client-filter-slice.md](558-cli-user-node-client-filter-slice.md)
+- [559-cli-inbox-filter-slice.md](559-cli-inbox-filter-slice.md)
+- [560-cli-inbox-message-filter-slice.md](560-cli-inbox-message-filter-slice.md)
 
 ## Audited Scope
 
@@ -1284,6 +1294,10 @@ Distributed proof profiles, generated verifier commands, and proof kit
 generation can now also require relay WebSocket URLs to be non-loopback and
 non-wildcard with `--require-external-relay-urls`, keeping physical proof
 topology checks from silently accepting local-only relay coordinates.
+CLI inbox detail can now filter Host-recorded User Node conversation messages
+by direction, exact message type, and bounded result count, matching the
+participant-oriented inbox list filters while preserving Host as the projection
+source.
 Deterministic runner task memory now also preserves bounded source-change
 candidate ids, status, totals, diff availability, and changed-file summaries
 from the live turn record, and the derived recent-work summary surfaces the

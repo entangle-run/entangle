@@ -314,6 +314,10 @@ The most accurate current description is:
   `--unread-only`, `--peer-node <nodeId>`, and `--limit <n>`, returning bounded
   conversation lists with `returned` and `totalMatched` counts without mutating
   Host or runner state;
+- the headless `entangle inbox show` participant surface now supports
+  `--direction <inbound|outbound>`, `--message-type <type>`, and `--limit <n>`,
+  returning bounded recorded-message lists with `returned` and `totalMatched`
+  counts over Host-recorded User Node conversation detail;
 - the process-runner smoke now proves that User Client wiki publication path
   through a signed builder wiki approval request, the running User Client JSON
   route, a completed projected `runtime.wiki.publish` command receipt, a
