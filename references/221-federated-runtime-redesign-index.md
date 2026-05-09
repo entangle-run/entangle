@@ -1275,6 +1275,10 @@ The distributed proof kit generator now also fails fast when
 `--require-external-host-url` is paired with a loopback, wildcard, malformed,
 or non-HTTP(S) Host URL, preventing physical-proof kits that the verifier would
 reject later.
+Distributed proof profiles, generated verifier commands, and proof kit
+generation can now also require relay WebSocket URLs to be non-loopback and
+non-wildcard with `--require-external-relay-urls`, keeping physical proof
+topology checks from silently accepting local-only relay coordinates.
 Deterministic runner task memory now also preserves bounded source-change
 candidate ids, status, totals, diff availability, and changed-file summaries
 from the live turn record, and the derived recent-work summary surfaces the

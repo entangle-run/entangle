@@ -5318,6 +5318,8 @@ describe("distributed proof profile contracts", () => {
       relayUrls: ["ws://relay.example:7777"],
       requireConversation: true,
       requireArtifactEvidence: true,
+      requireExternalHostUrl: true,
+      requireExternalRelayUrls: true,
       requireExternalUserClientUrls: true,
       requirePublishedGitArtifact: true,
       schemaVersion: 1,
@@ -5331,6 +5333,8 @@ describe("distributed proof profile contracts", () => {
     expect(result.checkUserClientHealth).toBe(true);
     expect(result.requireConversation).toBe(true);
     expect(result.requireArtifactEvidence).toBe(true);
+    expect(result.requireExternalHostUrl).toBe(true);
+    expect(result.requireExternalRelayUrls).toBe(true);
     expect(result.requireExternalUserClientUrls).toBe(true);
     expect(result.requirePublishedGitArtifact).toBe(true);
   });

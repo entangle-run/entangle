@@ -1,5 +1,19 @@
 # Entangle Wiki Log
 
+## [2026-05-09] ops | Added external relay URL distributed proof guard
+
+Added `references/557-distributed-proof-external-relay-url-slice.md`.
+Distributed proof profiles now support `requireExternalRelayUrls`, and both the
+proof kit generator and verifier expose `--require-external-relay-urls`. The
+generator fails before writing misleading physical-proof material when any
+explicit relay URL is loopback, wildcard, malformed, or non-WebSocket, while
+the verifier emits per-relay `relay external url <url>` checks for JSON/JUnit
+audit output. The TypeScript package contract was also realigned with the
+script profile normalizer for the existing `requireExternalHostUrl` field. The
+deterministic distributed proof tooling smoke now covers the profile field,
+generated verifier flag, generator failure path, verifier failure path, and
+verifier success path.
+
 ## [2026-05-05] ops | Added distributed proof runner Compose generation
 
 Added `references/540-distributed-proof-runner-compose-slice.md`.

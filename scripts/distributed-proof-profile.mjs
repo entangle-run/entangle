@@ -48,6 +48,7 @@ export function normalizeDistributedProofProfile(value, options = {}) {
   copyOptionalBoolean(profile, value, "requireExternalHostUrl", sourceLabel);
   copyOptionalBoolean(profile, value, "requireConversation", sourceLabel);
   copyOptionalBoolean(profile, value, "requireArtifactEvidence", sourceLabel);
+  copyOptionalBoolean(profile, value, "requireExternalRelayUrls", sourceLabel);
   copyOptionalBoolean(profile, value, "requirePublishedGitArtifact", sourceLabel);
 
   profile.relayUrls = normalizeStringArray(value.relayUrls, {

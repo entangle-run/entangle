@@ -1593,6 +1593,10 @@ Current status:
   non-HTTP(S) Host URLs when `--require-external-host-url` is requested,
   catching obvious physical-proof configuration mistakes before runner/operator
   material is written;
+- distributed proof profiles, generated verifier commands, and proof kit
+  generation can now require relay WebSocket URLs to be non-loopback and
+  non-wildcard with `--require-external-relay-urls`, keeping physical proof
+  topology checks from silently accepting local-only relay coordinates;
 - generated proof kits can now require User Client Basic Auth placeholders and
   fail-fast start checks for User Node runner machines, keeping credentials out
   of the kit command line while hardening physical proof endpoints;

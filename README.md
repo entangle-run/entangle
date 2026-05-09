@@ -463,6 +463,10 @@ API URL on `localhost`, loopback, or wildcard addresses.
 The proof kit generator now applies that Host URL guard at generation time too,
 so a physical-proof kit with a local Host URL fails before writing misleading
 runner/operator material.
+Pass `--require-external-relay-urls` when that same proof should reject relay
+URLs on `localhost`, loopback, or wildcard addresses. This guard checks URL
+shape and is separate from `--check-relay-health`, which opens the relay
+WebSocket from the operator machine.
 Pass `--require-user-client-basic-auth` when generated User Node runner
 directories should require `ENTANGLE_HUMAN_INTERFACE_BASIC_AUTH` before their
 User Clients start. Use `--user-client-basic-auth-env-var <envVar>` if the
@@ -494,7 +498,9 @@ agent-engine capabilities, and distinct User Client URLs back to Host
 projection. With the external-URL requirement enabled, those User Client URLs
 must also be reachable as non-loopback HTTP endpoints from the operator
 machine. With the external Host requirement enabled, the verifier also rejects
-a loopback or wildcard Host API URL before accepting the topology proof.
+a loopback or wildcard Host API URL before accepting the topology proof. With
+the external relay requirement enabled, the verifier also rejects loopback or
+wildcard WebSocket relay URLs before accepting the topology proof.
 
 After the runner directories are running and assignments have been offered, the
 operator machine can verify the proof through Host and User Client HTTP

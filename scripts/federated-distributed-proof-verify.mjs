@@ -46,6 +46,9 @@ const requireExternalUserClientUrls =
 const requireExternalHostUrl =
   hasFlag("--require-external-host-url") ||
   readProofProfileBoolean("requireExternalHostUrl");
+const requireExternalRelayUrls =
+  hasFlag("--require-external-relay-urls") ||
+  readProofProfileBoolean("requireExternalRelayUrls");
 const requireConversation =
   hasFlag("--require-conversation") ||
   readProofProfileBoolean("requireConversation");
@@ -149,6 +152,7 @@ Options:
   --require-external-user-client-urls
                                   Reject loopback or wildcard User Client URLs. Defaults to profile requireExternalUserClientUrls.
   --require-external-host-url     Reject loopback or wildcard Host API URLs. Defaults to profile requireExternalHostUrl.
+  --require-external-relay-urls   Reject loopback or wildcard relay URLs. Defaults to profile requireExternalRelayUrls.
   --require-conversation          Require a projected conversation from the primary User Node to the agent node. Defaults to profile requireConversation.
   --require-artifact-evidence     Require projected artifact/source/wiki evidence from the agent node.
   --require-published-git-artifact
@@ -691,7 +695,7 @@ function findDuplicateValues(values) {
   return [...duplicates].sort();
 }
 
-function isExternalHttpUrl(value) {
+function isExternalNetworkUrl(value, allowedProtocols) {
   let parsed;
 
   try {
@@ -700,16 +704,25 @@ function isExternalHttpUrl(value) {
     return false;
   }
 
-  const hostname = parsed.hostname.toLowerCase();
+  const hostname = parsed.hostname.toLowerCase().replace(/^\[|\]$/gu, "");
 
   return (
-    (parsed.protocol === "http:" || parsed.protocol === "https:") &&
+    allowedProtocols.includes(parsed.protocol) &&
+    hostname.length > 0 &&
     hostname !== "localhost" &&
     hostname !== "0.0.0.0" &&
     hostname !== "::" &&
     hostname !== "::1" &&
     !hostname.startsWith("127.")
   );
+}
+
+function isExternalHttpUrl(value) {
+  return isExternalNetworkUrl(value, ["http:", "https:"]);
+}
+
+function isExternalWebSocketUrl(value) {
+  return isExternalNetworkUrl(value, ["ws:", "wss:"]);
 }
 
 function countNodeProjectionRecords(snapshot, key, nodeId) {
@@ -1027,11 +1040,24 @@ async function evaluateSnapshot(snapshot) {
     );
   }
 
-  if (checkRelayHealth) {
+  if (checkRelayHealth || requireExternalRelayUrls) {
     if (relayUrls.length === 0) {
       addCheck(checks, "relay urls configured", false, "no relay URLs configured");
     }
+  }
 
+  if (requireExternalRelayUrls) {
+    for (const relayUrl of relayUrls) {
+      addCheck(
+        checks,
+        `relay external url ${relayUrl}`,
+        isExternalWebSocketUrl(relayUrl),
+        relayUrl
+      );
+    }
+  }
+
+  if (checkRelayHealth) {
     for (const relayUrl of relayUrls) {
       const health = await checkRelay(relayUrl);
       addCheck(

@@ -38,6 +38,7 @@ const requireExternalUserClientUrls = hasFlag(
   "--require-external-user-client-urls"
 );
 const requireExternalHostUrl = hasFlag("--require-external-host-url");
+const requireExternalRelayUrls = hasFlag("--require-external-relay-urls");
 const requireUserClientBasicAuth = hasFlag("--require-user-client-basic-auth");
 const userClientBasicAuthEnvVar =
   readFlagValue("--user-client-basic-auth-env-var") ??
@@ -152,6 +153,7 @@ Options:
   --require-external-user-client-urls
                                     Include verifier checks that reject loopback or wildcard User Client URLs.
   --require-external-host-url       Include verifier checks that reject loopback or wildcard Host API URLs.
+  --require-external-relay-urls     Include verifier checks that reject loopback or wildcard relay URLs.
   --require-user-client-basic-auth  Add a required Human Interface Runtime Basic Auth env placeholder to generated User Node runner env files.
   --user-client-basic-auth-env-var <envVar>
                                     Source env var for generated User Client Basic Auth placeholders. Default: ENTANGLE_HUMAN_INTERFACE_BASIC_AUTH
@@ -243,7 +245,7 @@ function validateEnvVarName(value, label) {
   }
 }
 
-function isExternalHttpUrl(value) {
+function isExternalNetworkUrl(value, allowedProtocols) {
   let parsed;
 
   try {
@@ -252,16 +254,25 @@ function isExternalHttpUrl(value) {
     return false;
   }
 
-  const hostname = parsed.hostname.toLowerCase();
+  const hostname = parsed.hostname.toLowerCase().replace(/^\[|\]$/gu, "");
 
   return (
-    (parsed.protocol === "http:" || parsed.protocol === "https:") &&
+    allowedProtocols.includes(parsed.protocol) &&
+    hostname.length > 0 &&
     hostname !== "localhost" &&
     hostname !== "0.0.0.0" &&
     hostname !== "::" &&
     hostname !== "::1" &&
     !hostname.startsWith("127.")
   );
+}
+
+function isExternalHttpUrl(value) {
+  return isExternalNetworkUrl(value, ["http:", "https:"]);
+}
+
+function isExternalWebSocketUrl(value) {
+  return isExternalNetworkUrl(value, ["ws:", "wss:"]);
 }
 
 function buildCliEnv() {
@@ -680,6 +691,10 @@ function buildVerifierCommand(options = {}) {
     args.push("--require-external-host-url");
   }
 
+  if (requireExternalRelayUrls) {
+    args.push("--require-external-relay-urls");
+  }
+
   if (options.requireArtifactEvidence) {
     args.push("--require-artifact-evidence");
     args.push("--require-published-git-artifact");
@@ -739,6 +754,7 @@ function buildProofProfile(options = {}) {
     ...(options.checkPublishedGitRef ? { checkPublishedGitRef: true } : {}),
     checkUserClientHealth: true,
     ...(requireExternalHostUrl ? { requireExternalHostUrl: true } : {}),
+    ...(requireExternalRelayUrls ? { requireExternalRelayUrls: true } : {}),
     ...(requireExternalUserClientUrls
       ? { requireExternalUserClientUrls: true }
       : {}),
@@ -1085,6 +1101,21 @@ try {
   if (requireExternalHostUrl && !isExternalHttpUrl(hostUrl)) {
     throw new Error(
       "--require-external-host-url requires --host-url to be a non-loopback http(s) URL reachable from other machines."
+    );
+  }
+
+  if (requireExternalRelayUrls && relayUrls.length === 0) {
+    throw new Error(
+      "--require-external-relay-urls requires at least one explicit non-loopback ws(s) --relay-url reachable from other machines."
+    );
+  }
+
+  if (
+    requireExternalRelayUrls &&
+    relayUrls.some((relayUrl) => !isExternalWebSocketUrl(relayUrl))
+  ) {
+    throw new Error(
+      "--require-external-relay-urls requires every --relay-url to be a non-loopback ws(s) URL reachable from other machines."
     );
   }
 

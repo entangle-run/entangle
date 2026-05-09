@@ -30,6 +30,8 @@ export const distributedProofProfileSchema = z
     relayUrls: z.array(websocketUrlSchema).default([]),
     requireConversation: z.boolean().optional(),
     requireArtifactEvidence: z.boolean().optional(),
+    requireExternalHostUrl: z.boolean().optional(),
+    requireExternalRelayUrls: z.boolean().optional(),
     requireExternalUserClientUrls: z.boolean().optional(),
     requirePublishedGitArtifact: z.boolean().optional(),
     reviewerUserNodeId: identifierSchema.default("reviewer"),

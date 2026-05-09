@@ -381,6 +381,7 @@ try {
     "--check-git-backend-health",
     "--check-published-git-ref",
     "--require-external-host-url",
+    "--require-external-relay-urls",
     "--require-external-user-client-urls",
     "--require-user-client-basic-auth",
     "--user-client-basic-auth-env-var",
@@ -406,6 +407,7 @@ try {
       '${ENTANGLE_PROOF_JUNIT_DIR:+--junit "$ENTANGLE_PROOF_JUNIT_DIR/artifacts.xml"}',
       "--check-relay-health",
       "--require-external-host-url",
+      "--require-external-relay-urls",
       "--require-external-user-client-urls",
       "--require-artifact-evidence",
       '"agentRunnerId":"proof-agent-runner"',
@@ -421,6 +423,7 @@ try {
       '"checkUserClientHealth":true',
       '"gitServiceRefs":["gitea"]',
       '"requireExternalHostUrl":true',
+      '"requireExternalRelayUrls":true',
       '"requireExternalUserClientUrls":true',
       '"requireConversation":true',
       '"requirePublishedGitArtifact":true',
@@ -486,6 +489,25 @@ try {
     }
   );
 
+  runFailureStep(
+    "proof kit external-relay local-url dry-run",
+    [
+      "scripts/federated-distributed-proof-kit.mjs",
+      "--dry-run",
+      "--output",
+      "/tmp/entangle-distributed-proof-ci-local-relay-url",
+      "--host-url",
+      "http://host.example:7071",
+      "--relay-url",
+      "ws://127.0.0.1:7777",
+      "--require-external-relay-urls"
+    ],
+    {
+      mustContain:
+        "--require-external-relay-urls requires every --relay-url to be a non-loopback ws(s) URL"
+    }
+  );
+
   const proofProfileTempDir = mkdtempSync(path.join(tmpdir(), "entangle-proof-profile-"));
   const proofProfilePath = path.join(proofProfileTempDir, "proof-profile.json");
 
@@ -506,6 +528,7 @@ try {
         requireConversation: true,
         requireArtifactEvidence: true,
         requireExternalHostUrl: true,
+        requireExternalRelayUrls: true,
         requirePublishedGitArtifact: true,
         reviewerUserNodeId: "bob",
         reviewerUserRunnerId: "proof-reviewer-runner",
@@ -886,6 +909,32 @@ try {
     "--require-external-host-url"
   ]);
   verifySelfTestJson(externalHostJson);
+
+  const loopbackRelayJson = runFailureStep(
+    "proof verifier loopback-relay self-test",
+    [
+      "scripts/federated-distributed-proof-verify.mjs",
+      "--self-test",
+      "--json",
+      "--relay-url",
+      "ws://127.0.0.1:7777",
+      "--require-external-relay-urls"
+    ],
+    {
+      mustContain: '"ok": false'
+    }
+  );
+  verifySelfTestFailureJson(loopbackRelayJson, "relay external url");
+
+  const externalRelayJson = runStep("proof verifier external-relay self-test", [
+    "scripts/federated-distributed-proof-verify.mjs",
+    "--self-test",
+    "--json",
+    "--relay-url",
+    "ws://relay.example:7777",
+    "--require-external-relay-urls"
+  ]);
+  verifySelfTestJson(externalRelayJson);
 
   const wrongRuntimeKindJson = runFailureStep("proof verifier wrong-runtime-kind self-test", [
     "scripts/federated-distributed-proof-verify.mjs",
