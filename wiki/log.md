@@ -6773,3 +6773,10 @@ Added `references/575-user-client-wiki-conflict-patch-draft-slice.md`. The
 React User Client wiki conflict block can now convert the participant's stale
 editor content into a runner-compatible unified patch draft against the current
 projected page and prefill the current hash as the next stale-edit guard.
+
+## [2026-05-09] runner | Added memory brief resolutions context
+
+Added `references/576-memory-brief-resolutions-context-slice.md`. Runner turn
+assembly now includes `summaries/resolutions.md` in the bounded memory brief
+when that page exists, so coding engines see recent closures beside active
+next actions without needing to inspect the full memory ref first.

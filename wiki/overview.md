@@ -921,6 +921,9 @@ The repository now also contains the first real implementation baseline:
   maintenance now records bounded approval-request directives in task pages,
   rebuilds `summaries/approval-ledger.md`, and feeds that page into future
   memory refs plus bounded memory briefs;
+- a memory-brief closure-context refinement where `summaries/resolutions.md`
+  now appears in the bounded prompt brief when present, so future turns see
+  recently closed questions and completed actions beside active work;
 - a handoff-aware working-context refinement where optional model-guided memory
   synthesis receives bounded emitted-handoff evidence and the durable
   `working-context.md` page now records emitted handoff message ids without
@@ -1505,7 +1508,8 @@ The current implementation-truth audit now lives in
   reporting only where later provider adapters justify new canonical fields,
   and otherwise deepen model-guided memory maintenance on top of the now
   stronger session-aware, artifact-aware/artifact-carrying,
-  engine-outcome-aware, execution-insight-carrying, and source-change-aware
+  engine-outcome-aware, execution-insight-carrying, source-change-aware, and
+  resolution-aware
   bounded runtime inspection surface plus deterministic source-change,
   approval, and delegation ledgers;
 - keep later CLI widening focused only on real operational leverage, not

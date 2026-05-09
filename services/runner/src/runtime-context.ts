@@ -34,6 +34,10 @@ const memoryBriefCandidates: MemoryBriefCandidate[] = [
     relativePath: "summaries/next-actions.md"
   },
   {
+    label: "Resolutions",
+    relativePath: "summaries/resolutions.md"
+  },
+  {
     label: "Source change ledger",
     relativePath: "summaries/source-change-ledger.md"
   },

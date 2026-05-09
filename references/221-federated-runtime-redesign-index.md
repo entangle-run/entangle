@@ -376,6 +376,7 @@ same-machine slice records.
 - [573-fake-openai-tool-call-smoke-slice.md](573-fake-openai-tool-call-smoke-slice.md)
 - [574-handoff-response-policy-prompt-slice.md](574-handoff-response-policy-prompt-slice.md)
 - [575-user-client-wiki-conflict-patch-draft-slice.md](575-user-client-wiki-conflict-patch-draft-slice.md)
+- [576-memory-brief-resolutions-context-slice.md](576-memory-brief-resolutions-context-slice.md)
 
 ## Audited Scope
 
@@ -1382,6 +1383,10 @@ rebuilds `summaries/delegation-ledger.md` from handoff-bearing task pages.
 Successful non-blocked turns write memory after outbound handoff publication,
 so the ledger can carry emitted Nostr event ids as well as requested target,
 edge, response-policy, artifact-inclusion, intent, and summary metadata.
+Future turn assembly now includes `summaries/resolutions.md` in the bounded
+memory brief when that page exists, so recent closures are visible next to
+active obligations without forcing the coding engine to open the full memory
+ref first.
 The highest-value remaining implementation areas are richer model-guided
 memory maintenance, deeper delegated-session semantics beyond the current
 controlled handoff path and deterministic owner/coordination/delegation memory

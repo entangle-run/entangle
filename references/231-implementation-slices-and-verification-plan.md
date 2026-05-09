@@ -1392,6 +1392,9 @@ Current status:
   when focused node-memory summary pages exist, while keeping `memoryRefs` as
   the complete page source and recording `memoryBriefContextIncluded` in the
   engine request summary;
+- that bounded memory brief now includes recent resolutions when
+  `summaries/resolutions.md` exists, keeping recently closed questions and
+  completed actions visible next to active work for future coding-engine turns;
 - model-guided post-turn memory synthesis now receives the same bounded
   `Memory brief:` prompt part as normal agent-engine turns, so focused register
   updates can use the compact current baseline while full pages stay available

@@ -939,6 +939,7 @@ files are the active federated redesign pack.
 574. [573-fake-openai-tool-call-smoke-slice.md](573-fake-openai-tool-call-smoke-slice.md)
 575. [574-handoff-response-policy-prompt-slice.md](574-handoff-response-policy-prompt-slice.md)
 576. [575-user-client-wiki-conflict-patch-draft-slice.md](575-user-client-wiki-conflict-patch-draft-slice.md)
+577. [576-memory-brief-resolutions-context-slice.md](576-memory-brief-resolutions-context-slice.md)
 
 ## Role of this corpus
 

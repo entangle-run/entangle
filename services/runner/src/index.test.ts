@@ -771,20 +771,35 @@ describe("runner runtime context", () => {
       "summaries"
     );
     const nextActionsPath = path.join(summariesRoot, "next-actions.md");
+    const resolutionsPath = path.join(summariesRoot, "resolutions.md");
 
     await mkdir(summariesRoot, { recursive: true });
-    await writeFile(
-      nextActionsPath,
-      [
-        "# Next Actions Summary",
-        "",
-        "## Next Actions",
-        "",
-        "- Complete the federated runner handoff verification.",
-        ""
-      ].join("\n"),
-      "utf8"
-    );
+    await Promise.all([
+      writeFile(
+        nextActionsPath,
+        [
+          "# Next Actions Summary",
+          "",
+          "## Next Actions",
+          "",
+          "- Complete the federated runner handoff verification.",
+          ""
+        ].join("\n"),
+        "utf8"
+      ),
+      writeFile(
+        resolutionsPath,
+        [
+          "# Resolutions Summary",
+          "",
+          "## Resolutions",
+          "",
+          "- The legacy direct mutation path is closed for this node.",
+          ""
+        ].join("\n"),
+        "utf8"
+      )
+    ]);
 
     const request = await buildAgentEngineTurnRequest(context);
     const interactionPrompt = request.interactionPromptParts.join("\n");
@@ -797,7 +812,12 @@ describe("runner runtime context", () => {
     expect(interactionPrompt).toContain(
       "Complete the federated runner handoff verification."
     );
+    expect(interactionPrompt).toContain("Resolutions");
+    expect(interactionPrompt).toContain(
+      "The legacy direct mutation path is closed for this node."
+    );
     expect(request.memoryRefs).toContain(nextActionsPath);
+    expect(request.memoryRefs).toContain(resolutionsPath);
     expect(summary.memoryBriefContextIncluded).toBe(true);
   });
 

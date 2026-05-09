@@ -1315,6 +1315,10 @@ This repository currently contains:
   requested handoff directives plus emitted event ids, and
   `summaries/delegation-ledger.md` feeds recent handoff history into future
   memory refs and bounded memory briefs;
+- a memory-brief closure-context refinement where `summaries/resolutions.md`
+  now appears in the bounded prompt brief next to active work, so future turns
+  can see recently closed questions and completed actions without first opening
+  the full memory ref;
 - a conversation-aware working-context refinement where the durable
   `working-context.md` page now carries active conversation ids plus bounded
   peer, lifecycle, response-policy, follow-up, artifact-count, and last-message
@@ -1681,7 +1685,7 @@ The highest-value remaining gaps are:
 - richer model-guided memory maintenance on top of the now stronger
   session-aware, artifact-aware/artifact-carrying, engine-outcome-aware,
   execution-insight-carrying, source-change-aware, owner-aware,
-  coordination-map-aware, and memory-brief-aware bounded runtime inspection
+  coordination-map-aware, resolution-aware, and memory-brief-aware bounded runtime inspection
   surface plus deterministic task-page source-change/approval/delegation
   memory and the source-change/approval/delegation ledgers;
 - deeper delegated-session runtime semantics beyond the current controlled
