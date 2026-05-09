@@ -195,6 +195,17 @@ textarea {
   gap: 7px;
 }
 
+.review-queue-group {
+  display: grid;
+  gap: 6px;
+}
+
+.review-queue-group-header {
+  color: #68717c;
+  font-size: 12px;
+  font-weight: 800;
+}
+
 .review-queue-item {
   display: grid;
   gap: 3px;

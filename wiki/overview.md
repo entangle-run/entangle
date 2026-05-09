@@ -941,6 +941,10 @@ The repository now also contains the first real implementation baseline:
   synthesis now receives that same bounded `Memory brief:` prompt part, so
   focused register updates can use the compact current memory baseline while
   complete wiki pages stay available through `memoryRefs`;
+- a participant review-queue batching refinement where the running React User
+  Client and fallback Human Interface Runtime group pending review work by
+  peer/node with bounded counts while keeping signed approval and source-change
+  review actions in the conversation-specific flows;
 - a coordination-map memory refinement where successful model-guided synthesis
   now writes `memory/wiki/summaries/coordination-map.md` with local node
   relation, owner/origin/entrypoint, inbound message provenance, active peer

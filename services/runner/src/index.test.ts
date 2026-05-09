@@ -3090,6 +3090,9 @@ describe("runner runtime context", () => {
       expect(pageBody).toContain("1 source histories, 2 wiki refs");
       expect(pageBody).toContain("1 reachable targets");
       expect(pageBody).toContain("Review Queue");
+      expect(pageBody).toContain(
+        "worker-it - 1 review - 0 approvals - 1 source change"
+      );
       expect(pageBody).toContain("source change source-change-turn-alpha");
       expect(pageBody).toContain("Previous user message.");
       expect(pageBody).toContain("delivery published 1/1 relays");

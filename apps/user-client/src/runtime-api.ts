@@ -829,6 +829,17 @@ export type UserClientReviewQueueItem =
       updatedAt: string;
     };
 
+export type UserClientReviewQueueGroup = {
+  approvalCount: number;
+  conversationIds: string[];
+  groupId: string;
+  itemCount: number;
+  items: UserClientReviewQueueItem[];
+  label: string;
+  newestUpdatedAt: string;
+  sourceChangeCount: number;
+};
+
 const openConversationStatuses = new Set([
   "acknowledged",
   "awaiting_approval",
@@ -1007,6 +1018,94 @@ export function buildUserClientReviewQueue(
   );
 
   return [...approvalItems, ...sourceChangeItems];
+}
+
+function resolveReviewQueueGroupIdentity(
+  item: UserClientReviewQueueItem
+): { groupId: string; label: string } {
+  if (item.kind === "approval") {
+    return {
+      groupId: `peer:${item.peerNodeId}`,
+      label: item.peerNodeId
+    };
+  }
+
+  const label = item.peerNodeId ?? item.nodeId;
+
+  return {
+    groupId: item.peerNodeId ? `peer:${item.peerNodeId}` : `node:${item.nodeId}`,
+    label
+  };
+}
+
+export function buildUserClientReviewQueueGroups(
+  input: UserClientState | UserClientReviewQueueItem[]
+): UserClientReviewQueueGroup[] {
+  const queue = Array.isArray(input) ? input : buildUserClientReviewQueue(input);
+  const groupsById = new Map<string, UserClientReviewQueueGroup>();
+
+  for (const item of queue) {
+    const identity = resolveReviewQueueGroupIdentity(item);
+    const existing = groupsById.get(identity.groupId);
+    const group =
+      existing ??
+      ({
+        approvalCount: 0,
+        conversationIds: [],
+        groupId: identity.groupId,
+        itemCount: 0,
+        items: [],
+        label: identity.label,
+        newestUpdatedAt: item.updatedAt,
+        sourceChangeCount: 0
+      } satisfies UserClientReviewQueueGroup);
+
+    group.items.push(item);
+    group.itemCount += 1;
+    group.newestUpdatedAt =
+      item.updatedAt > group.newestUpdatedAt ? item.updatedAt : group.newestUpdatedAt;
+
+    if (item.conversationId && !group.conversationIds.includes(item.conversationId)) {
+      group.conversationIds.push(item.conversationId);
+    }
+
+    if (item.kind === "approval") {
+      group.approvalCount += 1;
+    } else {
+      group.sourceChangeCount += 1;
+    }
+
+    groupsById.set(identity.groupId, group);
+  }
+
+  return [...groupsById.values()].sort((left, right) => {
+    const updatedOrder = right.newestUpdatedAt.localeCompare(left.newestUpdatedAt);
+
+    if (updatedOrder !== 0) {
+      return updatedOrder;
+    }
+
+    return left.groupId.localeCompare(right.groupId);
+  });
+}
+
+function formatReviewQueueCount(
+  count: number,
+  singular: string,
+  plural = `${singular}s`
+): string {
+  return `${count} ${count === 1 ? singular : plural}`;
+}
+
+export function formatUserClientReviewQueueGroup(
+  group: UserClientReviewQueueGroup
+): string {
+  return [
+    group.label,
+    formatReviewQueueCount(group.itemCount, "review"),
+    formatReviewQueueCount(group.approvalCount, "approval", "approvals"),
+    formatReviewQueueCount(group.sourceChangeCount, "source change")
+  ].join(" · ");
 }
 
 function formatFileCount(fileCount: number): string {

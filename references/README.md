@@ -933,6 +933,7 @@ files are the active federated redesign pack.
 568. [567-user-client-review-queue-slice.md](567-user-client-review-queue-slice.md)
 569. [568-human-interface-fallback-review-queue-slice.md](568-human-interface-fallback-review-queue-slice.md)
 570. [569-memory-synthesis-brief-context-slice.md](569-memory-synthesis-brief-context-slice.md)
+571. [570-participant-review-queue-batching-slice.md](570-participant-review-queue-batching-slice.md)
 
 ## Role of this corpus
 

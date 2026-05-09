@@ -17,6 +17,7 @@ import {
   buildWikiPageConflictSummary,
   buildWikiPageDraftFromProjection,
   buildWikiPageNextContentPreview,
+  buildUserClientReviewQueueGroups,
   buildUserClientReviewQueue,
   chooseConversationId,
   computeUtf8Sha256Hex,
@@ -32,8 +33,9 @@ import {
   formatDeliveryLabel,
   formatRuntimeCommandReceiptDetailLines,
   formatSignerLabel,
-  formatUserClientWorkloadLines,
+  formatUserClientReviewQueueGroup,
   formatUserClientReviewQueueItem,
+  formatUserClientWorkloadLines,
   formatWikiPageConflictSummaryLines,
   markConversationRead,
   normalizeApiBaseUrl,
@@ -1281,27 +1283,40 @@ function ReviewQueueCard({
   state: UserClientState;
 }) {
   const queue = buildUserClientReviewQueue(state);
+  const groups = buildUserClientReviewQueueGroups(queue);
 
   return (
     <section className="review-queue-card" aria-label="Review queue">
       <h2>Review Queue</h2>
       {queue.length > 0 ? (
         <div className="review-queue-list">
-          {queue.slice(0, 8).map((item) => (
-            <button
-              className="review-queue-item"
-              disabled={!item.conversationId}
-              key={item.id}
-              onClick={() => {
-                if (item.conversationId) {
-                  onSelectConversation(item.conversationId);
-                }
-              }}
-              type="button"
-            >
-              <span>{item.kind === "approval" ? "Approval" : "Source Change"}</span>
-              <strong>{formatUserClientReviewQueueItem(item)}</strong>
-            </button>
+          {groups.slice(0, 6).map((group) => (
+            <div className="review-queue-group" key={group.groupId}>
+              <div className="review-queue-group-header">
+                {formatUserClientReviewQueueGroup(group)}
+              </div>
+              {group.items.slice(0, 8).map((item) => (
+                <button
+                  className="review-queue-item"
+                  disabled={!item.conversationId}
+                  key={item.id}
+                  onClick={() => {
+                    if (item.conversationId) {
+                      onSelectConversation(item.conversationId);
+                    }
+                  }}
+                  type="button"
+                >
+                  <span>
+                    {item.kind === "approval" ? "Approval" : "Source Change"}
+                  </span>
+                  <strong>{formatUserClientReviewQueueItem(item)}</strong>
+                </button>
+              ))}
+              {group.items.length > 8 ? (
+                <p className="metadata">{group.items.length - 8} more reviews</p>
+              ) : null}
+            </div>
           ))}
         </div>
       ) : (

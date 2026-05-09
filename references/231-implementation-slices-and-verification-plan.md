@@ -1391,6 +1391,10 @@ Current status:
   `Memory brief:` prompt part as normal agent-engine turns, so focused register
   updates can use the compact current baseline while full pages stay available
   through `memoryRefs`;
+- the running React User Client and fallback Human Interface Runtime now group
+  Review Queue entries by peer/node, exposing bounded per-group counts for
+  pending reviews, approvals, and source-change reviews while preserving the
+  existing signed conversation-specific action flows;
 - `ops:smoke-federated-dev:runtime` now delegates to the process-runner
   federated smoke and defaults to the deterministic fake OpenCode
   attached-server profile, so the active runtime smoke proves the current

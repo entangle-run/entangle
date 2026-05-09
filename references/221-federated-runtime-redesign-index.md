@@ -370,6 +370,7 @@ same-machine slice records.
 - [567-user-client-review-queue-slice.md](567-user-client-review-queue-slice.md)
 - [568-human-interface-fallback-review-queue-slice.md](568-human-interface-fallback-review-queue-slice.md)
 - [569-memory-synthesis-brief-context-slice.md](569-memory-synthesis-brief-context-slice.md)
+- [570-participant-review-queue-batching-slice.md](570-participant-review-queue-batching-slice.md)
 
 ## Audited Scope
 
@@ -1101,6 +1102,10 @@ Model-guided post-turn memory synthesis now receives that same bounded memory
 brief inline in the synthesis prompt, so focused-register updates can see the
 current compact memory baseline while complete source pages remain available
 through `memoryRefs`.
+The running React User Client and fallback Human Interface Runtime now group
+Review Queue entries by peer/node, showing bounded per-group counts for pending
+reviews, approvals, and source-change reviews before a human node opens the
+conversation-specific action flow.
 Release-control packets are now covered by the active product naming guardrail,
 and released packet text no longer preserves retired runtime-profile literals
 or obsolete readiness milestone wording as public claims.

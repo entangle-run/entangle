@@ -1657,6 +1657,10 @@ This repository currently contains:
   revision, backend, and last reconciliation time, with Studio overview
   refresh now treating session and conversation activity as status-relevant
   because those events can change top-level session diagnostics;
+- a participant review-queue batching slice where the running React User
+  Client and fallback Human Interface Runtime group pending review work by
+  peer/node with bounded counts before the human node opens the
+  conversation-specific signed action flow;
 
 The highest-value remaining gaps are:
 
@@ -1670,7 +1674,8 @@ The highest-value remaining gaps are:
   autonomous handoff and runner-local active-conversation reconciliation path,
   especially formal cross-runtime relation modeling, richer participant-aware
   reassignment workflows beyond the first CLI/Studio assignment entry points,
-  richer participant review batching beyond the first User Client review queue,
+  richer participant review batching beyond the first grouped User Client and
+  fallback review queue,
   and automated repair workflows beyond the first owner-aware memory
   projection;
 - advanced git widening beyond the current locator-specific handoff,

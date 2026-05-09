@@ -9,6 +9,7 @@ import {
   buildWikiPageConflictSummary,
   buildWikiPageDraftFromProjection,
   buildWikiPageNextContentPreview,
+  buildUserClientReviewQueueGroups,
   buildUserClientReviewQueue,
   buildRuntimeApiUrl,
   chooseConversationId,
@@ -22,6 +23,7 @@ import {
   formatDeliveryLabel,
   formatRuntimeCommandReceiptDetailLines,
   formatSignerLabel,
+  formatUserClientReviewQueueGroup,
   formatUserClientReviewQueueItem,
   formatUserClientWorkloadLines,
   formatWikiPageConflictSummaryLines,
@@ -488,6 +490,23 @@ describe("user client runtime API helpers", () => {
     });
     expect(formatUserClientReviewQueueItem(queue[3]!)).toBe(
       "source change candidate-alpha · worker-it · 2 files +8 -2 · conversation-new"
+    );
+
+    const groups = buildUserClientReviewQueueGroups(queue);
+
+    expect(groups.map((group) => group.groupId)).toEqual([
+      "peer:worker-it",
+      "peer:reviewer-it"
+    ]);
+    expect(groups[0]).toMatchObject({
+      approvalCount: 2,
+      itemCount: 3,
+      label: "worker-it",
+      sourceChangeCount: 1
+    });
+    expect(groups[0]?.conversationIds).toEqual(["conversation-new"]);
+    expect(formatUserClientReviewQueueGroup(groups[0]!)).toBe(
+      "worker-it · 3 reviews · 2 approvals · 1 source change"
     );
   });
 

@@ -158,6 +158,17 @@ type UserClientReviewQueueItem =
       updatedAt: string;
     };
 
+type UserClientReviewQueueGroup = {
+  approvalCount: number;
+  conversationIds: string[];
+  groupId: string;
+  itemCount: number;
+  items: UserClientReviewQueueItem[];
+  label: string;
+  newestUpdatedAt: string;
+  sourceChangeCount: number;
+};
+
 const openConversationStatuses = new Set([
   "acknowledged",
   "awaiting_approval",
@@ -3803,6 +3814,93 @@ function buildUserClientReviewQueue(
   return [...approvalItems, ...sourceChangeItems];
 }
 
+function resolveReviewQueueGroupIdentity(
+  item: UserClientReviewQueueItem
+): { groupId: string; label: string } {
+  if (item.kind === "approval") {
+    return {
+      groupId: `peer:${item.peerNodeId}`,
+      label: item.peerNodeId
+    };
+  }
+
+  const label = item.peerNodeId ?? item.nodeId;
+
+  return {
+    groupId: item.peerNodeId ? `peer:${item.peerNodeId}` : `node:${item.nodeId}`,
+    label
+  };
+}
+
+function buildUserClientReviewQueueGroups(
+  queue: UserClientReviewQueueItem[]
+): UserClientReviewQueueGroup[] {
+  const groupsById = new Map<string, UserClientReviewQueueGroup>();
+
+  for (const item of queue) {
+    const identity = resolveReviewQueueGroupIdentity(item);
+    const existing = groupsById.get(identity.groupId);
+    const group =
+      existing ??
+      ({
+        approvalCount: 0,
+        conversationIds: [],
+        groupId: identity.groupId,
+        itemCount: 0,
+        items: [],
+        label: identity.label,
+        newestUpdatedAt: item.updatedAt,
+        sourceChangeCount: 0
+      } satisfies UserClientReviewQueueGroup);
+
+    group.items.push(item);
+    group.itemCount += 1;
+    group.newestUpdatedAt =
+      item.updatedAt > group.newestUpdatedAt ? item.updatedAt : group.newestUpdatedAt;
+
+    if (item.conversationId && !group.conversationIds.includes(item.conversationId)) {
+      group.conversationIds.push(item.conversationId);
+    }
+
+    if (item.kind === "approval") {
+      group.approvalCount += 1;
+    } else {
+      group.sourceChangeCount += 1;
+    }
+
+    groupsById.set(identity.groupId, group);
+  }
+
+  return [...groupsById.values()].sort((left, right) => {
+    const updatedOrder = right.newestUpdatedAt.localeCompare(left.newestUpdatedAt);
+
+    if (updatedOrder !== 0) {
+      return updatedOrder;
+    }
+
+    return left.groupId.localeCompare(right.groupId);
+  });
+}
+
+function formatReviewQueueCount(
+  count: number,
+  singular: string,
+  plural = `${singular}s`
+): string {
+  return `${count} ${count === 1 ? singular : plural}`;
+}
+
+function formatUserClientReviewQueueGroup(
+  group: UserClientReviewQueueGroup
+): string {
+  return [
+    group.label,
+    formatReviewQueueCount(group.itemCount, "review"),
+    formatReviewQueueCount(group.approvalCount, "approval", "approvals"),
+    formatReviewQueueCount(group.sourceChangeCount, "source change")
+  ].join(" - ");
+}
+
 function formatReviewQueueFileCount(fileCount: number): string {
   return `${fileCount} ${fileCount === 1 ? "file" : "files"}`;
 }
@@ -3832,20 +3930,35 @@ function formatUserClientReviewQueueItem(item: UserClientReviewQueueItem): strin
 
 function renderUserClientReviewQueue(state: UserClientState): string {
   const queue = buildUserClientReviewQueue(state);
+  const groups = buildUserClientReviewQueueGroups(queue);
 
   if (queue.length === 0) {
     return `<p class="empty">No pending reviews.</p>`;
   }
 
   return `<div class="review-queue-list">
-    ${queue
-      .slice(0, 8)
-      .map((item) => {
-        const body = `<span>${escapeHtml(item.kind === "approval" ? "Approval" : "Source Change")}</span><strong>${escapeHtml(formatUserClientReviewQueueItem(item))}</strong>`;
+    ${groups
+      .slice(0, 6)
+      .map((group) => {
+        const items = group.items
+          .slice(0, 8)
+          .map((item) => {
+            const body = `<span>${escapeHtml(item.kind === "approval" ? "Approval" : "Source Change")}</span><strong>${escapeHtml(formatUserClientReviewQueueItem(item))}</strong>`;
 
-        return item.conversationId
-          ? `<a class="review-queue-item" href="/?conversationId=${encodeURIComponent(item.conversationId)}">${body}</a>`
-          : `<div class="review-queue-item disabled">${body}</div>`;
+            return item.conversationId
+              ? `<a class="review-queue-item" href="/?conversationId=${encodeURIComponent(item.conversationId)}">${body}</a>`
+              : `<div class="review-queue-item disabled">${body}</div>`;
+          })
+          .join("");
+        const overflow =
+          group.items.length > 8
+            ? `<p class="meta">${escapeHtml(`${group.items.length - 8} more reviews`)}</p>`
+            : "";
+
+        return `<div class="review-queue-group">
+          <div class="review-queue-group-header">${escapeHtml(formatUserClientReviewQueueGroup(group))}</div>
+          ${items}${overflow}
+        </div>`;
       })
       .join("")}
   </div>`;
@@ -4171,6 +4284,8 @@ async function renderHome(input: {
       .command-receipt-conflict { background: #fff5f2; border-left: 3px solid var(--danger); color: var(--danger); display: grid; font-size: 12px; gap: 3px; margin-top: 4px; padding: 7px 9px; overflow-wrap: anywhere; }
       .workload-list { color: var(--muted); display: grid; font-size: 13px; gap: 6px; margin: 12px 0 0; padding-left: 18px; }
       .review-queue-list { display: grid; gap: 8px; margin-top: 12px; }
+      .review-queue-group { display: grid; gap: 6px; }
+      .review-queue-group-header { color: var(--muted); font-size: 12px; font-weight: 800; }
       .review-queue-item { color: inherit; display: grid; gap: 4px; text-decoration: none; border: 1px solid var(--line); background: #f8fafc; border-radius: 8px; padding: 10px; }
       .review-queue-item.disabled { opacity: .65; }
       .review-queue-item span { color: var(--muted); font-size: 11px; font-weight: 800; text-transform: uppercase; }

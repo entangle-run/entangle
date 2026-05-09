@@ -1,5 +1,13 @@
 # Entangle Wiki Log
 
+## [2026-05-09] user-client | Added participant review queue batching
+
+Added `references/570-participant-review-queue-batching-slice.md`. The
+running React User Client and fallback Human Interface Runtime now group Review
+Queue entries by peer/node, with bounded counts for pending reviews, approval
+items, and source-change review items before the human node opens the
+conversation-specific signed action flow.
+
 ## [2026-05-09] runner | Added memory synthesis brief context
 
 Added `references/569-memory-synthesis-brief-context-slice.md`.
