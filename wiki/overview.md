@@ -136,7 +136,8 @@ The most accurate current description is:
 - `pnpm ops:smoke-fake-opencode-server` now verifies that fake OpenCode
   harness end to end, including Basic-authenticated health, session creation,
   SSE permission delivery, permission reply, deterministic assistant output,
-  optional workspace mutation through `x-opencode-directory`, and idle status;
+  optional workspace mutation through `x-opencode-directory`, permission
+  rejection, session-error delivery, and idle status;
 - `pnpm ops:smoke-federated-process-runner -- --use-fake-opencode-server` now
   proves the attached `opencode_server` profile path through the real joined
   runner, including User Node-signed OpenCode permission approvals, source

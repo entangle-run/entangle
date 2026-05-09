@@ -377,6 +377,7 @@ same-machine slice records.
 - [574-handoff-response-policy-prompt-slice.md](574-handoff-response-policy-prompt-slice.md)
 - [575-user-client-wiki-conflict-patch-draft-slice.md](575-user-client-wiki-conflict-patch-draft-slice.md)
 - [576-memory-brief-resolutions-context-slice.md](576-memory-brief-resolutions-context-slice.md)
+- [577-fake-opencode-permission-rejection-smoke-slice.md](577-fake-opencode-permission-rejection-smoke-slice.md)
 
 ## Audited Scope
 
@@ -513,7 +514,7 @@ The repository is not fully federated:
 - `pnpm ops:smoke-fake-opencode-server` now verifies that fake OpenCode
   harness end to end, including Basic-authenticated health, session creation,
   permission SSE delivery, permission reply, deterministic assistant output,
-  and idle status;
+  permission rejection as `session.error`, and idle status;
 - runner OpenCode adapter tests now also start that fake server as a real child
   process and drive an attached-server turn through actual HTTP/SSE traffic;
 - the fake OpenCode server can now optionally write deterministic content into

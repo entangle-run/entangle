@@ -44,6 +44,7 @@ try {
   await verifyTurnWithPermission(startup.baseUrl);
   await verifyWorkspaceWrite(workspaceRoot, generatedRelativePath);
   await verifyDebugState(startup.baseUrl);
+  await verifyPermissionRejection(startup.baseUrl);
   console.log(`fake OpenCode server smoke passed (${startup.baseUrl})`);
 } finally {
   await Promise.all([
@@ -261,6 +262,152 @@ async function verifyDebugState(baseUrl) {
     body.sessions?.[startup.sessionId]?.completed !== true
   ) {
     throw new Error(`Debug state check failed: ${response.status}`);
+  }
+}
+
+async function verifyPermissionRejection(baseUrl) {
+  const rejectSessionId = `${startup.sessionId}-rejected`;
+  const events = [];
+  let permissionReplySent = false;
+  let sawCompletionText = false;
+  let sawError = false;
+  let sawIdle = false;
+  let resolveEventStreamReady;
+  const eventStreamReady = new Promise((resolve) => {
+    resolveEventStreamReady = resolve;
+  });
+
+  const eventStreamPromise = consumeSseEvents(
+    `${baseUrl}/event`,
+    async (event) => {
+      events.push(event);
+
+      if (event.type === "permission.asked") {
+        if (event.properties?.sessionID !== rejectSessionId) {
+          throw new Error(
+            `Unexpected rejection session id '${String(event.properties?.sessionID)}'.`
+          );
+        }
+
+        const requestId = event.properties?.id;
+
+        if (requestId !== startup.permissionId) {
+          throw new Error(`Unexpected permission id '${String(requestId)}'.`);
+        }
+
+        const replyResponse = await fetch(
+          `${baseUrl}/permission/${encodeURIComponent(requestId)}/reply`,
+          {
+            body: JSON.stringify({
+              message: "Rejected by deterministic fake OpenCode smoke.",
+              reply: "reject"
+            }),
+            headers: jsonHeaders(),
+            method: "POST"
+          }
+        );
+
+        if (!replyResponse.ok) {
+          throw new Error(
+            `Permission rejection reply failed: ${replyResponse.status}`
+          );
+        }
+
+        permissionReplySent = true;
+        return;
+      }
+
+      if (event.type === "message.part.updated") {
+        sawCompletionText = true;
+        return;
+      }
+
+      if (
+        event.type === "session.error" &&
+        event.properties?.sessionID === rejectSessionId
+      ) {
+        sawError = true;
+        return;
+      }
+
+      if (
+        event.type === "session.status" &&
+        event.properties?.sessionID === rejectSessionId &&
+        event.properties?.status?.type === "idle"
+      ) {
+        sawIdle = true;
+      }
+    },
+    () => {
+      resolveEventStreamReady();
+    }
+  );
+
+  await Promise.race([eventStreamReady, eventStreamPromise]);
+
+  const sessionResponse = await fetch(`${baseUrl}/session`, {
+    body: JSON.stringify({
+      id: rejectSessionId,
+      permission: [
+        {
+          mode: "ask",
+          permission: "bash"
+        }
+      ],
+      title: "worker-it:session-alpha-rejected"
+    }),
+    headers: jsonHeaders({
+      "x-opencode-directory": encodeURIComponent(workspaceRoot)
+    }),
+    method: "POST"
+  });
+  const sessionBody = await sessionResponse.json();
+
+  if (!sessionResponse.ok || sessionBody.id !== rejectSessionId) {
+    throw new Error(`Rejected session create failed: ${sessionResponse.status}`);
+  }
+
+  const promptResponse = await fetch(
+    `${baseUrl}/session/${encodeURIComponent(rejectSessionId)}/prompt_async`,
+    {
+      body: JSON.stringify({
+        parts: [
+          {
+            text: "Run deterministic Entangle fake OpenCode rejection smoke.",
+            type: "text"
+          }
+        ]
+      }),
+      headers: jsonHeaders({
+        "x-opencode-directory": encodeURIComponent(workspaceRoot)
+      }),
+      method: "POST"
+    }
+  );
+
+  if (!promptResponse.ok) {
+    throw new Error(`Rejected prompt async failed: ${promptResponse.status}`);
+  }
+
+  await eventStreamPromise;
+
+  if (!permissionReplySent || !sawError || !sawIdle || sawCompletionText) {
+    throw new Error(
+      `Incomplete fake OpenCode rejection flow: permissionReplySent=${permissionReplySent} sawError=${sawError} sawIdle=${sawIdle} sawCompletionText=${sawCompletionText} events=${events.map((event) => event.type).join(",")}`
+    );
+  }
+
+  const debugResponse = await fetch(`${baseUrl}/debug/state`, {
+    headers: authorizationHeaders()
+  });
+  const body = await debugResponse.json();
+
+  if (
+    !debugResponse.ok ||
+    body.permissionReplies?.[startup.permissionId]?.reply !== "reject" ||
+    body.sessions?.[rejectSessionId]?.completed !== true
+  ) {
+    throw new Error(`Rejected debug state check failed: ${debugResponse.status}`);
   }
 }
 

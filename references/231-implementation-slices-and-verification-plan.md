@@ -269,7 +269,7 @@ Current status:
 - `pnpm ops:smoke-fake-opencode-server` now starts that fake OpenCode server
   on an ephemeral port and verifies Basic-authenticated health, session
   creation, SSE permission delivery, permission reply, deterministic assistant
-  output, and idle status.
+  output, permission rejection as `session.error`, and idle status.
 - `pnpm ops:fake-agent-engine-http` now starts a deterministic external HTTP
   agent-engine fixture that implements the shared turn contract, and
   `pnpm ops:smoke-fake-agent-engine-http` verifies health, turn execution,

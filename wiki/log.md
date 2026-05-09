@@ -6780,3 +6780,11 @@ Added `references/576-memory-brief-resolutions-context-slice.md`. Runner turn
 assembly now includes `summaries/resolutions.md` in the bounded memory brief
 when that page exists, so coding engines see recent closures beside active
 next actions without needing to inspect the full memory ref first.
+
+## [2026-05-09] smoke | Added fake OpenCode permission rejection proof
+
+Added `references/577-fake-opencode-permission-rejection-smoke-slice.md`.
+`pnpm ops:smoke-fake-opencode-server` now runs a second deterministic attached
+OpenCode session that rejects the permission request and verifies
+`session.error`, idle status, and debug-state rejection persistence without
+live model credentials.

@@ -186,10 +186,10 @@ catalog/auth/adapter wiring tests without live model credentials, and
 `pnpm ops:fake-opencode-server` command now starts a deterministic fake
 OpenCode attached server for manual no-credential route and permission-bridge
 plumbing checks, and `pnpm ops:smoke-fake-opencode-server` verifies that
-server's health, session, SSE permission, permission reply, completion, and
-idle flow end to end. The runner OpenCode adapter tests also start that fake
-server as a child process and execute an attached-server turn over real
-HTTP/SSE traffic. The federated process-runner smoke can also run with
+server's health, session, SSE permission, permission reply, completion,
+rejection, and idle flow end to end. The runner OpenCode adapter tests also
+start that fake server as a child process and execute an attached-server turn
+over real HTTP/SSE traffic. The federated process-runner smoke can also run with
 `--use-fake-opencode-server` to prove an attached `opencode_server` profile,
 User Node-signed permission approvals, workspace mutation, and session
 continuity without live model credentials. The shorter root commands
@@ -940,6 +940,7 @@ files are the active federated redesign pack.
 575. [574-handoff-response-policy-prompt-slice.md](574-handoff-response-policy-prompt-slice.md)
 576. [575-user-client-wiki-conflict-patch-draft-slice.md](575-user-client-wiki-conflict-patch-draft-slice.md)
 577. [576-memory-brief-resolutions-context-slice.md](576-memory-brief-resolutions-context-slice.md)
+578. [577-fake-opencode-permission-rejection-smoke-slice.md](577-fake-opencode-permission-rejection-smoke-slice.md)
 
 ## Role of this corpus
 

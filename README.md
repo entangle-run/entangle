@@ -259,7 +259,8 @@ pnpm ops:fake-opencode-server -- --port 18081 --username entangle --password ser
 
 It serves `/global/health`, `/event`, `/session`,
 `/session/:sessionID/prompt_async`, and `/permission/:requestID/reply` with a
-deterministic permission request and completion event. Point an
+deterministic permission request, completion event, and rejection session-error
+path. Point an
 `opencode_server` engine profile at `http://127.0.0.1:18081`, configure
 `permissionMode: "entangle_approval"`, and set
 `OPENCODE_SERVER_USERNAME=entangle` plus
