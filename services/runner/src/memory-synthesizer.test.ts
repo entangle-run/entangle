@@ -717,6 +717,12 @@ describe("model-guided memory synthesis", () => {
     expect(capturedRequest?.interactionPromptParts.join("\n")).toContain(
       "Current focused register baseline:"
     );
+    expect(capturedRequest?.interactionPromptParts.join("\n")).toContain(
+      "Memory brief:"
+    );
+    expect(capturedRequest?.interactionPromptParts.join("\n")).toContain(
+      "### Next actions (summaries/next-actions.md)"
+    );
     expect(capturedRequest?.systemPromptParts.join("\n")).toContain(
       "populate the explicit closure-reference fields with the exact original baseline text"
     );

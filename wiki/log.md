@@ -1,5 +1,13 @@
 # Entangle Wiki Log
 
+## [2026-05-09] runner | Added memory synthesis brief context
+
+Added `references/569-memory-synthesis-brief-context-slice.md`.
+Model-guided post-turn memory synthesis now receives the bounded `Memory
+brief:` prompt part already used by normal agent-engine turns, so focused
+register updates can see compact current summaries and deterministic ledgers
+inline while full `memoryRefs` remain available.
+
 ## [2026-05-09] runner | Added fallback review queue
 
 Added `references/568-human-interface-fallback-review-queue-slice.md`. The

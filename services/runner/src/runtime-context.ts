@@ -98,7 +98,7 @@ function truncateMemoryBriefContent(value: string, maxCharacters: number): strin
   return `${normalized.slice(0, Math.max(0, maxCharacters - 15)).trimEnd()}\n[truncated]`;
 }
 
-async function collectMemoryBriefPromptPart(
+export async function collectMemoryBriefPromptPart(
   context: EffectiveRuntimeContext
 ): Promise<string | undefined> {
   const wikiRoot = path.join(context.workspace.memoryRoot, "wiki");

@@ -42,7 +42,10 @@ import {
   type RunnerSessionStateSnapshot,
   renderRunnerSessionStateSnapshotForPrompt
 } from "./session-state-snapshot.js";
-import { collectMemoryRefs } from "./runtime-context.js";
+import {
+  collectMemoryBriefPromptPart,
+  collectMemoryRefs
+} from "./runtime-context.js";
 import type { RunnerInboundEnvelope } from "./transport.js";
 
 const maxWorkingContextListEntries = 6;
@@ -2016,6 +2019,8 @@ export async function buildModelGuidedMemorySynthesisTurnRequest(
       statePaths: buildRunnerStatePaths(input.context.workspace.runtimeRoot),
       wikiRoot
     }));
+  const memoryBriefPromptPart = await collectMemoryBriefPromptPart(input.context);
+
   return {
     sessionId: input.envelope.message.sessionId,
     nodeId: input.context.binding.node.nodeId,
@@ -2056,6 +2061,7 @@ export async function buildModelGuidedMemorySynthesisTurnRequest(
           ? input.producedArtifactIds.join(", ")
           : "none"
       }`,
+      ...(memoryBriefPromptPart ? [memoryBriefPromptPart] : []),
       renderInboundMessageContextForPrompt(input.envelope),
       renderFocusedRegisterBaselineForPrompt(
         focusedRegisterContext.promptBaseline

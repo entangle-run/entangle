@@ -937,6 +937,10 @@ The repository now also contains the first real implementation baseline:
   now receive a bounded inline brief from focused node-memory summaries when
   those pages exist, while complete wiki pages stay available through
   `memoryRefs`;
+- a memory-synthesis brief-context refinement where model-guided post-turn
+  synthesis now receives that same bounded `Memory brief:` prompt part, so
+  focused register updates can use the compact current memory baseline while
+  complete wiki pages stay available through `memoryRefs`;
 - a coordination-map memory refinement where successful model-guided synthesis
   now writes `memory/wiki/summaries/coordination-map.md` with local node
   relation, owner/origin/entrypoint, inbound message provenance, active peer

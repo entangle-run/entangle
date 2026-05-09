@@ -369,6 +369,7 @@ same-machine slice records.
 - [566-studio-user-node-runner-candidates-slice.md](566-studio-user-node-runner-candidates-slice.md)
 - [567-user-client-review-queue-slice.md](567-user-client-review-queue-slice.md)
 - [568-human-interface-fallback-review-queue-slice.md](568-human-interface-fallback-review-queue-slice.md)
+- [569-memory-synthesis-brief-context-slice.md](569-memory-synthesis-brief-context-slice.md)
 
 ## Audited Scope
 
@@ -1096,6 +1097,10 @@ Engine turn requests now also include a bounded `Memory brief:` prompt part
 when focused node-memory summaries exist, while preserving `memoryRefs` as the
 complete source pages. The runner records whether that memory brief was present
 in `engineRequestSummary` for trace and presentation surfaces.
+Model-guided post-turn memory synthesis now receives that same bounded memory
+brief inline in the synthesis prompt, so focused-register updates can see the
+current compact memory baseline while complete source pages remain available
+through `memoryRefs`.
 Release-control packets are now covered by the active product naming guardrail,
 and released packet text no longer preserves retired runtime-profile literals
 or obsolete readiness milestone wording as public claims.

@@ -1387,6 +1387,10 @@ Current status:
   when focused node-memory summary pages exist, while keeping `memoryRefs` as
   the complete page source and recording `memoryBriefContextIncluded` in the
   engine request summary;
+- model-guided post-turn memory synthesis now receives the same bounded
+  `Memory brief:` prompt part as normal agent-engine turns, so focused register
+  updates can use the compact current baseline while full pages stay available
+  through `memoryRefs`;
 - `ops:smoke-federated-dev:runtime` now delegates to the process-runner
   federated smoke and defaults to the deterministic fake OpenCode
   attached-server profile, so the active runtime smoke proves the current
