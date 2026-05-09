@@ -915,6 +915,7 @@ files are the active federated redesign pack.
 554. [553-source-history-git-attribution-slice.md](553-source-history-git-attribution-slice.md)
 555. [554-demo-studio-launch-slice.md](554-demo-studio-launch-slice.md)
 556. [555-demo-tooling-smoke-slice.md](555-demo-tooling-smoke-slice.md)
+557. [556-distributed-proof-kit-external-host-generation-guard-slice.md](556-distributed-proof-kit-external-host-generation-guard-slice.md)
 
 ## Role of this corpus
 

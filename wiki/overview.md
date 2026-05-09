@@ -472,6 +472,9 @@ User Client URLs when a physical multi-machine proof needs to show that
 human-node clients are reachable beyond their own host.
 They can also opt into `requireExternalHostUrl`, which rejects loopback or
 wildcard Host API URLs for physical proof runs.
+The proof kit generator now applies that external Host URL requirement before
+writing kit material, so loopback, wildcard, malformed, or non-HTTP(S) Host
+URLs fail at generation time when the physical-proof guard is requested.
 When a proof profile carries explicit assignments, the verifier now uses those
 manifest assignment ids rather than deriving ids from runner ids.
 Generated proof profiles now also carry primary User Node conversation and

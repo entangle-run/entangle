@@ -6590,3 +6590,13 @@ fake `external_http` User Node runtime demo paths.
 The smoke is intentionally no-infrastructure and no-credential; it protects the
 operator-facing demo command surface while the process-runner smokes continue
 to prove runtime behavior.
+
+## [2026-05-09] proof | Added external Host URL kit guard
+
+Added
+`references/556-distributed-proof-kit-external-host-generation-guard-slice.md`.
+The distributed proof kit generator now rejects local, wildcard, malformed, or
+non-HTTP(S) Host URLs when `--require-external-host-url` is requested.
+
+This catches obvious physical-proof configuration mistakes before writing
+runner/operator material that the verifier would reject later.

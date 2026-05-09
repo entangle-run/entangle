@@ -467,6 +467,25 @@ try {
     }
   );
 
+  runFailureStep(
+    "proof kit external-host local-url dry-run",
+    [
+      "scripts/federated-distributed-proof-kit.mjs",
+      "--dry-run",
+      "--output",
+      "/tmp/entangle-distributed-proof-ci-local-host-url",
+      "--host-url",
+      "http://127.0.0.1:7071",
+      "--relay-url",
+      "ws://relay.example:7777",
+      "--require-external-host-url"
+    ],
+    {
+      mustContain:
+        "--require-external-host-url requires --host-url to be a non-loopback http(s) URL"
+    }
+  );
+
   const proofProfileTempDir = mkdtempSync(path.join(tmpdir(), "entangle-proof-profile-"));
   const proofProfilePath = path.join(proofProfileTempDir, "proof-profile.json");
 

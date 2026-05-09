@@ -460,6 +460,9 @@ should reject projected User Client URLs on `localhost`, loopback, or wildcard
 addresses.
 Pass `--require-external-host-url` when that same proof should reject a Host
 API URL on `localhost`, loopback, or wildcard addresses.
+The proof kit generator now applies that Host URL guard at generation time too,
+so a physical-proof kit with a local Host URL fails before writing misleading
+runner/operator material.
 Pass `--require-user-client-basic-auth` when generated User Node runner
 directories should require `ENTANGLE_HUMAN_INTERFACE_BASIC_AUTH` before their
 User Clients start. Use `--user-client-basic-auth-env-var <envVar>` if the

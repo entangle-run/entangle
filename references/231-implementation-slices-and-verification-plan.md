@@ -1589,6 +1589,10 @@ Current status:
 - distributed proof profiles and generated verifier commands can now also
   require the Host API URL to be non-loopback and non-wildcard, keeping
   physical proof topology checks from silently accepting a local-only Host URL;
+- distributed proof kit generation now rejects local, wildcard, malformed, or
+  non-HTTP(S) Host URLs when `--require-external-host-url` is requested,
+  catching obvious physical-proof configuration mistakes before runner/operator
+  material is written;
 - generated proof kits can now require User Client Basic Auth placeholders and
   fail-fast start checks for User Node runner machines, keeping credentials out
   of the kit command line while hardening physical proof endpoints;

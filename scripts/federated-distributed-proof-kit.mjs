@@ -243,6 +243,27 @@ function validateEnvVarName(value, label) {
   }
 }
 
+function isExternalHttpUrl(value) {
+  let parsed;
+
+  try {
+    parsed = new URL(value);
+  } catch {
+    return false;
+  }
+
+  const hostname = parsed.hostname.toLowerCase();
+
+  return (
+    (parsed.protocol === "http:" || parsed.protocol === "https:") &&
+    hostname !== "localhost" &&
+    hostname !== "0.0.0.0" &&
+    hostname !== "::" &&
+    hostname !== "::1" &&
+    !hostname.startsWith("127.")
+  );
+}
+
 function buildCliEnv() {
   return {
     ...process.env,
@@ -1058,6 +1079,12 @@ try {
   if (checkRelayHealth && relayUrls.length === 0) {
     throw new Error(
       "--check-relay-health requires at least one explicit --relay-url so the generated proof profile can be verified from another machine."
+    );
+  }
+
+  if (requireExternalHostUrl && !isExternalHttpUrl(hostUrl)) {
+    throw new Error(
+      "--require-external-host-url requires --host-url to be a non-loopback http(s) URL reachable from other machines."
     );
   }
 

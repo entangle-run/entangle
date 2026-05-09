@@ -1271,6 +1271,10 @@ launching the separate operator surface.
 `pnpm ops:smoke-demo-tools` now verifies the demo command surface without
 starting infrastructure, covering syntax, help, base dry-run, Studio dry-run,
 fake OpenCode dry-run, and fake `external_http` dry-run assembly.
+The distributed proof kit generator now also fails fast when
+`--require-external-host-url` is paired with a loopback, wildcard, malformed,
+or non-HTTP(S) Host URL, preventing physical-proof kits that the verifier would
+reject later.
 Deterministic runner task memory now also preserves bounded source-change
 candidate ids, status, totals, diff availability, and changed-file summaries
 from the live turn record, and the derived recent-work summary surfaces the
