@@ -354,6 +354,19 @@ export function filterUserNodeApprovalMessagesForCli(input: {
   return input.limit === undefined ? messages : messages.slice(0, input.limit);
 }
 
+export function filterUserNodeSourceReviewMessagesForCli(input: {
+  limit?: number | undefined;
+  messages: UserNodeMessageRecord[];
+}): UserNodeMessageRecord[] {
+  const messages = filterUserNodeApprovalMessagesForCli({
+    messages: input.messages
+  }).filter(
+    (message) => message.approval?.resource?.kind === "source_change_candidate"
+  );
+
+  return input.limit === undefined ? messages : messages.slice(0, input.limit);
+}
+
 export function projectUserNodeCommandReceiptSummary(
   receipt: RuntimeCommandReceiptProjectionRecord
 ): UserNodeCommandReceiptCliSummary {

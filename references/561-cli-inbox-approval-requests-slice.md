@@ -70,9 +70,9 @@ when a recorded message carries approval metadata.
 
 ## Open Questions
 
-Future participant CLI work may add a similar focused source-review inbox. This
-slice closes the approval-request discovery path first because approval
-responses already have direct signed CLI commands.
+Future participant CLI work may add richer grouped pending-work views. Focused
+source-review discovery is now covered by
+`562-cli-inbox-source-review-requests-slice.md`.
 
 ## Verification
 

@@ -322,6 +322,10 @@ The most accurate current description is:
   `approval.request` messages across projected User Node conversations, with
   compact approval id, operation, and resource metadata for signed
   `approve/reject --from-message` responses;
+- the headless `entangle inbox source-reviews` participant surface now narrows
+  that same recorded-message substrate to approval requests whose resource kind
+  is `source_change_candidate`, matching signed
+  `review-source-candidate --from-message` decisions;
 - the process-runner smoke now proves that User Client wiki publication path
   through a signed builder wiki approval request, the running User Client JSON
   route, a completed projected `runtime.wiki.publish` command receipt, a

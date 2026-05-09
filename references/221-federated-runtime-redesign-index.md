@@ -362,6 +362,7 @@ same-machine slice records.
 - [559-cli-inbox-filter-slice.md](559-cli-inbox-filter-slice.md)
 - [560-cli-inbox-message-filter-slice.md](560-cli-inbox-message-filter-slice.md)
 - [561-cli-inbox-approval-requests-slice.md](561-cli-inbox-approval-requests-slice.md)
+- [562-cli-inbox-source-review-requests-slice.md](562-cli-inbox-source-review-requests-slice.md)
 
 ## Audited Scope
 
@@ -1302,6 +1303,9 @@ source.
 CLI inbox approvals now expose inbound approval-request discovery across
 Host-recorded User Node conversations, including scoped approval metadata and
 event ids for the existing signed approve/reject response commands.
+CLI inbox source-reviews now expose the same discovery path narrowed to
+source-change candidate approval resources, aligning headless participant
+inspection with signed source-review decisions.
 Deterministic runner task memory now also preserves bounded source-change
 candidate ids, status, totals, diff availability, and changed-file summaries
 from the live turn record, and the derived recent-work summary surfaces the

@@ -1,5 +1,13 @@
 # Entangle Wiki Log
 
+## [2026-05-09] cli | Added source review request inbox
+
+Added `references/562-cli-inbox-source-review-requests-slice.md`.
+`entangle inbox source-reviews` now scans Host-recorded User Node conversations
+for inbound approval requests whose resource kind is `source_change_candidate`.
+This gives headless participants the event id and candidate metadata needed by
+the existing signed `review-source-candidate --from-message` command.
+
 ## [2026-05-09] cli | Added approval request inbox
 
 Added `references/561-cli-inbox-approval-requests-slice.md`.

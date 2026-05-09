@@ -1624,6 +1624,10 @@ Current status:
   `approval.request` messages with approval metadata, giving headless User Node
   participants a read-only approval queue before signed `approve/reject
   --from-message` responses;
+- CLI inbox source-reviews now narrows recorded approval requests to
+  `source_change_candidate` resources, giving headless User Node participants a
+  read-only source-review queue before signed
+  `review-source-candidate --from-message` decisions;
 - generated distributed proof kits can now optionally include
   `docker-compose.runners.yml` plus per-runner container entrypoints with
   `--write-runner-compose`, giving operators a same-machine container-boundary

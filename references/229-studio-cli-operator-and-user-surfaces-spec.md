@@ -56,6 +56,10 @@ Recently added:
   for inbound `approval.request` messages with approval metadata, giving
   headless participants the event ids needed by signed `approve/reject
   --from-message` commands.
+- CLI `inbox source-reviews` narrows that same recorded-message substrate to
+  `source_change_candidate` approval resources, giving headless participants
+  the event ids needed by signed `review-source-candidate --from-message`
+  commands.
 - User Client approval controls now render from inbound `approval.request`
   message metadata and publish signed `approval.response` messages through the
   Host User Node gateway.
@@ -203,6 +207,7 @@ CLI has matching headless surfaces:
 - `entangle inbox show <conversationId> --user-node <nodeId>`
   with optional direction, message-type, and limit filters
 - `entangle inbox approvals --user-node <nodeId>`
+- `entangle inbox source-reviews --user-node <nodeId>`
 - `entangle user-nodes clients`
 - `entangle user-nodes assign <nodeId> --runner <runnerId> --revoke-existing`
 - `entangle reply <messageId> "..." --user-node <nodeId>`

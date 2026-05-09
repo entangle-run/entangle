@@ -159,7 +159,9 @@ Node can inspect a bounded participant inbox without changing Host state, while
 message type, and limit for focused thread inspection. `entangle inbox
 approvals` gives the same headless participant a read-only approval-request
 queue with event ids and scoped approval metadata for signed
-`approve/reject --from-message` responses. The
+`approve/reject --from-message` responses, while `entangle inbox
+source-reviews` narrows that queue to source-change candidate review requests
+for signed `review-source-candidate --from-message` decisions. The
 running User Client state also shows its own
 Host-projected `human_interface` runtime assignment, runner, desired/observed
 state, last-seen timestamp, projected client URL, restart generation, and
@@ -674,7 +676,9 @@ This repository currently contains:
   inbox listing able to filter unread conversations, one peer node, and bounded
   result counts, plus CLI inbox detail able to filter recorded messages by
   direction, exact message type, and bounded result counts, plus CLI approval
-  inbox discovery over recorded inbound `approval.request` messages, and CLI
+  inbox discovery over recorded inbound `approval.request` messages, plus CLI
+  source-review inbox discovery for `source_change_candidate` approval
+  resources, and CLI
   approve/reject commands able to derive that context directly from
   Host-recorded inbound approval-request messages through direct User Node
   message lookup;

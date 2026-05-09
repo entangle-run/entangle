@@ -13,6 +13,7 @@ import {
   filterUserConversationsForCli,
   filterUserNodeApprovalMessagesForCli,
   filterUserNodeMessagesForCli,
+  filterUserNodeSourceReviewMessagesForCli,
   filterUserNodeClientSummariesForCli,
   filterUserNodeCommandReceiptsForCli,
   listCurrentUserNodeAssignmentsForCli,
@@ -778,6 +779,85 @@ describe("user node CLI output", () => {
       approvalResourceKind: "source_change_candidate",
       messageType: "approval.request"
     });
+  });
+
+  it("filters source review request messages for the headless User Node inbox", () => {
+    const messages: UserNodeMessageRecord[] = [
+      {
+        approval: {
+          approvalId: "approval-generic-alpha",
+          approverNodeIds: ["user-a"],
+          operation: "tool_execution",
+          resource: {
+            id: "artifact-alpha",
+            kind: "artifact",
+            label: "Artifact alpha"
+          }
+        },
+        artifactRefs: [],
+        conversationId: "conversation-alpha",
+        createdAt: "2026-04-26T12:00:00.000Z",
+        direction: "inbound",
+        eventId:
+          "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        fromNodeId: "worker-it",
+        fromPubkey:
+          "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+        messageType: "approval.request",
+        peerNodeId: "worker-it",
+        publishedRelays: [],
+        relayUrls: [],
+        schemaVersion: "1",
+        sessionId: "session-alpha",
+        summary: "Approve artifact.",
+        toNodeId: "user-a",
+        toPubkey:
+          "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+        turnId: "turn-alpha",
+        userNodeId: "user-a"
+      },
+      {
+        approval: {
+          approvalId: "approval-source-alpha",
+          approverNodeIds: ["user-a"],
+          operation: "source_application",
+          resource: {
+            id: "source-change-alpha",
+            kind: "source_change_candidate",
+            label: "Source change alpha"
+          }
+        },
+        artifactRefs: [],
+        conversationId: "conversation-alpha",
+        createdAt: "2026-04-26T12:01:00.000Z",
+        direction: "inbound",
+        eventId:
+          "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+        fromNodeId: "worker-it",
+        fromPubkey:
+          "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+        messageType: "approval.request",
+        peerNodeId: "worker-it",
+        publishedRelays: [],
+        relayUrls: [],
+        schemaVersion: "1",
+        sessionId: "session-alpha",
+        summary: "Review source.",
+        toNodeId: "user-a",
+        toPubkey:
+          "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+        turnId: "turn-alpha",
+        userNodeId: "user-a"
+      }
+    ];
+
+    expect(
+      filterUserNodeSourceReviewMessagesForCli({ messages }).map(
+        (message) => message.eventId
+      )
+    ).toEqual([
+      "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"
+    ]);
   });
 
   it("builds scoped approval response metadata from CLI options", () => {
