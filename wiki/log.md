@@ -6943,3 +6943,13 @@ export/import.
 The command is read-only and does not require Host state, giving operators the
 same readiness evidence before they attempt a non-dry-run service-volume
 operation.
+
+## [2026-05-09] deployment | Added service-volume maintenance commands
+
+Added `references/592-service-volume-maintenance-command-slice.md`.
+`entangle deployment service-volumes stop-services` and `start-services` now
+plan the Gitea/strfry Docker Compose maintenance commands by default and run
+them only when the operator passes `--apply`.
+
+The helpers keep local service maintenance explicit while leaving the federated
+runtime protocol boundaries unchanged.

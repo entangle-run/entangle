@@ -392,6 +392,7 @@ same-machine slice records.
 - [589-service-volume-quiescing-acknowledgement-slice.md](589-service-volume-quiescing-acknowledgement-slice.md)
 - [590-service-volume-running-container-check-slice.md](590-service-volume-running-container-check-slice.md)
 - [591-service-volume-status-surface-slice.md](591-service-volume-status-surface-slice.md)
+- [592-service-volume-maintenance-command-slice.md](592-service-volume-maintenance-command-slice.md)
 
 ## Audited Scope
 
@@ -1251,6 +1252,9 @@ operations when Docker reports a running container still mounting one of the
 target service volumes. Operators can inspect the same target-volume existence
 and running-container readiness evidence through the read-only
 `deployment service-volumes status` CLI surface before attempting export/import.
+The same service-volume command group now also provides non-mutating
+`stop-services` and `start-services` plans, with actual Docker Compose service
+maintenance requiring `--apply`.
 New Host events now carry optional audit hash-chain fields, and Host serializes
 event appends so concurrent operator requests do not fork the local audit
 sequence. Host now also exposes `GET /v1/events/integrity`, host-client

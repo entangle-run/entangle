@@ -70,6 +70,7 @@ import {
   createDeploymentServiceVolumeExport,
   createDeploymentServiceVolumeImport,
   inspectDeploymentServiceVolumes,
+  planDeploymentServiceVolumeMaintenance,
   restoreDeploymentBackup
 } from "./deployment-backup-command.js";
 import {
@@ -630,6 +631,38 @@ deploymentServiceVolumesCommand
 
     printJson({
       serviceVolumeStatus: summary
+    });
+  });
+
+deploymentServiceVolumesCommand
+  .command("stop-services")
+  .option("--apply", "Execute the Docker Compose stop command.")
+  .description("Plan or stop Gitea and relay services before service-volume export/import.")
+  .action((options: { apply?: boolean }) => {
+    const summary = planDeploymentServiceVolumeMaintenance({
+      action: "stop",
+      apply: options.apply,
+      repositoryRoot
+    });
+
+    printJson({
+      serviceVolumeMaintenance: summary
+    });
+  });
+
+deploymentServiceVolumesCommand
+  .command("start-services")
+  .option("--apply", "Execute the Docker Compose start command.")
+  .description("Plan or start Gitea and relay services after service-volume import/export.")
+  .action((options: { apply?: boolean }) => {
+    const summary = planDeploymentServiceVolumeMaintenance({
+      action: "start",
+      apply: options.apply,
+      repositoryRoot
+    });
+
+    printJson({
+      serviceVolumeMaintenance: summary
     });
   });
 

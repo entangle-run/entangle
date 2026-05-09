@@ -127,6 +127,13 @@ running containers:
 pnpm --filter @entangle/cli dev deployment service-volumes status
 ```
 
+Plan or apply service shutdown before a real service-volume export/import:
+
+```sh
+pnpm --filter @entangle/cli dev deployment service-volumes stop-services
+pnpm --filter @entangle/cli dev deployment service-volumes stop-services --apply
+```
+
 Export the Gitea and strfry volumes into a separate bundle after the services
 have been stopped or otherwise quiesced:
 
@@ -138,6 +145,13 @@ Validate service-volume import commands before restoring the service data:
 
 ```sh
 pnpm --filter @entangle/cli dev deployment service-volumes import entangle-service-volumes --dry-run
+```
+
+Plan or apply service restart after restoring service-volume data:
+
+```sh
+pnpm --filter @entangle/cli dev deployment service-volumes start-services
+pnpm --filter @entangle/cli dev deployment service-volumes start-services --apply
 ```
 
 The service-volume bundle intentionally excludes Host secret state. Keep secret

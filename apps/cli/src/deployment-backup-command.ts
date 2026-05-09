@@ -71,6 +71,16 @@ export interface DeploymentServiceVolumesStatusOptions {
   repositoryRoot: string;
 }
 
+export type DeploymentServiceVolumeMaintenanceAction = "start" | "stop";
+
+export interface DeploymentServiceVolumeMaintenanceOptions {
+  action: DeploymentServiceVolumeMaintenanceAction;
+  apply?: boolean | undefined;
+  commandRunner?: DeploymentServiceVolumeCommandRunner | undefined;
+  now?: (() => Date) | undefined;
+  repositoryRoot: string;
+}
+
 export interface DeploymentBackupCopyStats {
   bytes: number;
   directories: number;
@@ -208,6 +218,15 @@ export interface DeploymentServiceVolumesStatusSummary {
   volumes: DeploymentServiceVolumeStatusEntry[];
 }
 
+export interface DeploymentServiceVolumeMaintenanceSummary {
+  action: DeploymentServiceVolumeMaintenanceAction;
+  applied: boolean;
+  command: string[];
+  generatedAt: string;
+  serviceNames: string[];
+  status: "applied" | "planned";
+}
+
 export interface DeploymentServiceVolumeOperationSummary {
   createdAt: string;
   dockerImage: string;
@@ -232,6 +251,9 @@ const backupConfigPath = "config";
 const hostStateRelativePath = ".entangle/host";
 const secretsPath = ".entangle-secrets";
 const defaultServiceVolumeDockerImage = "alpine:3.20";
+const federatedDevProfileComposeFile =
+  "deploy/federated-dev/compose/docker-compose.federated-dev.yml";
+const serviceVolumeMaintenanceServiceNames = ["gitea", "strfry"] as const;
 const excludedExternalVolumes = [
   {
     mountPath: "/data",
@@ -701,6 +723,18 @@ function buildServiceVolumeInspectArgs(volume: string): string[] {
   return ["volume", "inspect", volume];
 }
 
+function buildServiceVolumeMaintenanceArgs(
+  action: DeploymentServiceVolumeMaintenanceAction
+): string[] {
+  const prefix = ["compose", "-f", federatedDevProfileComposeFile];
+
+  if (action === "stop") {
+    return [...prefix, "stop", ...serviceVolumeMaintenanceServiceNames];
+  }
+
+  return [...prefix, "up", "-d", ...serviceVolumeMaintenanceServiceNames];
+}
+
 function buildServiceVolumeQuiescenceArgs(volume: string): string[] {
   return ["ps", "--filter", `volume=${volume}`, "--format", "{{.Names}}"];
 }
@@ -900,6 +934,34 @@ export function inspectDeploymentServiceVolumes(
     status: readyForExportImport ? "ready" : "blocked",
     volumeCount: volumes.length,
     volumes
+  };
+}
+
+export function planDeploymentServiceVolumeMaintenance(
+  options: DeploymentServiceVolumeMaintenanceOptions
+): DeploymentServiceVolumeMaintenanceSummary {
+  const commandRunner = options.commandRunner ?? defaultCommandRunner;
+  const args = buildServiceVolumeMaintenanceArgs(options.action);
+
+  if (options.apply) {
+    const result = commandRunner("docker", args, {
+      cwd: options.repositoryRoot
+    });
+
+    if (result.status !== 0 || result.error || result.signal) {
+      throw new Error(
+        `Service-volume ${options.action} command failed: ${normalizeCommandResult(result)}`
+      );
+    }
+  }
+
+  return {
+    action: options.action,
+    applied: Boolean(options.apply),
+    command: ["docker", ...args],
+    generatedAt: (options.now ?? (() => new Date()))().toISOString(),
+    serviceNames: [...serviceVolumeMaintenanceServiceNames],
+    status: options.apply ? "applied" : "planned"
   };
 }
 

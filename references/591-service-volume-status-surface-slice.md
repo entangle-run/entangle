@@ -76,6 +76,9 @@ behavior is unchanged.
 
 Future work should add guided service stop/start orchestration and post-import
 service health validation after restored services are restarted.
+`references/592-service-volume-maintenance-command-slice.md` adds the first
+guided local stop/start command wrapper; post-start health validation remains
+open.
 
 ## Verification
 

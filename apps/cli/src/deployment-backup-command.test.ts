@@ -7,6 +7,7 @@ import {
   createDeploymentServiceVolumeExport,
   createDeploymentServiceVolumeImport,
   inspectDeploymentServiceVolumes,
+  planDeploymentServiceVolumeMaintenance,
   restoreDeploymentBackup
 } from "./deployment-backup-command.js";
 
@@ -646,5 +647,71 @@ describe("deployment backup command helpers", () => {
       ["volume", "inspect", "strfry-data"],
       ["ps", "--filter", "volume=strfry-data", "--format", "{{.Names}}"]
     ]);
+  });
+
+  it("plans service-volume service stop without executing Docker Compose", async () => {
+    const commandCalls: Array<{ args: string[]; command: string }> = [];
+    const summary = planDeploymentServiceVolumeMaintenance({
+      action: "stop",
+      commandRunner: (command, args) => {
+        commandCalls.push({ args, command });
+        throw new Error("Docker Compose must not run during planning.");
+      },
+      repositoryRoot: await createTempRoot("entangle-service-volume-stop-plan-")
+    });
+
+    expect(commandCalls).toEqual([]);
+    expect(summary).toMatchObject({
+      action: "stop",
+      applied: false,
+      status: "planned"
+    });
+    expect(summary.command).toEqual([
+      "docker",
+      "compose",
+      "-f",
+      "deploy/federated-dev/compose/docker-compose.federated-dev.yml",
+      "stop",
+      "gitea",
+      "strfry"
+    ]);
+  });
+
+  it("applies service-volume service start through Docker Compose", async () => {
+    const commandCalls: Array<{ args: string[]; command: string }> = [];
+    const summary = planDeploymentServiceVolumeMaintenance({
+      action: "start",
+      apply: true,
+      commandRunner: (command, args) => {
+        commandCalls.push({ args, command });
+        return {
+          signal: null,
+          status: 0,
+          stderr: "",
+          stdout: "started\n"
+        };
+      },
+      repositoryRoot: await createTempRoot("entangle-service-volume-start-apply-")
+    });
+
+    expect(commandCalls).toEqual([
+      {
+        args: [
+          "compose",
+          "-f",
+          "deploy/federated-dev/compose/docker-compose.federated-dev.yml",
+          "up",
+          "-d",
+          "gitea",
+          "strfry"
+        ],
+        command: "docker"
+      }
+    ]);
+    expect(summary).toMatchObject({
+      action: "start",
+      applied: true,
+      status: "applied"
+    });
   });
 });
