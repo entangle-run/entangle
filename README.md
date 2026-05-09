@@ -1214,7 +1214,9 @@ This repository currently contains:
   state-layout compatibility checks; the federated dev Compose profile now
   gives those service volumes stable explicit names and doctor warns when older
   Compose-prefixed service volumes are present, while repair reports those
-  previous service volumes as manual migration actions;
+  previous service volumes as manual migration actions; Gitea and strfry
+  service volumes now also have separate service-volume export/import bundle
+  paths with dry-run Docker command planning;
 - a first conservative same-machine repair command through `entangle deployment repair`,
   defaulting to dry-run previews and applying only safe host-state
   initialization, missing layout-marker, or missing standard host-state
@@ -1689,7 +1691,9 @@ This repository currently contains:
   secrets, while `entangle deployment repair` provides a dry-run-first conservative
   repair surface for safe host-state initialization, missing layout-marker
   recovery, missing standard host-state directory recovery, and manual
-  previous service-volume migration planning;
+  previous service-volume migration planning, and `entangle deployment
+  service-volumes export/import` provides a separate Gitea/relay service-volume
+  bundle path for non-disposable profiles;
 - the next bounded Studio completion slice where the operator can now select
   one runtime-scoped session summary and inspect host-backed per-node session
   detail without widening the host API or inventing client-owned session
@@ -1799,8 +1803,10 @@ The highest-value remaining gaps are:
   Authority-signed integrity report, typed audit-bundle export, and CLI file
   handoff;
 - stronger end-to-end deployment and integration hardening beyond the current
-  disposable same-machine profile, especially infrastructure-backed
-  multi-machine proof execution and non-disposable upgrade/repair behavior.
+  disposable same-machine profile and first service-volume export/import path,
+  especially infrastructure-backed multi-machine proof execution,
+  service-aware quiescing/health checks, and non-disposable upgrade/repair
+  behavior.
 
 The repository should be treated as a live design baseline rather than as a static document dump. Each substantial interaction with the project should begin with a lightweight audit loop:
 

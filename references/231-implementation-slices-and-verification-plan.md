@@ -1566,6 +1566,10 @@ Current status:
   volumes are present; `entangle deployment repair` now turns those warnings
   into manual repair actions so operators see the required service-data
   migration in dry-run and `--apply-safe` reports without automatic mutation;
+- `entangle deployment service-volumes export/import` now provides a separate
+  dry-run-capable service-volume bundle path for Gitea and strfry state, using
+  a typed `entangle-service-volume-backup` manifest while keeping Host secret
+  state excluded;
 - Host event records now include optional audit hash-chain fields, Host event
   appends are serialized to preserve chain order, and CLI runtime-trace
   summaries expose the hashes when present; Host, host-client, and CLI now

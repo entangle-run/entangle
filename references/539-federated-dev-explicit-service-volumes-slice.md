@@ -66,8 +66,10 @@ volume names before treating the profile as non-disposable.
 
 ## Open Questions
 
-Future work should add service-level backup/export commands for Gitea and relay
-state. This slice only makes the names stable and observable.
+`references/586-service-volume-export-import-slice.md` adds the first
+service-level export/import commands for Gitea and relay state. This slice's
+remaining follow-up is service-aware quiescing and upgrade validation, not
+volume-name observability.
 
 ## Verification
 

@@ -114,6 +114,28 @@ If an older profile still has `compose_gitea-data` or `compose_strfry-data`,
 copy that service data into `gitea-data` or `strfry-data` before treating the
 profile as non-disposable.
 
+Plan a separate Gitea/relay service-volume export without executing Docker:
+
+```sh
+pnpm --filter @entangle/cli dev deployment service-volumes export --dry-run
+```
+
+Export the Gitea and strfry volumes into a separate bundle after the services
+have been stopped or otherwise quiesced:
+
+```sh
+pnpm --filter @entangle/cli dev deployment service-volumes export --output entangle-service-volumes
+```
+
+Validate service-volume import commands before restoring the service data:
+
+```sh
+pnpm --filter @entangle/cli dev deployment service-volumes import entangle-service-volumes --dry-run
+```
+
+The service-volume bundle intentionally excludes Host secret state. Keep secret
+backup, restore, and rotation as a separate operator policy.
+
 Validate a restore without changing Entangle state:
 
 ```sh

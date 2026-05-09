@@ -1368,6 +1368,9 @@ The repository now also contains the first real implementation baseline:
   profile now gives those service volumes stable explicit names, and doctor
   warns when older Compose-prefixed service volumes are present; repair now
   surfaces those previous service volumes as manual migration actions;
+  `entangle deployment service-volumes export/import` now provides a separate
+  dry-run-capable Gitea/relay volume bundle path while still excluding Host
+  secret state;
 - an active same-machine profile smoke through `pnpm ops:smoke-federated-dev`, covering
   running Compose services, the local runner image, host status/events, Studio
   HTTP, Gitea HTTP reachability, and the local `strfry` Nostr WebSocket
@@ -1524,8 +1527,9 @@ The current implementation-truth audit now lives in
   the next git gaps are richer collaborative wiki merge UI beyond the first
   conflict recovery paths, repository
   lifecycle behavior, and explicit fallback or replication behavior,
-  while the next deployment-grade gap is
-  non-disposable profile upgrade behavior for older Gitea volumes;
+  while the next deployment-grade gap is service-aware quiescing,
+  post-import health checks, and non-disposable profile upgrade behavior for
+  older Gitea volumes;
 - complete CLI parity where it adds real headless operational value;
 - continue narrowing the remaining delegated-session gaps now that controlled
   autonomous `task.handoff` emission and runner-local active-conversation

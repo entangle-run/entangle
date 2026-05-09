@@ -51,8 +51,10 @@ remain compatible.
 
 ## Open Questions
 
-Future work should add service-specific external volume backup and restore
-procedures instead of only exposing inventory.
+`references/586-service-volume-export-import-slice.md` adds the first
+service-specific external volume export/import procedure. Future work should
+add service-aware quiescing and post-import validation instead of treating the
+tar bundle as a full upgrade workflow.
 
 ## Verification
 

@@ -68,8 +68,10 @@ rerun doctor before treating the profile as non-disposable.
 
 ## Open Questions
 
-Future service-level export/import tooling should own safe migration of Gitea
-and relay state. This slice only makes the current manual obligation visible.
+`references/586-service-volume-export-import-slice.md` adds first service-level
+export/import tooling for Gitea and relay state. This slice still intentionally
+keeps previous-volume migration as a manual repair action until Entangle has
+service-aware quiescing, import health checks, and guided upgrade validation.
 
 ## Verification
 

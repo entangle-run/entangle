@@ -59,9 +59,10 @@ with a fallback warning.
 
 ## Open Questions
 
-A future non-disposable upgrade path should add service-specific backup and
-restore procedures for Gitea and relay data instead of only recording excluded
-volume names.
+`references/586-service-volume-export-import-slice.md` adds the first
+service-specific export/import path for Gitea and relay volumes. Future
+non-disposable upgrade work should add service-aware quiescing, health checks,
+and guided migration for older service data.
 
 ## Verification
 

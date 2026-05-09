@@ -6880,3 +6880,14 @@ The provider smoke now verifies scripted assistant text, scripted function
 tool-call output, scripted final text, and scripted Responses API output
 without live model credentials, while the existing deterministic default and
 single built-in tool-call mode remain available.
+
+## [2026-05-09] deployment | Added service-volume export/import bundles
+
+Added `references/586-service-volume-export-import-slice.md`.
+`entangle deployment service-volumes export` and `entangle deployment
+service-volumes import` now provide a separate dry-run-capable bundle path for
+Gitea and strfry volumes.
+
+The service-volume bundle uses a typed `entangle-service-volume-backup`
+manifest, executes through Docker by default, keeps Host secret state excluded,
+and exposes deterministic command plans for non-disposable profile operations.

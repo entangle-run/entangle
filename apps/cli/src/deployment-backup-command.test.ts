@@ -4,6 +4,8 @@ import path from "node:path";
 import { afterEach, describe, expect, it } from "vitest";
 import {
   createDeploymentBackup,
+  createDeploymentServiceVolumeExport,
+  createDeploymentServiceVolumeImport,
   restoreDeploymentBackup
 } from "./deployment-backup-command.js";
 
@@ -260,5 +262,162 @@ describe("deployment backup command helpers", () => {
         repositoryRoot: targetRepositoryRoot
       })
     ).rejects.toThrow("unsupported_future");
+  });
+
+  it("plans service-volume export without executing Docker in dry-run mode", async () => {
+    const outputPath = path.join(
+      await createTempRoot("entangle-service-volume-export-"),
+      "bundle"
+    );
+    const commandCalls: Array<{ args: string[]; command: string }> = [];
+
+    const summary = await createDeploymentServiceVolumeExport({
+      commandRunner: (command, args) => {
+        commandCalls.push({ args, command });
+        return {
+          signal: null,
+          status: 0,
+          stderr: "",
+          stdout: ""
+        };
+      },
+      dryRun: true,
+      now: () => new Date("2026-05-09T00:00:00.000Z"),
+      outputPath,
+      repositoryRoot: await createTempRoot("entangle-service-volume-repo-")
+    });
+
+    expect(commandCalls).toEqual([]);
+    expect(summary).toMatchObject({
+      createdAt: "2026-05-09T00:00:00.000Z",
+      dryRun: true,
+      exported: false,
+      secretVolumeIncluded: false,
+      volumeCount: 2
+    });
+    expect(summary.volumes.map((volume) => volume.volume)).toEqual([
+      "gitea-data",
+      "strfry-data"
+    ]);
+    expect(summary.volumes.every((volume) => volume.status === "planned")).toBe(
+      true
+    );
+  });
+
+  it("exports service volumes with deterministic Docker archive commands and manifest", async () => {
+    const outputPath = path.join(
+      await createTempRoot("entangle-service-volume-export-real-"),
+      "bundle"
+    );
+    const commandCalls: Array<{ args: string[]; command: string }> = [];
+
+    const summary = await createDeploymentServiceVolumeExport({
+      commandRunner: (command, args) => {
+        commandCalls.push({ args, command });
+        return {
+          signal: null,
+          status: 0,
+          stderr: "",
+          stdout: ""
+        };
+      },
+      now: () => new Date("2026-05-09T00:00:00.000Z"),
+      outputPath,
+      repositoryRoot: await createTempRoot("entangle-service-volume-repo-real-")
+    });
+
+    expect(summary).toMatchObject({
+      dryRun: false,
+      exported: true,
+      volumeCount: 2
+    });
+    expect(commandCalls).toHaveLength(2);
+    expect(commandCalls[0]).toMatchObject({
+      command: "docker"
+    });
+    expect(commandCalls[0]?.args).toEqual(
+      expect.arrayContaining([
+        "run",
+        "--rm",
+        "-v",
+        "gitea-data:/volume:ro",
+        "-v",
+        `${outputPath}:/backup`
+      ])
+    );
+    expect(commandCalls[0]?.args.at(-1)).toBe(
+      "cd /volume && tar -cf /backup/gitea-data.tar ."
+    );
+
+    expect(await readJson(path.join(outputPath, "manifest.json"))).toMatchObject({
+      product: "entangle-service-volume-backup",
+      schemaVersion: "1",
+      secretsIncluded: false,
+      volumes: [
+        {
+          archivePath: "gitea-data.tar",
+          service: "gitea",
+          volume: "gitea-data"
+        },
+        {
+          archivePath: "strfry-data.tar",
+          service: "strfry",
+          volume: "strfry-data"
+        }
+      ]
+    });
+  });
+
+  it("plans service-volume import from a validated manifest without executing Docker", async () => {
+    const bundleRoot = path.join(
+      await createTempRoot("entangle-service-volume-import-"),
+      "bundle"
+    );
+    await writeJson(path.join(bundleRoot, "manifest.json"), {
+      createdAt: "2026-05-09T00:00:00.000Z",
+      dockerImage: "alpine:3.20",
+      product: "entangle-service-volume-backup",
+      schemaVersion: "1",
+      secretsIncluded: false,
+      volumes: [
+        {
+          archivePath: "gitea-data.tar",
+          mountPath: "/data",
+          service: "gitea",
+          volume: "gitea-data"
+        }
+      ]
+    });
+    await writeText(path.join(bundleRoot, "gitea-data.tar"), "tar-bytes");
+
+    const commandCalls: Array<{ args: string[]; command: string }> = [];
+    const summary = await createDeploymentServiceVolumeImport({
+      commandRunner: (command, args) => {
+        commandCalls.push({ args, command });
+        return {
+          signal: null,
+          status: 0,
+          stderr: "",
+          stdout: ""
+        };
+      },
+      dryRun: true,
+      inputPath: bundleRoot,
+      now: () => new Date("2026-05-09T00:00:00.000Z"),
+      repositoryRoot: await createTempRoot("entangle-service-volume-import-repo-")
+    });
+
+    expect(commandCalls).toEqual([]);
+    expect(summary).toMatchObject({
+      dryRun: true,
+      imported: false,
+      secretVolumeIncluded: false,
+      volumeCount: 1
+    });
+    expect(summary.volumes[0]).toMatchObject({
+      archivePath: path.join(bundleRoot, "gitea-data.tar"),
+      status: "planned",
+      volume: "gitea-data"
+    });
   });
 });

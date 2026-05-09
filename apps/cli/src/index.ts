@@ -67,6 +67,8 @@ import {
 import { buildDeploymentDiagnosticsBundle } from "./deployment-diagnostics-bundle-command.js";
 import {
   createDeploymentBackup,
+  createDeploymentServiceVolumeExport,
+  createDeploymentServiceVolumeImport,
   restoreDeploymentBackup
 } from "./deployment-backup-command.js";
 import {
@@ -609,6 +611,69 @@ deploymentCommand
 
       printJson({
         restore: summary
+      });
+    }
+  );
+
+const deploymentServiceVolumesCommand = deploymentCommand
+  .command("service-volumes")
+  .description("Export or import Entangle service-owned deployment volumes.");
+
+deploymentServiceVolumesCommand
+  .command("export")
+  .option("--docker-image <image>", "Utility image used for tar operations.", "alpine:3.20")
+  .option("--dry-run", "Plan Docker archive commands without executing them.")
+  .option("--force", "Replace an existing service-volume backup output directory.")
+  .option(
+    "--output <path>",
+    "Service-volume backup bundle output directory.",
+    "entangle-service-volumes"
+  )
+  .description("Export Gitea and relay service volumes into a service-volume backup bundle.")
+  .action(
+    async (options: {
+      dockerImage: string;
+      dryRun?: boolean;
+      force?: boolean;
+      output: string;
+    }) => {
+      const summary = await createDeploymentServiceVolumeExport({
+        dockerImage: options.dockerImage,
+        dryRun: options.dryRun,
+        force: options.force,
+        outputPath: resolveCliPath(options.output),
+        repositoryRoot
+      });
+
+      printJson({
+        serviceVolumeExport: summary
+      });
+    }
+  );
+
+deploymentServiceVolumesCommand
+  .command("import")
+  .argument("<bundle>", "Path to an Entangle service-volume backup bundle directory.")
+  .option("--docker-image <image>", "Override the utility image used for tar operations.")
+  .option("--dry-run", "Plan Docker restore commands without executing them.")
+  .description("Import Gitea and relay service volumes from a service-volume backup bundle.")
+  .action(
+    async (
+      bundle: string,
+      options: {
+        dockerImage?: string;
+        dryRun?: boolean;
+      }
+    ) => {
+      const summary = await createDeploymentServiceVolumeImport({
+        dockerImage: options.dockerImage,
+        dryRun: options.dryRun,
+        inputPath: resolveCliPath(bundle),
+        repositoryRoot
+      });
+
+      printJson({
+        serviceVolumeImport: summary
       });
     }
   );

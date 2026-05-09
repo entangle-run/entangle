@@ -386,6 +386,7 @@ same-machine slice records.
 - [583-operator-token-file-configuration-slice.md](583-operator-token-file-configuration-slice.md)
 - [584-external-http-agent-engine-health-url-slice.md](584-external-http-agent-engine-health-url-slice.md)
 - [585-fake-openai-scripted-provider-slice.md](585-fake-openai-scripted-provider-slice.md)
+- [586-service-volume-export-import-slice.md](586-service-volume-export-import-slice.md)
 
 ## Audited Scope
 
@@ -1232,7 +1233,10 @@ known excluded external service volumes for Gitea, strfry, and Host secret
 state, and restore warnings print that inventory so non-disposable service
 state is explicit. Backup command summaries also include
 `externalVolumeCount` so operators can see that inventory exists without
-opening the manifest.
+opening the manifest. Gitea and strfry service volumes now also have a
+separate `entangle-service-volume-backup` bundle path through deployment
+service-volume export/import commands, with dry-run Docker command planning and
+Host secret state still excluded by default.
 New Host events now carry optional audit hash-chain fields, and Host serializes
 event appends so concurrent operator requests do not fork the local audit
 sequence. Host now also exposes `GET /v1/events/integrity`, host-client
@@ -1439,6 +1443,7 @@ queue, richer collaborative wiki merge UI beyond the first conflict-to-patch
 draft recovery path on top of the participant-scoped page upsert and patch-set
 commands,
 repository lifecycle and replicated/fallback artifact behavior,
-infrastructure-backed multi-machine proof execution, non-disposable upgrade
-behavior, external audit retention, and deeper production identity and
-authorization beyond the scoped and expiry-aware bootstrap-token boundary.
+infrastructure-backed multi-machine proof execution, service-aware
+quiescing/health checks and non-disposable upgrade behavior, external audit
+retention, and deeper production identity and authorization beyond the scoped
+and expiry-aware bootstrap-token boundary.

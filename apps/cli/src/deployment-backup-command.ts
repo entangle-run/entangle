@@ -9,6 +9,7 @@ import {
   symlink,
   writeFile
 } from "node:fs/promises";
+import { spawnSync, type SpawnSyncReturns } from "node:child_process";
 import path from "node:path";
 import {
   currentStateLayoutVersion,
@@ -27,6 +28,36 @@ export interface DeploymentBackupOptions {
 export interface DeploymentRestoreOptions {
   dryRun?: boolean | undefined;
   force?: boolean | undefined;
+  inputPath: string;
+  now?: (() => Date) | undefined;
+  repositoryRoot: string;
+}
+
+type DeploymentServiceVolumeCommandResult = Pick<
+  SpawnSyncReturns<string>,
+  "error" | "signal" | "status" | "stderr" | "stdout"
+>;
+
+type DeploymentServiceVolumeCommandRunner = (
+  command: string,
+  args: string[],
+  options: { cwd: string }
+) => DeploymentServiceVolumeCommandResult;
+
+export interface DeploymentServiceVolumeExportOptions {
+  commandRunner?: DeploymentServiceVolumeCommandRunner | undefined;
+  dockerImage?: string | undefined;
+  dryRun?: boolean | undefined;
+  force?: boolean | undefined;
+  now?: (() => Date) | undefined;
+  outputPath: string;
+  repositoryRoot: string;
+}
+
+export interface DeploymentServiceVolumeImportOptions {
+  commandRunner?: DeploymentServiceVolumeCommandRunner | undefined;
+  dockerImage?: string | undefined;
+  dryRun?: boolean | undefined;
   inputPath: string;
   now?: (() => Date) | undefined;
   repositoryRoot: string;
@@ -104,11 +135,58 @@ export interface DeploymentRestoreSummary {
   warnings: string[];
 }
 
+export interface DeploymentServiceVolumeManifest {
+  createdAt: string;
+  dockerImage: string;
+  product: "entangle-service-volume-backup";
+  schemaVersion: "1";
+  secretsIncluded: false;
+  volumes: DeploymentServiceVolumeManifestEntry[];
+}
+
+export interface DeploymentServiceVolumeManifestEntry {
+  archivePath: string;
+  mountPath: string;
+  service: string;
+  volume: string;
+}
+
+export type DeploymentServiceVolumeOperationStatus =
+  | "exported"
+  | "imported"
+  | "planned";
+
+export interface DeploymentServiceVolumeOperationEntry {
+  archivePath: string;
+  archiveRelativePath: string;
+  command: string[];
+  mountPath: string;
+  service: string;
+  status: DeploymentServiceVolumeOperationStatus;
+  volume: string;
+}
+
+export interface DeploymentServiceVolumeOperationSummary {
+  createdAt: string;
+  dockerImage: string;
+  dryRun: boolean;
+  exported?: boolean | undefined;
+  imported?: boolean | undefined;
+  inputPath?: string | undefined;
+  manifestPath: string;
+  outputPath?: string | undefined;
+  secretVolumeIncluded: false;
+  volumeCount: number;
+  volumes: DeploymentServiceVolumeOperationEntry[];
+}
+
 const manifestFileName = "manifest.json";
+const serviceVolumeManifestFileName = "manifest.json";
 const backupStatePath = "state/host";
 const backupConfigPath = "config";
 const hostStateRelativePath = ".entangle/host";
 const secretsPath = ".entangle-secrets";
+const defaultServiceVolumeDockerImage = "alpine:3.20";
 const excludedExternalVolumes = [
   {
     mountPath: "/data",
@@ -126,6 +204,20 @@ const excludedExternalVolumes = [
     volume: "entangle-secret-state"
   }
 ] as const;
+const backupServiceVolumes = [
+  {
+    archivePath: "gitea-data.tar",
+    mountPath: "/data",
+    service: "gitea",
+    volume: "gitea-data"
+  },
+  {
+    archivePath: "strfry-data.tar",
+    mountPath: "/app/strfry-db",
+    service: "strfry",
+    volume: "strfry-data"
+  }
+] as const satisfies readonly DeploymentServiceVolumeManifestEntry[];
 
 const deploymentBackupConfigPaths = [
   "package.json",
@@ -196,6 +288,15 @@ function resolveSafeBundlePath(bundleRoot: string, relativePath: string): string
   }
 
   return path.resolve(bundleRoot, relativePath);
+}
+
+function isSafeServiceVolumeArchivePath(inputPath: string): boolean {
+  return (
+    isSafeRelativePath(inputPath) &&
+    inputPath
+      .split(/[\\/]+/u)
+      .every((segment) => /^[0-9A-Za-z._-]+$/u.test(segment))
+  );
 }
 
 function classifyStateLayoutRecord(
@@ -419,6 +520,158 @@ function validateBackupManifest(rawManifest: unknown): DeploymentBackupManifest 
   return manifest as DeploymentBackupManifest;
 }
 
+function validateServiceVolumeManifest(rawManifest: unknown): DeploymentServiceVolumeManifest {
+  if (!rawManifest || typeof rawManifest !== "object") {
+    throw new Error("Service volume backup manifest is not a JSON object.");
+  }
+
+  const manifest = rawManifest as Partial<DeploymentServiceVolumeManifest>;
+  if (
+    manifest.schemaVersion !== "1" ||
+    manifest.product !== "entangle-service-volume-backup"
+  ) {
+    throw new Error(
+      "Manifest is not an Entangle service-volume backup manifest."
+    );
+  }
+
+  if (manifest.secretsIncluded !== false) {
+    throw new Error("Service volume backup manifest must explicitly exclude secrets.");
+  }
+
+  if (!Array.isArray(manifest.volumes) || manifest.volumes.length === 0) {
+    throw new Error("Service volume backup manifest does not contain volumes.");
+  }
+
+  for (const [index, volume] of manifest.volumes.entries()) {
+    if (
+      typeof volume?.service !== "string" ||
+      typeof volume.volume !== "string" ||
+      typeof volume.mountPath !== "string" ||
+      typeof volume.archivePath !== "string"
+    ) {
+      throw new Error(
+        `Service volume backup manifest volume ${index} is incomplete.`
+      );
+    }
+
+    if (!isSafeServiceVolumeArchivePath(volume.archivePath)) {
+      throw new Error(
+        `Service volume backup manifest volume ${index} has unsafe archive path '${volume.archivePath}'.`
+      );
+    }
+  }
+
+  return {
+    createdAt:
+      typeof manifest.createdAt === "string"
+        ? manifest.createdAt
+        : new Date(0).toISOString(),
+    dockerImage:
+      typeof manifest.dockerImage === "string" && manifest.dockerImage
+        ? manifest.dockerImage
+        : defaultServiceVolumeDockerImage,
+    product: "entangle-service-volume-backup",
+    schemaVersion: "1",
+    secretsIncluded: false,
+    volumes: manifest.volumes
+  };
+}
+
+function defaultCommandRunner(
+  command: string,
+  args: string[],
+  options: { cwd: string }
+): DeploymentServiceVolumeCommandResult {
+  return spawnSync(command, args, {
+    cwd: options.cwd,
+    encoding: "utf8"
+  });
+}
+
+function normalizeCommandResult(result: DeploymentServiceVolumeCommandResult): string {
+  const stderr = (result.stderr ?? "").trim();
+  const stdout = (result.stdout ?? "").trim();
+  const output =
+    result.status === 0 || stderr.length === 0
+      ? `${stdout}${stderr}`.trim()
+      : stderr;
+
+  if (output.length > 0) {
+    return output.split("\n")[0] ?? output;
+  }
+
+  if (result.error) {
+    return result.error.message;
+  }
+
+  if (result.signal) {
+    return `terminated by ${result.signal}`;
+  }
+
+  return "no output";
+}
+
+function buildServiceVolumeExportArgs(input: {
+  archivePath: string;
+  dockerImage: string;
+  outputPath: string;
+  volume: string;
+}): string[] {
+  return [
+    "run",
+    "--rm",
+    "-v",
+    `${input.volume}:/volume:ro`,
+    "-v",
+    `${input.outputPath}:/backup`,
+    input.dockerImage,
+    "sh",
+    "-c",
+    `cd /volume && tar -cf /backup/${input.archivePath} .`
+  ];
+}
+
+function buildServiceVolumeImportArgs(input: {
+  archivePath: string;
+  dockerImage: string;
+  inputPath: string;
+  volume: string;
+}): string[] {
+  return [
+    "run",
+    "--rm",
+    "-v",
+    `${input.volume}:/volume`,
+    "-v",
+    `${input.inputPath}:/backup:ro`,
+    input.dockerImage,
+    "sh",
+    "-c",
+    `cd /volume && tar -xf /backup/${input.archivePath}`
+  ];
+}
+
+function runServiceVolumeDockerCommand(input: {
+  args: string[];
+  commandRunner: DeploymentServiceVolumeCommandRunner;
+  operation: "export" | "import";
+  repositoryRoot: string;
+  volume: string;
+}): void {
+  const result = input.commandRunner("docker", input.args, {
+    cwd: input.repositoryRoot
+  });
+
+  if (result.status === 0 && !result.error && !result.signal) {
+    return;
+  }
+
+  throw new Error(
+    `Service volume ${input.operation} for '${input.volume}' failed: ${normalizeCommandResult(result)}`
+  );
+}
+
 function formatExternalVolumeWarning(
   volumes: DeploymentBackupManifest["exclusions"]["externalVolumes"] | undefined
 ): string {
@@ -528,6 +781,86 @@ export async function createDeploymentBackup(
   };
 }
 
+export async function createDeploymentServiceVolumeExport(
+  options: DeploymentServiceVolumeExportOptions
+): Promise<DeploymentServiceVolumeOperationSummary> {
+  const createdAt = (options.now ?? (() => new Date()))().toISOString();
+  const outputPath = path.resolve(options.outputPath);
+  const manifestPath = path.join(outputPath, serviceVolumeManifestFileName);
+  const dockerImage = options.dockerImage ?? defaultServiceVolumeDockerImage;
+  const dryRun = Boolean(options.dryRun);
+  const commandRunner = options.commandRunner ?? defaultCommandRunner;
+
+  if (!dryRun && (await pathExists(outputPath))) {
+    if (!options.force) {
+      throw new Error(
+        `Service volume backup output path '${outputPath}' already exists. Use --force to replace it.`
+      );
+    }
+
+    await rm(outputPath, { force: true, recursive: true });
+  }
+
+  if (!dryRun) {
+    await mkdir(outputPath, { recursive: true });
+  }
+
+  const volumes: DeploymentServiceVolumeOperationEntry[] = backupServiceVolumes.map(
+    (volume) => {
+      const args = buildServiceVolumeExportArgs({
+        archivePath: volume.archivePath,
+        dockerImage,
+        outputPath,
+        volume: volume.volume
+      });
+
+      return {
+        archivePath: path.join(outputPath, volume.archivePath),
+        archiveRelativePath: volume.archivePath,
+        command: ["docker", ...args],
+        mountPath: volume.mountPath,
+        service: volume.service,
+        status: dryRun ? "planned" : "exported",
+        volume: volume.volume
+      };
+    }
+  );
+
+  if (!dryRun) {
+    for (const volume of volumes) {
+      runServiceVolumeDockerCommand({
+        args: volume.command.slice(1),
+        commandRunner,
+        operation: "export",
+        repositoryRoot: options.repositoryRoot,
+        volume: volume.volume
+      });
+    }
+
+    const manifest: DeploymentServiceVolumeManifest = {
+      createdAt,
+      dockerImage,
+      product: "entangle-service-volume-backup",
+      schemaVersion: "1",
+      secretsIncluded: false,
+      volumes: backupServiceVolumes.map((volume) => ({ ...volume }))
+    };
+    await writeJsonFile(manifestPath, manifest);
+  }
+
+  return {
+    createdAt,
+    dockerImage,
+    dryRun,
+    exported: !dryRun,
+    manifestPath,
+    outputPath,
+    secretVolumeIncluded: false,
+    volumeCount: volumes.length,
+    volumes
+  };
+}
+
 export async function restoreDeploymentBackup(
   options: DeploymentRestoreOptions
 ): Promise<DeploymentRestoreSummary> {
@@ -584,5 +917,70 @@ export async function restoreDeploymentBackup(
     stateStats: manifest.state.stats,
     targetPath,
     warnings
+  };
+}
+
+export async function createDeploymentServiceVolumeImport(
+  options: DeploymentServiceVolumeImportOptions
+): Promise<DeploymentServiceVolumeOperationSummary> {
+  const inspectedAt = (options.now ?? (() => new Date()))().toISOString();
+  const inputPath = path.resolve(options.inputPath);
+  const manifestPath = path.join(inputPath, serviceVolumeManifestFileName);
+  const manifest = validateServiceVolumeManifest(await readJsonFile(manifestPath));
+  const dockerImage = options.dockerImage ?? manifest.dockerImage;
+  const dryRun = Boolean(options.dryRun);
+  const commandRunner = options.commandRunner ?? defaultCommandRunner;
+  const volumes: DeploymentServiceVolumeOperationEntry[] = manifest.volumes.map(
+    (volume) => {
+      const archivePath = resolveSafeBundlePath(inputPath, volume.archivePath);
+      const args = buildServiceVolumeImportArgs({
+        archivePath: volume.archivePath,
+        dockerImage,
+        inputPath,
+        volume: volume.volume
+      });
+
+      return {
+        archivePath,
+        archiveRelativePath: volume.archivePath,
+        command: ["docker", ...args],
+        mountPath: volume.mountPath,
+        service: volume.service,
+        status: dryRun ? "planned" : "imported",
+        volume: volume.volume
+      };
+    }
+  );
+
+  for (const volume of volumes) {
+    if (!(await pathExists(volume.archivePath))) {
+      throw new Error(
+        `Service volume backup archive '${volume.archivePath}' is missing.`
+      );
+    }
+  }
+
+  if (!dryRun) {
+    for (const volume of volumes) {
+      runServiceVolumeDockerCommand({
+        args: volume.command.slice(1),
+        commandRunner,
+        operation: "import",
+        repositoryRoot: options.repositoryRoot,
+        volume: volume.volume
+      });
+    }
+  }
+
+  return {
+    createdAt: inspectedAt,
+    dockerImage,
+    dryRun,
+    imported: !dryRun,
+    inputPath,
+    manifestPath,
+    secretVolumeIncluded: false,
+    volumeCount: volumes.length,
+    volumes
   };
 }
