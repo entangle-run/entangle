@@ -332,11 +332,19 @@ describe("deployment backup command helpers", () => {
       exported: true,
       volumeCount: 2
     });
-    expect(commandCalls).toHaveLength(2);
+    expect(commandCalls).toHaveLength(4);
     expect(commandCalls[0]).toMatchObject({
+      args: ["ps", "--filter", "volume=gitea-data", "--format", "{{.Names}}"],
       command: "docker"
     });
-    expect(commandCalls[0]?.args).toEqual(
+    expect(commandCalls[1]).toMatchObject({
+      args: ["ps", "--filter", "volume=strfry-data", "--format", "{{.Names}}"],
+      command: "docker"
+    });
+    expect(commandCalls[2]).toMatchObject({
+      command: "docker"
+    });
+    expect(commandCalls[2]?.args).toEqual(
       expect.arrayContaining([
         "run",
         "--rm",
@@ -346,7 +354,7 @@ describe("deployment backup command helpers", () => {
         `${outputPath}:/backup`
       ])
     );
-    expect(commandCalls[0]?.args.at(-1)).toBe(
+    expect(commandCalls[2]?.args.at(-1)).toBe(
       "cd /volume && tar -cf /backup/gitea-data.tar ."
     );
 
@@ -384,6 +392,39 @@ describe("deployment backup command helpers", () => {
         repositoryRoot: await createTempRoot("entangle-service-volume-repo-ack-")
       })
     ).rejects.toThrow("--assume-services-stopped");
+  });
+
+  it("rejects service-volume export when a target volume is still mounted by a running container", async () => {
+    const outputPath = path.join(
+      await createTempRoot("entangle-service-volume-export-running-"),
+      "bundle"
+    );
+    const commandCalls: Array<{ args: string[]; command: string }> = [];
+
+    await expect(
+      createDeploymentServiceVolumeExport({
+        assumeServicesStopped: true,
+        commandRunner: (command, args) => {
+          commandCalls.push({ args, command });
+          return {
+            signal: null,
+            status: 0,
+            stderr: "",
+            stdout: args.includes("volume=gitea-data")
+              ? "entangle-gitea-1\n"
+              : ""
+          };
+        },
+        outputPath,
+        repositoryRoot: await createTempRoot("entangle-service-volume-repo-running-")
+      })
+    ).rejects.toThrow("gitea-data");
+
+    expect(commandCalls).toHaveLength(1);
+    expect(commandCalls[0]).toMatchObject({
+      args: ["ps", "--filter", "volume=gitea-data", "--format", "{{.Names}}"],
+      command: "docker"
+    });
   });
 
   it("plans service-volume import from a validated manifest without executing Docker", async () => {
@@ -470,5 +511,53 @@ describe("deployment backup command helpers", () => {
         repositoryRoot: await createTempRoot("entangle-service-volume-import-ack-repo-")
       })
     ).rejects.toThrow("--assume-services-stopped");
+  });
+
+  it("rejects service-volume import when a target volume is still mounted by a running container", async () => {
+    const bundleRoot = path.join(
+      await createTempRoot("entangle-service-volume-import-running-"),
+      "bundle"
+    );
+    await writeJson(path.join(bundleRoot, "manifest.json"), {
+      createdAt: "2026-05-09T00:00:00.000Z",
+      dockerImage: "alpine:3.20",
+      product: "entangle-service-volume-backup",
+      schemaVersion: "1",
+      secretsIncluded: false,
+      volumes: [
+        {
+          archivePath: "gitea-data.tar",
+          mountPath: "/data",
+          service: "gitea",
+          volume: "gitea-data"
+        }
+      ]
+    });
+    await writeText(path.join(bundleRoot, "gitea-data.tar"), "tar-bytes");
+    const commandCalls: Array<{ args: string[]; command: string }> = [];
+
+    await expect(
+      createDeploymentServiceVolumeImport({
+        assumeServicesStopped: true,
+        commandRunner: (command, args) => {
+          commandCalls.push({ args, command });
+          return {
+            signal: null,
+            status: 0,
+            stderr: "",
+            stdout: "entangle-gitea-1\n"
+          };
+        },
+        inputPath: bundleRoot,
+        repositoryRoot: await createTempRoot("entangle-service-volume-import-running-repo-")
+      })
+    ).rejects.toThrow("gitea-data");
+
+    expect(commandCalls).toEqual([
+      {
+        args: ["ps", "--filter", "volume=gitea-data", "--format", "{{.Names}}"],
+        command: "docker"
+      }
+    ]);
   });
 });

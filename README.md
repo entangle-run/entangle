@@ -1223,7 +1223,8 @@ This repository currently contains:
   previous service volumes as manual migration actions; Gitea and strfry
   service volumes now also have separate service-volume export/import bundle
   paths with dry-run Docker command planning, and non-dry-run service-volume
-  operations require `--assume-services-stopped`;
+  operations require `--assume-services-stopped` plus a running-container check
+  for each target volume;
 - a first conservative same-machine repair command through `entangle deployment repair`,
   defaulting to dry-run previews and applying only safe host-state
   initialization, missing layout-marker, or missing standard host-state
@@ -1701,7 +1702,8 @@ This repository currently contains:
   previous service-volume migration planning, and `entangle deployment
   service-volumes export/import` provides a separate Gitea/relay service-volume
   bundle path for non-disposable profiles with explicit stopped-service
-  acknowledgement before non-dry-run Docker commands execute;
+  acknowledgement and running-container volume checks before non-dry-run Docker
+  archive commands execute;
 - the next bounded Studio completion slice where the operator can now select
   one runtime-scoped session summary and inspect host-backed per-node session
   detail without widening the host API or inventing client-owned session
@@ -1813,7 +1815,7 @@ The highest-value remaining gaps are:
 - stronger end-to-end deployment and integration hardening beyond the current
   disposable same-machine profile and first service-volume export/import path,
   especially infrastructure-backed multi-machine proof execution,
-  automated service-aware quiescing/health checks, and non-disposable
+  guided service stop/start, post-import health checks, and non-disposable
   upgrade/repair behavior.
 
 The repository should be treated as a live design baseline rather than as a static document dump. Each substantial interaction with the project should begin with a lightweight audit loop:

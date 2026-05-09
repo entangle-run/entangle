@@ -136,7 +136,9 @@ pnpm --filter @entangle/cli dev deployment service-volumes import entangle-servi
 The service-volume bundle intentionally excludes Host secret state. Keep secret
 backup, restore, and rotation as a separate operator policy. Non-dry-run
 service-volume export and import require `--assume-services-stopped`; that flag
-is an operator acknowledgement, not an automated health check.
+is an operator acknowledgement, not a stop/start action. The command also
+checks Docker's running-container view and refuses archive mutation if a target
+volume is still mounted by a running container.
 
 The no-infrastructure tool smoke verifies both dry-run surfaces without Docker
 or live service volumes:

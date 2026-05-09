@@ -390,6 +390,7 @@ same-machine slice records.
 - [587-service-volume-tool-smoke-slice.md](587-service-volume-tool-smoke-slice.md)
 - [588-fake-openai-scripted-error-slice.md](588-fake-openai-scripted-error-slice.md)
 - [589-service-volume-quiescing-acknowledgement-slice.md](589-service-volume-quiescing-acknowledgement-slice.md)
+- [590-service-volume-running-container-check-slice.md](590-service-volume-running-container-check-slice.md)
 
 ## Audited Scope
 
@@ -1244,7 +1245,9 @@ separate `entangle-service-volume-backup` bundle path through deployment
 service-volume export/import commands, with dry-run Docker command planning and
 Host secret state still excluded by default. Non-dry-run service-volume
 export/import now also requires an explicit `--assume-services-stopped`
-operator acknowledgement before Docker is invoked.
+operator acknowledgement before Docker is invoked, and the command rejects
+operations when Docker reports a running container still mounting one of the
+target service volumes.
 New Host events now carry optional audit hash-chain fields, and Host serializes
 event appends so concurrent operator requests do not fork the local audit
 sequence. Host now also exposes `GET /v1/events/integrity`, host-client

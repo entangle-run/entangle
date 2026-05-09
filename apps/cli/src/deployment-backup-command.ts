@@ -168,6 +168,14 @@ export interface DeploymentServiceVolumeOperationEntry {
   volume: string;
 }
 
+export interface DeploymentServiceVolumeQuiescenceCheck {
+  command: string[];
+  runningContainers: string[];
+  service: string;
+  status: "clear";
+  volume: string;
+}
+
 export interface DeploymentServiceVolumeOperationSummary {
   createdAt: string;
   dockerImage: string;
@@ -177,7 +185,9 @@ export interface DeploymentServiceVolumeOperationSummary {
   inputPath?: string | undefined;
   manifestPath: string;
   outputPath?: string | undefined;
+  quiescenceChecks: DeploymentServiceVolumeQuiescenceCheck[];
   secretVolumeIncluded: false;
+  serviceVolumeQuiescenceChecked: boolean;
   servicesStoppedAcknowledged: boolean;
   volumeCount: number;
   volumes: DeploymentServiceVolumeOperationEntry[];
@@ -655,6 +665,17 @@ function buildServiceVolumeImportArgs(input: {
   ];
 }
 
+function buildServiceVolumeQuiescenceArgs(volume: string): string[] {
+  return ["ps", "--filter", `volume=${volume}`, "--format", "{{.Names}}"];
+}
+
+function parseRunningContainerNames(stdout: string | undefined): string[] {
+  return (stdout ?? "")
+    .split(/\r?\n/u)
+    .map((line) => line.trim())
+    .filter((line) => line.length > 0);
+}
+
 function runServiceVolumeDockerCommand(input: {
   args: string[];
   commandRunner: DeploymentServiceVolumeCommandRunner;
@@ -672,6 +693,54 @@ function runServiceVolumeDockerCommand(input: {
 
   throw new Error(
     `Service volume ${input.operation} for '${input.volume}' failed: ${normalizeCommandResult(result)}`
+  );
+}
+
+function inspectServiceVolumeQuiescence(input: {
+  commandRunner: DeploymentServiceVolumeCommandRunner;
+  repositoryRoot: string;
+  service: string;
+  volume: string;
+}): DeploymentServiceVolumeQuiescenceCheck {
+  const args = buildServiceVolumeQuiescenceArgs(input.volume);
+  const result = input.commandRunner("docker", args, {
+    cwd: input.repositoryRoot
+  });
+
+  if (result.status !== 0 || result.error || result.signal) {
+    throw new Error(
+      `Service volume quiescence check for '${input.volume}' failed: ${normalizeCommandResult(result)}`
+    );
+  }
+
+  const runningContainers = parseRunningContainerNames(result.stdout);
+  if (runningContainers.length > 0) {
+    throw new Error(
+      `Service volume '${input.volume}' for service '${input.service}' is still mounted by running container(s): ${runningContainers.join(", ")}. Stop or quiesce those services before retrying.`
+    );
+  }
+
+  return {
+    command: ["docker", ...args],
+    runningContainers,
+    service: input.service,
+    status: "clear",
+    volume: input.volume
+  };
+}
+
+function inspectServiceVolumeQuiescenceForVolumes(input: {
+  commandRunner: DeploymentServiceVolumeCommandRunner;
+  repositoryRoot: string;
+  volumes: readonly Pick<DeploymentServiceVolumeManifestEntry, "service" | "volume">[];
+}): DeploymentServiceVolumeQuiescenceCheck[] {
+  return input.volumes.map((volume) =>
+    inspectServiceVolumeQuiescence({
+      commandRunner: input.commandRunner,
+      repositoryRoot: input.repositoryRoot,
+      service: volume.service,
+      volume: volume.volume
+    })
   );
 }
 
@@ -813,6 +882,7 @@ export async function createDeploymentServiceVolumeExport(
     operation: "export"
   });
 
+  let outputPathExists = false;
   if (!dryRun && (await pathExists(outputPath))) {
     if (!options.force) {
       throw new Error(
@@ -820,6 +890,18 @@ export async function createDeploymentServiceVolumeExport(
       );
     }
 
+    outputPathExists = true;
+  }
+
+  const quiescenceChecks = dryRun
+    ? []
+    : inspectServiceVolumeQuiescenceForVolumes({
+        commandRunner,
+        repositoryRoot: options.repositoryRoot,
+        volumes: backupServiceVolumes
+      });
+
+  if (!dryRun && outputPathExists) {
     await rm(outputPath, { force: true, recursive: true });
   }
 
@@ -877,7 +959,9 @@ export async function createDeploymentServiceVolumeExport(
     exported: !dryRun,
     manifestPath,
     outputPath,
+    quiescenceChecks,
     secretVolumeIncluded: false,
+    serviceVolumeQuiescenceChecked: !dryRun,
     servicesStoppedAcknowledged: Boolean(options.assumeServicesStopped),
     volumeCount: volumes.length,
     volumes
@@ -988,6 +1072,14 @@ export async function createDeploymentServiceVolumeImport(
     }
   }
 
+  const quiescenceChecks = dryRun
+    ? []
+    : inspectServiceVolumeQuiescenceForVolumes({
+        commandRunner,
+        repositoryRoot: options.repositoryRoot,
+        volumes
+      });
+
   if (!dryRun) {
     for (const volume of volumes) {
       runServiceVolumeDockerCommand({
@@ -1007,7 +1099,9 @@ export async function createDeploymentServiceVolumeImport(
     imported: !dryRun,
     inputPath,
     manifestPath,
+    quiescenceChecks,
     secretVolumeIncluded: false,
+    serviceVolumeQuiescenceChecked: !dryRun,
     servicesStoppedAcknowledged: Boolean(options.assumeServicesStopped),
     volumeCount: volumes.length,
     volumes

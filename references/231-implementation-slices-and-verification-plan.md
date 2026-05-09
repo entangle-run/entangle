@@ -1576,6 +1576,9 @@ Current status:
 - non-dry-run service-volume export/import now requires
   `--assume-services-stopped`, keeping live service quiescing as an explicit
   operator acknowledgement before Docker archive commands execute;
+- the same non-dry-run service-volume export/import path now performs a
+  Docker running-container check for each target volume and rejects archive
+  mutation if a container is still mounting `gitea-data` or `strfry-data`;
 - `pnpm ops:smoke-deployment-service-volume-tools` now verifies those
   service-volume export/import dry-run CLI paths without requiring Docker,
   initialized Host state, or live service volumes;
@@ -1741,9 +1744,10 @@ Current status:
   `--write-runner-compose`, giving operators a same-machine container-boundary
   rehearsal path while preserving Host/runner communication through reachable
   Host and relay URLs;
-- the remaining distributed proof hardening is infrastructure-backed
-  orchestration that can provision multiple machines or VM/container boundaries
-  around the verifier.
+- the remaining deployment hardening is infrastructure-backed orchestration
+  that can provision multiple machines or VM/container boundaries around the
+  verifier, plus guided service stop/start and post-import health checks for
+  non-disposable service-volume workflows.
 
 Verification:
 

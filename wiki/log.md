@@ -6921,3 +6921,14 @@ require `--assume-services-stopped` before Docker archive commands execute.
 Dry-run behavior is unchanged. The flag is an explicit operator
 acknowledgement that Gitea and relay services have been stopped or quiesced;
 automated service health checks remain a later deployment-hardening step.
+
+## [2026-05-09] deployment | Added service-volume running-container checks
+
+Added `references/590-service-volume-running-container-check-slice.md`.
+Non-dry-run `entangle deployment service-volumes export` and `import` now check
+Docker's running-container view for each target service volume before archive
+mutation.
+
+The guard rejects operations when `gitea-data` or `strfry-data` is still
+mounted by a running container. Dry-run behavior remains non-mutating and does
+not require Docker daemon inspection.

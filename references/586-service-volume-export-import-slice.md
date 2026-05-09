@@ -29,6 +29,8 @@ quiesce the affected services before using the non-dry-run path.
 `references/589-service-volume-quiescing-acknowledgement-slice.md` adds the
 first enforcement step by requiring `--assume-services-stopped` before
 non-dry-run export/import can invoke Docker.
+`references/590-service-volume-running-container-check-slice.md` adds a
+volume-based running-container guard before non-dry-run archive mutation.
 
 ## Impacted Modules And Files
 
@@ -93,9 +95,9 @@ operator policy.
 
 ## Open Questions
 
-Future work should replace acknowledgement-only safety with service-aware
-quiescing, health checks before/after import, and guided upgrade workflows for
-older non-disposable profiles.
+Future work should add guided service stop/start orchestration, post-import
+health checks, disposable non-dry-run service-volume fixtures, and guided
+upgrade workflows for older non-disposable profiles.
 
 ## Verification
 

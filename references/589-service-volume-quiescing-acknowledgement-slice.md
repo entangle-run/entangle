@@ -16,6 +16,9 @@ services are stopped or quiesced.
 
 This is not a full service-aware health check, but it prevents accidental live
 volume capture or restore through an omitted flag.
+`references/590-service-volume-running-container-check-slice.md` adds the next
+guard by inspecting running containers mounted on the target volumes before
+archive mutation.
 
 ## Impacted Modules And Files
 
@@ -67,9 +70,9 @@ Dry-run behavior is unchanged. Non-dry-run export/import now requires
 
 ## Open Questions
 
-Future work should replace acknowledgement-only safety with service-aware
-quiescing checks, post-import health checks, and disposable volume fixtures for
-live export/import smoke coverage.
+Future work should add guided service stop/start orchestration, post-import
+health checks, and disposable volume fixtures for live export/import smoke
+coverage.
 
 ## Verification
 
