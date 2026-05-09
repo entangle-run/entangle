@@ -380,6 +380,9 @@ same-machine slice records.
 - [577-fake-opencode-permission-rejection-smoke-slice.md](577-fake-opencode-permission-rejection-smoke-slice.md)
 - [578-distributed-proof-external-git-url-slice.md](578-distributed-proof-external-git-url-slice.md)
 - [579-distributed-proof-external-agent-engine-url-slice.md](579-distributed-proof-external-agent-engine-url-slice.md)
+- [580-agent-engine-proof-url-credential-hardening-slice.md](580-agent-engine-proof-url-credential-hardening-slice.md)
+- [581-external-http-agent-engine-auth-binding-slice.md](581-external-http-agent-engine-auth-binding-slice.md)
+- [582-fake-external-http-bearer-smoke-slice.md](582-fake-external-http-bearer-smoke-slice.md)
 
 ## Audited Scope
 
@@ -1353,6 +1356,10 @@ marker.
 environment variable reference, so Host, CLI, Studio, runner execution, and
 distributed proof kits can configure authenticated HTTP engines without storing
 or printing the secret value.
+The deterministic fake external HTTP engine and its smoke now prove that
+bearer path without real model credentials: `/turn` rejects missing auth,
+accepts the configured env-backed token, and Host default catalog seeding can
+store the same env reference for `external_http` profiles.
 CLI inbox detail can now filter Host-recorded User Node conversation messages
 by direction, exact message type, and bounded result count, matching the
 participant-oriented inbox list filters while preserving Host as the projection

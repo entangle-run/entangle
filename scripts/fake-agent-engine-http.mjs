@@ -8,6 +8,7 @@ const defaultOptions = {
   approvalId: undefined,
   approvalReason: "Approve deterministic fake external HTTP source application.",
   approvalResourceId: undefined,
+  bearerTokenEnvVar: undefined,
   content: "Deterministic Entangle fake external HTTP engine response.",
   engineSessionId: undefined,
   engineVersion: "fake-agent-engine-http-1.0.0",
@@ -32,6 +33,13 @@ try {
 if (options.help) {
   printHelp();
   process.exit(0);
+}
+
+if (options.bearerTokenEnvVar && !process.env[options.bearerTokenEnvVar]) {
+  console.error(
+    `[fake-agent-engine-http] ${options.bearerTokenEnvVar} must be set when --bearer-token-env-var is used.`
+  );
+  process.exit(1);
 }
 
 const requests = [];
@@ -95,6 +103,10 @@ async function handleRequest(input) {
     }
 
     if (input.request.method === "POST" && url.pathname === "/turn") {
+      if (!authorizeTurnRequest(input.request, input.response)) {
+        return;
+      }
+
       const body = parseJsonObject(await readIncomingBody(input.request));
       const nodeId = readNestedString(body, ["request", "nodeId"]) ?? "unknown";
       const runtimeNodeId =
@@ -180,6 +192,9 @@ function parseArgs(args) {
       case "--approval-resource-id":
         parsed.approvalResourceId = readRequiredValue(args, ++index, arg);
         break;
+      case "--bearer-token-env-var":
+        parsed.bearerTokenEnvVar = readRequiredValue(args, ++index, arg);
+        break;
       case "--content":
         parsed.content = readRequiredValue(args, ++index, arg);
         break;
@@ -225,6 +240,13 @@ function parseArgs(args) {
     );
   }
 
+  if (
+    parsed.bearerTokenEnvVar &&
+    !/^[A-Za-z_][A-Za-z0-9_]*$/.test(parsed.bearerTokenEnvVar)
+  ) {
+    throw new Error("--bearer-token-env-var must be a valid environment variable name.");
+  }
+
   return parsed;
 }
 
@@ -254,6 +276,8 @@ Options:
                             Optional source-change approval resource id.
   --approval-approver <id>  Approval approver node id. Default: user
   --approval-reason <text>  Approval reason.
+  --bearer-token-env-var <envVar>
+                            Require Authorization: Bearer from this env var on /turn.
   --write-file <path>       Optional source-workspace relative file to write on each turn.
   --write-content <text>    Content for --write-file.
   --json-log                Print startup metadata as JSON.
@@ -332,6 +356,26 @@ function buildApprovalDirective() {
       label: options.approvalResourceId
     }
   };
+}
+
+function authorizeTurnRequest(request, response) {
+  if (!options.bearerTokenEnvVar) {
+    return true;
+  }
+
+  const expectedToken = process.env[options.bearerTokenEnvVar];
+  const expectedHeader = `Bearer ${expectedToken}`;
+
+  if (request.headers.authorization === expectedHeader) {
+    return true;
+  }
+
+  sendJson(response, 401, {
+    error: {
+      message: "Missing or invalid fake external HTTP bearer token."
+    }
+  });
+  return false;
 }
 
 function sendJson(response, statusCode, body) {

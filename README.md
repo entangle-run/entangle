@@ -308,12 +308,27 @@ model credentials, start the deterministic fake external HTTP engine:
 pnpm ops:fake-agent-engine-http -- --port 18082 --write-file src/fake-external-http-generated.ts
 ```
 
-Point an `external_http` engine profile at `http://127.0.0.1:18082/turn`:
+To exercise bearer-authenticated `external_http` plumbing without a real model
+provider, keep the token in the server and runner environments and pass only
+the variable name through Entangle:
+
+```bash
+export ENTANGLE_FAKE_EXTERNAL_HTTP_ENGINE_TOKEN=dev-token
+pnpm ops:fake-agent-engine-http -- \
+  --port 18082 \
+  --write-file src/fake-external-http-generated.ts \
+  --bearer-token-env-var ENTANGLE_FAKE_EXTERNAL_HTTP_ENGINE_TOKEN
+```
+
+Point an `external_http` engine profile at `http://127.0.0.1:18082/turn`.
+Include the bearer env flag when the fixture was started with
+`--bearer-token-env-var`; otherwise omit that flag:
 
 ```bash
 pnpm --filter @entangle/cli dev host catalog agent-engine upsert external-http-fake \
   --kind external_http \
   --base-url http://127.0.0.1:18082/turn \
+  --http-bearer-token-env-var ENTANGLE_FAKE_EXTERNAL_HTTP_ENGINE_TOKEN \
   --set-default \
   --summary
 ```
@@ -323,14 +338,15 @@ The fixture accepts the shared turn payload, returns a deterministic
 workspace. This validates protocol, catalog, runner-adapter, and workspace
 plumbing; it does not validate real model behavior.
 
-The fake external HTTP engine has its own no-credential smoke:
+The fake external HTTP engine has its own no-real-model smoke:
 
 ```bash
 pnpm ops:smoke-fake-agent-engine-http
 ```
 
 That smoke starts the endpoint on an ephemeral port and verifies health, turn
-execution, response shape, optional workspace mutation, and debug state.
+execution, bearer rejection before auth, authenticated response shape, optional
+workspace mutation, and debug state.
 
 The same fake engine can now run inside the full federated process smoke:
 
@@ -798,7 +814,11 @@ This repository currently contains:
   OpenCode. Shared catalog validation now requires `external_process` profiles
   to declare an executable. The runner also executes `external_http` profiles
   by POSTing the same turn payload to the configured endpoint and validating the
-  shared turn result response. Unsupported native engine placeholders are not
+  shared turn result response. Default `external_http` profiles can also seed
+  a bearer-token env reference from
+  `ENTANGLE_DEFAULT_AGENT_ENGINE_HTTP_BEARER_TOKEN_ENV_VAR`; Host stores only
+  the variable name, and the runner resolves the token from its own
+  environment. Unsupported native engine placeholders are not
   exposed as active profile kinds until a runner adapter exists, with
   runner-owned source workspace change
   harvesting now recording bounded changed-file and diff summaries on turns,

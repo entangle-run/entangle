@@ -1112,8 +1112,12 @@ function buildDefaultCatalog(): DeploymentResourceCatalog {
           "auto_reject"
         ? "auto_reject"
         : agentEngineKind === "opencode_server"
-          ? "auto_reject"
-          : undefined;
+        ? "auto_reject"
+        : undefined;
+  const agentEngineHttpAuthEnvVar =
+    agentEngineKind === "external_http"
+      ? process.env.ENTANGLE_DEFAULT_AGENT_ENGINE_HTTP_BEARER_TOKEN_ENV_VAR?.trim()
+      : undefined;
 
   const modelEndpointId = process.env.ENTANGLE_DEFAULT_MODEL_ENDPOINT_ID?.trim();
   const modelBaseUrl = process.env.ENTANGLE_DEFAULT_MODEL_BASE_URL?.trim();
@@ -1196,6 +1200,14 @@ function buildDefaultCatalog(): DeploymentResourceCatalog {
           process.env.ENTANGLE_DEFAULT_AGENT_ENGINE_AGENT?.trim() || undefined,
         ...(agentEnginePermissionMode
           ? { permissionMode: agentEnginePermissionMode }
+          : {}),
+        ...(agentEngineHttpAuthEnvVar
+          ? {
+              httpAuth: {
+                mode: "bearer_env",
+                tokenEnvVar: agentEngineHttpAuthEnvVar
+              }
+            }
           : {}),
         version:
           process.env.ENTANGLE_DEFAULT_AGENT_ENGINE_VERSION?.trim() || undefined

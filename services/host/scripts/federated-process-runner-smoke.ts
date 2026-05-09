@@ -115,6 +115,7 @@ type StartedFakeExternalHttpEngine = {
   child: ChildProcessByStdio<null, Readable, Readable>;
   stderr: () => string;
   stdout: () => string;
+  tokenEnvVar: string;
   turnUrl: string;
 };
 
@@ -771,6 +772,8 @@ async function startAttachedFakeOpenCodeServer(input: {
 
 async function startFakeExternalHttpEngine(input: {
   approvalId: string;
+  bearerToken: string;
+  bearerTokenEnvVar: string;
   content: string;
   engineSessionId: string;
   sourceChangeId: string;
@@ -797,6 +800,8 @@ async function startFakeExternalHttpEngine(input: {
       input.approvalId,
       "--approval-resource-id",
       input.sourceChangeId,
+      "--bearer-token-env-var",
+      input.bearerTokenEnvVar,
       "--approval-reason",
       "Approve deterministic fake external HTTP source application.",
       "--write-file",
@@ -807,6 +812,10 @@ async function startFakeExternalHttpEngine(input: {
     ],
     {
       cwd: repoRoot,
+      env: {
+        ...process.env,
+        [input.bearerTokenEnvVar]: input.bearerToken
+      },
       stdio: ["ignore", "pipe", "pipe"]
     }
   );
@@ -885,6 +894,7 @@ async function startFakeExternalHttpEngine(input: {
     child,
     stderr: () => stderr,
     stdout: () => stdout,
+    tokenEnvVar: input.bearerTokenEnvVar,
     turnUrl
   };
 }
@@ -1174,8 +1184,12 @@ async function main(): Promise<void> {
     }
 
     if (useFakeExternalHttpEngine) {
+      const bearerTokenEnvVar = "ENTANGLE_FAKE_EXTERNAL_HTTP_ENGINE_TOKEN";
+      const bearerToken = "fake-external-http-smoke-token";
       fakeExternalHttpEngine = await startFakeExternalHttpEngine({
         approvalId: engineApprovalId,
+        bearerToken,
+        bearerTokenEnvVar,
         content:
           "Smoke fake external HTTP engine completed a deterministic turn.",
         engineSessionId: fakeExternalHttpEngineSessionId,
@@ -1192,6 +1206,9 @@ async function main(): Promise<void> {
         "fake-agent-engine-http-1.0.0";
       process.env.ENTANGLE_DEFAULT_AGENT_ENGINE_BASE_URL =
         fakeExternalHttpEngine.turnUrl;
+      process.env.ENTANGLE_DEFAULT_AGENT_ENGINE_HTTP_BEARER_TOKEN_ENV_VAR =
+        fakeExternalHttpEngine.tokenEnvVar;
+      process.env[fakeExternalHttpEngine.tokenEnvVar] = bearerToken;
       printPass("fake-external-http-engine", fakeExternalHttpEngine.turnUrl);
     }
 
@@ -5371,7 +5388,9 @@ async function main(): Promise<void> {
     delete process.env.ENTANGLE_DEFAULT_AGENT_ENGINE_DISPLAY_NAME;
     delete process.env.ENTANGLE_DEFAULT_AGENT_ENGINE_VERSION;
     delete process.env.ENTANGLE_DEFAULT_AGENT_ENGINE_BASE_URL;
+    delete process.env.ENTANGLE_DEFAULT_AGENT_ENGINE_HTTP_BEARER_TOKEN_ENV_VAR;
     delete process.env.ENTANGLE_DEFAULT_AGENT_ENGINE_PERMISSION_MODE;
+    delete process.env.ENTANGLE_FAKE_EXTERNAL_HTTP_ENGINE_TOKEN;
 
     if (!keepTemp) {
       await rm(tempRoot, { force: true, recursive: true });

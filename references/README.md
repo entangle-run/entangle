@@ -214,10 +214,11 @@ external-process profiles to declare an executable. The runner now also
 executes `external_http` profiles by POSTing the same shared turn payload to
 the configured endpoint and validating the shared turn result response. A root
 `pnpm ops:fake-agent-engine-http` command now starts a deterministic
-no-credential external HTTP agent-engine fixture for manual custom-engine
+no-real-model external HTTP agent-engine fixture for manual custom-engine
 plumbing tests, and `pnpm ops:smoke-fake-agent-engine-http` verifies that
-fixture's health, turn response, optional workspace mutation, and debug-state
-route. The full federated process smoke can now also run with
+fixture's health, bearer rejection before auth, authenticated turn response,
+optional workspace mutation, and debug-state route. The full federated process
+smoke can now also run with
 `pnpm ops:smoke-federated-process-runner:fake-external-http`, proving the same
 generic HTTP engine boundary through real Host assignment, User Node review,
 projected artifacts/source/wiki evidence, and multi-user Human Interface
@@ -961,6 +962,7 @@ files are the active federated redesign pack.
 580. [579-distributed-proof-external-agent-engine-url-slice.md](579-distributed-proof-external-agent-engine-url-slice.md)
 581. [580-agent-engine-proof-url-credential-hardening-slice.md](580-agent-engine-proof-url-credential-hardening-slice.md)
 582. [581-external-http-agent-engine-auth-binding-slice.md](581-external-http-agent-engine-auth-binding-slice.md)
+583. [582-fake-external-http-bearer-smoke-slice.md](582-fake-external-http-bearer-smoke-slice.md)
 
 ## Role of this corpus
 

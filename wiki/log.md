@@ -6832,3 +6832,16 @@ Host, CLI, Studio, runner execution, and distributed proof kit generation pass
 only the environment variable name. The runner resolves the actual token from
 its own environment and sends it as an HTTP bearer header, so authenticated
 external engines no longer require credentials in URLs or Host catalog state.
+
+## [2026-05-09] smoke | Added fake external HTTP bearer auth proof
+
+Added `references/582-fake-external-http-bearer-smoke-slice.md`.
+`pnpm ops:fake-agent-engine-http` can now require bearer auth for `/turn`
+through a token environment variable name, and
+`pnpm ops:smoke-fake-agent-engine-http` verifies unauthenticated rejection plus
+authenticated deterministic turn execution without real model credentials.
+
+Host default catalog seeding can also store
+`ENTANGLE_DEFAULT_AGENT_ENGINE_HTTP_BEARER_TOKEN_ENV_VAR` as the
+`external_http` profile auth reference, keeping token values out of Host state
+while allowing process-runner smokes to exercise the runner auth path.

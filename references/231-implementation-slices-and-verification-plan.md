@@ -1652,6 +1652,10 @@ Current status:
   `httpAuth: { mode: "bearer_env", tokenEnvVar }` reference, with Host/CLI/
   Studio catalog wiring, runner-side bearer header resolution, and distributed
   proof-kit env placeholders that keep token values out of URLs and Host state;
+- the deterministic fake external HTTP engine and smoke can now require a
+  bearer token through an env-var reference, verify unauthenticated `/turn`
+  rejection, verify authenticated turn execution, and Host default catalog
+  seeding can write the same env reference for `external_http` profiles;
 - generated proof kits can now require User Client Basic Auth placeholders and
   fail-fast start checks for User Node runner machines, keeping credentials out
   of the kit command line while hardening physical proof endpoints;

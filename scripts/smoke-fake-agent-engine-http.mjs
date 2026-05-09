@@ -11,6 +11,8 @@ const workspaceRoot = await mkdtemp(
 );
 const generatedRelativePath = "src/fake-external-http-generated.ts";
 const generatedContent = "export const fakeExternalHttpGenerated = true;\n";
+const bearerTokenEnvVar = "ENTANGLE_FAKE_EXTERNAL_HTTP_BEARER_TOKEN";
+const bearerToken = "fake-external-http-token";
 
 const serverProcess = spawn(
   process.execPath,
@@ -28,10 +30,16 @@ const serverProcess = spawn(
     "approval-fake-external-http",
     "--approval-resource-id",
     "source-change-fake-external-http",
+    "--bearer-token-env-var",
+    bearerTokenEnvVar,
     "--json-log"
   ],
   {
     cwd: process.cwd(),
+    env: {
+      ...process.env,
+      [bearerTokenEnvVar]: bearerToken
+    },
     stdio: ["ignore", "pipe", "pipe"]
   }
 );
@@ -39,6 +47,7 @@ const serverProcess = spawn(
 try {
   const startup = await waitForStartup(serverProcess);
   await verifyHealth(startup.healthUrl);
+  await verifyUnauthorizedTurn(startup.turnUrl);
   await verifyTurn(startup.turnUrl);
   await verifyWorkspaceWrite();
   await verifyDebugState(startup.baseUrl);
@@ -145,6 +154,7 @@ async function verifyTurn(turnUrl) {
       schemaVersion: 1
     }),
     headers: {
+      authorization: `Bearer ${bearerToken}`,
       "content-type": "application/json"
     },
     method: "POST"
@@ -166,6 +176,42 @@ async function verifyTurn(turnUrl) {
       "approval-fake-external-http"
   ) {
     throw new Error(`Turn check failed: ${response.status}`);
+  }
+}
+
+async function verifyUnauthorizedTurn(turnUrl) {
+  const response = await fetch(turnUrl, {
+    body: JSON.stringify({
+      request: {
+        artifactInputs: [],
+        artifactRefs: [],
+        executionLimits: {
+          maxOutputTokens: 1024,
+          maxToolTurns: 4
+        },
+        interactionPromptParts: ["Run unauthorized fake external HTTP check."],
+        memoryRefs: [],
+        nodeId: "worker-it",
+        sessionId: "session-alpha",
+        systemPromptParts: ["You are an Entangle runtime node."],
+        toolDefinitions: []
+      },
+      runtime: {
+        nodeId: "worker-it",
+        workspace: {
+          sourceWorkspaceRoot: workspaceRoot
+        }
+      },
+      schemaVersion: 1
+    }),
+    headers: {
+      "content-type": "application/json"
+    },
+    method: "POST"
+  });
+
+  if (response.status !== 401) {
+    throw new Error(`Unauthorized turn check failed: ${response.status}`);
   }
 }
 

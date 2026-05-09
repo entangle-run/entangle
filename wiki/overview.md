@@ -173,9 +173,9 @@ The most accurate current description is:
   endpoint and validates the shared turn result response;
 - operators can now start a deterministic fake external HTTP agent-engine
   endpoint with `pnpm ops:fake-agent-engine-http`, and
-  `pnpm ops:smoke-fake-agent-engine-http` verifies no-credential health, turn
-  response, optional workspace mutation, and debug-state plumbing for
-  `external_http` profiles;
+  `pnpm ops:smoke-fake-agent-engine-http` verifies no-real-model health,
+  bearer rejection before auth, authenticated turn response, optional
+  workspace mutation, and debug-state plumbing for `external_http` profiles;
 - `pnpm ops:smoke-federated-process-runner:fake-external-http` now runs the
   same fake endpoint through the full joined-runner proof, including Host
   engine profile selection, `external_http` runner capability, User Node review
@@ -564,6 +564,10 @@ redact any credentialed catalog URL before printing checks.
 bearer-token environment variable reference; Host, CLI, Studio, runner
 execution, and distributed proof kit generation pass only the environment
 variable name while the runner reads the actual token from its own environment.
+Host default catalog seeding can now store that env reference from
+`ENTANGLE_DEFAULT_AGENT_ENGINE_HTTP_BEARER_TOKEN_ENV_VAR`, and the fake
+external HTTP engine smoke proves the authenticated fixture path without real
+model credentials.
 `pnpm ops:smoke-distributed-proof-tools` now gives CI a deterministic
 no-infrastructure check for proof-kit syntax/help/dry-run paths and verifier
 self-test JSON, including non-running runtime rejection and duplicated User

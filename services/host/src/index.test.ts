@@ -927,6 +927,10 @@ afterEach(async () => {
   delete process.env.ENTANGLE_DEFAULT_MODEL_BASE_URL;
   delete process.env.ENTANGLE_DEFAULT_MODEL_SECRET_REF;
   delete process.env.ENTANGLE_DEFAULT_MODEL_DEFAULT_MODEL;
+  delete process.env.ENTANGLE_DEFAULT_AGENT_ENGINE_BASE_URL;
+  delete process.env.ENTANGLE_DEFAULT_AGENT_ENGINE_HTTP_BEARER_TOKEN_ENV_VAR;
+  delete process.env.ENTANGLE_DEFAULT_AGENT_ENGINE_ID;
+  delete process.env.ENTANGLE_DEFAULT_AGENT_ENGINE_KIND;
   delete process.env.ENTANGLE_DEFAULT_AGENT_ENGINE_PERMISSION_MODE;
   delete process.env.ENTANGLE_DEFAULT_GIT_NAMESPACE;
   delete process.env.ENTANGLE_DEFAULT_GIT_REMOTE_BASE;
@@ -1792,6 +1796,39 @@ describe("buildHostServer", () => {
         catalogInspectionResponseSchema.parse(invalidResponse.json()).validation
           .ok
       ).toBe(false);
+    } finally {
+      await server.close();
+    }
+  });
+
+  it("seeds external HTTP default agent engine auth from env references", async () => {
+    process.env.ENTANGLE_DEFAULT_AGENT_ENGINE_KIND = "external_http";
+    process.env.ENTANGLE_DEFAULT_AGENT_ENGINE_ID = "external-http-default";
+    process.env.ENTANGLE_DEFAULT_AGENT_ENGINE_BASE_URL =
+      "https://engine.example/turn";
+    process.env.ENTANGLE_DEFAULT_AGENT_ENGINE_HTTP_BEARER_TOKEN_ENV_VAR =
+      "ENTANGLE_EXTERNAL_HTTP_ENGINE_TOKEN";
+    const server = await createTestServer();
+
+    try {
+      const response = await server.inject({
+        method: "GET",
+        url: "/v1/catalog"
+      });
+      const inspection = catalogInspectionResponseSchema.parse(response.json());
+
+      expect(response.statusCode).toBe(200);
+      expect(inspection.catalog?.agentEngineProfiles).toContainEqual({
+        baseUrl: "https://engine.example/turn",
+        displayName: "Agent Engine",
+        httpAuth: {
+          mode: "bearer_env",
+          tokenEnvVar: "ENTANGLE_EXTERNAL_HTTP_ENGINE_TOKEN"
+        },
+        id: "external-http-default",
+        kind: "external_http",
+        stateScope: "node"
+      });
     } finally {
       await server.close();
     }
