@@ -518,7 +518,8 @@ publishing participant clients without at least runtime-local browser auth.
 CLI operators can now run `entangle user-nodes clients --check-health` to probe
 Host-projected User Client `/health` URLs from the operator machine and see
 successes, failures, or bounded `--health-timeout-ms` timeout results inline
-with the User Node client summary.
+with the User Node client summary. They can add `--node <nodeId>` to narrow the
+roster and optional health probe to one human participant.
 Generated distributed proof operator commands now use that same CLI health
 probe before the scripted User Node task, keeping manual proof execution
 aligned with verifier health checks.

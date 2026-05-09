@@ -112,6 +112,7 @@ import {
 import {
   attachUserNodeClientHealthForCli,
   buildUserNodeClientSummariesForCli,
+  filterUserNodeClientSummariesForCli,
   filterUserNodeCommandReceiptsForCli,
   listCurrentUserNodeAssignmentsForCli,
   projectUserNodeCommandReceiptSummary,
@@ -1485,6 +1486,7 @@ userNodesCommand
 
 userNodesCommand
   .command("clients")
+  .option("--node <nodeId>", "Only include one User Node client endpoint.")
   .option(
     "--check-health",
     "Probe projected User Client /health endpoints from this CLI machine."
@@ -1497,7 +1499,12 @@ userNodesCommand
   .option("--summary", "Print compact User Client runtime summaries.")
   .description("List User Client endpoints projected for active graph User Nodes.")
   .action(async (
-    options: { checkHealth?: boolean; healthTimeoutMs: string; summary?: boolean },
+    options: {
+      checkHealth?: boolean;
+      healthTimeoutMs: string;
+      node?: string;
+      summary?: boolean;
+    },
     command: Command
   ) => {
     const client = createCliHostClient(command);
@@ -1505,9 +1512,12 @@ userNodesCommand
       client.listUserNodes(),
       client.getProjection()
     ]);
-    const clients = buildUserNodeClientSummariesForCli({
-      projection,
-      userNodes: userNodes.userNodes
+    const clients = filterUserNodeClientSummariesForCli({
+      nodeId: options.node,
+      summaries: buildUserNodeClientSummariesForCli({
+        projection,
+        userNodes: userNodes.userNodes
+      })
     });
     const clientsWithHealth = options.checkHealth
       ? await attachUserNodeClientHealthForCli({

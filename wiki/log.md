@@ -1,5 +1,14 @@
 # Entangle Wiki Log
 
+## [2026-05-09] cli | Added User Client endpoint node filtering
+
+Added `references/558-cli-user-node-client-filter-slice.md`.
+`entangle user-nodes clients` now accepts `--node <nodeId>` so operators can
+inspect and optionally health-probe one human participant's User Client
+endpoint without probing the full active User Node roster. The filter is
+applied before `--check-health`, preserving the full roster as the default
+behavior.
+
 ## [2026-05-09] ops | Added external relay URL distributed proof guard
 
 Added `references/557-distributed-proof-external-relay-url-slice.md`.

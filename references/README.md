@@ -917,6 +917,7 @@ files are the active federated redesign pack.
 556. [555-demo-tooling-smoke-slice.md](555-demo-tooling-smoke-slice.md)
 557. [556-distributed-proof-kit-external-host-generation-guard-slice.md](556-distributed-proof-kit-external-host-generation-guard-slice.md)
 558. [557-distributed-proof-external-relay-url-slice.md](557-distributed-proof-external-relay-url-slice.md)
+559. [558-cli-user-node-client-filter-slice.md](558-cli-user-node-client-filter-slice.md)
 
 ## Role of this corpus
 

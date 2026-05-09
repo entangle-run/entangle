@@ -792,7 +792,8 @@ Current status:
   when `apps/user-client/dist` exists or an explicit static directory is passed;
 - CLI now exposes `entangle user-nodes clients` to list active User Nodes with
   projected Human Interface Runtime state, runner placement, assignment id, and
-  User Client URL;
+  User Client URL, with `--node <nodeId>` for participant-scoped endpoint
+  inspection;
 - richer artifact object-backend review remains open.
 
 Verification:
@@ -1609,6 +1610,9 @@ Current status:
 - CLI User Client health probes now use a default bounded timeout and expose
   `--health-timeout-ms`, so unreachable participant endpoints cannot hold the
   operator command open indefinitely;
+- CLI User Client endpoint summaries now support `--node <nodeId>`, so
+  operators can inspect and optionally health-probe one human participant
+  without probing every active User Client;
 - generated distributed proof kits can now optionally include
   `docker-compose.runners.yml` plus per-runner container entrypoints with
   `--write-runner-compose`, giving operators a same-machine container-boundary

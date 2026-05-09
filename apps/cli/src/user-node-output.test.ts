@@ -10,6 +10,7 @@ import type {
 import {
   attachUserNodeClientHealthForCli,
   buildUserNodeClientSummariesForCli,
+  filterUserNodeClientSummariesForCli,
   filterUserNodeCommandReceiptsForCli,
   listCurrentUserNodeAssignmentsForCli,
   projectUserNodeCommandReceiptSummary,
@@ -335,6 +336,20 @@ describe("user node CLI output", () => {
         unreadCount: 0
       }
     ]);
+  });
+
+  it("filters User Client summaries by selected User Node id", () => {
+    const summaries = buildUserNodeClientSummariesForCli({
+      projection,
+      userNodes
+    });
+
+    expect(
+      filterUserNodeClientSummariesForCli({
+        nodeId: "user-a",
+        summaries
+      }).map((summary) => summary.nodeId)
+    ).toEqual(["user-a"]);
   });
 
   it("attaches operator-side User Client health checks", async () => {

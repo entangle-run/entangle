@@ -1149,9 +1149,11 @@ operators can now also add `--check-health` to `entangle user-nodes clients`
 to probe Host-projected User Client `/health` endpoints from the operator
 machine without mutating Host or runner state; each probe is bounded by a
 configurable `--health-timeout-ms` timeout and timeout failures are serialized
-into `clientHealth`. Generated distributed proof operator commands now run
-that same CLI health probe before sending the scripted User Node task, and
-proof-kit dry-run output names the command so CI can keep it present. Host
+into `clientHealth`. The same command now accepts `--node <nodeId>` to narrow
+endpoint inspection and optional health probing to one human participant.
+Generated distributed proof operator commands now run that same CLI health
+probe before sending the scripted User Node task, and proof-kit dry-run output
+names the command so CI can keep it present. Host
 session cancellation no
 longer falls back to writing
 request records into runner runtime roots; it requires an accepted federated

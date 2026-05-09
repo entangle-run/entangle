@@ -157,9 +157,10 @@ Host-projected `human_interface` runtime assignment, runner, desired/observed
 state, last-seen timestamp, projected client URL, restart generation, and
 status message. The headless `entangle user-nodes clients` roster now also
 adds per-User-Node conversation, unread, pending approval, latest message, and
-participant-command receipt counts. Studio's User Node roster shows the same
-participant-command receipt and failed receipt counts next to its existing
-conversation and Human Interface Runtime placement summary.
+participant-command receipt counts, and `--node <nodeId>` narrows the roster
+and optional health probe to one human participant. Studio's User Node roster
+shows the same participant-command receipt and failed receipt counts next to
+its existing conversation and Human Interface Runtime placement summary.
 The running React User Client also shows a compact participant Workload panel
 for conversations, open work, unread messages, unique pending approvals,
 pending source reviews, command receipt statuses, source-history/wiki refs,
@@ -490,7 +491,9 @@ pnpm --filter @entangle/cli dev user-nodes clients --summary --check-health
 The health probe reads Host projection for the endpoint list, then checks each
 User Client `/health` endpoint from the CLI machine and reports success or
 failure in `clientHealth`. Each probe is bounded by a default 3000ms timeout;
-use `--health-timeout-ms <ms>` for slower remote links.
+use `--health-timeout-ms <ms>` for slower remote links. Add
+`--node <nodeId>` when you only want the endpoint and optional health probe for
+one human participant.
 Copy runner directories to machines with Entangle checkouts; the proof is valid
 only when the runners do not rely on Host filesystem access and report running
 runtime observations, expected runtime-kind capabilities, expected
@@ -656,7 +659,7 @@ This repository currently contains:
   projection of the User Client endpoint through Host, CLI, and Studio, with
   Host runtime synchronization retaining observed User Node runtime endpoints,
   including `entangle user-nodes clients` for User Node-focused endpoint
-  discovery,
+  discovery and `--node <nodeId>` for participant-scoped endpoint inspection,
   with CLI signed approve/reject and generic User Node message
   commands able to
   carry scoped approval-response operation/resource/reason context, and CLI

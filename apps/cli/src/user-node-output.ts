@@ -416,6 +416,17 @@ export function buildUserNodeClientSummariesForCli(input: {
   );
 }
 
+export function filterUserNodeClientSummariesForCli(input: {
+  nodeId?: string | undefined;
+  summaries: UserNodeClientCliSummary[];
+}): UserNodeClientCliSummary[] {
+  if (!input.nodeId) {
+    return input.summaries;
+  }
+
+  return input.summaries.filter((summary) => summary.nodeId === input.nodeId);
+}
+
 function buildUserClientHealthUrl(clientUrl: string): string {
   return new URL("/health", clientUrl).toString();
 }
