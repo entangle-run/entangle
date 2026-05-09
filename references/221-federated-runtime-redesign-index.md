@@ -379,6 +379,7 @@ same-machine slice records.
 - [576-memory-brief-resolutions-context-slice.md](576-memory-brief-resolutions-context-slice.md)
 - [577-fake-opencode-permission-rejection-smoke-slice.md](577-fake-opencode-permission-rejection-smoke-slice.md)
 - [578-distributed-proof-external-git-url-slice.md](578-distributed-proof-external-git-url-slice.md)
+- [579-distributed-proof-external-agent-engine-url-slice.md](579-distributed-proof-external-agent-engine-url-slice.md)
 
 ## Audited Scope
 
@@ -1339,6 +1340,11 @@ non-loopback, non-wildcard, and non-file-backed with
 `--require-external-git-urls`, keeping physical proof topology checks from
 silently accepting local-only artifact handoff coordinates while leaving live
 git service probing behind `--check-git-backend-health`.
+They can now also require URL-backed default agent engine profiles to be
+non-loopback and non-wildcard with
+`--require-external-agent-engine-urls`, catching local-only attached OpenCode
+or `external_http` engine endpoints before a physical proof is treated as
+portable across machines.
 CLI inbox detail can now filter Host-recorded User Node conversation messages
 by direction, exact message type, and bounded result count, matching the
 participant-oriented inbox list filters while preserving Host as the projection

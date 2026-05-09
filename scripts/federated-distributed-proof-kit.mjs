@@ -40,6 +40,9 @@ const requireExternalUserClientUrls = hasFlag(
 const requireExternalHostUrl = hasFlag("--require-external-host-url");
 const requireExternalRelayUrls = hasFlag("--require-external-relay-urls");
 const requireExternalGitUrls = hasFlag("--require-external-git-urls");
+const requireExternalAgentEngineUrls = hasFlag(
+  "--require-external-agent-engine-urls"
+);
 const requireUserClientBasicAuth = hasFlag("--require-user-client-basic-auth");
 const userClientBasicAuthEnvVar =
   readFlagValue("--user-client-basic-auth-env-var") ??
@@ -156,6 +159,8 @@ Options:
   --require-external-host-url       Include verifier checks that reject loopback or wildcard Host API URLs.
   --require-external-relay-urls     Include verifier checks that reject loopback or wildcard relay URLs.
   --require-external-git-urls       Include verifier checks that reject loopback, wildcard, or file-backed git service URLs.
+  --require-external-agent-engine-urls
+                                    Include verifier checks that reject loopback or wildcard URL-backed agent engine profiles.
   --require-user-client-basic-auth  Add a required Human Interface Runtime Basic Auth env placeholder to generated User Node runner env files.
   --user-client-basic-auth-env-var <envVar>
                                     Source env var for generated User Client Basic Auth placeholders. Default: ENTANGLE_HUMAN_INTERFACE_BASIC_AUTH
@@ -701,6 +706,10 @@ function buildVerifierCommand(options = {}) {
     args.push("--require-external-git-urls");
   }
 
+  if (requireExternalAgentEngineUrls) {
+    args.push("--require-external-agent-engine-urls");
+  }
+
   if (options.requireArtifactEvidence) {
     args.push("--require-artifact-evidence");
     args.push("--require-published-git-artifact");
@@ -759,6 +768,9 @@ function buildProofProfile(options = {}) {
     ...(checkGitBackendHealth ? { checkGitBackendHealth: true } : {}),
     ...(options.checkPublishedGitRef ? { checkPublishedGitRef: true } : {}),
     checkUserClientHealth: true,
+    ...(requireExternalAgentEngineUrls
+      ? { requireExternalAgentEngineUrls: true }
+      : {}),
     ...(requireExternalHostUrl ? { requireExternalHostUrl: true } : {}),
     ...(requireExternalRelayUrls ? { requireExternalRelayUrls: true } : {}),
     ...(requireExternalGitUrls ? { requireExternalGitUrls: true } : {}),
@@ -1123,6 +1135,26 @@ try {
   ) {
     throw new Error(
       "--require-external-relay-urls requires every --relay-url to be a non-loopback ws(s) URL reachable from other machines."
+    );
+  }
+
+  if (
+    requireExternalAgentEngineUrls &&
+    fakeOpenCodeServerUrl &&
+    !isExternalHttpUrl(fakeOpenCodeServerUrl)
+  ) {
+    throw new Error(
+      "--require-external-agent-engine-urls requires --fake-opencode-server-url to be a non-loopback http(s) URL reachable from runner machines."
+    );
+  }
+
+  if (
+    requireExternalAgentEngineUrls &&
+    externalHttpEngineUrl &&
+    !isExternalHttpUrl(externalHttpEngineUrl)
+  ) {
+    throw new Error(
+      "--require-external-agent-engine-urls requires --external-http-engine-url to be a non-loopback http(s) URL reachable from runner machines."
     );
   }
 

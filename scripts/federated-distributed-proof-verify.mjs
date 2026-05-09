@@ -52,6 +52,9 @@ const requireExternalRelayUrls =
 const requireExternalGitUrls =
   hasFlag("--require-external-git-urls") ||
   readProofProfileBoolean("requireExternalGitUrls");
+const requireExternalAgentEngineUrls =
+  hasFlag("--require-external-agent-engine-urls") ||
+  readProofProfileBoolean("requireExternalAgentEngineUrls");
 const requireConversation =
   hasFlag("--require-conversation") ||
   readProofProfileBoolean("requireConversation");
@@ -66,6 +69,9 @@ const selfTestRuntimeState =
 const selfTestSharedUserClientUrl = hasFlag("--self-test-shared-user-client-url");
 const selfTestFileGitBackend = hasFlag("--self-test-file-git-backend");
 const selfTestLoopbackGitUrl = hasFlag("--self-test-loopback-git-url");
+const selfTestLoopbackAgentEngineUrl = hasFlag(
+  "--self-test-loopback-agent-engine-url"
+);
 const selfTestWithoutArtifactEvidence = hasFlag(
   "--self-test-without-artifact-evidence"
 );
@@ -158,6 +164,8 @@ Options:
   --require-external-host-url     Reject loopback or wildcard Host API URLs. Defaults to profile requireExternalHostUrl.
   --require-external-relay-urls   Reject loopback or wildcard relay URLs. Defaults to profile requireExternalRelayUrls.
   --require-external-git-urls     Reject loopback, wildcard, or file-backed git service URLs. Defaults to profile requireExternalGitUrls.
+  --require-external-agent-engine-urls
+                                  Reject loopback or wildcard URL-backed agent engine profiles. Defaults to profile requireExternalAgentEngineUrls.
   --require-conversation          Require a projected conversation from the primary User Node to the agent node. Defaults to profile requireConversation.
   --require-artifact-evidence     Require projected artifact/source/wiki evidence from the agent node.
   --require-published-git-artifact
@@ -177,6 +185,8 @@ Options:
                                   Use one User Client URL for both Human Interface Runtime fixtures.
   --self-test-file-git-backend     Use a file-backed git service in the self-test fixture.
   --self-test-loopback-git-url      Use loopback git service URLs in the self-test fixture.
+  --self-test-loopback-agent-engine-url
+                                  Use a loopback URL-backed agent engine profile in the self-test fixture.
   --self-test-without-artifact-evidence
                                   Omit projected artifact/source/wiki evidence from the self-test fixture.
   --self-test-wrong-runtime-kind   Make the agent runner advertise the wrong runtime kind.
@@ -428,7 +438,10 @@ async function fetchSnapshot() {
     fetchJson("/v1/projection")
   ]);
   const catalog =
-    checkGitBackendHealth || checkPublishedGitRefHealth || requireExternalGitUrls
+    checkGitBackendHealth ||
+    checkPublishedGitRefHealth ||
+    requireExternalGitUrls ||
+    requireExternalAgentEngineUrls
       ? await fetchJson("/v1/catalog")
       : undefined;
 
@@ -544,9 +557,32 @@ function buildSelfTestSnapshot() {
       catalog: {
         catalogId: "self-test-catalog",
         defaults: {
+          agentEngineProfileRef: "proof-agent-engine",
           gitServiceRef: "gitea",
           relayProfileRefs: []
         },
+        agentEngineProfiles: [
+          {
+            baseUrl:
+              agentEngineKind === "external_process"
+                ? undefined
+                : selfTestLoopbackAgentEngineUrl
+                  ? "http://127.0.0.1:18081"
+                  : "http://agent-engine.example:18081",
+            displayName: "Self-test Agent Engine",
+            executable:
+              agentEngineKind === "external_process"
+                ? "/usr/local/bin/entangle-agent-engine"
+                : undefined,
+            id: "proof-agent-engine",
+            kind: agentEngineKind,
+            permissionMode:
+              agentEngineKind === "opencode_server"
+                ? "entangle_approval"
+                : undefined,
+            stateScope: "node"
+          }
+        ],
         gitServices: [
           {
             authMode: "ssh_key",
@@ -919,6 +955,20 @@ function findGitService(catalog, gitServiceRef) {
   );
 }
 
+function findAgentEngineProfile(catalog, profileRef) {
+  return getArray(catalog, "agentEngineProfiles").find(
+    (profile) => profile?.id === profileRef
+  );
+}
+
+function resolveAgentEngineProfileRef(catalog) {
+  const defaultAgentEngineProfileRef = catalog?.defaults?.agentEngineProfileRef;
+  return typeof defaultAgentEngineProfileRef === "string" &&
+    defaultAgentEngineProfileRef.trim().length > 0
+    ? defaultAgentEngineProfileRef.trim()
+    : undefined;
+}
+
 function resolveGitServiceRefs(catalog) {
   if (gitServiceRefs.length > 0) {
     return gitServiceRefs;
@@ -1159,6 +1209,56 @@ async function evaluateSnapshot(snapshot) {
             );
           }
         }
+      }
+    }
+  }
+
+  if (requireExternalAgentEngineUrls) {
+    const catalog = getCatalog(snapshot);
+    addCheck(
+      checks,
+      "agent engine catalog available",
+      Boolean(catalog),
+      catalog ? `catalog=${catalog.catalogId ?? "unknown"}` : "missing catalog"
+    );
+
+    const agentEngineProfileRef = resolveAgentEngineProfileRef(catalog);
+    addCheck(
+      checks,
+      "agent engine profile ref configured",
+      Boolean(agentEngineProfileRef),
+      agentEngineProfileRef
+        ? `agentEngineProfileRef=${agentEngineProfileRef}`
+        : "no default agent engine profile configured"
+    );
+
+    if (agentEngineProfileRef) {
+      const profile = findAgentEngineProfile(catalog, agentEngineProfileRef);
+      addCheck(
+        checks,
+        `agent engine ${agentEngineProfileRef} exists`,
+        Boolean(profile),
+        profile
+          ? `kind=${profile.kind ?? "unknown"}; baseUrl=${
+              profile.baseUrl ?? "not configured"
+            }`
+          : "missing agent engine profile"
+      );
+
+      if (profile) {
+        const baseUrl =
+          typeof profile.baseUrl === "string" ? profile.baseUrl : "";
+        const hasUrl = baseUrl.length > 0;
+        addCheck(
+          checks,
+          `agent engine ${agentEngineProfileRef} external url`,
+          hasUrl ? isExternalHttpUrl(baseUrl) : true,
+          hasUrl
+            ? `kind=${profile.kind ?? "unknown"}; baseUrl=${baseUrl}`
+            : `kind=${profile.kind ?? "unknown"}; baseUrl=not required; executable=${
+                profile.executable ?? "not configured"
+              }`
+        );
       }
     }
   }

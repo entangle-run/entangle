@@ -383,6 +383,7 @@ try {
     "--require-external-host-url",
     "--require-external-relay-urls",
     "--require-external-git-urls",
+    "--require-external-agent-engine-urls",
     "--require-external-user-client-urls",
     "--require-user-client-basic-auth",
     "--user-client-basic-auth-env-var",
@@ -410,6 +411,7 @@ try {
       "--require-external-host-url",
       "--require-external-relay-urls",
       "--require-external-git-urls",
+      "--require-external-agent-engine-urls",
       "--require-external-user-client-urls",
       "--require-artifact-evidence",
       '"agentRunnerId":"proof-agent-runner"',
@@ -427,6 +429,7 @@ try {
       '"requireExternalHostUrl":true',
       '"requireExternalRelayUrls":true',
       '"requireExternalGitUrls":true',
+      '"requireExternalAgentEngineUrls":true',
       '"requireExternalUserClientUrls":true',
       '"requireConversation":true',
       '"requirePublishedGitArtifact":true',
@@ -437,6 +440,25 @@ try {
       ].join(" ")
     ]
   });
+
+  runFailureStep(
+    "proof kit fake-opencode external-agent-engine local-url dry-run",
+    [
+      "scripts/federated-distributed-proof-kit.mjs",
+      "--dry-run",
+      "--output",
+      "/tmp/entangle-distributed-proof-ci-fake-opencode-local-engine",
+      "--host-url",
+      "http://host.example:7071",
+      "--fake-opencode-server-url",
+      "http://127.0.0.1:18081",
+      "--require-external-agent-engine-urls"
+    ],
+    {
+      mustContain:
+        "--require-external-agent-engine-urls requires --fake-opencode-server-url to be a non-loopback http(s) URL reachable from runner machines."
+    }
+  );
 
   runFailureStep(
     "proof kit invalid user-client auth env var dry-run",
@@ -810,6 +832,35 @@ try {
     "--require-external-git-urls"
   ]);
   verifySelfTestJson(externalGitUrlJson);
+
+  const loopbackAgentEngineUrlJson = runFailureStep(
+    "proof verifier loopback-agent-engine-url self-test",
+    [
+      "scripts/federated-distributed-proof-verify.mjs",
+      "--self-test",
+      "--json",
+      "--require-external-agent-engine-urls",
+      "--self-test-loopback-agent-engine-url"
+    ],
+    {
+      mustContain: '"ok": false'
+    }
+  );
+  verifySelfTestFailureJson(
+    loopbackAgentEngineUrlJson,
+    "agent engine proof-agent-engine external url"
+  );
+
+  const externalAgentEngineUrlJson = runStep(
+    "proof verifier external-agent-engine-url self-test",
+    [
+      "scripts/federated-distributed-proof-verify.mjs",
+      "--self-test",
+      "--json",
+      "--require-external-agent-engine-urls"
+    ]
+  );
+  verifySelfTestJson(externalAgentEngineUrlJson);
 
   const missingGitServiceJson = runFailureStep(
     "proof verifier missing-git-service self-test",

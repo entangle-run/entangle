@@ -1490,8 +1490,9 @@ Current status:
   optionally require projected artifact/source/wiki evidence from the agent
   node after work is produced plus relay WebSocket health for configured proof
   relays, Host catalog git backend health for selected or default git
-  services, and external git service URL shape for physical proof runs;
-  generated proof profiles now also carry the primary User Node
+  services, external git service URL shape, and external URL-backed agent
+  engine profile shape for physical proof runs; generated proof profiles now
+  also carry the primary User Node
   conversation and projected User Client health requirements so invoking the
   verifier with only `--profile` keeps the generated proof strength;
 - `pnpm ops:smoke-distributed-proof-tools` now runs a deterministic
@@ -1527,7 +1528,10 @@ Current status:
   machine against projected published git artifact locators and checks the
   advertised branch commit; when generated with `--require-external-git-urls`,
   proof kits now also encode a topology check that selected Host catalog git
-  service coordinates are non-loopback, non-wildcard, and non-file-backed;
+  service coordinates are non-loopback, non-wildcard, and non-file-backed; when
+  generated with `--require-external-agent-engine-urls`, proof kits now also
+  encode a topology check that the selected URL-backed default agent engine
+  profile is non-loopback and non-wildcard;
 - runtime-context runner startup and the Human Interface Runtime now support
   mounted-file identity secret delivery as well as env-var delivery, matching
   generic runner join behavior;
@@ -1635,6 +1639,12 @@ Current status:
   `--require-external-git-urls`, keeping physical proof topology checks from
   silently accepting local-only artifact handoff coordinates while leaving live
   health probing behind `--check-git-backend-health`;
+- distributed proof profiles, generated verifier commands, and proof kit
+  generation can now require URL-backed default agent engine profiles to be
+  non-loopback and non-wildcard with
+  `--require-external-agent-engine-urls`, keeping physical attached OpenCode
+  and `external_http` proof runs from silently accepting local-only engine
+  endpoints;
 - generated proof kits can now require User Client Basic Auth placeholders and
   fail-fast start checks for User Node runner machines, keeping credentials out
   of the kit command line while hardening physical proof endpoints;

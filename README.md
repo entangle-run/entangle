@@ -499,6 +499,11 @@ catalog git service URLs on `localhost`, loopback, wildcard, or file-backed
 coordinates. This guard checks `baseUrl` and `remoteBase` shape and is
 separate from `--check-git-backend-health`, which probes the selected git
 service base URL from the operator machine.
+Pass `--require-external-agent-engine-urls` when URL-backed agent engine
+profiles must also avoid `localhost`, loopback, or wildcard addresses. This is
+useful for attached OpenCode or `external_http` proof runs where the engine
+endpoint must be reachable from the agent runner machine; executable-only
+profiles do not need a network URL.
 Pass `--require-user-client-basic-auth` when generated User Node runner
 directories should require `ENTANGLE_HUMAN_INTERFACE_BASIC_AUTH` before their
 User Clients start. Use `--user-client-basic-auth-env-var <envVar>` if the
@@ -538,6 +543,9 @@ wildcard WebSocket relay URLs before accepting the topology proof.
 With the external git requirement enabled, the verifier also rejects loopback,
 wildcard, or file-backed git service coordinates before accepting the topology
 proof.
+With the external agent-engine requirement enabled, the verifier also rejects a
+loopback or wildcard URL on the selected default URL-backed agent engine
+profile.
 
 After the runner directories are running and assignments have been offered, the
 operator machine can verify the proof through Host and User Client HTTP
@@ -581,6 +589,10 @@ default git service to be present, non-file-backed, and reachable at its public
 Add `--require-external-git-urls` when the proof should validate git service
 URL shape without opening the service, or combine both flags when the operator
 needs shape and live base URL checks.
+Add `--require-external-agent-engine-urls` when attached OpenCode or
+`external_http` engine URLs should be topology-checked for physical proof
+runs. The proof kit also fails fast if the supplied fake OpenCode or external
+HTTP engine URL is local-only while this guard is enabled.
 Generate the kit with `--check-published-git-ref` when the operator machine
 should also run `git ls-remote` against projected post-work git artifact refs.
 
@@ -600,10 +612,11 @@ profiles fail before Host inspection, and that missing artifact evidence,
 missing relay URLs, file-backed git services, or missing git service refs fail
 when explicitly required. It also checks loopback User Client URL rejection
 when physical proof mode requests external URLs, loopback git service URL
-rejection when external git URLs are required, generated User Client Basic Auth
-placeholders for User Node runner machines, custom assignment ids from proof
-profiles, and the generated post-work artifact verifier command. It does not
-replace the real distributed proof above.
+rejection when external git URLs are required, loopback attached-engine URL
+rejection when external agent engine URLs are required, generated User Client
+Basic Auth placeholders for User Node runner machines, custom assignment ids
+from proof profiles, and the generated post-work artifact verifier command. It
+does not replace the real distributed proof above.
 
 Managed Docker runners in the federated dev profile use the same join path.
 The Host passes inline join config JSON to the runner container and the runner

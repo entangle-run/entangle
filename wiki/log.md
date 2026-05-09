@@ -6798,3 +6798,15 @@ proof kit generator and verifier expose `--require-external-git-urls`.
 The verifier rejects loopback, wildcard, or file-backed Host catalog git
 service coordinates when physical proof topology requests external git URLs,
 while live service probing remains behind `--check-git-backend-health`.
+
+## [2026-05-09] proof | Added external agent-engine URL proof guard
+
+Added
+`references/579-distributed-proof-external-agent-engine-url-slice.md`.
+Distributed proof profiles now support `requireExternalAgentEngineUrls`, and
+both the proof kit generator and verifier expose
+`--require-external-agent-engine-urls`.
+
+The proof kit fails fast when attached OpenCode or `external_http` proof setup
+uses a loopback engine URL under that guard, and the verifier rejects loopback
+or wildcard URL-backed default agent engine profiles in Host catalog state.
