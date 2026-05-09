@@ -131,7 +131,7 @@ The most accurate current description is:
 - `pnpm ops:smoke-fake-openai-provider` now verifies that no-credential
   provider harness end to end, including an opt-in chat-completions tool-call
   round, streaming chat-completions, Responses API frames, and a scripted
-  multi-step provider sequence;
+  multi-step provider sequence with deterministic HTTP error responses;
 - operators can now start a deterministic fake OpenCode server with
   `pnpm ops:fake-opencode-server` for manual no-credential attached-server
   route and permission-bridge plumbing tests;

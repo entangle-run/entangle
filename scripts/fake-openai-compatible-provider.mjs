@@ -156,7 +156,8 @@ async function handleRequest(input) {
         return;
       }
 
-      sendJson(input.response, 200, buildResponsesBody(body));
+      const result = buildResponsesResult(body);
+      sendJson(input.response, result.statusCode, result.body);
       return;
     }
 
@@ -165,7 +166,8 @@ async function handleRequest(input) {
       return;
     }
 
-    sendJson(input.response, 200, buildChatCompletionBody(body));
+    const result = buildChatCompletionResult(body);
+    sendJson(input.response, result.statusCode, result.body);
   } catch (error) {
     sendJson(input.response, 500, {
       error: {
@@ -203,37 +205,43 @@ function isAuthorized(request) {
   return request.headers.authorization === `Bearer ${options.apiKey}`;
 }
 
-function buildChatCompletionBody(body) {
+function buildChatCompletionResult(body) {
   const model = typeof body.model === "string" && body.model ? body.model : options.model;
   const scriptedStep = takeScriptedChatCompletionStep();
 
   if (scriptedStep) {
-    return buildScriptedChatCompletionBody({ body, model, scriptedStep });
+    return buildScriptedChatCompletionResult({ body, model, scriptedStep });
   }
 
   if (shouldSendToolCall(body)) {
-    return buildChatToolCallBody({ body, model });
+    return {
+      body: buildChatToolCallBody({ body, model }),
+      statusCode: 200
+    };
   }
 
   return {
-    choices: [
-      {
-        finish_reason: "stop",
-        index: 0,
-        message: {
-          content: options.content,
-          role: "assistant"
+    body: {
+      choices: [
+        {
+          finish_reason: "stop",
+          index: 0,
+          message: {
+            content: options.content,
+            role: "assistant"
+          }
         }
+      ],
+      created: Math.floor(Date.now() / 1000),
+      id: `chatcmpl_${randomUUID()}`,
+      model,
+      object: "chat.completion",
+      usage: {
+        completion_tokens: countApproxTokens(options.content),
+        prompt_tokens: countApproxPromptTokens(body)
       }
-    ],
-    created: Math.floor(Date.now() / 1000),
-    id: `chatcmpl_${randomUUID()}`,
-    model,
-    object: "chat.completion",
-    usage: {
-      completion_tokens: countApproxTokens(options.content),
-      prompt_tokens: countApproxPromptTokens(body)
-    }
+    },
+    statusCode: 200
   };
 }
 
@@ -288,26 +296,56 @@ function buildChatToolCallBody(input) {
   };
 }
 
-function buildScriptedChatCompletionBody(input) {
+function buildScriptedChatCompletionResult(input) {
+  if (input.scriptedStep.type === "error") {
+    return buildScriptedErrorResult(input.scriptedStep);
+  }
+
   if (input.scriptedStep.type === "tool_call") {
     return {
+      body: {
+        choices: [
+          {
+            finish_reason: "tool_calls",
+            index: 0,
+            message: {
+              content: null,
+              role: "assistant",
+              tool_calls: [
+                {
+                  function: {
+                    arguments: JSON.stringify(input.scriptedStep.arguments),
+                    name: input.scriptedStep.name
+                  },
+                  id: input.scriptedStep.id,
+                  type: "function"
+                }
+              ]
+            }
+          }
+        ],
+        created: Math.floor(Date.now() / 1000),
+        id: `chatcmpl_${randomUUID()}`,
+        model: input.model,
+        object: "chat.completion",
+        usage: {
+          completion_tokens: countApproxTokens(JSON.stringify(input.scriptedStep.arguments)),
+          prompt_tokens: countApproxPromptTokens(input.body)
+        }
+      },
+      statusCode: 200
+    };
+  }
+
+  return {
+    body: {
       choices: [
         {
-          finish_reason: "tool_calls",
+          finish_reason: input.scriptedStep.finishReason,
           index: 0,
           message: {
-            content: null,
-            role: "assistant",
-            tool_calls: [
-              {
-                function: {
-                  arguments: JSON.stringify(input.scriptedStep.arguments),
-                  name: input.scriptedStep.name
-                },
-                id: input.scriptedStep.id,
-                type: "function"
-              }
-            ]
+            content: input.scriptedStep.content,
+            role: "assistant"
           }
         }
       ],
@@ -316,31 +354,23 @@ function buildScriptedChatCompletionBody(input) {
       model: input.model,
       object: "chat.completion",
       usage: {
-        completion_tokens: countApproxTokens(JSON.stringify(input.scriptedStep.arguments)),
+        completion_tokens: countApproxTokens(input.scriptedStep.content),
         prompt_tokens: countApproxPromptTokens(input.body)
       }
-    };
-  }
+    },
+    statusCode: 200
+  };
+}
 
+function buildScriptedErrorResult(step) {
   return {
-    choices: [
-      {
-        finish_reason: input.scriptedStep.finishReason,
-        index: 0,
-        message: {
-          content: input.scriptedStep.content,
-          role: "assistant"
-        }
+    body: {
+      error: {
+        message: step.message,
+        type: step.errorType
       }
-    ],
-    created: Math.floor(Date.now() / 1000),
-    id: `chatcmpl_${randomUUID()}`,
-    model: input.model,
-    object: "chat.completion",
-    usage: {
-      completion_tokens: countApproxTokens(input.scriptedStep.content),
-      prompt_tokens: countApproxPromptTokens(input.body)
-    }
+    },
+    statusCode: step.status
   };
 }
 
@@ -353,38 +383,46 @@ function resolveToolCallName(body) {
   return options.toolCallName ?? firstToolName ?? "inspect_artifact_input";
 }
 
-function buildResponsesBody(body) {
+function buildResponsesResult(body) {
   const model = typeof body.model === "string" && body.model ? body.model : options.model;
   const responseId = `resp_${randomUUID()}`;
   const scriptedStep = takeScriptedResponsesStep();
+
+  if (scriptedStep?.type === "error") {
+    return buildScriptedErrorResult(scriptedStep);
+  }
+
   const content = scriptedStep?.content ?? options.content;
 
   return {
-    created_at: Math.floor(Date.now() / 1000),
-    id: responseId,
-    model,
-    object: "response",
-    output: [
-      {
-        content: [
-          {
-            annotations: [],
-            text: content,
-            type: "output_text"
-          }
-        ],
-        id: `msg_${randomUUID()}`,
-        role: "assistant",
-        status: "completed",
-        type: "message"
+    body: {
+      created_at: Math.floor(Date.now() / 1000),
+      id: responseId,
+      model,
+      object: "response",
+      output: [
+        {
+          content: [
+            {
+              annotations: [],
+              text: content,
+              type: "output_text"
+            }
+          ],
+          id: `msg_${randomUUID()}`,
+          role: "assistant",
+          status: "completed",
+          type: "message"
+        }
+      ],
+      output_text: content,
+      status: "completed",
+      usage: {
+        input_tokens: countApproxPromptTokens(body),
+        output_tokens: countApproxTokens(content)
       }
-    ],
-    output_text: content,
-    status: "completed",
-    usage: {
-      input_tokens: countApproxPromptTokens(body),
-      output_tokens: countApproxTokens(content)
-    }
+    },
+    statusCode: 200
   };
 }
 
@@ -688,11 +726,12 @@ function parseScriptArray(input) {
 function parseScriptedChatCompletionStep(input) {
   const entry = parseScriptObjectEntry(input);
   const hasContent = Object.hasOwn(entry, "content");
+  const hasError = Object.hasOwn(entry, "error");
   const hasToolCall = Object.hasOwn(entry, "toolCall");
 
-  if (hasContent === hasToolCall) {
+  if ([hasContent, hasError, hasToolCall].filter(Boolean).length !== 1) {
     throw new Error(
-      `Script '${input.path}' chatCompletions[${input.index}] must define exactly one of 'content' or 'toolCall'.`
+      `Script '${input.path}' chatCompletions[${input.index}] must define exactly one of 'content', 'error', or 'toolCall'.`
     );
   }
 
@@ -711,6 +750,15 @@ function parseScriptedChatCompletionStep(input) {
           : "stop",
       type: "content"
     };
+  }
+
+  if (hasError) {
+    return parseScriptedErrorStep({
+      endpoint: "chatCompletions",
+      error: entry.error,
+      index: input.index,
+      path: input.path
+    });
   }
 
   const toolCall = entry.toolCall;
@@ -752,6 +800,23 @@ function parseScriptedChatCompletionStep(input) {
 
 function parseScriptedResponsesStep(input) {
   const entry = parseScriptObjectEntry(input);
+  const hasContent = Object.hasOwn(entry, "content");
+  const hasError = Object.hasOwn(entry, "error");
+
+  if (hasContent === hasError) {
+    throw new Error(
+      `Script '${input.path}' responses[${input.index}] must define exactly one of 'content' or 'error'.`
+    );
+  }
+
+  if (hasError) {
+    return parseScriptedErrorStep({
+      endpoint: "responses",
+      error: entry.error,
+      index: input.index,
+      path: input.path
+    });
+  }
 
   if (typeof entry.content !== "string") {
     throw new Error(
@@ -760,7 +825,46 @@ function parseScriptedResponsesStep(input) {
   }
 
   return {
-    content: entry.content
+    content: entry.content,
+    type: "content"
+  };
+}
+
+function parseScriptedErrorStep(input) {
+  if (
+    typeof input.error !== "object" ||
+    input.error === null ||
+    Array.isArray(input.error)
+  ) {
+    throw new Error(
+      `Script '${input.path}' ${input.endpoint}[${input.index}].error must be an object.`
+    );
+  }
+
+  if (
+    !Number.isInteger(input.error.status) ||
+    input.error.status < 400 ||
+    input.error.status > 599
+  ) {
+    throw new Error(
+      `Script '${input.path}' ${input.endpoint}[${input.index}].error.status must be an HTTP error status.`
+    );
+  }
+
+  if (typeof input.error.message !== "string" || input.error.message.length === 0) {
+    throw new Error(
+      `Script '${input.path}' ${input.endpoint}[${input.index}].error.message must be a non-empty string.`
+    );
+  }
+
+  return {
+    errorType:
+      typeof input.error.type === "string" && input.error.type.length > 0
+        ? input.error.type
+        : "scripted_error",
+    message: input.error.message,
+    status: input.error.status,
+    type: "error"
   };
 }
 
@@ -830,10 +934,12 @@ Script format:
           "name": "inspect_artifact_input",
           "arguments": { "artifactId": "artifact-alpha" }
         }
-      }
+      },
+      { "error": { "status": 429, "message": "scripted_rate_limit" } }
     ],
     "responses": [
-      { "content": "Scripted Responses API text." }
+      { "content": "Scripted Responses API text." },
+      { "error": { "status": 503, "message": "scripted_unavailable" } }
     ]
   }
 `);

@@ -388,6 +388,7 @@ same-machine slice records.
 - [585-fake-openai-scripted-provider-slice.md](585-fake-openai-scripted-provider-slice.md)
 - [586-service-volume-export-import-slice.md](586-service-volume-export-import-slice.md)
 - [587-service-volume-tool-smoke-slice.md](587-service-volume-tool-smoke-slice.md)
+- [588-fake-openai-scripted-error-slice.md](588-fake-openai-scripted-error-slice.md)
 
 ## Audited Scope
 
@@ -520,6 +521,9 @@ The repository is not fully federated:
 - the same deterministic provider can now load a local `--script` JSON file for
   ordered non-streaming chat-completions and Responses API fixtures, including
   scripted assistant text and function tool-call steps without live credentials;
+- scripted fake OpenAI provider steps can now also emit deterministic HTTP
+  error bodies for chat-completions and Responses API routes, covering
+  no-credential rate-limit and provider-unavailable plumbing checks;
 - operators can now start a deterministic fake OpenCode server through
   `pnpm ops:fake-opencode-server`; it exposes the attached OpenCode
   server routes Entangle consumes and emits deterministic SSE permission and

@@ -265,6 +265,9 @@ Current status:
   ordered non-streaming chat-completions and Responses API fixtures, and the
   smoke verifies scripted text, function tool-call, final text, and Responses
   API output without live credentials.
+- Scripted fake OpenAI-compatible provider steps can now also emit
+  deterministic HTTP error responses, and the smoke verifies scripted 429
+  chat-completions plus 503 Responses API errors without live credentials.
 - `pnpm ops:fake-opencode-server` now starts a deterministic fake attached
   OpenCode server for no-credential route and permission-bridge plumbing
   checks. It can also optionally write deterministic content into the workspace
@@ -1456,7 +1459,7 @@ Current status:
 - `pnpm ops:smoke-fake-openai-provider` verifies the deterministic provider
   harness without live credentials, including an opt-in chat-completions
   `tool_calls` round and a scripted multi-step sequence from the
-  operator-started fake provider;
+  operator-started fake provider, including scripted HTTP error responses;
 - `pnpm ops:check-product-naming` verifies active product surfaces do not
   reintroduce obsolete local product/profile labels;
 - `pnpm ops:demo-user-node-runtime` now wraps the fastest interactive User

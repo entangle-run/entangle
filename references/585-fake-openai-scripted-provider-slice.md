@@ -77,9 +77,9 @@ the built-in single tool-call scenario, but cannot be combined with `--script`.
 
 ## Open Questions
 
-Future work can decide whether scripted streaming frames or error scenarios are
-needed. The current slice intentionally covers the non-streaming paths most
-useful for deterministic manual agent-engine tests.
+`references/588-fake-openai-scripted-error-slice.md` adds deterministic
+non-streaming scripted error responses. Future work can decide whether scripted
+streaming frames or mid-stream error scenarios are needed.
 
 ## Verification
 

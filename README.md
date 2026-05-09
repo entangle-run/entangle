@@ -242,7 +242,9 @@ before completing after the next `tool` result message. Add `--script
 provider-script.json` when you need ordered non-streaming chat-completions and
 Responses API fixtures; scripted chat steps can emit assistant text or one
 function tool call, and scripted mode falls back to the deterministic default
-after the script is exhausted.
+after the script is exhausted. Scripted chat-completions and Responses API
+steps can also emit deterministic HTTP error bodies for rate-limit or provider
+outage plumbing checks.
 
 The provider harness has its own no-credential smoke:
 
@@ -253,7 +255,7 @@ pnpm ops:smoke-fake-openai-provider
 That smoke starts the fake provider on an ephemeral port and verifies health,
 model listing, non-streaming chat completions, an opt-in tool-call round,
 streaming chat completions, streaming Responses API frames, and a scripted
-multi-step provider sequence.
+multi-step provider sequence including scripted error responses.
 
 For manual attached OpenCode permission-bridge plumbing tests without real
 model credentials, start the deterministic fake OpenCode server:

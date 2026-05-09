@@ -312,11 +312,25 @@ async function verifyScriptedProvider() {
       },
       {
         content: "Scripted final chat reply."
+      },
+      {
+        error: {
+          message: "scripted_chat_rate_limit",
+          status: 429,
+          type: "rate_limit_exceeded"
+        }
       }
     ],
     responses: [
       {
         content: "Scripted Responses API reply."
+      },
+      {
+        error: {
+          message: "scripted_responses_unavailable",
+          status: 503,
+          type: "provider_unavailable"
+        }
       }
     ]
   };
@@ -345,6 +359,7 @@ async function verifyScriptedProvider() {
     const scriptedStartup = await waitForStartup(child);
     await verifyScriptedChatSequence(scriptedStartup.baseUrl);
     await verifyScriptedResponsesBody(scriptedStartup.baseUrl);
+    await verifyScriptedErrorBodies(scriptedStartup.baseUrl);
   } finally {
     await stopProvider(child);
     await rm(tempDir, { recursive: true, force: true });
@@ -446,6 +461,51 @@ async function verifyScriptedChatSequence(baseUrl) {
     thirdBody.choices?.[0]?.message?.content !== "Scripted final chat reply."
   ) {
     throw new Error(`Scripted final chat check failed: ${thirdResponse.status}`);
+  }
+}
+
+async function verifyScriptedErrorBodies(baseUrl) {
+  const chatResponse = await fetch(`${baseUrl}/chat/completions`, {
+    body: JSON.stringify({
+      messages: [
+        {
+          content: "script error",
+          role: "user"
+        }
+      ],
+      model: "entangle-deterministic-test"
+    }),
+    headers: jsonHeaders(),
+    method: "POST"
+  });
+  const chatBody = await chatResponse.json();
+
+  if (
+    chatResponse.status !== 429 ||
+    chatBody.error?.message !== "scripted_chat_rate_limit" ||
+    chatBody.error?.type !== "rate_limit_exceeded"
+  ) {
+    throw new Error(`Scripted chat error check failed: ${chatResponse.status}`);
+  }
+
+  const responsesResponse = await fetch(`${baseUrl}/responses`, {
+    body: JSON.stringify({
+      input: "script response error",
+      model: "entangle-deterministic-test"
+    }),
+    headers: jsonHeaders(),
+    method: "POST"
+  });
+  const responsesBody = await responsesResponse.json();
+
+  if (
+    responsesResponse.status !== 503 ||
+    responsesBody.error?.message !== "scripted_responses_unavailable" ||
+    responsesBody.error?.type !== "provider_unavailable"
+  ) {
+    throw new Error(
+      `Scripted Responses API error check failed: ${responsesResponse.status}`
+    );
   }
 }
 
