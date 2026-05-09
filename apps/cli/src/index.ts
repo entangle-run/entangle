@@ -111,6 +111,8 @@ import {
 } from "./projection-output.js";
 import {
   attachUserNodeClientHealthForCli,
+  buildUserNodeReviewQueueForCli,
+  buildUserNodeReviewQueueGroupsForCli,
   buildUserNodeClientSummariesForCli,
   buildUserNodeRunnerCandidateSummariesForCli,
   filterUserNodeAssignmentsForCli,
@@ -126,6 +128,7 @@ import {
   projectUserNodeIdentitySummary,
   projectUserNodeMessageSummary,
   projectUserNodeMessagePublishSummary,
+  projectUserNodeReviewQueueGroupSummary,
   sortUserNodeIdentitiesForCli
 } from "./user-node-output.js";
 import {
@@ -2136,6 +2139,64 @@ inboxCommand
             messages,
             returned: messages.length,
             totalMatched: allSourceReviewMessages.length
+          }
+    );
+  });
+
+inboxCommand
+  .command("review-queue")
+  .requiredOption("--user-node <nodeId>", "User Node identifier.")
+  .option("--peer-node <nodeId>", "Filter to conversations with one peer node.")
+  .option("--unread-only", "Only scan conversations with unread messages.")
+  .option("--limit <n>", "Maximum number of review items to return.", "20")
+  .option("--summary", "Print compact grouped review queue summaries.")
+  .description("List grouped pending review work for one User Node.")
+  .action(async (
+    options: {
+      limit: string;
+      peerNode?: string;
+      summary?: boolean;
+      unreadOnly?: boolean;
+      userNode: string;
+    },
+    command: Command
+  ) => {
+    const limit = parsePositiveIntegerOption(options.limit, "--limit");
+    const client = createCliHostClient(command);
+    const inbox = await client.getUserNodeInbox(options.userNode);
+    const conversations = filterUserConversationsForCli({
+      conversations: inbox.conversations,
+      ...(options.peerNode ? { peerNodeId: options.peerNode } : {}),
+      unreadOnly: options.unreadOnly === true
+    });
+    const details = await Promise.all(
+      conversations.map((conversation) =>
+        client.getUserNodeConversation(
+          options.userNode,
+          conversation.conversationId
+        )
+      )
+    );
+    const allItems = buildUserNodeReviewQueueForCli({
+      messages: details.flatMap((detail) => detail.messages)
+    });
+    const items = allItems.slice(0, limit);
+    const groups = buildUserNodeReviewQueueGroupsForCli(items);
+
+    printJson(
+      options.summary
+        ? {
+            conversationCount: conversations.length,
+            groups: groups.map(projectUserNodeReviewQueueGroupSummary),
+            returned: items.length,
+            totalMatched: allItems.length
+          }
+        : {
+            conversationCount: conversations.length,
+            groups,
+            items,
+            returned: items.length,
+            totalMatched: allItems.length
           }
     );
   });

@@ -1,5 +1,12 @@
 # Entangle Wiki Log
 
+## [2026-05-09] cli | Added headless review queue
+
+Added `references/571-cli-review-queue-slice.md`. The CLI now exposes
+`entangle inbox review-queue --user-node <nodeId>` as a grouped headless triage
+view over inbound approval requests and source-change review requests, with
+peer/unread filters and compact summary output.
+
 ## [2026-05-09] user-client | Added participant review queue batching
 
 Added `references/570-participant-review-queue-batching-slice.md`. The

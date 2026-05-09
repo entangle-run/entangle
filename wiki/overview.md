@@ -945,6 +945,9 @@ The repository now also contains the first real implementation baseline:
   Client and fallback Human Interface Runtime group pending review work by
   peer/node with bounded counts while keeping signed approval and source-change
   review actions in the conversation-specific flows;
+- a CLI review-queue refinement where `entangle inbox review-queue --user-node
+  <nodeId>` exposes the same grouped headless triage view over inbound approval
+  and source-change review requests;
 - a coordination-map memory refinement where successful model-guided synthesis
   now writes `memory/wiki/summaries/coordination-map.md` with local node
   relation, owner/origin/entrypoint, inbound message provenance, active peer

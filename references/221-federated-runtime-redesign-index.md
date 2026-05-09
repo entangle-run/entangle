@@ -371,6 +371,7 @@ same-machine slice records.
 - [568-human-interface-fallback-review-queue-slice.md](568-human-interface-fallback-review-queue-slice.md)
 - [569-memory-synthesis-brief-context-slice.md](569-memory-synthesis-brief-context-slice.md)
 - [570-participant-review-queue-batching-slice.md](570-participant-review-queue-batching-slice.md)
+- [571-cli-review-queue-slice.md](571-cli-review-queue-slice.md)
 
 ## Audited Scope
 
@@ -1106,6 +1107,10 @@ The running React User Client and fallback Human Interface Runtime now group
 Review Queue entries by peer/node, showing bounded per-group counts for pending
 reviews, approvals, and source-change reviews before a human node opens the
 conversation-specific action flow.
+The CLI now exposes the same headless triage concept through
+`entangle inbox review-queue --user-node <nodeId>`, grouping inbound approval
+and source-change review requests by peer node while preserving existing signed
+reply/approval/review commands as the mutation path.
 Release-control packets are now covered by the active product naming guardrail,
 and released packet text no longer preserves retired runtime-profile literals
 or obsolete readiness milestone wording as public claims.

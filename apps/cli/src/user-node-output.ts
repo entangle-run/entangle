@@ -121,6 +121,34 @@ export type UserNodeMessageCliSummary = {
   turnId: string;
 };
 
+export type UserNodeReviewQueueCliItem = {
+  approvalId: string;
+  approvalOperation?: string;
+  approvalResourceId?: string;
+  approvalResourceKind?: string;
+  approvalResourceLabel?: string;
+  conversationId: string;
+  createdAt: string;
+  eventId: string;
+  id: string;
+  kind: "approval" | "source_change";
+  peerNodeId: string;
+  sessionId: string;
+  summary: string;
+  turnId: string;
+};
+
+export type UserNodeReviewQueueCliGroup = {
+  approvalCount: number;
+  conversationIds: string[];
+  groupId: string;
+  itemCount: number;
+  items: UserNodeReviewQueueCliItem[];
+  label: string;
+  newestCreatedAt: string;
+  sourceChangeCount: number;
+};
+
 export type UserNodeCommandReceiptCliSummary = {
   artifactId?: string;
   commandEventType: string;
@@ -565,6 +593,139 @@ export function filterUserNodeSourceReviewMessagesForCli(input: {
   );
 
   return input.limit === undefined ? messages : messages.slice(0, input.limit);
+}
+
+function projectUserNodeReviewQueueItem(
+  message: UserNodeMessageRecord
+): UserNodeReviewQueueCliItem | undefined {
+  const approval = message.approval;
+
+  if (
+    message.direction !== "inbound" ||
+    message.messageType !== "approval.request" ||
+    approval === undefined
+  ) {
+    return undefined;
+  }
+
+  const resource = approval.resource;
+  const kind =
+    resource?.kind === "source_change_candidate" ? "source_change" : "approval";
+
+  return {
+    approvalId: approval.approvalId,
+    ...(approval.operation ? { approvalOperation: approval.operation } : {}),
+    ...(resource?.id ? { approvalResourceId: resource.id } : {}),
+    ...(resource?.kind ? { approvalResourceKind: resource.kind } : {}),
+    ...(resource?.label ? { approvalResourceLabel: resource.label } : {}),
+    conversationId: message.conversationId,
+    createdAt: message.createdAt,
+    eventId: message.eventId,
+    id: `${kind}:${approval.approvalId}`,
+    kind,
+    peerNodeId: message.peerNodeId,
+    sessionId: message.sessionId,
+    summary: message.summary,
+    turnId: message.turnId
+  };
+}
+
+export function buildUserNodeReviewQueueForCli(input: {
+  limit?: number | undefined;
+  messages: UserNodeMessageRecord[];
+}): UserNodeReviewQueueCliItem[] {
+  const items = filterUserNodeApprovalMessagesForCli({
+    messages: input.messages
+  })
+    .map(projectUserNodeReviewQueueItem)
+    .filter((item): item is UserNodeReviewQueueCliItem => item !== undefined);
+
+  return input.limit === undefined ? items : items.slice(0, input.limit);
+}
+
+export function buildUserNodeReviewQueueGroupsForCli(
+  items: UserNodeReviewQueueCliItem[]
+): UserNodeReviewQueueCliGroup[] {
+  const groupsById = new Map<string, UserNodeReviewQueueCliGroup>();
+
+  for (const item of items) {
+    const groupId = `peer:${item.peerNodeId}`;
+    const existing = groupsById.get(groupId);
+    const group =
+      existing ??
+      ({
+        approvalCount: 0,
+        conversationIds: [],
+        groupId,
+        itemCount: 0,
+        items: [],
+        label: item.peerNodeId,
+        newestCreatedAt: item.createdAt,
+        sourceChangeCount: 0
+      } satisfies UserNodeReviewQueueCliGroup);
+
+    group.items.push(item);
+    group.itemCount += 1;
+    group.newestCreatedAt =
+      item.createdAt > group.newestCreatedAt ? item.createdAt : group.newestCreatedAt;
+
+    if (!group.conversationIds.includes(item.conversationId)) {
+      group.conversationIds.push(item.conversationId);
+    }
+
+    if (item.kind === "source_change") {
+      group.sourceChangeCount += 1;
+    } else {
+      group.approvalCount += 1;
+    }
+
+    groupsById.set(groupId, group);
+  }
+
+  return [...groupsById.values()].sort((left, right) => {
+    const createdOrder = right.newestCreatedAt.localeCompare(left.newestCreatedAt);
+
+    if (createdOrder !== 0) {
+      return createdOrder;
+    }
+
+    return left.groupId.localeCompare(right.groupId);
+  });
+}
+
+function formatReviewQueueCount(
+  count: number,
+  singular: string,
+  plural = `${singular}s`
+): string {
+  return `${count} ${count === 1 ? singular : plural}`;
+}
+
+export function formatUserNodeReviewQueueGroupForCli(
+  group: UserNodeReviewQueueCliGroup
+): string {
+  return [
+    group.label,
+    formatReviewQueueCount(group.itemCount, "review"),
+    formatReviewQueueCount(group.approvalCount, "approval", "approvals"),
+    formatReviewQueueCount(group.sourceChangeCount, "source change")
+  ].join(" · ");
+}
+
+export function projectUserNodeReviewQueueItemSummary(
+  item: UserNodeReviewQueueCliItem
+): UserNodeReviewQueueCliItem {
+  return item;
+}
+
+export function projectUserNodeReviewQueueGroupSummary(
+  group: UserNodeReviewQueueCliGroup
+): UserNodeReviewQueueCliGroup & { labelSummary: string } {
+  return {
+    ...group,
+    items: group.items.map(projectUserNodeReviewQueueItemSummary),
+    labelSummary: formatUserNodeReviewQueueGroupForCli(group)
+  };
 }
 
 export function projectUserNodeCommandReceiptSummary(

@@ -10,6 +10,8 @@ import type {
 } from "@entangle/types";
 import {
   attachUserNodeClientHealthForCli,
+  buildUserNodeReviewQueueForCli,
+  buildUserNodeReviewQueueGroupsForCli,
   buildUserNodeRunnerCandidateSummariesForCli,
   buildUserNodeClientSummariesForCli,
   filterUserNodeAssignmentsForCli,
@@ -19,12 +21,14 @@ import {
   filterUserNodeSourceReviewMessagesForCli,
   filterUserNodeClientSummariesForCli,
   filterUserNodeCommandReceiptsForCli,
+  formatUserNodeReviewQueueGroupForCli,
   listCurrentUserNodeAssignmentsForCli,
   projectUserNodeCommandReceiptSummary,
   projectUserConversationSummary,
   projectUserNodeIdentitySummary,
   projectUserNodeMessageSummary,
   projectUserNodeMessagePublishSummary,
+  projectUserNodeReviewQueueItemSummary,
   sortUserConversationsForCli,
   sortUserNodeIdentitiesForCli
 } from "./user-node-output.js";
@@ -1114,6 +1118,125 @@ describe("user node CLI output", () => {
     ).toEqual([
       "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"
     ]);
+  });
+
+  it("builds a grouped review queue for the headless User Node inbox", () => {
+    const messages: UserNodeMessageRecord[] = [
+      {
+        approval: {
+          approvalId: "approval-generic-alpha",
+          approverNodeIds: ["user-a"],
+          operation: "tool_execution",
+          resource: {
+            id: "artifact-alpha",
+            kind: "artifact",
+            label: "Artifact alpha"
+          }
+        },
+        artifactRefs: [],
+        conversationId: "conversation-reviewer",
+        createdAt: "2026-04-26T12:01:00.000Z",
+        direction: "inbound",
+        eventId:
+          "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        fromNodeId: "reviewer-it",
+        fromPubkey:
+          "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+        messageType: "approval.request",
+        peerNodeId: "reviewer-it",
+        publishedRelays: [],
+        relayUrls: [],
+        schemaVersion: "1",
+        sessionId: "session-alpha",
+        summary: "Approve artifact.",
+        toNodeId: "user-a",
+        toPubkey:
+          "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+        turnId: "turn-alpha",
+        userNodeId: "user-a"
+      },
+      {
+        approval: {
+          approvalId: "approval-source-alpha",
+          approverNodeIds: ["user-a"],
+          operation: "source_application",
+          resource: {
+            id: "source-change-alpha",
+            kind: "source_change_candidate",
+            label: "Source change alpha"
+          }
+        },
+        artifactRefs: [],
+        conversationId: "conversation-worker",
+        createdAt: "2026-04-26T12:02:00.000Z",
+        direction: "inbound",
+        eventId:
+          "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+        fromNodeId: "worker-it",
+        fromPubkey:
+          "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+        messageType: "approval.request",
+        peerNodeId: "worker-it",
+        publishedRelays: [],
+        relayUrls: [],
+        schemaVersion: "1",
+        sessionId: "session-alpha",
+        summary: "Review source.",
+        toNodeId: "user-a",
+        toPubkey:
+          "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+        turnId: "turn-alpha",
+        userNodeId: "user-a"
+      },
+      {
+        artifactRefs: [],
+        conversationId: "conversation-worker",
+        createdAt: "2026-04-26T12:03:00.000Z",
+        direction: "outbound",
+        eventId:
+          "dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd",
+        fromNodeId: "user-a",
+        fromPubkey:
+          "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+        messageType: "approval.response",
+        peerNodeId: "worker-it",
+        publishedRelays: [],
+        relayUrls: [],
+        schemaVersion: "1",
+        sessionId: "session-alpha",
+        summary: "Approved.",
+        toNodeId: "worker-it",
+        toPubkey:
+          "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+        turnId: "turn-alpha",
+        userNodeId: "user-a"
+      }
+    ];
+
+    const items = buildUserNodeReviewQueueForCli({ messages });
+
+    expect(items.map((item) => item.id)).toEqual([
+      "source_change:approval-source-alpha",
+      "approval:approval-generic-alpha"
+    ]);
+    expect(projectUserNodeReviewQueueItemSummary(items[0]!)).toMatchObject({
+      approvalId: "approval-source-alpha",
+      approvalResourceId: "source-change-alpha",
+      approvalResourceKind: "source_change_candidate",
+      conversationId: "conversation-worker",
+      kind: "source_change",
+      peerNodeId: "worker-it"
+    });
+
+    const groups = buildUserNodeReviewQueueGroupsForCli(items);
+
+    expect(groups.map((group) => group.groupId)).toEqual([
+      "peer:worker-it",
+      "peer:reviewer-it"
+    ]);
+    expect(formatUserNodeReviewQueueGroupForCli(groups[0]!)).toBe(
+      "worker-it · 1 review · 0 approvals · 1 source change"
+    );
   });
 
   it("builds scoped approval response metadata from CLI options", () => {

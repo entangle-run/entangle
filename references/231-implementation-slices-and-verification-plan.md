@@ -1395,6 +1395,10 @@ Current status:
   Review Queue entries by peer/node, exposing bounded per-group counts for
   pending reviews, approvals, and source-change reviews while preserving the
   existing signed conversation-specific action flows;
+- `entangle inbox review-queue --user-node <nodeId>` now exposes the same
+  grouped headless triage view over inbound approval requests and
+  source-change review requests, with peer/unread filters and compact summary
+  output while leaving signed responses to the existing message commands;
 - `ops:smoke-federated-dev:runtime` now delegates to the process-runner
   federated smoke and defaults to the deterministic fake OpenCode
   attached-server profile, so the active runtime smoke proves the current
