@@ -238,7 +238,11 @@ deterministic responses and bearer-token validation. Point an
 catalog, auth, adapter, and UI wiring without live model credentials. This does
 not validate real model behavior. Add `--tool-call-on-first-request` when you
 want the fake chat-completions endpoint to request one deterministic tool call
-before completing after the next `tool` result message.
+before completing after the next `tool` result message. Add `--script
+provider-script.json` when you need ordered non-streaming chat-completions and
+Responses API fixtures; scripted chat steps can emit assistant text or one
+function tool call, and scripted mode falls back to the deterministic default
+after the script is exhausted.
 
 The provider harness has its own no-credential smoke:
 
@@ -248,7 +252,8 @@ pnpm ops:smoke-fake-openai-provider
 
 That smoke starts the fake provider on an ephemeral port and verifies health,
 model listing, non-streaming chat completions, an opt-in tool-call round,
-streaming chat completions, and streaming Responses API frames.
+streaming chat completions, streaming Responses API frames, and a scripted
+multi-step provider sequence.
 
 For manual attached OpenCode permission-bridge plumbing tests without real
 model credentials, start the deterministic fake OpenCode server:

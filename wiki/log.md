@@ -6869,3 +6869,14 @@ classifies failed probes as provider-unavailable engine failures. Existing
 profiles without health URLs continue to execute without a probe. Distributed
 proof-kit generation now also accepts `--external-http-engine-health-url` and
 passes it into generated Host operator commands.
+
+## [2026-05-09] smoke | Added scripted fake OpenAI provider sequences
+
+Added `references/585-fake-openai-scripted-provider-slice.md`.
+`pnpm ops:fake-openai-provider` can now load a local `--script` JSON file with
+ordered non-streaming chat-completions and Responses API fixture responses.
+
+The provider smoke now verifies scripted assistant text, scripted function
+tool-call output, scripted final text, and scripted Responses API output
+without live model credentials, while the existing deterministic default and
+single built-in tool-call mode remain available.

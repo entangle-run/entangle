@@ -1,6 +1,9 @@
 #!/usr/bin/env node
 import { spawn } from "node:child_process";
 import { once } from "node:events";
+import { mkdtemp, rm, writeFile } from "node:fs/promises";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
 import { createInterface } from "node:readline";
 
 const apiKey = "entangle-test-key";
@@ -31,6 +34,7 @@ try {
   await verifyChatToolLoop(startup.baseUrl);
   await verifyChatStream(startup.baseUrl);
   await verifyResponsesStream(startup.baseUrl);
+  await verifyScriptedProvider();
   console.log(
     `fake OpenAI-compatible provider smoke passed (${startup.baseUrl})`
   );
@@ -286,6 +290,181 @@ async function verifyResponsesStream(baseUrl) {
     !body.includes("[DONE]")
   ) {
     throw new Error(`Responses stream check failed: ${response.status}`);
+  }
+}
+
+async function verifyScriptedProvider() {
+  const tempDir = await mkdtemp(join(tmpdir(), "entangle-fake-openai-script-"));
+  const scriptPath = join(tempDir, "script.json");
+  const script = {
+    chatCompletions: [
+      {
+        content: "Scripted first chat reply."
+      },
+      {
+        toolCall: {
+          arguments: {
+            artifactId: "artifact-scripted"
+          },
+          id: "call_scripted_001",
+          name: "inspect_artifact_input"
+        }
+      },
+      {
+        content: "Scripted final chat reply."
+      }
+    ],
+    responses: [
+      {
+        content: "Scripted Responses API reply."
+      }
+    ]
+  };
+
+  await writeFile(scriptPath, `${JSON.stringify(script, null, 2)}\n`, "utf8");
+
+  const child = spawn(
+    process.execPath,
+    [
+      "scripts/fake-openai-compatible-provider.mjs",
+      "--port",
+      "0",
+      "--api-key",
+      apiKey,
+      "--script",
+      scriptPath,
+      "--json-log"
+    ],
+    {
+      cwd: process.cwd(),
+      stdio: ["ignore", "pipe", "pipe"]
+    }
+  );
+
+  try {
+    const scriptedStartup = await waitForStartup(child);
+    await verifyScriptedChatSequence(scriptedStartup.baseUrl);
+    await verifyScriptedResponsesBody(scriptedStartup.baseUrl);
+  } finally {
+    await stopProvider(child);
+    await rm(tempDir, { recursive: true, force: true });
+  }
+}
+
+async function verifyScriptedChatSequence(baseUrl) {
+  const firstResponse = await fetch(`${baseUrl}/chat/completions`, {
+    body: JSON.stringify({
+      messages: [
+        {
+          content: "script first",
+          role: "user"
+        }
+      ],
+      model: "entangle-deterministic-test"
+    }),
+    headers: jsonHeaders(),
+    method: "POST"
+  });
+  const firstBody = await firstResponse.json();
+
+  if (
+    !firstResponse.ok ||
+    firstBody.choices?.[0]?.message?.content !== "Scripted first chat reply."
+  ) {
+    throw new Error(`Scripted first chat check failed: ${firstResponse.status}`);
+  }
+
+  const secondResponse = await fetch(`${baseUrl}/chat/completions`, {
+    body: JSON.stringify({
+      messages: [
+        {
+          content: "script tool",
+          role: "user"
+        }
+      ],
+      model: "entangle-deterministic-test",
+      tool_choice: "auto",
+      tools: [
+        {
+          function: {
+            name: "inspect_artifact_input",
+            parameters: {
+              type: "object"
+            }
+          },
+          type: "function"
+        }
+      ]
+    }),
+    headers: jsonHeaders(),
+    method: "POST"
+  });
+  const secondBody = await secondResponse.json();
+  const scriptedToolCall = secondBody.choices?.[0]?.message?.tool_calls?.[0];
+
+  if (
+    !secondResponse.ok ||
+    secondBody.choices?.[0]?.finish_reason !== "tool_calls" ||
+    scriptedToolCall?.id !== "call_scripted_001" ||
+    scriptedToolCall?.function?.name !== "inspect_artifact_input" ||
+    JSON.parse(scriptedToolCall.function.arguments).artifactId !==
+      "artifact-scripted"
+  ) {
+    throw new Error(`Scripted tool-call check failed: ${secondResponse.status}`);
+  }
+
+  const thirdResponse = await fetch(`${baseUrl}/chat/completions`, {
+    body: JSON.stringify({
+      messages: [
+        {
+          content: "script tool",
+          role: "user"
+        },
+        {
+          content: null,
+          role: "assistant",
+          tool_calls: [scriptedToolCall]
+        },
+        {
+          content: JSON.stringify({
+            artifactId: "artifact-scripted",
+            preview: "Scripted artifact content."
+          }),
+          role: "tool",
+          tool_call_id: scriptedToolCall.id
+        }
+      ],
+      model: "entangle-deterministic-test"
+    }),
+    headers: jsonHeaders(),
+    method: "POST"
+  });
+  const thirdBody = await thirdResponse.json();
+
+  if (
+    !thirdResponse.ok ||
+    thirdBody.choices?.[0]?.message?.content !== "Scripted final chat reply."
+  ) {
+    throw new Error(`Scripted final chat check failed: ${thirdResponse.status}`);
+  }
+}
+
+async function verifyScriptedResponsesBody(baseUrl) {
+  const response = await fetch(`${baseUrl}/responses`, {
+    body: JSON.stringify({
+      input: "script response",
+      model: "entangle-deterministic-test"
+    }),
+    headers: jsonHeaders(),
+    method: "POST"
+  });
+  const body = await response.json();
+
+  if (
+    !response.ok ||
+    body.output_text !== "Scripted Responses API reply."
+  ) {
+    throw new Error(`Scripted Responses API check failed: ${response.status}`);
   }
 }
 

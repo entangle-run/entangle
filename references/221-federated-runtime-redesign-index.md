@@ -385,6 +385,7 @@ same-machine slice records.
 - [582-fake-external-http-bearer-smoke-slice.md](582-fake-external-http-bearer-smoke-slice.md)
 - [583-operator-token-file-configuration-slice.md](583-operator-token-file-configuration-slice.md)
 - [584-external-http-agent-engine-health-url-slice.md](584-external-http-agent-engine-health-url-slice.md)
+- [585-fake-openai-scripted-provider-slice.md](585-fake-openai-scripted-provider-slice.md)
 
 ## Audited Scope
 
@@ -514,6 +515,9 @@ The repository is not fully federated:
   single chat-completions `tool_calls` round with
   `--tool-call-on-first-request`, and its smoke verifies the first tool-call
   response plus final tool-result completion without live credentials;
+- the same deterministic provider can now load a local `--script` JSON file for
+  ordered non-streaming chat-completions and Responses API fixtures, including
+  scripted assistant text and function tool-call steps without live credentials;
 - operators can now start a deterministic fake OpenCode server through
   `pnpm ops:fake-opencode-server`; it exposes the attached OpenCode
   server routes Entangle consumes and emits deterministic SSE permission and

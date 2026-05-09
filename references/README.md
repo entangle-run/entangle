@@ -182,8 +182,10 @@ for chat completions, tool-loop continuation, and provider error mapping
 without live model credentials. A root `pnpm ops:fake-openai-provider` command
 now starts a deterministic OpenAI-compatible HTTP development server for manual
 catalog/auth/adapter wiring tests without live model credentials, and
-`pnpm ops:smoke-fake-openai-provider` verifies that harness end to end. A root
-`pnpm ops:fake-opencode-server` command now starts a deterministic fake
+`pnpm ops:smoke-fake-openai-provider` verifies that harness end to end. The
+same provider can now load a local scripted non-streaming chat-completions and
+Responses API sequence for deterministic multi-step no-credential fixtures. A
+root `pnpm ops:fake-opencode-server` command now starts a deterministic fake
 OpenCode attached server for manual no-credential route and permission-bridge
 plumbing checks, and `pnpm ops:smoke-fake-opencode-server` verifies that
 server's health, session, SSE permission, permission reply, completion,
@@ -965,6 +967,7 @@ files are the active federated redesign pack.
 583. [582-fake-external-http-bearer-smoke-slice.md](582-fake-external-http-bearer-smoke-slice.md)
 584. [583-operator-token-file-configuration-slice.md](583-operator-token-file-configuration-slice.md)
 585. [584-external-http-agent-engine-health-url-slice.md](584-external-http-agent-engine-health-url-slice.md)
+586. [585-fake-openai-scripted-provider-slice.md](585-fake-openai-scripted-provider-slice.md)
 
 ## Role of this corpus
 
