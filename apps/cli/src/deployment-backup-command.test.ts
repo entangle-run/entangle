@@ -321,6 +321,7 @@ describe("deployment backup command helpers", () => {
           stdout: ""
         };
       },
+      assumeServicesStopped: true,
       now: () => new Date("2026-05-09T00:00:00.000Z"),
       outputPath,
       repositoryRoot: await createTempRoot("entangle-service-volume-repo-real-")
@@ -366,6 +367,23 @@ describe("deployment backup command helpers", () => {
         }
       ]
     });
+  });
+
+  it("rejects non-dry-run service-volume export without stopped-service acknowledgement", async () => {
+    const outputPath = path.join(
+      await createTempRoot("entangle-service-volume-export-ack-"),
+      "bundle"
+    );
+
+    await expect(
+      createDeploymentServiceVolumeExport({
+        commandRunner: () => {
+          throw new Error("Docker must not run without acknowledgement.");
+        },
+        outputPath,
+        repositoryRoot: await createTempRoot("entangle-service-volume-repo-ack-")
+      })
+    ).rejects.toThrow("--assume-services-stopped");
   });
 
   it("plans service-volume import from a validated manifest without executing Docker", async () => {
@@ -419,5 +437,38 @@ describe("deployment backup command helpers", () => {
       status: "planned",
       volume: "gitea-data"
     });
+  });
+
+  it("rejects non-dry-run service-volume import without stopped-service acknowledgement", async () => {
+    const bundleRoot = path.join(
+      await createTempRoot("entangle-service-volume-import-ack-"),
+      "bundle"
+    );
+    await writeJson(path.join(bundleRoot, "manifest.json"), {
+      createdAt: "2026-05-09T00:00:00.000Z",
+      dockerImage: "alpine:3.20",
+      product: "entangle-service-volume-backup",
+      schemaVersion: "1",
+      secretsIncluded: false,
+      volumes: [
+        {
+          archivePath: "gitea-data.tar",
+          mountPath: "/data",
+          service: "gitea",
+          volume: "gitea-data"
+        }
+      ]
+    });
+    await writeText(path.join(bundleRoot, "gitea-data.tar"), "tar-bytes");
+
+    await expect(
+      createDeploymentServiceVolumeImport({
+        commandRunner: () => {
+          throw new Error("Docker must not run without acknowledgement.");
+        },
+        inputPath: bundleRoot,
+        repositoryRoot: await createTempRoot("entangle-service-volume-import-ack-repo-")
+      })
+    ).rejects.toThrow("--assume-services-stopped");
   });
 });

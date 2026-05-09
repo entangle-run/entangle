@@ -621,6 +621,10 @@ const deploymentServiceVolumesCommand = deploymentCommand
 
 deploymentServiceVolumesCommand
   .command("export")
+  .option(
+    "--assume-services-stopped",
+    "Confirm Gitea and relay services are stopped or quiesced before exporting."
+  )
   .option("--docker-image <image>", "Utility image used for tar operations.", "alpine:3.20")
   .option("--dry-run", "Plan Docker archive commands without executing them.")
   .option("--force", "Replace an existing service-volume backup output directory.")
@@ -632,12 +636,14 @@ deploymentServiceVolumesCommand
   .description("Export Gitea and relay service volumes into a service-volume backup bundle.")
   .action(
     async (options: {
+      assumeServicesStopped?: boolean;
       dockerImage: string;
       dryRun?: boolean;
       force?: boolean;
       output: string;
     }) => {
       const summary = await createDeploymentServiceVolumeExport({
+        assumeServicesStopped: options.assumeServicesStopped,
         dockerImage: options.dockerImage,
         dryRun: options.dryRun,
         force: options.force,
@@ -654,6 +660,10 @@ deploymentServiceVolumesCommand
 deploymentServiceVolumesCommand
   .command("import")
   .argument("<bundle>", "Path to an Entangle service-volume backup bundle directory.")
+  .option(
+    "--assume-services-stopped",
+    "Confirm Gitea and relay services are stopped or quiesced before importing."
+  )
   .option("--docker-image <image>", "Override the utility image used for tar operations.")
   .option("--dry-run", "Plan Docker restore commands without executing them.")
   .description("Import Gitea and relay service volumes from a service-volume backup bundle.")
@@ -661,11 +671,13 @@ deploymentServiceVolumesCommand
     async (
       bundle: string,
       options: {
+        assumeServicesStopped?: boolean;
         dockerImage?: string;
         dryRun?: boolean;
       }
     ) => {
       const summary = await createDeploymentServiceVolumeImport({
+        assumeServicesStopped: options.assumeServicesStopped,
         dockerImage: options.dockerImage,
         dryRun: options.dryRun,
         inputPath: resolveCliPath(bundle),

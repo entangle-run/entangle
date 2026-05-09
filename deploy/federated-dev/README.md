@@ -124,7 +124,7 @@ Export the Gitea and strfry volumes into a separate bundle after the services
 have been stopped or otherwise quiesced:
 
 ```sh
-pnpm --filter @entangle/cli dev deployment service-volumes export --output entangle-service-volumes
+pnpm --filter @entangle/cli dev deployment service-volumes export --output entangle-service-volumes --assume-services-stopped
 ```
 
 Validate service-volume import commands before restoring the service data:
@@ -134,7 +134,9 @@ pnpm --filter @entangle/cli dev deployment service-volumes import entangle-servi
 ```
 
 The service-volume bundle intentionally excludes Host secret state. Keep secret
-backup, restore, and rotation as a separate operator policy.
+backup, restore, and rotation as a separate operator policy. Non-dry-run
+service-volume export and import require `--assume-services-stopped`; that flag
+is an operator acknowledgement, not an automated health check.
 
 The no-infrastructure tool smoke verifies both dry-run surfaces without Docker
 or live service volumes:

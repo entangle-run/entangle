@@ -6911,3 +6911,13 @@ non-streaming chat-completions and Responses API routes.
 The provider smoke now verifies scripted 429 and 503 responses without live
 model credentials, so provider failure plumbing can be exercised through the
 same executable fixture as happy-path and tool-call scenarios.
+
+## [2026-05-09] deployment | Required service-volume quiescing acknowledgement
+
+Added `references/589-service-volume-quiescing-acknowledgement-slice.md`.
+Non-dry-run `entangle deployment service-volumes export` and `import` now
+require `--assume-services-stopped` before Docker archive commands execute.
+
+Dry-run behavior is unchanged. The flag is an explicit operator
+acknowledgement that Gitea and relay services have been stopped or quiesced;
+automated service health checks remain a later deployment-hardening step.

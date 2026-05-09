@@ -389,6 +389,7 @@ same-machine slice records.
 - [586-service-volume-export-import-slice.md](586-service-volume-export-import-slice.md)
 - [587-service-volume-tool-smoke-slice.md](587-service-volume-tool-smoke-slice.md)
 - [588-fake-openai-scripted-error-slice.md](588-fake-openai-scripted-error-slice.md)
+- [589-service-volume-quiescing-acknowledgement-slice.md](589-service-volume-quiescing-acknowledgement-slice.md)
 
 ## Audited Scope
 
@@ -1241,7 +1242,9 @@ state is explicit. Backup command summaries also include
 opening the manifest. Gitea and strfry service volumes now also have a
 separate `entangle-service-volume-backup` bundle path through deployment
 service-volume export/import commands, with dry-run Docker command planning and
-Host secret state still excluded by default.
+Host secret state still excluded by default. Non-dry-run service-volume
+export/import now also requires an explicit `--assume-services-stopped`
+operator acknowledgement before Docker is invoked.
 New Host events now carry optional audit hash-chain fields, and Host serializes
 event appends so concurrent operator requests do not fork the local audit
 sequence. Host now also exposes `GET /v1/events/integrity`, host-client

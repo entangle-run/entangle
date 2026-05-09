@@ -1573,6 +1573,9 @@ Current status:
   dry-run-capable service-volume bundle path for Gitea and strfry state, using
   a typed `entangle-service-volume-backup` manifest while keeping Host secret
   state excluded;
+- non-dry-run service-volume export/import now requires
+  `--assume-services-stopped`, keeping live service quiescing as an explicit
+  operator acknowledgement before Docker archive commands execute;
 - `pnpm ops:smoke-deployment-service-volume-tools` now verifies those
   service-volume export/import dry-run CLI paths without requiring Docker,
   initialized Host state, or live service volumes;

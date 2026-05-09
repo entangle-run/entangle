@@ -45,6 +45,7 @@ type DeploymentServiceVolumeCommandRunner = (
 ) => DeploymentServiceVolumeCommandResult;
 
 export interface DeploymentServiceVolumeExportOptions {
+  assumeServicesStopped?: boolean | undefined;
   commandRunner?: DeploymentServiceVolumeCommandRunner | undefined;
   dockerImage?: string | undefined;
   dryRun?: boolean | undefined;
@@ -55,6 +56,7 @@ export interface DeploymentServiceVolumeExportOptions {
 }
 
 export interface DeploymentServiceVolumeImportOptions {
+  assumeServicesStopped?: boolean | undefined;
   commandRunner?: DeploymentServiceVolumeCommandRunner | undefined;
   dockerImage?: string | undefined;
   dryRun?: boolean | undefined;
@@ -176,6 +178,7 @@ export interface DeploymentServiceVolumeOperationSummary {
   manifestPath: string;
   outputPath?: string | undefined;
   secretVolumeIncluded: false;
+  servicesStoppedAcknowledged: boolean;
   volumeCount: number;
   volumes: DeploymentServiceVolumeOperationEntry[];
 }
@@ -672,6 +675,20 @@ function runServiceVolumeDockerCommand(input: {
   );
 }
 
+function assertServiceVolumeMutationAcknowledged(input: {
+  assumeServicesStopped: boolean | undefined;
+  dryRun: boolean;
+  operation: "export" | "import";
+}): void {
+  if (input.dryRun || input.assumeServicesStopped) {
+    return;
+  }
+
+  throw new Error(
+    `Non-dry-run service-volume ${input.operation} requires --assume-services-stopped because Gitea and relay services must be stopped or quiesced first.`
+  );
+}
+
 function formatExternalVolumeWarning(
   volumes: DeploymentBackupManifest["exclusions"]["externalVolumes"] | undefined
 ): string {
@@ -790,6 +807,11 @@ export async function createDeploymentServiceVolumeExport(
   const dockerImage = options.dockerImage ?? defaultServiceVolumeDockerImage;
   const dryRun = Boolean(options.dryRun);
   const commandRunner = options.commandRunner ?? defaultCommandRunner;
+  assertServiceVolumeMutationAcknowledged({
+    assumeServicesStopped: options.assumeServicesStopped,
+    dryRun,
+    operation: "export"
+  });
 
   if (!dryRun && (await pathExists(outputPath))) {
     if (!options.force) {
@@ -856,6 +878,7 @@ export async function createDeploymentServiceVolumeExport(
     manifestPath,
     outputPath,
     secretVolumeIncluded: false,
+    servicesStoppedAcknowledged: Boolean(options.assumeServicesStopped),
     volumeCount: volumes.length,
     volumes
   };
@@ -930,6 +953,11 @@ export async function createDeploymentServiceVolumeImport(
   const dockerImage = options.dockerImage ?? manifest.dockerImage;
   const dryRun = Boolean(options.dryRun);
   const commandRunner = options.commandRunner ?? defaultCommandRunner;
+  assertServiceVolumeMutationAcknowledged({
+    assumeServicesStopped: options.assumeServicesStopped,
+    dryRun,
+    operation: "import"
+  });
   const volumes: DeploymentServiceVolumeOperationEntry[] = manifest.volumes.map(
     (volume) => {
       const archivePath = resolveSafeBundlePath(inputPath, volume.archivePath);
@@ -980,6 +1008,7 @@ export async function createDeploymentServiceVolumeImport(
     inputPath,
     manifestPath,
     secretVolumeIncluded: false,
+    servicesStoppedAcknowledged: Boolean(options.assumeServicesStopped),
     volumeCount: volumes.length,
     volumes
   };

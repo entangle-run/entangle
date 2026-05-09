@@ -26,6 +26,9 @@ non-disposable same-machine deployments:
 
 This is not a live-service quiescing workflow. Operators must stop or otherwise
 quiesce the affected services before using the non-dry-run path.
+`references/589-service-volume-quiescing-acknowledgement-slice.md` adds the
+first enforcement step by requiring `--assume-services-stopped` before
+non-dry-run export/import can invoke Docker.
 
 ## Impacted Modules And Files
 
@@ -90,8 +93,9 @@ operator policy.
 
 ## Open Questions
 
-Future work should add service-aware quiescing, health checks before/after
-import, and guided upgrade workflows for older non-disposable profiles.
+Future work should replace acknowledgement-only safety with service-aware
+quiescing, health checks before/after import, and guided upgrade workflows for
+older non-disposable profiles.
 
 ## Verification
 

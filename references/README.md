@@ -971,6 +971,7 @@ files are the active federated redesign pack.
 587. [586-service-volume-export-import-slice.md](586-service-volume-export-import-slice.md)
 588. [587-service-volume-tool-smoke-slice.md](587-service-volume-tool-smoke-slice.md)
 589. [588-fake-openai-scripted-error-slice.md](588-fake-openai-scripted-error-slice.md)
+590. [589-service-volume-quiescing-acknowledgement-slice.md](589-service-volume-quiescing-acknowledgement-slice.md)
 
 ## Role of this corpus
 
