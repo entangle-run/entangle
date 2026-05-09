@@ -1570,6 +1570,9 @@ Current status:
   dry-run-capable service-volume bundle path for Gitea and strfry state, using
   a typed `entangle-service-volume-backup` manifest while keeping Host secret
   state excluded;
+- `pnpm ops:smoke-deployment-service-volume-tools` now verifies those
+  service-volume export/import dry-run CLI paths without requiring Docker,
+  initialized Host state, or live service volumes;
 - Host event records now include optional audit hash-chain fields, Host event
   appends are serialized to preserve chain order, and CLI runtime-trace
   summaries expose the hashes when present; Host, host-client, and CLI now

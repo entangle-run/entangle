@@ -6891,3 +6891,13 @@ Gitea and strfry volumes.
 The service-volume bundle uses a typed `entangle-service-volume-backup`
 manifest, executes through Docker by default, keeps Host secret state excluded,
 and exposes deterministic command plans for non-disposable profile operations.
+
+## [2026-05-09] smoke | Added service-volume CLI dry-run smoke
+
+Added `references/587-service-volume-tool-smoke-slice.md`.
+`pnpm ops:smoke-deployment-service-volume-tools` now verifies service-volume
+export/import dry-run CLI output without Docker, initialized Host state, or
+live service volumes.
+
+The smoke checks planned Gitea/strfry export commands, Host secret exclusion,
+and import dry-run parsing from a temporary typed service-volume manifest.

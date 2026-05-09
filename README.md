@@ -1206,6 +1206,10 @@ This repository currently contains:
 - a same-machine reliability smoke through `pnpm ops:smoke-federated-dev:reliability` that
   creates a temporary backup bundle, validates restore dry-run, and verifies
   repair dry-run output against an initialized same-machine profile;
+- a no-infrastructure service-volume tool smoke through
+  `pnpm ops:smoke-deployment-service-volume-tools` that verifies Gitea/relay
+  service-volume export and import dry-run CLI output without requiring Docker
+  or live volumes;
 - first same-machine backup/restore commands through `entangle deployment backup` and
   `entangle deployment restore`, using a versioned directory bundle for
   `.entangle/host`, selected same-machine profile config snapshots, explicit secret

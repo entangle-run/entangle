@@ -387,6 +387,7 @@ same-machine slice records.
 - [584-external-http-agent-engine-health-url-slice.md](584-external-http-agent-engine-health-url-slice.md)
 - [585-fake-openai-scripted-provider-slice.md](585-fake-openai-scripted-provider-slice.md)
 - [586-service-volume-export-import-slice.md](586-service-volume-export-import-slice.md)
+- [587-service-volume-tool-smoke-slice.md](587-service-volume-tool-smoke-slice.md)
 
 ## Audited Scope
 

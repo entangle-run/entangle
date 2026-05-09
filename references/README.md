@@ -969,6 +969,7 @@ files are the active federated redesign pack.
 585. [584-external-http-agent-engine-health-url-slice.md](584-external-http-agent-engine-health-url-slice.md)
 586. [585-fake-openai-scripted-provider-slice.md](585-fake-openai-scripted-provider-slice.md)
 587. [586-service-volume-export-import-slice.md](586-service-volume-export-import-slice.md)
+588. [587-service-volume-tool-smoke-slice.md](587-service-volume-tool-smoke-slice.md)
 
 ## Role of this corpus
 

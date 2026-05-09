@@ -29,6 +29,7 @@
     "ops:smoke-federated-process-runner:fake-external-http": "node scripts/smoke-federated-process-runner.mjs --relay-url ws://localhost:7777 --timeout-ms 60000 --use-fake-external-http-engine",
     "ops:smoke-federated-dev:runtime": "node scripts/smoke-federated-dev-runtime.mjs",
     "ops:smoke-demo-tools": "node scripts/smoke-demo-tools.mjs",
+    "ops:smoke-deployment-service-volume-tools": "node scripts/smoke-deployment-service-volume-tools.mjs",
     "ops:demo-federated-preview": "node scripts/federated-preview-demo.mjs",
     "ops:demo-federated-preview:reset": "node scripts/federated-preview-demo.mjs --reset",
     "ops:demo-user-node-runtime": "node scripts/federated-user-node-runtime-demo.mjs",

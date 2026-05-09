@@ -1389,6 +1389,10 @@ The repository now also contains the first real implementation baseline:
 - a same-machine reliability smoke through `pnpm ops:smoke-federated-dev:reliability`,
   which creates a temporary same-machine backup bundle, validates restore dry-run, and
   checks repair dry-run output against an initialized same-machine profile;
+- a no-infrastructure service-volume smoke through
+  `pnpm ops:smoke-deployment-service-volume-tools`, which verifies Gitea/relay
+  service-volume export/import dry-run CLI output without Docker or live
+  volumes;
 - a disposable same-machine profile smoke through `pnpm ops:smoke-federated-dev:disposable`,
   covering strict preflight, runner image build, stable service startup,
   readiness probing through the active smoke, and teardown with volumes;

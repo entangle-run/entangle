@@ -136,6 +136,13 @@ pnpm --filter @entangle/cli dev deployment service-volumes import entangle-servi
 The service-volume bundle intentionally excludes Host secret state. Keep secret
 backup, restore, and rotation as a separate operator policy.
 
+The no-infrastructure tool smoke verifies both dry-run surfaces without Docker
+or live service volumes:
+
+```sh
+pnpm ops:smoke-deployment-service-volume-tools
+```
+
 Validate a restore without changing Entangle state:
 
 ```sh
@@ -334,6 +341,10 @@ The reliability smoke creates a temporary `entangle deployment backup` bundle,
 validates `entangle deployment restore --dry-run`, runs
 `entangle deployment repair --skip-live --json`, and removes the temporary
 backup bundle after the check.
+
+`pnpm ops:smoke-deployment-service-volume-tools` separately verifies
+service-volume export/import dry-run output without requiring an initialized
+profile.
 
 Environment overrides:
 
