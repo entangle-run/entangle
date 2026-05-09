@@ -11,6 +11,7 @@ import {
   attachUserNodeClientHealthForCli,
   buildUserNodeClientSummariesForCli,
   filterUserConversationsForCli,
+  filterUserNodeApprovalMessagesForCli,
   filterUserNodeMessagesForCli,
   filterUserNodeClientSummariesForCli,
   filterUserNodeCommandReceiptsForCli,
@@ -677,6 +678,106 @@ describe("user node CLI output", () => {
     ).toEqual([
       "dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd"
     ]);
+  });
+
+  it("filters approval request messages for the headless User Node inbox", () => {
+    const messages: UserNodeMessageRecord[] = [
+      {
+        artifactRefs: [],
+        conversationId: "conversation-alpha",
+        createdAt: "2026-04-26T12:00:00.000Z",
+        direction: "inbound",
+        eventId:
+          "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        fromNodeId: "worker-it",
+        fromPubkey:
+          "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+        messageType: "approval.request",
+        peerNodeId: "worker-it",
+        publishedRelays: [],
+        relayUrls: [],
+        schemaVersion: "1",
+        sessionId: "session-alpha",
+        summary: "Please approve old work.",
+        toNodeId: "user-a",
+        toPubkey:
+          "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+        turnId: "turn-alpha",
+        userNodeId: "user-a"
+      },
+      {
+        approval: {
+          approvalId: "approval-source-alpha",
+          approverNodeIds: ["user-a"],
+          operation: "source_application",
+          resource: {
+            id: "source-change-alpha",
+            kind: "source_change_candidate",
+            label: "Source change alpha"
+          }
+        },
+        artifactRefs: [],
+        conversationId: "conversation-alpha",
+        createdAt: "2026-04-26T12:02:00.000Z",
+        direction: "inbound",
+        eventId:
+          "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+        fromNodeId: "worker-it",
+        fromPubkey:
+          "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+        messageType: "approval.request",
+        peerNodeId: "worker-it",
+        publishedRelays: [],
+        relayUrls: [],
+        schemaVersion: "1",
+        sessionId: "session-alpha",
+        summary: "Please approve source.",
+        toNodeId: "user-a",
+        toPubkey:
+          "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+        turnId: "turn-alpha",
+        userNodeId: "user-a"
+      },
+      {
+        artifactRefs: [],
+        conversationId: "conversation-alpha",
+        createdAt: "2026-04-26T12:03:00.000Z",
+        direction: "outbound",
+        eventId:
+          "dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd",
+        fromNodeId: "user-a",
+        fromPubkey:
+          "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+        messageType: "approval.response",
+        peerNodeId: "worker-it",
+        publishedRelays: [],
+        relayUrls: [],
+        schemaVersion: "1",
+        sessionId: "session-alpha",
+        summary: "Approved.",
+        toNodeId: "worker-it",
+        toPubkey:
+          "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+        turnId: "turn-alpha",
+        userNodeId: "user-a"
+      }
+    ];
+
+    const approvals = filterUserNodeApprovalMessagesForCli({
+      limit: 1,
+      messages
+    });
+
+    expect(approvals.map((message) => message.eventId)).toEqual([
+      "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"
+    ]);
+    expect(projectUserNodeMessageSummary(approvals[0]!)).toMatchObject({
+      approvalId: "approval-source-alpha",
+      approvalOperation: "source_application",
+      approvalResourceId: "source-change-alpha",
+      approvalResourceKind: "source_change_candidate",
+      messageType: "approval.request"
+    });
   });
 
   it("builds scoped approval response metadata from CLI options", () => {

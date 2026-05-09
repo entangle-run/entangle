@@ -113,6 +113,7 @@ import {
   attachUserNodeClientHealthForCli,
   buildUserNodeClientSummariesForCli,
   filterUserConversationsForCli,
+  filterUserNodeApprovalMessagesForCli,
   filterUserNodeClientSummariesForCli,
   filterUserNodeCommandReceiptsForCli,
   filterUserNodeMessagesForCli,
@@ -1908,6 +1909,62 @@ inboxCommand
             totalMatched: matchedConversations.length
           }
         : { conversations, returned: conversations.length, totalMatched: matchedConversations.length }
+    );
+  });
+
+inboxCommand
+  .command("approvals")
+  .requiredOption("--user-node <nodeId>", "User Node identifier.")
+  .option("--peer-node <nodeId>", "Filter to conversations with one peer node.")
+  .option("--unread-only", "Only scan conversations with unread messages.")
+  .option("--limit <n>", "Maximum number of approval messages to return.", "20")
+  .option("--summary", "Print compact approval request summaries.")
+  .description("List inbound approval requests for one User Node.")
+  .action(async (
+    options: {
+      limit: string;
+      peerNode?: string;
+      summary?: boolean;
+      unreadOnly?: boolean;
+      userNode: string;
+    },
+    command: Command
+  ) => {
+    const limit = parsePositiveIntegerOption(options.limit, "--limit");
+    const client = createCliHostClient(command);
+    const inbox = await client.getUserNodeInbox(options.userNode);
+    const conversations = filterUserConversationsForCli({
+      conversations: inbox.conversations,
+      ...(options.peerNode ? { peerNodeId: options.peerNode } : {}),
+      unreadOnly: options.unreadOnly === true
+    });
+    const details = await Promise.all(
+      conversations.map((conversation) =>
+        client.getUserNodeConversation(
+          options.userNode,
+          conversation.conversationId
+        )
+      )
+    );
+    const allApprovalMessages = filterUserNodeApprovalMessagesForCli({
+      messages: details.flatMap((detail) => detail.messages)
+    });
+    const messages = allApprovalMessages.slice(0, limit);
+
+    printJson(
+      options.summary
+        ? {
+            conversationCount: conversations.length,
+            messages: messages.map(projectUserNodeMessageSummary),
+            returned: messages.length,
+            totalMatched: allApprovalMessages.length
+          }
+        : {
+            conversationCount: conversations.length,
+            messages,
+            returned: messages.length,
+            totalMatched: allApprovalMessages.length
+          }
     );
   });
 

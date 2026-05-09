@@ -361,6 +361,7 @@ same-machine slice records.
 - [558-cli-user-node-client-filter-slice.md](558-cli-user-node-client-filter-slice.md)
 - [559-cli-inbox-filter-slice.md](559-cli-inbox-filter-slice.md)
 - [560-cli-inbox-message-filter-slice.md](560-cli-inbox-message-filter-slice.md)
+- [561-cli-inbox-approval-requests-slice.md](561-cli-inbox-approval-requests-slice.md)
 
 ## Audited Scope
 
@@ -1298,6 +1299,9 @@ CLI inbox detail can now filter Host-recorded User Node conversation messages
 by direction, exact message type, and bounded result count, matching the
 participant-oriented inbox list filters while preserving Host as the projection
 source.
+CLI inbox approvals now expose inbound approval-request discovery across
+Host-recorded User Node conversations, including scoped approval metadata and
+event ids for the existing signed approve/reject response commands.
 Deterministic runner task memory now also preserves bounded source-change
 candidate ids, status, totals, diff availability, and changed-file summaries
 from the live turn record, and the derived recent-work summary surfaces the

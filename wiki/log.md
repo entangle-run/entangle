@@ -1,5 +1,13 @@
 # Entangle Wiki Log
 
+## [2026-05-09] cli | Added approval request inbox
+
+Added `references/561-cli-inbox-approval-requests-slice.md`.
+`entangle inbox approvals` now scans Host-recorded User Node conversations for
+inbound `approval.request` messages with approval metadata. Compact output
+includes the approval id, operation, resource scope, and event id needed by the
+existing signed `approve --from-message` and `reject --from-message` commands.
+
 ## [2026-05-09] cli | Added inbox message filters
 
 Added `references/560-cli-inbox-message-filter-slice.md`.

@@ -318,6 +318,10 @@ The most accurate current description is:
   `--direction <inbound|outbound>`, `--message-type <type>`, and `--limit <n>`,
   returning bounded recorded-message lists with `returned` and `totalMatched`
   counts over Host-recorded User Node conversation detail;
+- the headless `entangle inbox approvals` participant surface now lists inbound
+  `approval.request` messages across projected User Node conversations, with
+  compact approval id, operation, and resource metadata for signed
+  `approve/reject --from-message` responses;
 - the process-runner smoke now proves that User Client wiki publication path
   through a signed builder wiki approval request, the running User Client JSON
   route, a completed projected `runtime.wiki.publish` command receipt, a

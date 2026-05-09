@@ -100,6 +100,12 @@ export type UserNodeMessagePublishCliSummary = {
 };
 
 export type UserNodeMessageCliSummary = {
+  approvalDecision?: string;
+  approvalId?: string;
+  approvalOperation?: string;
+  approvalResourceId?: string;
+  approvalResourceKind?: string;
+  approvalResourceLabel?: string;
   conversationId: string;
   createdAt: string;
   direction: string;
@@ -331,6 +337,19 @@ export function filterUserNodeMessagesForCli(input: {
       return true;
     })
   );
+
+  return input.limit === undefined ? messages : messages.slice(0, input.limit);
+}
+
+export function filterUserNodeApprovalMessagesForCli(input: {
+  limit?: number | undefined;
+  messages: UserNodeMessageRecord[];
+}): UserNodeMessageRecord[] {
+  const messages = filterUserNodeMessagesForCli({
+    direction: "inbound",
+    messages: input.messages,
+    messageType: "approval.request"
+  }).filter((message) => message.approval !== undefined);
 
   return input.limit === undefined ? messages : messages.slice(0, input.limit);
 }
@@ -653,7 +672,20 @@ export function projectUserNodeMessagePublishSummary(
 export function projectUserNodeMessageSummary(
   message: UserNodeMessageRecord
 ): UserNodeMessageCliSummary {
+  const approval = message.approval;
+  const approvalResource = approval?.resource;
+
   return {
+    ...(approval?.decision ? { approvalDecision: approval.decision } : {}),
+    ...(approval?.approvalId ? { approvalId: approval.approvalId } : {}),
+    ...(approval?.operation ? { approvalOperation: approval.operation } : {}),
+    ...(approvalResource?.id ? { approvalResourceId: approvalResource.id } : {}),
+    ...(approvalResource?.kind
+      ? { approvalResourceKind: approvalResource.kind }
+      : {}),
+    ...(approvalResource?.label
+      ? { approvalResourceLabel: approvalResource.label }
+      : {}),
     conversationId: message.conversationId,
     createdAt: message.createdAt,
     direction: message.direction,

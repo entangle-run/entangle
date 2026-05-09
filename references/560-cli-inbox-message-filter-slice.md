@@ -67,9 +67,9 @@ limit explicitly. Output now includes `returned` and `totalMatched` counters.
 
 ## Open Questions
 
-Future participant CLI work may add approval/source-review focused aliases on
-top of the same recorded message read model. This slice keeps the primitive
-conversation filter small and composable.
+Future participant CLI work may add source-review focused aliases on top of the
+same recorded message read model. Approval-request discovery is now covered by
+`561-cli-inbox-approval-requests-slice.md`.
 
 ## Verification
 

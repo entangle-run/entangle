@@ -52,6 +52,10 @@ Recently added:
   renders recorded messages for the selected thread. CLI `inbox show` can now
   filter recorded messages by inbound/outbound direction, exact message type,
   and a bounded result count without changing Host state.
+- CLI `inbox approvals` now scans Host-recorded User Node conversation detail
+  for inbound `approval.request` messages with approval metadata, giving
+  headless participants the event ids needed by signed `approve/reject
+  --from-message` commands.
 - User Client approval controls now render from inbound `approval.request`
   message metadata and publish signed `approval.response` messages through the
   Host User Node gateway.
@@ -198,6 +202,7 @@ CLI has matching headless surfaces:
 - `entangle inbox list --user-node <nodeId>`
 - `entangle inbox show <conversationId> --user-node <nodeId>`
   with optional direction, message-type, and limit filters
+- `entangle inbox approvals --user-node <nodeId>`
 - `entangle user-nodes clients`
 - `entangle user-nodes assign <nodeId> --runner <runnerId> --revoke-existing`
 - `entangle reply <messageId> "..." --user-node <nodeId>`

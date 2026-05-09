@@ -1620,6 +1620,10 @@ Current status:
   `--message-type <type>`, and `--limit <n>`, giving headless User Node
   participants bounded recorded-message inspection over Host conversation
   detail;
+- CLI inbox approvals now scans Host conversation detail for inbound
+  `approval.request` messages with approval metadata, giving headless User Node
+  participants a read-only approval queue before signed `approve/reject
+  --from-message` responses;
 - generated distributed proof kits can now optionally include
   `docker-compose.runners.yml` plus per-runner container entrypoints with
   `--write-runner-compose`, giving operators a same-machine container-boundary
