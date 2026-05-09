@@ -232,6 +232,7 @@ import {
 } from "./runtime-wiki-publication.js";
 import {
   buildUserNodeRuntimeSummaries,
+  buildUserNodeRunnerCandidateSummariesForStudio,
   buildAssignmentOperationalDetailsForStudio,
   buildAssignmentRelatedNavigationForStudio,
   canRevokeRunnerProjection,
@@ -253,6 +254,8 @@ import {
   formatUserConversationLabel,
   formatUserNodeRuntimeSummaryDetail,
   formatUserNodeRuntimeSummaryLabel,
+  formatUserNodeRunnerCandidateDetail,
+  formatUserNodeRunnerCandidateLabel,
   sortRuntimeCommandReceiptsForStudio,
   sortRuntimeProjectionsForStudio,
   sortRunnerProjectionsForStudio,
@@ -3671,6 +3674,20 @@ export function App() {
       ),
     [runnerRegistryEntries]
   );
+  const userNodeRunnerCandidatesByNodeId = useMemo(
+    () =>
+      new Map(
+        userNodes.map((userNode) => [
+          userNode.nodeId,
+          buildUserNodeRunnerCandidateSummariesForStudio({
+            nodeId: userNode.nodeId,
+            projection: projectionSnapshot,
+            runnerRegistryEntries
+          })
+        ])
+      ),
+    [projectionSnapshot, runnerRegistryEntries, userNodes]
+  );
   const assignmentProjectionRows = useMemo(
     () =>
       sortAssignmentProjectionsForStudio(projectionSnapshot?.assignments ?? []),
@@ -4325,46 +4342,82 @@ export function App() {
 
         {userNodeRuntimeSummaries.length > 0 ? (
           <div className="compact-list">
-            {userNodeRuntimeSummaries.slice(0, 4).map((summary) => (
-              <div key={summary.nodeId} className="compact-list-item">
-                <strong>{formatUserNodeRuntimeSummaryLabel(summary)}</strong>
-                <span>{formatUserNodeRuntimeSummaryDetail(summary)}</span>
-                {summary.clientUrl ? (
-                  <a href={summary.clientUrl} rel="noreferrer" target="_blank">
-                    Open User Client
-                  </a>
-                ) : null}
-                <div className="action-row">
-                  <button
-                    className="secondary-button"
-                    onClick={() => {
-                      prepareUserNodeRuntimeAssignment({
-                        nodeId: summary.nodeId,
-                        ...(summary.runnerId
-                          ? { runnerId: summary.runnerId }
-                          : {})
-                      });
-                    }}
-                    type="button"
-                  >
-                    Prepare Assignment
-                  </button>
-                  {summary.assignmentId ? (
+            {userNodeRuntimeSummaries.slice(0, 4).map((summary) => {
+              const runnerCandidates =
+                userNodeRunnerCandidatesByNodeId.get(summary.nodeId) ?? [];
+
+              return (
+                <div key={summary.nodeId} className="compact-list-item">
+                  <strong>{formatUserNodeRuntimeSummaryLabel(summary)}</strong>
+                  <span>{formatUserNodeRuntimeSummaryDetail(summary)}</span>
+                  {runnerCandidates.length > 0 ? (
+                    <div className="candidate-strip">
+                      {runnerCandidates.slice(0, 3).map((candidate) => (
+                        <div
+                          key={`${summary.nodeId}-${candidate.runnerId}`}
+                          className="candidate-row"
+                        >
+                          <span>
+                            <strong>
+                              {formatUserNodeRunnerCandidateLabel(candidate)}
+                            </strong>
+                            {" · "}
+                            {formatUserNodeRunnerCandidateDetail(candidate)}
+                          </span>
+                          <button
+                            className="secondary-button"
+                            disabled={!candidate.recommended}
+                            onClick={() => {
+                              prepareUserNodeRuntimeAssignment({
+                                nodeId: summary.nodeId,
+                                runnerId: candidate.runnerId
+                              });
+                            }}
+                            type="button"
+                          >
+                            Prepare
+                          </button>
+                        </div>
+                      ))}
+                    </div>
+                  ) : null}
+                  {summary.clientUrl ? (
+                    <a href={summary.clientUrl} rel="noreferrer" target="_blank">
+                      Open User Client
+                    </a>
+                  ) : null}
+                  <div className="action-row">
                     <button
                       className="secondary-button"
                       onClick={() => {
-                        if (summary.assignmentId) {
-                          void loadAssignmentTimeline(summary.assignmentId);
-                        }
+                        prepareUserNodeRuntimeAssignment({
+                          nodeId: summary.nodeId,
+                          ...(summary.runnerId
+                            ? { runnerId: summary.runnerId }
+                            : {})
+                        });
                       }}
                       type="button"
                     >
-                      Assignment Timeline
+                      Prepare Assignment
                     </button>
-                  ) : null}
+                    {summary.assignmentId ? (
+                      <button
+                        className="secondary-button"
+                        onClick={() => {
+                          if (summary.assignmentId) {
+                            void loadAssignmentTimeline(summary.assignmentId);
+                          }
+                        }}
+                        type="button"
+                      >
+                        Assignment Timeline
+                      </button>
+                    ) : null}
+                  </div>
                 </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
         ) : (
           <div className="inline-empty-state">

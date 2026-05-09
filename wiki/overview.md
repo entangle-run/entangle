@@ -336,6 +336,9 @@ The most accurate current description is:
   surface now lists health-aware `human_interface` runner candidates with
   trust, liveness, operational state, current placement, capacity after
   explicit User Node revocation, and exclusion reasons before reassignment;
+- Studio User Node runtime rows now render the same runner-candidate reasoning
+  and can prepare the existing Host assignment form with a recommended runner
+  without mutating assignment state directly from the row;
 - the process-runner smoke now proves that User Client wiki publication path
   through a signed builder wiki approval request, the running User Client JSON
   route, a completed projected `runtime.wiki.publish` command receipt, a

@@ -374,6 +374,25 @@ code {
   line-height: 1.45;
 }
 
+.compact-list .candidate-strip {
+  display: grid;
+  gap: 8px;
+  margin-top: 6px;
+  padding: 0;
+}
+
+.compact-list .candidate-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 8px;
+  padding: 0;
+}
+
+.candidate-row span {
+  min-width: 0;
+}
+
 .related-link-grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));

@@ -175,8 +175,10 @@ assignments for one human participant before reassignment. The headless
 `human_interface` runner candidates with trust, liveness, operational state,
 capacity, current placement, capacity after explicit User Node revocation, and
 exclusion reasons before reassignment. Studio's User Node roster shows the
-same participant-command receipt and failed receipt counts next to its
-existing conversation and Human Interface Runtime placement summary.
+same candidate reasoning and can prepare the Host assignment form with a
+recommended runner; it also shows participant-command receipt and failed
+receipt counts next to its existing conversation and Human Interface Runtime
+placement summary.
 The running React User Client also shows a compact participant Workload panel
 for conversations, open work, unread messages, unique pending approvals,
 pending source reviews, command receipt statuses, source-history/wiki refs,

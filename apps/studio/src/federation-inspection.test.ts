@@ -10,6 +10,7 @@ import {
   buildAssignmentOperationalDetailsForStudio,
   buildAssignmentRelatedNavigationForStudio,
   buildUserNodeRuntimeSummaries,
+  buildUserNodeRunnerCandidateSummariesForStudio,
   canRevokeRunnerProjection,
   canTrustRunnerProjection,
   formatRuntimeAssignmentTimelineDetail,
@@ -28,6 +29,8 @@ import {
   formatUserNodeIdentityLabel,
   formatUserNodeRuntimeSummaryDetail,
   formatUserNodeRuntimeSummaryLabel,
+  formatUserNodeRunnerCandidateDetail,
+  formatUserNodeRunnerCandidateLabel,
   sortRuntimeCommandReceiptsForStudio,
   sortRuntimeProjectionsForStudio,
   sortRunnerProjectionsForStudio,
@@ -644,6 +647,130 @@ describe("Studio federation inspection helpers", () => {
     );
     expect(formatUserNodeRuntimeSummaryDetail(userSummary!)).toContain(
       "failed commands 1"
+    );
+  });
+
+  it("builds health-aware User Node runner candidates for reassignment", () => {
+    const candidateProjection: HostProjectionSnapshot = {
+      ...projection,
+      assignments: [
+        ...projection.assignments,
+        {
+          assignmentId: "assignment-user-a",
+          graphId: "team-alpha",
+          graphRevisionId: "rev-1",
+          hostAuthorityPubkey:
+            "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+          nodeId: "user-a",
+          projection: {
+            source: "observation_event",
+            updatedAt: "2026-04-26T12:03:00.000Z"
+          },
+          runnerId: "runner-user-a",
+          status: "active"
+        }
+      ]
+    };
+    const runnerEntries: RunnerRegistryEntry[] = [
+      {
+        ...runnerRegistryEntry,
+        heartbeat: {
+          ...runnerRegistryEntry.heartbeat!,
+          assignmentIds: ["assignment-user-a"],
+          operationalState: "busy",
+          runnerId: "runner-user-a"
+        },
+        registration: {
+          ...runnerRegistryEntry.registration,
+          capabilities: {
+            ...runnerRegistryEntry.registration.capabilities,
+            agentEngineKinds: [],
+            maxAssignments: 1,
+            runtimeKinds: ["human_interface"]
+          },
+          runnerId: "runner-user-a",
+          trustState: "trusted"
+        }
+      },
+      {
+        ...runnerRegistryEntry,
+        heartbeat: {
+          ...runnerRegistryEntry.heartbeat!,
+          assignmentIds: [],
+          operationalState: "ready",
+          runnerId: "runner-human-ready"
+        },
+        registration: {
+          ...runnerRegistryEntry.registration,
+          capabilities: {
+            ...runnerRegistryEntry.registration.capabilities,
+            agentEngineKinds: [],
+            maxAssignments: 1,
+            runtimeKinds: ["human_interface"]
+          },
+          runnerId: "runner-human-ready",
+          trustState: "trusted"
+        }
+      },
+      {
+        ...runnerRegistryEntry,
+        heartbeat: undefined,
+        liveness: "offline",
+        registration: {
+          ...runnerRegistryEntry.registration,
+          capabilities: {
+            ...runnerRegistryEntry.registration.capabilities,
+            agentEngineKinds: [],
+            maxAssignments: 1,
+            runtimeKinds: ["human_interface"]
+          },
+          runnerId: "runner-human-offline",
+          trustState: "trusted"
+        }
+      },
+      {
+        ...runnerRegistryEntry,
+        registration: {
+          ...runnerRegistryEntry.registration,
+          capabilities: {
+            ...runnerRegistryEntry.registration.capabilities,
+            agentEngineKinds: ["opencode_server"],
+            runtimeKinds: ["agent_runner"]
+          },
+          runnerId: "runner-agent-only",
+          trustState: "trusted"
+        }
+      }
+    ];
+    const candidates = buildUserNodeRunnerCandidateSummariesForStudio({
+      nodeId: "user-a",
+      projection: candidateProjection,
+      runnerRegistryEntries: runnerEntries
+    });
+
+    expect(candidates.map((candidate) => candidate.runnerId)).toEqual([
+      "runner-user-a",
+      "runner-human-ready",
+      "runner-human-offline"
+    ]);
+    expect(candidates[0]).toMatchObject({
+      availableCapacity: 0,
+      availableCapacityAfterUserNodeRevocation: 1,
+      currentUserAssignmentIds: ["assignment-user-a"],
+      isCurrentRunner: true,
+      recommended: true,
+      runnerId: "runner-user-a"
+    });
+    expect(candidates[2]).toMatchObject({
+      exclusionReasons: ["runner_liveness_offline", "runner_operational_unknown"],
+      recommended: false,
+      runnerId: "runner-human-offline"
+    });
+    expect(formatUserNodeRunnerCandidateLabel(candidates[0]!)).toBe(
+      "runner-user-a · recommended · current"
+    );
+    expect(formatUserNodeRunnerCandidateDetail(candidates[2]!)).toContain(
+      "blocked runner_liveness_offline/runner_operational_unknown"
     );
   });
 });

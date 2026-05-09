@@ -1,5 +1,17 @@
 # Entangle Wiki Log
 
+## [2026-05-09] studio | Added User Node runner candidates
+
+Added `references/566-studio-user-node-runner-candidates-slice.md`. Studio
+User Node runtime rows now show health-aware `human_interface` runner
+candidates from Host projection and runner registry state, including current
+placement, capacity after explicit User Node revocation, recommended state, and
+bounded exclusion reasons.
+
+Candidate buttons only prepare the existing Host assignment form with the
+selected recommended runner; assignment mutation still happens through the
+operator-controlled Host assignment form.
+
 ## [2026-05-09] cli | Added User Node runner candidates
 
 Added `references/565-cli-user-node-runner-candidates-slice.md`.

@@ -37,10 +37,10 @@ from the remaining hardening work. The current target is:
 - the runner-served User Client remains the participant surface for human graph
   nodes.
 - CLI mirrors both operator and headless User Node participant workflows.
-- remaining gaps are Studio-side runner-health-aware reassignment UX, deeper
-  grouped participant review workflows, production identity/key custody,
-  production RBAC/SSO, external User Node custody, and infrastructure-backed
-  distributed proof execution.
+- remaining gaps are deeper reassignment workflows, deeper grouped participant
+  review workflows, production identity/key custody, production RBAC/SSO,
+  external User Node custody, and infrastructure-backed distributed proof
+  execution.
 
 ## Impacted Modules/Files
 
@@ -65,9 +65,8 @@ documents are:
   fields exposed through `/api/state`.
 - Update the Studio/CLI surface spec so workload summaries and participant
   command receipt counts are documented as implemented.
-- Keep open gaps focused on production hardening, Studio-side
-  runner-health-aware reassignment workflows, and richer grouped participant
-  review flows.
+- Keep open gaps focused on production hardening, richer reassignment
+  workflows, and richer grouped participant review flows.
 
 ## Tests Required
 

@@ -1638,6 +1638,9 @@ Current status:
   runners with liveness, operational state, capacity, current User Node
   placement, capacity after explicit User Node revocation, and exclusion
   reasons before assignment mutation;
+- Studio User Node runtime rows now render the same candidate reasoning and can
+  prepare the existing Host assignment form with a recommended runner without
+  mutating assignment state directly from the row;
 - deterministic runner task memory now records bounded approval-request
   directives, rebuilds `summaries/approval-ledger.md`, and feeds the ledger
   into future turn `memoryRefs` plus bounded memory briefs;

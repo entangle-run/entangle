@@ -366,6 +366,7 @@ same-machine slice records.
 - [563-cli-user-node-assignment-roster-slice.md](563-cli-user-node-assignment-roster-slice.md)
 - [564-approval-ledger-memory-slice.md](564-approval-ledger-memory-slice.md)
 - [565-cli-user-node-runner-candidates-slice.md](565-cli-user-node-runner-candidates-slice.md)
+- [566-studio-user-node-runner-candidates-slice.md](566-studio-user-node-runner-candidates-slice.md)
 
 ## Audited Scope
 
@@ -1318,6 +1319,9 @@ placement from generic assignment lists.
 CLI User Node runner candidates now expose trust, liveness, operational state,
 capacity, current placement, capacity after explicit User Node revocation, and
 bounded exclusion reasons before a headless operator offers a reassignment.
+Studio User Node runtime rows now show the same candidate reasoning and can
+prepare the existing Host assignment form with a recommended runner without
+mutating assignment state directly from the row.
 Deterministic runner task memory now also preserves bounded source-change
 candidate ids, status, totals, diff availability, and changed-file summaries
 from the live turn record, and the derived recent-work summary surfaces the
@@ -1338,9 +1342,8 @@ edge, response-policy, artifact-inclusion, intent, and summary metadata.
 The highest-value remaining implementation areas are richer model-guided
 memory maintenance, deeper delegated-session semantics beyond the current
 controlled handoff path and deterministic owner/coordination/delegation memory
-projection, Studio-side participant runtime reassignment UX beyond the current
-read-only User Client runtime status projection and CLI candidate preflight,
-collaborative wiki merge UI on top of the participant-scoped
+projection, deeper reassignment workflows beyond current CLI/Studio candidate
+preflight, collaborative wiki merge UI on top of the participant-scoped
 page upsert and patch-set commands,
 repository lifecycle and replicated/fallback artifact behavior,
 infrastructure-backed multi-machine proof execution, non-disposable upgrade

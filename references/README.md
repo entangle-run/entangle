@@ -929,6 +929,7 @@ files are the active federated redesign pack.
 564. [563-cli-user-node-assignment-roster-slice.md](563-cli-user-node-assignment-roster-slice.md)
 565. [564-approval-ledger-memory-slice.md](564-approval-ledger-memory-slice.md)
 566. [565-cli-user-node-runner-candidates-slice.md](565-cli-user-node-runner-candidates-slice.md)
+567. [566-studio-user-node-runner-candidates-slice.md](566-studio-user-node-runner-candidates-slice.md)
 
 ## Role of this corpus
 
