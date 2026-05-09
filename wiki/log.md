@@ -1,5 +1,12 @@
 # Entangle Wiki Log
 
+## [2026-05-09] tooling | Added fake OpenAI tool-call smoke
+
+Added `references/573-fake-openai-tool-call-smoke-slice.md`. The
+deterministic OpenAI-compatible development provider can now opt into one
+chat-completions `tool_calls` round, and the no-credential smoke verifies that
+tool-call response plus the final tool-result completion path.
+
 ## [2026-05-09] user-client | Added workload review totals
 
 Added `references/572-user-client-workload-review-total-slice.md`. The

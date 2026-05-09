@@ -128,8 +128,8 @@ The most accurate current description is:
   provider with `pnpm ops:fake-openai-provider` for manual no-credential
   catalog, auth, adapter, and UI wiring tests;
 - `pnpm ops:smoke-fake-openai-provider` now verifies that no-credential
-  provider harness end to end, including streaming chat-completions and
-  Responses API frames;
+  provider harness end to end, including an opt-in chat-completions tool-call
+  round, streaming chat-completions, and Responses API frames;
 - operators can now start a deterministic fake OpenCode server with
   `pnpm ops:fake-opencode-server` for manual no-credential attached-server
   route and permission-bridge plumbing tests;

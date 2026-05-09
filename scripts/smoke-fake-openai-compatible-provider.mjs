@@ -12,6 +12,7 @@ const providerProcess = spawn(
     "0",
     "--api-key",
     apiKey,
+    "--tool-call-on-first-request",
     "--json-log"
   ],
   {
@@ -27,6 +28,7 @@ try {
   await verifyHealth(startup.healthUrl);
   await verifyModels(startup.baseUrl);
   await verifyChatCompletion(startup.baseUrl);
+  await verifyChatToolLoop(startup.baseUrl);
   await verifyChatStream(startup.baseUrl);
   await verifyResponsesStream(startup.baseUrl);
   console.log(
@@ -137,6 +139,106 @@ async function verifyChatCompletion(baseUrl) {
       "Deterministic Entangle test provider response."
   ) {
     throw new Error(`Chat completion check failed: ${response.status}`);
+  }
+}
+
+async function verifyChatToolLoop(baseUrl) {
+  const firstResponse = await fetch(`${baseUrl}/chat/completions`, {
+    body: JSON.stringify({
+      messages: [
+        {
+          content: "inspect artifact",
+          role: "user"
+        }
+      ],
+      model: "entangle-deterministic-test",
+      tool_choice: "auto",
+      tools: [
+        {
+          function: {
+            description: "Inspect an artifact.",
+            name: "inspect_artifact_input",
+            parameters: {
+              properties: {
+                artifactId: {
+                  type: "string"
+                }
+              },
+              required: ["artifactId"],
+              type: "object"
+            }
+          },
+          type: "function"
+        }
+      ]
+    }),
+    headers: jsonHeaders(),
+    method: "POST"
+  });
+  const firstBody = await firstResponse.json();
+  const toolCall = firstBody.choices?.[0]?.message?.tool_calls?.[0];
+
+  if (
+    !firstResponse.ok ||
+    firstBody.choices?.[0]?.finish_reason !== "tool_calls" ||
+    toolCall?.function?.name !== "inspect_artifact_input" ||
+    JSON.parse(toolCall.function.arguments).artifactId !== "artifact-alpha"
+  ) {
+    throw new Error(`Chat tool-call request check failed: ${firstResponse.status}`);
+  }
+
+  const secondResponse = await fetch(`${baseUrl}/chat/completions`, {
+    body: JSON.stringify({
+      messages: [
+        {
+          content: "inspect artifact",
+          role: "user"
+        },
+        {
+          content: null,
+          role: "assistant",
+          tool_calls: [toolCall]
+        },
+        {
+          content: JSON.stringify({
+            artifactId: "artifact-alpha",
+            preview: "Artifact content."
+          }),
+          role: "tool",
+          tool_call_id: toolCall.id
+        }
+      ],
+      model: "entangle-deterministic-test",
+      tools: [
+        {
+          function: {
+            description: "Inspect an artifact.",
+            name: "inspect_artifact_input",
+            parameters: {
+              properties: {
+                artifactId: {
+                  type: "string"
+                }
+              },
+              required: ["artifactId"],
+              type: "object"
+            }
+          },
+          type: "function"
+        }
+      ]
+    }),
+    headers: jsonHeaders(),
+    method: "POST"
+  });
+  const secondBody = await secondResponse.json();
+
+  if (
+    !secondResponse.ok ||
+    secondBody.choices?.[0]?.message?.content !==
+      "Deterministic Entangle test provider response."
+  ) {
+    throw new Error(`Chat tool-result completion check failed: ${secondResponse.status}`);
   }
 }
 

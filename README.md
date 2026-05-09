@@ -234,7 +234,9 @@ deterministic responses and bearer-token validation. Point an
 `openai_compatible` model endpoint at `http://127.0.0.1:18080/v1` and store
 `entangle-test-key` under the endpoint's `secretRef` when you want to validate
 catalog, auth, adapter, and UI wiring without live model credentials. This does
-not validate real model behavior.
+not validate real model behavior. Add `--tool-call-on-first-request` when you
+want the fake chat-completions endpoint to request one deterministic tool call
+before completing after the next `tool` result message.
 
 The provider harness has its own no-credential smoke:
 
@@ -243,8 +245,8 @@ pnpm ops:smoke-fake-openai-provider
 ```
 
 That smoke starts the fake provider on an ephemeral port and verifies health,
-model listing, non-streaming chat completions, streaming chat completions, and
-streaming Responses API frames.
+model listing, non-streaming chat completions, an opt-in tool-call round,
+streaming chat completions, and streaming Responses API frames.
 
 For manual attached OpenCode permission-bridge plumbing tests without real
 model credentials, start the deterministic fake OpenCode server:

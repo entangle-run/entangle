@@ -9,7 +9,11 @@ const defaultOptions = {
   jsonLog: false,
   model: "entangle-deterministic-test",
   port: 18080,
-  requireAuth: true
+  requireAuth: true,
+  toolCallArguments: '{"artifactId":"artifact-alpha"}',
+  toolCallId: "call_entangle_fake_provider_001",
+  toolCallName: undefined,
+  toolCallOnFirstRequest: false
 };
 
 let options;
@@ -184,6 +188,10 @@ function isAuthorized(request) {
 function buildChatCompletionBody(body) {
   const model = typeof body.model === "string" && body.model ? body.model : options.model;
 
+  if (shouldSendToolCall(body)) {
+    return buildChatToolCallBody({ body, model });
+  }
+
   return {
     choices: [
       {
@@ -204,6 +212,66 @@ function buildChatCompletionBody(body) {
       prompt_tokens: countApproxPromptTokens(body)
     }
   };
+}
+
+function shouldSendToolCall(body) {
+  return (
+    options.toolCallOnFirstRequest === true &&
+    Array.isArray(body.tools) &&
+    body.tools.length > 0 &&
+    !hasToolResultMessage(body)
+  );
+}
+
+function hasToolResultMessage(body) {
+  return (
+    Array.isArray(body.messages) &&
+    body.messages.some((message) => message?.role === "tool")
+  );
+}
+
+function buildChatToolCallBody(input) {
+  const toolName = resolveToolCallName(input.body);
+
+  return {
+    choices: [
+      {
+        finish_reason: "tool_calls",
+        index: 0,
+        message: {
+          content: null,
+          role: "assistant",
+          tool_calls: [
+            {
+              function: {
+                arguments: options.toolCallArguments,
+                name: toolName
+              },
+              id: options.toolCallId,
+              type: "function"
+            }
+          ]
+        }
+      }
+    ],
+    created: Math.floor(Date.now() / 1000),
+    id: `chatcmpl_${randomUUID()}`,
+    model: input.model,
+    object: "chat.completion",
+    usage: {
+      completion_tokens: countApproxTokens(options.toolCallArguments),
+      prompt_tokens: countApproxPromptTokens(input.body)
+    }
+  };
+}
+
+function resolveToolCallName(body) {
+  const firstToolName = Array.isArray(body.tools)
+    ? body.tools.find((tool) => typeof tool?.function?.name === "string")
+        ?.function?.name
+    : undefined;
+
+  return options.toolCallName ?? firstToolName ?? "inspect_artifact_input";
 }
 
 function buildResponsesBody(body) {
@@ -404,12 +472,20 @@ function parseArgs(args) {
       continue;
     }
 
+    if (arg === "--tool-call-on-first-request") {
+      parsed.toolCallOnFirstRequest = true;
+      continue;
+    }
+
     if (
       arg === "--api-key" ||
       arg === "--content" ||
       arg === "--host" ||
       arg === "--model" ||
-      arg === "--port"
+      arg === "--port" ||
+      arg === "--tool-call-arguments" ||
+      arg === "--tool-call-id" ||
+      arg === "--tool-call-name"
     ) {
       const value = args[index + 1];
       if (!value) {
@@ -431,6 +507,13 @@ function parseArgs(args) {
           throw new Error(`Invalid port '${value}'.`);
         }
         parsed.port = port;
+      } else if (arg === "--tool-call-arguments") {
+        validateJsonObjectString(value, arg);
+        parsed.toolCallArguments = value;
+      } else if (arg === "--tool-call-id") {
+        parsed.toolCallId = value;
+      } else if (arg === "--tool-call-name") {
+        parsed.toolCallName = value;
       }
       continue;
     }
@@ -439,6 +522,22 @@ function parseArgs(args) {
   }
 
   return parsed;
+}
+
+function validateJsonObjectString(value, optionName) {
+  try {
+    const parsed = JSON.parse(value);
+
+    if (typeof parsed !== "object" || parsed === null || Array.isArray(parsed)) {
+      throw new Error("Expected JSON object.");
+    }
+  } catch (error) {
+    throw new Error(
+      `${optionName} must be a JSON object string: ${
+        error instanceof Error ? error.message : String(error)
+      }`
+    );
+  }
 }
 
 function printHelp() {
@@ -451,6 +550,12 @@ Options:
   --model <id>               Model id exposed by /v1/models.
   --content <text>           Deterministic assistant response content.
   --allow-missing-auth       Do not require Authorization: Bearer <key>.
+  --tool-call-on-first-request
+                             Return one chat-completions tool call when tools are present.
+  --tool-call-name <name>    Override tool call function name.
+  --tool-call-id <id>        Tool call id. Default: call_entangle_fake_provider_001
+  --tool-call-arguments <json>
+                             Tool call arguments object string.
   --json-log                 Print startup metadata as JSON.
   -h, --help                 Show this help.
 

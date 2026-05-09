@@ -373,6 +373,7 @@ same-machine slice records.
 - [570-participant-review-queue-batching-slice.md](570-participant-review-queue-batching-slice.md)
 - [571-cli-review-queue-slice.md](571-cli-review-queue-slice.md)
 - [572-user-client-workload-review-total-slice.md](572-user-client-workload-review-total-slice.md)
+- [573-fake-openai-tool-call-smoke-slice.md](573-fake-openai-tool-call-smoke-slice.md)
 
 ## Audited Scope
 
@@ -498,6 +499,10 @@ The repository is not fully federated:
 - `pnpm ops:smoke-fake-openai-provider` now verifies that deterministic
   provider harness end to end, including streaming chat-completions and
   Responses API frames;
+- the deterministic OpenAI-compatible development provider can now opt into a
+  single chat-completions `tool_calls` round with
+  `--tool-call-on-first-request`, and its smoke verifies the first tool-call
+  response plus final tool-result completion without live credentials;
 - operators can now start a deterministic fake OpenCode server through
   `pnpm ops:fake-opencode-server`; it exposes the attached OpenCode
   server routes Entangle consumes and emits deterministic SSE permission and
