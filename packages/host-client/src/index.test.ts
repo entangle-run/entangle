@@ -275,6 +275,8 @@ describe("createHostClient", () => {
           clearBaseUrl: false,
           clearDefaultAgent: false,
           clearExecutable: false,
+          clearHealthUrl: false,
+          clearHttpAuth: false,
           clearPermissionMode: false,
           clearVersion: false,
           displayName: "Attached OpenCode",
