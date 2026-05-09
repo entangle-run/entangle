@@ -1433,6 +1433,9 @@ Current status:
   Studio automatically after the keep-running smoke prints the ephemeral Host
   URL and operator token, keeping Studio as the operator/admin surface while
   preserving separate User Client URLs for human graph nodes;
+- `pnpm ops:smoke-demo-tools` now verifies the demo command surface through
+  no-infrastructure syntax, help, and dry-run checks for the base,
+  Studio-enabled, fake OpenCode, and fake `external_http` paths;
 - `pnpm ops:demo-user-node-runtime:fake-opencode` now wraps that same
   keep-running User Node runtime proof with the attached fake OpenCode server
   profile, and `pnpm ops:smoke-federated-process-runner:fake-opencode`

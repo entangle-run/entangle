@@ -426,6 +426,9 @@ the process-runner proof in `--keep-running` mode.
 after the keep-running proof exposes the ephemeral Host URL and operator
 token, while keeping the projected User Client URLs as the separate human-node
 participant surfaces.
+`pnpm ops:smoke-demo-tools` verifies the demo command surface through
+no-infrastructure syntax, help, and dry-run checks for the base, Studio,
+fake OpenCode, and fake `external_http` paths.
 `pnpm ops:demo-user-node-runtime:fake-opencode` runs the same keep-running
 path with the attached fake OpenCode server profile, so operators can inspect
 User Node approval and attached-engine continuity without live model

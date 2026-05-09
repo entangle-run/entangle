@@ -1268,6 +1268,9 @@ The interactive User Node runtime demo can now start Studio automatically with
 `pnpm ops:demo-user-node-runtime:studio` or `--with-studio`, waiting for the
 keep-running smoke to print the ephemeral Host URL and operator token before
 launching the separate operator surface.
+`pnpm ops:smoke-demo-tools` now verifies the demo command surface without
+starting infrastructure, covering syntax, help, base dry-run, Studio dry-run,
+fake OpenCode dry-run, and fake `external_http` dry-run assembly.
 Deterministic runner task memory now also preserves bounded source-change
 candidate ids, status, totals, diff availability, and changed-file summaries
 from the live turn record, and the derived recent-work summary surfaces the

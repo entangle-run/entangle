@@ -6579,3 +6579,14 @@ the keep-running smoke prints the ephemeral Host URL and operator token.
 The change keeps Studio as the operator/admin surface and keeps the projected
 User Client URLs as the separate participant clients for running human graph
 nodes.
+
+## [2026-05-09] demo | Added demo tooling smoke
+
+Added `references/555-demo-tooling-smoke-slice.md`. The new
+`pnpm ops:smoke-demo-tools` command verifies demo script syntax, help output,
+and dry-run command assembly for the base, Studio-enabled, fake OpenCode, and
+fake `external_http` User Node runtime demo paths.
+
+The smoke is intentionally no-infrastructure and no-credential; it protects the
+operator-facing demo command surface while the process-runner smokes continue
+to prove runtime behavior.

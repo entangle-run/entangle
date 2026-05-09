@@ -376,6 +376,16 @@ and operator token, then starts Studio with matching `VITE_ENTANGLE_HOST_URL`
 and `VITE_ENTANGLE_HOST_TOKEN`. The User Client URLs remain the separate
 participant clients for the running User Nodes.
 
+The demo command surface has a no-infrastructure smoke:
+
+```bash
+pnpm ops:smoke-demo-tools
+```
+
+It verifies demo syntax, help, and dry-run assembly for the base, Studio,
+fake OpenCode, and fake `external_http` paths without starting Host, relay, or
+runners.
+
 To run the interactive demo with the attached fake OpenCode server profile
 instead of the temporary fake executable, use:
 
