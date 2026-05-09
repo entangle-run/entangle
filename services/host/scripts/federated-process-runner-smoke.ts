@@ -82,6 +82,13 @@ const operatorToken = "process-runner-smoke-token";
 const scriptDirectory = path.dirname(fileURLToPath(import.meta.url));
 const repoRoot = path.resolve(scriptDirectory, "..", "..", "..");
 const userClientStaticDir = resolveUserClientStaticDir();
+const hostCorsOrigins = [
+  "http://localhost:3000",
+  "http://127.0.0.1:3000",
+  ...splitCommaSeparatedValues(
+    process.env.ENTANGLE_PROCESS_SMOKE_EXTRA_CORS_ORIGINS
+  )
+];
 const useFakeOpenCodeServer = process.argv.includes(
   "--use-fake-opencode-server"
 );
@@ -121,6 +128,17 @@ function readFlagValue(name: string): string | undefined {
 
   const index = process.argv.indexOf(name);
   return index >= 0 ? process.argv[index + 1] : undefined;
+}
+
+function splitCommaSeparatedValues(value: string | undefined): string[] {
+  return [
+    ...new Set(
+      (value ?? "")
+        .split(",")
+        .map((item) => item.trim())
+        .filter((item) => item.length > 0)
+    )
+  ];
 }
 
 function sha256Hex(value: string): string {
@@ -1015,8 +1033,9 @@ async function main(): Promise<void> {
   process.env.ENTANGLE_RUNTIME_BACKEND = "memory";
   process.env.ENTANGLE_HOST_LOGGER = "false";
   process.env.ENTANGLE_HOST_OPERATOR_TOKEN = operatorToken;
-  process.env.ENTANGLE_HOST_CORS_ORIGINS =
-    "http://localhost:3000,http://127.0.0.1:3000";
+  process.env.ENTANGLE_HOST_CORS_ORIGINS = [...new Set(hostCorsOrigins)].join(
+    ","
+  );
   process.env.ENTANGLE_DEFAULT_RELAY_READ_URL = relayUrl;
   process.env.ENTANGLE_DEFAULT_RELAY_WRITE_URL = relayUrl;
   process.env.ENTANGLE_DEFAULT_GIT_TRANSPORT = "file";

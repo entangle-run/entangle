@@ -31,6 +31,7 @@
     "ops:demo-federated-preview": "node scripts/federated-preview-demo.mjs",
     "ops:demo-federated-preview:reset": "node scripts/federated-preview-demo.mjs --reset",
     "ops:demo-user-node-runtime": "node scripts/federated-user-node-runtime-demo.mjs",
+    "ops:demo-user-node-runtime:studio": "node scripts/federated-user-node-runtime-demo.mjs --with-studio",
     "ops:demo-user-node-runtime:fake-opencode": "node scripts/federated-user-node-runtime-demo.mjs --fake-opencode-server",
     "ops:demo-user-node-runtime:fake-external-http": "node scripts/federated-user-node-runtime-demo.mjs --fake-external-http-engine",
     "ops:distributed-proof-kit": "node scripts/federated-distributed-proof-kit.mjs",

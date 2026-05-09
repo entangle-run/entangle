@@ -1264,6 +1264,10 @@ Source-history commits and published source-history artifact commits now use
 the node's resolved primary git principal attribution, matching wiki repository
 commit behavior and keeping git-facing contribution metadata aligned with the
 configured per-node profile.
+The interactive User Node runtime demo can now start Studio automatically with
+`pnpm ops:demo-user-node-runtime:studio` or `--with-studio`, waiting for the
+keep-running smoke to print the ephemeral Host URL and operator token before
+launching the separate operator surface.
 Deterministic runner task memory now also preserves bounded source-change
 candidate ids, status, totals, diff availability, and changed-file summaries
 from the live turn record, and the derived recent-work summary surfaces the

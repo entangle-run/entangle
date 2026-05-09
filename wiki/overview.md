@@ -422,6 +422,10 @@ projected Human Interface Runtime placement and User Client URLs.
 `pnpm ops:demo-user-node-runtime` now wraps that shortest interactive path by
 building the dedicated User Client, starting the development relay, and running
 the process-runner proof in `--keep-running` mode.
+`pnpm ops:demo-user-node-runtime:studio` can now launch Studio automatically
+after the keep-running proof exposes the ephemeral Host URL and operator
+token, while keeping the projected User Client URLs as the separate human-node
+participant surfaces.
 `pnpm ops:demo-user-node-runtime:fake-opencode` runs the same keep-running
 path with the attached fake OpenCode server profile, so operators can inspect
 User Node approval and attached-engine continuity without live model

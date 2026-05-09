@@ -88,6 +88,8 @@ The demo keeps Host and all joined runners alive, prints the running User
 Client URLs, and prints a ready Studio command with the ephemeral Host URL and
 operator token. Host CORS is explicitly allow-listed for Studio development
 origins through `ENTANGLE_HOST_CORS_ORIGINS`.
+Use `pnpm ops:demo-user-node-runtime:studio` when Studio should be launched
+automatically after the same Host URL and operator token are available.
 
 That smoke starts Host, one real joined agent runner process, and two real
 joined User Node runner processes with separate state roots. It assigns the
@@ -362,6 +364,17 @@ It builds the dedicated User Client app, starts the development relay, runs the
 process-runner smoke in `--keep-running` mode, and prints the Host URL,
 operator token, and both User Client URLs. Stop it with `Ctrl-C` in the demo
 terminal.
+
+To start the operator Studio admin surface in the same controlled demo, use:
+
+```bash
+pnpm ops:demo-user-node-runtime:studio
+```
+
+That variant waits until the keep-running smoke prints the ephemeral Host URL
+and operator token, then starts Studio with matching `VITE_ENTANGLE_HOST_URL`
+and `VITE_ENTANGLE_HOST_TOKEN`. The User Client URLs remain the separate
+participant clients for the running User Nodes.
 
 To run the interactive demo with the attached fake OpenCode server profile
 instead of the temporary fake executable, use:

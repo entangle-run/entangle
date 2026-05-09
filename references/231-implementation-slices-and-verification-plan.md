@@ -1429,6 +1429,10 @@ Current status:
   Node runtime proof by building the dedicated User Client app, starting the
   development relay, and running the process-runner smoke in `--keep-running`
   mode so operators can open both projected User Client URLs;
+- `pnpm ops:demo-user-node-runtime:studio` and `--with-studio` now start
+  Studio automatically after the keep-running smoke prints the ephemeral Host
+  URL and operator token, keeping Studio as the operator/admin surface while
+  preserving separate User Client URLs for human graph nodes;
 - `pnpm ops:demo-user-node-runtime:fake-opencode` now wraps that same
   keep-running User Node runtime proof with the attached fake OpenCode server
   profile, and `pnpm ops:smoke-federated-process-runner:fake-opencode`

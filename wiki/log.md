@@ -6568,3 +6568,14 @@ Added `references/553-source-history-git-attribution-slice.md`. Source-history
 commits and published source-history artifact commits now use the node's
 resolved primary git principal attribution when available, matching wiki
 repository commits and preserving per-node git-facing contribution metadata.
+
+## [2026-05-09] demo | Added Studio-enabled User Node runtime demo
+
+Added `references/554-demo-studio-launch-slice.md`. The interactive User Node
+runtime demo now accepts `--with-studio`, and the root
+`pnpm ops:demo-user-node-runtime:studio` command uses it to start Studio after
+the keep-running smoke prints the ephemeral Host URL and operator token.
+
+The change keeps Studio as the operator/admin surface and keeps the projected
+User Client URLs as the separate participant clients for running human graph
+nodes.
