@@ -65,6 +65,12 @@ export interface DeploymentServiceVolumeImportOptions {
   repositoryRoot: string;
 }
 
+export interface DeploymentServiceVolumesStatusOptions {
+  commandRunner?: DeploymentServiceVolumeCommandRunner | undefined;
+  now?: (() => Date) | undefined;
+  repositoryRoot: string;
+}
+
 export interface DeploymentBackupCopyStats {
   bytes: number;
   directories: number;
@@ -174,6 +180,32 @@ export interface DeploymentServiceVolumeQuiescenceCheck {
   service: string;
   status: "clear";
   volume: string;
+}
+
+export type DeploymentServiceVolumeStatus =
+  | "in_use"
+  | "missing"
+  | "ready"
+  | "unavailable";
+
+export interface DeploymentServiceVolumeStatusEntry {
+  detail: string;
+  exists: boolean;
+  inspectCommand: string[];
+  mountPath: string;
+  runningContainers: string[];
+  runningContainersCommand?: string[] | undefined;
+  service: string;
+  status: DeploymentServiceVolumeStatus;
+  volume: string;
+}
+
+export interface DeploymentServiceVolumesStatusSummary {
+  generatedAt: string;
+  readyForExportImport: boolean;
+  status: "blocked" | "ready";
+  volumeCount: number;
+  volumes: DeploymentServiceVolumeStatusEntry[];
 }
 
 export interface DeploymentServiceVolumeOperationSummary {
@@ -665,6 +697,10 @@ function buildServiceVolumeImportArgs(input: {
   ];
 }
 
+function buildServiceVolumeInspectArgs(volume: string): string[] {
+  return ["volume", "inspect", volume];
+}
+
 function buildServiceVolumeQuiescenceArgs(volume: string): string[] {
   return ["ps", "--filter", `volume=${volume}`, "--format", "{{.Names}}"];
 }
@@ -744,6 +780,67 @@ function inspectServiceVolumeQuiescenceForVolumes(input: {
   );
 }
 
+function inspectServiceVolumeStatus(input: {
+  commandRunner: DeploymentServiceVolumeCommandRunner;
+  repositoryRoot: string;
+  volume: DeploymentServiceVolumeManifestEntry;
+}): DeploymentServiceVolumeStatusEntry {
+  const inspectArgs = buildServiceVolumeInspectArgs(input.volume.volume);
+  const inspectResult = input.commandRunner("docker", inspectArgs, {
+    cwd: input.repositoryRoot
+  });
+  const inspectCommand = ["docker", ...inspectArgs];
+
+  if (inspectResult.status !== 0 || inspectResult.error || inspectResult.signal) {
+    return {
+      detail: normalizeCommandResult(inspectResult),
+      exists: false,
+      inspectCommand,
+      mountPath: input.volume.mountPath,
+      runningContainers: [],
+      service: input.volume.service,
+      status: "missing",
+      volume: input.volume.volume
+    };
+  }
+
+  const runningArgs = buildServiceVolumeQuiescenceArgs(input.volume.volume);
+  const runningResult = input.commandRunner("docker", runningArgs, {
+    cwd: input.repositoryRoot
+  });
+  const runningContainersCommand = ["docker", ...runningArgs];
+
+  if (runningResult.status !== 0 || runningResult.error || runningResult.signal) {
+    return {
+      detail: normalizeCommandResult(runningResult),
+      exists: true,
+      inspectCommand,
+      mountPath: input.volume.mountPath,
+      runningContainers: [],
+      runningContainersCommand,
+      service: input.volume.service,
+      status: "unavailable",
+      volume: input.volume.volume
+    };
+  }
+
+  const runningContainers = parseRunningContainerNames(runningResult.stdout);
+  return {
+    detail:
+      runningContainers.length > 0
+        ? `${runningContainers.length} running container(s) mounted`
+        : "volume exists and is not mounted by running containers",
+    exists: true,
+    inspectCommand,
+    mountPath: input.volume.mountPath,
+    runningContainers,
+    runningContainersCommand,
+    service: input.volume.service,
+    status: runningContainers.length > 0 ? "in_use" : "ready",
+    volume: input.volume.volume
+  };
+}
+
 function assertServiceVolumeMutationAcknowledged(input: {
   assumeServicesStopped: boolean | undefined;
   dryRun: boolean;
@@ -782,6 +879,28 @@ function assertRestorableLayout(
   throw new Error(
     `Cannot restore Entangle deployment profile backup with state layout status '${layout.status}'.`
   );
+}
+
+export function inspectDeploymentServiceVolumes(
+  options: DeploymentServiceVolumesStatusOptions
+): DeploymentServiceVolumesStatusSummary {
+  const commandRunner = options.commandRunner ?? defaultCommandRunner;
+  const volumes = backupServiceVolumes.map((volume) =>
+    inspectServiceVolumeStatus({
+      commandRunner,
+      repositoryRoot: options.repositoryRoot,
+      volume
+    })
+  );
+  const readyForExportImport = volumes.every((volume) => volume.status === "ready");
+
+  return {
+    generatedAt: (options.now ?? (() => new Date()))().toISOString(),
+    readyForExportImport,
+    status: readyForExportImport ? "ready" : "blocked",
+    volumeCount: volumes.length,
+    volumes
+  };
 }
 
 export async function createDeploymentBackup(

@@ -973,6 +973,7 @@ files are the active federated redesign pack.
 589. [588-fake-openai-scripted-error-slice.md](588-fake-openai-scripted-error-slice.md)
 590. [589-service-volume-quiescing-acknowledgement-slice.md](589-service-volume-quiescing-acknowledgement-slice.md)
 591. [590-service-volume-running-container-check-slice.md](590-service-volume-running-container-check-slice.md)
+592. [591-service-volume-status-surface-slice.md](591-service-volume-status-surface-slice.md)
 
 ## Role of this corpus
 

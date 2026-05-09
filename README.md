@@ -1212,6 +1212,9 @@ This repository currently contains:
   `pnpm ops:smoke-deployment-service-volume-tools` that verifies Gitea/relay
   service-volume export and import dry-run CLI output without requiring Docker
   or live volumes;
+- a read-only `entangle deployment service-volumes status` surface that checks
+  stable service-volume existence and running-container use before operators
+  attempt export/import;
 - first same-machine backup/restore commands through `entangle deployment backup` and
   `entangle deployment restore`, using a versioned directory bundle for
   `.entangle/host`, selected same-machine profile config snapshots, explicit secret
@@ -1224,7 +1227,8 @@ This repository currently contains:
   service volumes now also have separate service-volume export/import bundle
   paths with dry-run Docker command planning, and non-dry-run service-volume
   operations require `--assume-services-stopped` plus a running-container check
-  for each target volume;
+  for each target volume; the same readiness evidence is available through
+  `entangle deployment service-volumes status`;
 - a first conservative same-machine repair command through `entangle deployment repair`,
   defaulting to dry-run previews and applying only safe host-state
   initialization, missing layout-marker, or missing standard host-state
@@ -1703,7 +1707,8 @@ This repository currently contains:
   service-volumes export/import` provides a separate Gitea/relay service-volume
   bundle path for non-disposable profiles with explicit stopped-service
   acknowledgement and running-container volume checks before non-dry-run Docker
-  archive commands execute;
+  archive commands execute, while `deployment service-volumes status` exposes
+  the same volume readiness as a read-only preflight;
 - the next bounded Studio completion slice where the operator can now select
   one runtime-scoped session summary and inspect host-backed per-node session
   detail without widening the host API or inventing client-owned session

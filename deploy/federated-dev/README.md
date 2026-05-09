@@ -120,6 +120,13 @@ Plan a separate Gitea/relay service-volume export without executing Docker:
 pnpm --filter @entangle/cli dev deployment service-volumes export --dry-run
 ```
 
+Inspect whether the stable service volumes exist and are currently unused by
+running containers:
+
+```sh
+pnpm --filter @entangle/cli dev deployment service-volumes status
+```
+
 Export the Gitea and strfry volumes into a separate bundle after the services
 have been stopped or otherwise quiesced:
 

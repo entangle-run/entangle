@@ -391,6 +391,7 @@ same-machine slice records.
 - [588-fake-openai-scripted-error-slice.md](588-fake-openai-scripted-error-slice.md)
 - [589-service-volume-quiescing-acknowledgement-slice.md](589-service-volume-quiescing-acknowledgement-slice.md)
 - [590-service-volume-running-container-check-slice.md](590-service-volume-running-container-check-slice.md)
+- [591-service-volume-status-surface-slice.md](591-service-volume-status-surface-slice.md)
 
 ## Audited Scope
 
@@ -1247,7 +1248,9 @@ Host secret state still excluded by default. Non-dry-run service-volume
 export/import now also requires an explicit `--assume-services-stopped`
 operator acknowledgement before Docker is invoked, and the command rejects
 operations when Docker reports a running container still mounting one of the
-target service volumes.
+target service volumes. Operators can inspect the same target-volume existence
+and running-container readiness evidence through the read-only
+`deployment service-volumes status` CLI surface before attempting export/import.
 New Host events now carry optional audit hash-chain fields, and Host serializes
 event appends so concurrent operator requests do not fork the local audit
 sequence. Host now also exposes `GET /v1/events/integrity`, host-client

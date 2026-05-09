@@ -1372,7 +1372,9 @@ The repository now also contains the first real implementation baseline:
   dry-run-capable Gitea/relay volume bundle path while still excluding Host
   secret state, and non-dry-run service-volume operations now require
   `--assume-services-stopped` plus a running-container check for each target
-  volume before Docker archive commands execute;
+  volume before Docker archive commands execute; `entangle deployment
+  service-volumes status` exposes the same readiness evidence as a read-only
+  operator preflight;
 - an active same-machine profile smoke through `pnpm ops:smoke-federated-dev`, covering
   running Compose services, the local runner image, host status/events, Studio
   HTTP, Gitea HTTP reachability, and the local `strfry` Nostr WebSocket
@@ -1535,7 +1537,8 @@ The current implementation-truth audit now lives in
   lifecycle behavior, and explicit fallback or replication behavior,
   while the next deployment-grade gap is guided service stop/start,
   post-import health checks, and non-disposable profile upgrade behavior beyond
-  the current explicit acknowledgement and running-container guards;
+  the current explicit acknowledgement, running-container guards, and read-only
+  service-volume status surface;
 - complete CLI parity where it adds real headless operational value;
 - continue narrowing the remaining delegated-session gaps now that controlled
   autonomous `task.handoff` emission and runner-local active-conversation

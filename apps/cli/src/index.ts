@@ -69,6 +69,7 @@ import {
   createDeploymentBackup,
   createDeploymentServiceVolumeExport,
   createDeploymentServiceVolumeImport,
+  inspectDeploymentServiceVolumes,
   restoreDeploymentBackup
 } from "./deployment-backup-command.js";
 import {
@@ -618,6 +619,19 @@ deploymentCommand
 const deploymentServiceVolumesCommand = deploymentCommand
   .command("service-volumes")
   .description("Export or import Entangle service-owned deployment volumes.");
+
+deploymentServiceVolumesCommand
+  .command("status")
+  .description("Inspect service-volume readiness for export or import.")
+  .action(() => {
+    const summary = inspectDeploymentServiceVolumes({
+      repositoryRoot
+    });
+
+    printJson({
+      serviceVolumeStatus: summary
+    });
+  });
 
 deploymentServiceVolumesCommand
   .command("export")

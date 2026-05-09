@@ -6932,3 +6932,14 @@ mutation.
 The guard rejects operations when `gitea-data` or `strfry-data` is still
 mounted by a running container. Dry-run behavior remains non-mutating and does
 not require Docker daemon inspection.
+
+## [2026-05-09] deployment | Added service-volume status preflight
+
+Added `references/591-service-volume-status-surface-slice.md`.
+`entangle deployment service-volumes status` now reports stable Gitea/strfry
+service-volume existence, running-container use, and aggregate readiness for
+export/import.
+
+The command is read-only and does not require Host state, giving operators the
+same readiness evidence before they attempt a non-dry-run service-volume
+operation.

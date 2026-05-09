@@ -6,6 +6,7 @@ import {
   createDeploymentBackup,
   createDeploymentServiceVolumeExport,
   createDeploymentServiceVolumeImport,
+  inspectDeploymentServiceVolumes,
   restoreDeploymentBackup
 } from "./deployment-backup-command.js";
 
@@ -558,6 +559,92 @@ describe("deployment backup command helpers", () => {
         args: ["ps", "--filter", "volume=gitea-data", "--format", "{{.Names}}"],
         command: "docker"
       }
+    ]);
+  });
+
+  it("reports service-volume status including running containers", async () => {
+    const commandCalls: Array<{ args: string[]; command: string }> = [];
+    const summary = inspectDeploymentServiceVolumes({
+      commandRunner: (command, args) => {
+        commandCalls.push({ args, command });
+        if (args[0] === "volume" && args[1] === "inspect") {
+          return {
+            signal: null,
+            status: 0,
+            stderr: "",
+            stdout: `${args[2]} exists\n`
+          };
+        }
+
+        return {
+          signal: null,
+          status: 0,
+          stderr: "",
+          stdout: args.includes("volume=gitea-data")
+            ? "entangle-gitea-1\n"
+            : ""
+        };
+      },
+      now: () => new Date("2026-05-09T00:00:00.000Z"),
+      repositoryRoot: await createTempRoot("entangle-service-volume-status-repo-")
+    });
+
+    expect(summary).toMatchObject({
+      generatedAt: "2026-05-09T00:00:00.000Z",
+      readyForExportImport: false,
+      status: "blocked",
+      volumeCount: 2
+    });
+    expect(summary.volumes).toEqual([
+      expect.objectContaining({
+        runningContainers: ["entangle-gitea-1"],
+        status: "in_use",
+        volume: "gitea-data"
+      }),
+      expect.objectContaining({
+        runningContainers: [],
+        status: "ready",
+        volume: "strfry-data"
+      })
+    ]);
+    expect(commandCalls.map((call) => call.args)).toEqual([
+      ["volume", "inspect", "gitea-data"],
+      ["ps", "--filter", "volume=gitea-data", "--format", "{{.Names}}"],
+      ["volume", "inspect", "strfry-data"],
+      ["ps", "--filter", "volume=strfry-data", "--format", "{{.Names}}"]
+    ]);
+  });
+
+  it("reports missing service volumes without checking running containers", async () => {
+    const commandCalls: Array<{ args: string[]; command: string }> = [];
+    const summary = inspectDeploymentServiceVolumes({
+      commandRunner: (command, args) => {
+        commandCalls.push({ args, command });
+        return {
+          signal: null,
+          status: args.includes("gitea-data") ? 1 : 0,
+          stderr: args.includes("gitea-data") ? "No such volume\n" : "",
+          stdout: ""
+        };
+      },
+      repositoryRoot: await createTempRoot("entangle-service-volume-status-missing-repo-")
+    });
+
+    expect(summary.readyForExportImport).toBe(false);
+    expect(summary.volumes[0]).toMatchObject({
+      detail: "No such volume",
+      runningContainers: [],
+      status: "missing",
+      volume: "gitea-data"
+    });
+    expect(summary.volumes[1]).toMatchObject({
+      status: "ready",
+      volume: "strfry-data"
+    });
+    expect(commandCalls.map((call) => call.args)).toEqual([
+      ["volume", "inspect", "gitea-data"],
+      ["volume", "inspect", "strfry-data"],
+      ["ps", "--filter", "volume=strfry-data", "--format", "{{.Names}}"]
     ]);
   });
 });

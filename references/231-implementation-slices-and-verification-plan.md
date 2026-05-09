@@ -1579,6 +1579,9 @@ Current status:
 - the same non-dry-run service-volume export/import path now performs a
   Docker running-container check for each target volume and rejects archive
   mutation if a container is still mounting `gitea-data` or `strfry-data`;
+- `entangle deployment service-volumes status` now exposes the same
+  service-volume existence and running-container readiness evidence as a
+  read-only operator preflight;
 - `pnpm ops:smoke-deployment-service-volume-tools` now verifies those
   service-volume export/import dry-run CLI paths without requiring Docker,
   initialized Host state, or live service volumes;

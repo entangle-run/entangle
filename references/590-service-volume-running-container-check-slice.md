@@ -20,6 +20,8 @@ target service volumes.
 
 The check is intentionally volume-based rather than Compose-project-based so it
 can catch any running container that has mounted `gitea-data` or `strfry-data`.
+`references/591-service-volume-status-surface-slice.md` exposes the same
+readiness evidence as a read-only CLI preflight.
 
 ## Impacted Modules And Files
 
