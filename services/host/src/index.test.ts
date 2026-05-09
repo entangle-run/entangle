@@ -929,6 +929,7 @@ afterEach(async () => {
   delete process.env.ENTANGLE_DEFAULT_MODEL_DEFAULT_MODEL;
   delete process.env.ENTANGLE_DEFAULT_AGENT_ENGINE_BASE_URL;
   delete process.env.ENTANGLE_DEFAULT_AGENT_ENGINE_HTTP_BEARER_TOKEN_ENV_VAR;
+  delete process.env.ENTANGLE_DEFAULT_AGENT_ENGINE_HTTP_HEALTH_URL;
   delete process.env.ENTANGLE_DEFAULT_AGENT_ENGINE_ID;
   delete process.env.ENTANGLE_DEFAULT_AGENT_ENGINE_KIND;
   delete process.env.ENTANGLE_DEFAULT_AGENT_ENGINE_PERMISSION_MODE;
@@ -1756,6 +1757,7 @@ describe("buildHostServer", () => {
         payload: {
           baseUrl: "https://engine.example/turn",
           displayName: "External HTTP",
+          healthUrl: "https://engine.example/health",
           httpAuth: {
             mode: "bearer_env",
             tokenEnvVar: "ENTANGLE_EXTERNAL_HTTP_ENGINE_TOKEN"
@@ -1772,6 +1774,7 @@ describe("buildHostServer", () => {
       expect(externalHttpInspection.catalog?.agentEngineProfiles).toContainEqual({
         baseUrl: "https://engine.example/turn",
         displayName: "External HTTP",
+        healthUrl: "https://engine.example/health",
         httpAuth: {
           mode: "bearer_env",
           tokenEnvVar: "ENTANGLE_EXTERNAL_HTTP_ENGINE_TOKEN"
@@ -1806,6 +1809,8 @@ describe("buildHostServer", () => {
     process.env.ENTANGLE_DEFAULT_AGENT_ENGINE_ID = "external-http-default";
     process.env.ENTANGLE_DEFAULT_AGENT_ENGINE_BASE_URL =
       "https://engine.example/turn";
+    process.env.ENTANGLE_DEFAULT_AGENT_ENGINE_HTTP_HEALTH_URL =
+      "https://engine.example/health";
     process.env.ENTANGLE_DEFAULT_AGENT_ENGINE_HTTP_BEARER_TOKEN_ENV_VAR =
       "ENTANGLE_EXTERNAL_HTTP_ENGINE_TOKEN";
     const server = await createTestServer();
@@ -1821,6 +1826,7 @@ describe("buildHostServer", () => {
       expect(inspection.catalog?.agentEngineProfiles).toContainEqual({
         baseUrl: "https://engine.example/turn",
         displayName: "Agent Engine",
+        healthUrl: "https://engine.example/health",
         httpAuth: {
           mode: "bearer_env",
           tokenEnvVar: "ENTANGLE_EXTERNAL_HTTP_ENGINE_TOKEN"

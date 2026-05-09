@@ -147,6 +147,7 @@ export const agentEngineProfileSchema = z
     executable: nonEmptyStringSchema.optional(),
     baseUrl: httpUrlSchema.optional(),
     defaultAgent: identifierSchema.optional(),
+    healthUrl: httpUrlSchema.optional(),
     httpAuth: agentEngineHttpAuthSchema.optional(),
     permissionMode: agentEnginePermissionModeSchema.optional(),
     stateScope: z.enum(["node", "shared"]).default("node")
@@ -185,6 +186,15 @@ export const agentEngineProfileSchema = z
         message:
           "HTTP agent engine auth is only supported for external_http profiles.",
         path: ["httpAuth"]
+      });
+    }
+
+    if (value.healthUrl && value.kind !== "external_http") {
+      context.addIssue({
+        code: z.ZodIssueCode.custom,
+        message:
+          "HTTP agent engine health URLs are only supported for external_http profiles.",
+        path: ["healthUrl"]
       });
     }
   });

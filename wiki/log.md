@@ -6856,3 +6856,16 @@ operator bootstrap auth can now load the same multi-token record array from
 This keeps existing env-token behavior intact while allowing service managers
 or secret mounts to provide durable token records without putting large JSON
 documents directly in the process environment.
+
+## [2026-05-09] runner | Added external HTTP engine health URL probing
+
+Added `references/584-external-http-agent-engine-health-url-slice.md`.
+`external_http` agent engine profiles can now carry an explicit `healthUrl`,
+including Host default seeding through
+`ENTANGLE_DEFAULT_AGENT_ENGINE_HTTP_HEALTH_URL`.
+
+When `healthUrl` is present, the runner probes it before posting a turn and
+classifies failed probes as provider-unavailable engine failures. Existing
+profiles without health URLs continue to execute without a probe. Distributed
+proof-kit generation now also accepts `--external-http-engine-health-url` and
+passes it into generated Host operator commands.

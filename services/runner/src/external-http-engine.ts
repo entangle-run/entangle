@@ -119,6 +119,57 @@ function buildHeaders(input: {
   };
 }
 
+async function probeExternalHttpHealth(input: {
+  headers: Record<string, string>;
+  healthUrl: string;
+  profileId: string;
+  signal: AbortSignal;
+}): Promise<void> {
+  try {
+    const response = await fetch(input.healthUrl, {
+      headers: input.headers,
+      method: "GET",
+      signal: input.signal
+    });
+    const responseBody = await response.text();
+
+    if (!response.ok) {
+      throw new Error(
+        `HTTP ${response.status}${responseBody.trim() ? `: ${responseBody.trim()}` : ""}`
+      );
+    }
+
+    const contentType = response.headers.get("content-type") ?? "";
+    if (!contentType.toLowerCase().includes("application/json")) {
+      return;
+    }
+
+    const parsed: unknown = responseBody.trim()
+      ? JSON.parse(responseBody)
+      : {};
+    if (
+      parsed &&
+      typeof parsed === "object" &&
+      !Array.isArray(parsed) &&
+      (parsed as { healthy?: unknown }).healthy === false
+    ) {
+      throw new Error("health response reported healthy: false");
+    }
+  } catch (error) {
+    if (error instanceof AgentEngineExecutionError) {
+      throw error;
+    }
+
+    throw new AgentEngineExecutionError(
+      `External HTTP agent engine '${input.profileId}' health probe failed.`,
+      {
+        classification: "provider_unavailable",
+        cause: error
+      }
+    );
+  }
+}
+
 export function createExternalHttpAgentEngine(input: {
   runtimeContext: EffectiveRuntimeContext;
 }): AgentEngine {
@@ -155,6 +206,18 @@ export function createExternalHttpAgentEngine(input: {
       }
 
       try {
+        const headers = buildHeaders({
+          runtimeContext: input.runtimeContext
+        });
+        if (profile.healthUrl) {
+          await probeExternalHttpHealth({
+            headers,
+            healthUrl: profile.healthUrl,
+            profileId: profile.id,
+            signal: controller.signal
+          });
+        }
+
         const response = await fetch(profile.baseUrl!, {
           body: JSON.stringify(
             buildExternalHttpPayload({
@@ -162,9 +225,7 @@ export function createExternalHttpAgentEngine(input: {
               runtimeContext: input.runtimeContext
             })
           ),
-          headers: buildHeaders({
-            runtimeContext: input.runtimeContext
-          }),
+          headers,
           method: "POST",
           signal: controller.signal
         });

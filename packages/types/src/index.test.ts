@@ -5188,6 +5188,18 @@ describe("agent runtime contracts", () => {
     });
   });
 
+  it("accepts explicit health URLs on external HTTP agent engine profiles", () => {
+    const result = agentEngineProfileSchema.parse({
+      baseUrl: "https://engine.example/turn",
+      displayName: "External HTTP",
+      healthUrl: "https://engine.example/health",
+      id: "external-http",
+      kind: "external_http"
+    });
+
+    expect(result.healthUrl).toBe("https://engine.example/health");
+  });
+
   it("rejects bearer auth references on non-external HTTP agent engine profiles", () => {
     expect(
       agentEngineProfileSchema.safeParse({
@@ -5197,6 +5209,18 @@ describe("agent runtime contracts", () => {
           mode: "bearer_env",
           tokenEnvVar: "ENTANGLE_EXTERNAL_HTTP_ENGINE_TOKEN"
         },
+        id: "opencode-attached",
+        kind: "opencode_server"
+      }).success
+    ).toBe(false);
+  });
+
+  it("rejects health URLs on non-external HTTP agent engine profiles", () => {
+    expect(
+      agentEngineProfileSchema.safeParse({
+        baseUrl: "https://opencode.example",
+        displayName: "OpenCode Attached",
+        healthUrl: "https://opencode.example/health",
         id: "opencode-attached",
         kind: "opencode_server"
       }).success
@@ -5231,10 +5255,17 @@ describe("agent runtime contracts", () => {
         clearBaseUrl: true
       }).success
     ).toBe(false);
+    expect(
+      agentEngineProfileUpsertRequestSchema.safeParse({
+        clearHealthUrl: true,
+        healthUrl: "https://engine.example/health"
+      }).success
+    ).toBe(false);
   });
 
   it("accepts atomic agent engine profile auth upsert requests", () => {
     const result = agentEngineProfileUpsertRequestSchema.parse({
+      healthUrl: "https://engine.example/health",
       httpAuth: {
         mode: "bearer_env",
         tokenEnvVar: "ENTANGLE_EXTERNAL_HTTP_ENGINE_TOKEN"
@@ -5243,7 +5274,9 @@ describe("agent runtime contracts", () => {
     });
 
     expect(result).toMatchObject({
+      clearHealthUrl: false,
       clearHttpAuth: false,
+      healthUrl: "https://engine.example/health",
       httpAuth: {
         mode: "bearer_env",
         tokenEnvVar: "ENTANGLE_EXTERNAL_HTTP_ENGINE_TOKEN"

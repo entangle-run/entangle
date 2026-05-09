@@ -47,6 +47,7 @@ function createExternalRuntimeContext(
   context: EffectiveRuntimeContext,
   baseUrl: string,
   options: {
+    healthUrl?: string;
     httpAuth?: NonNullable<
       EffectiveRuntimeContext["agentRuntimeContext"]["engineProfile"]["httpAuth"]
     >;
@@ -59,6 +60,7 @@ function createExternalRuntimeContext(
       engineProfile: {
         baseUrl,
         displayName: "External HTTP",
+        ...(options.healthUrl ? { healthUrl: options.healthUrl } : {}),
         ...(options.httpAuth ? { httpAuth: options.httpAuth } : {}),
         id: "external-http-test",
         kind: "external_http" as const,
@@ -97,6 +99,10 @@ async function startHttpEngine(handler: HttpHandler): Promise<string> {
   }
 
   return `http://127.0.0.1:${address.port}/turn`;
+}
+
+function buildHealthUrl(turnUrl: string): string {
+  return new URL("/health", turnUrl).toString();
 }
 
 afterEach(async () => {
@@ -166,6 +172,73 @@ describe("external HTTP runner engine adapter", () => {
       assistantMessages: ["authenticated external HTTP"],
       stopReason: "completed"
     });
+  });
+
+  it("probes configured external HTTP health URLs before posting a turn", async () => {
+    const requests: string[] = [];
+    const baseUrl = await startHttpEngine((request, response) => {
+      requests.push(`${request.method} ${request.url}`);
+      if (request.method === "GET" && request.url === "/health") {
+        response.setHeader("content-type", "application/json");
+        response.end(
+          JSON.stringify({
+            healthy: true,
+            version: "external-http-fixture-healthy"
+          })
+        );
+        return;
+      }
+
+      response.setHeader("content-type", "application/json");
+      response.end(
+        JSON.stringify({
+          assistantMessages: ["health checked external HTTP"],
+          stopReason: "completed"
+        })
+      );
+    });
+    const fixture = await createRuntimeFixture();
+    const runtimeContext = createExternalRuntimeContext(fixture.context, baseUrl, {
+      healthUrl: buildHealthUrl(baseUrl)
+    });
+    const engine = createExternalHttpAgentEngine({ runtimeContext });
+
+    await expect(engine.executeTurn(buildTurnRequest())).resolves.toMatchObject({
+      assistantMessages: ["health checked external HTTP"],
+      stopReason: "completed"
+    });
+    expect(requests).toEqual(["GET /health", "POST /turn"]);
+  });
+
+  it("does not post turns when the configured external HTTP health probe fails", async () => {
+    const requests: string[] = [];
+    const baseUrl = await startHttpEngine((request, response) => {
+      requests.push(`${request.method} ${request.url}`);
+      if (request.method === "GET" && request.url === "/health") {
+        response.statusCode = 503;
+        response.end("unhealthy");
+        return;
+      }
+
+      response.setHeader("content-type", "application/json");
+      response.end(
+        JSON.stringify({
+          assistantMessages: ["should not be called"],
+          stopReason: "completed"
+        })
+      );
+    });
+    const fixture = await createRuntimeFixture();
+    const runtimeContext = createExternalRuntimeContext(fixture.context, baseUrl, {
+      healthUrl: buildHealthUrl(baseUrl)
+    });
+    const engine = createExternalHttpAgentEngine({ runtimeContext });
+
+    await expect(engine.executeTurn(buildTurnRequest())).rejects.toMatchObject({
+      classification: "provider_unavailable",
+      name: "AgentEngineExecutionError"
+    } satisfies Partial<AgentEngineExecutionError>);
+    expect(requests).toEqual(["GET /health"]);
   });
 
   it("fails configuration when external HTTP bearer auth env var is missing", async () => {

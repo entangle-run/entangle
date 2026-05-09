@@ -21,6 +21,7 @@ export type AgentEngineProfileEditorDraft = {
   defaultAgent: string;
   displayName: string;
   executable: string;
+  healthUrl: string;
   httpBearerTokenEnvVar: string;
   kind: AgentEngineProfile["kind"];
   permissionMode: "" | AgentEngineProfile["permissionMode"];
@@ -36,6 +37,7 @@ export function createEmptyAgentEngineProfileEditorDraft(): AgentEngineProfileEd
     defaultAgent: "",
     displayName: "",
     executable: "opencode",
+    healthUrl: "",
     httpBearerTokenEnvVar: "",
     kind: "opencode_server",
     permissionMode: "auto_reject",
@@ -55,6 +57,7 @@ export function buildAgentEngineProfileEditorDraft(input: {
     defaultAgent: input.profile.defaultAgent ?? "",
     displayName: input.profile.displayName,
     executable: input.profile.executable ?? "",
+    healthUrl: input.profile.healthUrl ?? "",
     httpBearerTokenEnvVar:
       input.profile.httpAuth?.mode === "bearer_env"
         ? input.profile.httpAuth.tokenEnvVar
@@ -88,6 +91,9 @@ export function buildAgentEngineProfileFromDraft(
       ? { defaultAgent: draft.defaultAgent.trim() }
       : {}),
     ...(draft.executable.trim() ? { executable: draft.executable.trim() } : {}),
+    ...(supportsHttpAuth && draft.healthUrl.trim()
+      ? { healthUrl: draft.healthUrl.trim() }
+      : {}),
     ...(supportsHttpAuth && draft.httpBearerTokenEnvVar.trim()
       ? {
           httpAuth: {
@@ -142,6 +148,7 @@ export function buildAgentEngineProfileUpsertRequestFromDraft(
     clearBaseUrl: draft.baseUrl.trim() === "",
     clearDefaultAgent: draft.defaultAgent.trim() === "",
     clearExecutable: draft.executable.trim() === "",
+    clearHealthUrl: !supportsHttpAuth || draft.healthUrl.trim() === "",
     clearHttpAuth: !supportsHttpAuth || draft.httpBearerTokenEnvVar.trim() === "",
     clearPermissionMode: draft.permissionMode === "",
     clearVersion: draft.version.trim() === "",
@@ -154,6 +161,9 @@ export function buildAgentEngineProfileUpsertRequestFromDraft(
       ? { defaultAgent: draft.defaultAgent.trim() }
       : {}),
     ...(draft.executable.trim() ? { executable: draft.executable.trim() } : {}),
+    ...(supportsHttpAuth && draft.healthUrl.trim()
+      ? { healthUrl: draft.healthUrl.trim() }
+      : {}),
     ...(supportsHttpAuth && draft.httpBearerTokenEnvVar.trim()
       ? {
           httpAuth: {

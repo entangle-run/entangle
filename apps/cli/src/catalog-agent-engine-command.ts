@@ -13,12 +13,14 @@ export type CatalogAgentEngineUpsertOptions = {
   clearBaseUrl?: boolean;
   clearDefaultAgent?: boolean;
   clearExecutable?: boolean;
+  clearHealthUrl?: boolean;
   clearHttpAuth?: boolean;
   clearPermissionMode?: boolean;
   clearVersion?: boolean;
   defaultAgent?: string;
   displayName?: string;
   executable?: string;
+  healthUrl?: string;
   httpBearerTokenEnvVar?: string;
   kind?: string;
   permissionMode?: string;
@@ -32,6 +34,7 @@ export type AgentEngineProfileSummary = {
   defaultAgent?: string;
   displayName: string;
   executable?: string;
+  healthUrl?: string;
   httpAuth?: AgentEngineProfile["httpAuth"];
   id: string;
   isDefault: boolean;
@@ -64,6 +67,10 @@ function assertAgentEngineUpsertOptionsAreNotConflicting(
 
   if (options.baseUrl && options.clearBaseUrl) {
     throw new Error("Use either --base-url or --clear-base-url, not both.");
+  }
+
+  if (options.healthUrl && options.clearHealthUrl) {
+    throw new Error("Use either --health-url or --clear-health-url, not both.");
   }
 
   if (options.defaultAgent && options.clearDefaultAgent) {
@@ -99,12 +106,14 @@ export function buildAgentEngineProfileUpsertRequest(
     ...(options.clearBaseUrl ? { clearBaseUrl: true } : {}),
     ...(options.clearDefaultAgent ? { clearDefaultAgent: true } : {}),
     ...(options.clearExecutable ? { clearExecutable: true } : {}),
+    ...(options.clearHealthUrl ? { clearHealthUrl: true } : {}),
     ...(options.clearHttpAuth ? { clearHttpAuth: true } : {}),
     ...(options.clearPermissionMode ? { clearPermissionMode: true } : {}),
     ...(options.clearVersion ? { clearVersion: true } : {}),
     ...(options.defaultAgent ? { defaultAgent: options.defaultAgent } : {}),
     ...(options.displayName ? { displayName: options.displayName } : {}),
     ...(options.executable ? { executable: options.executable } : {}),
+    ...(options.healthUrl ? { healthUrl: options.healthUrl } : {}),
     ...(options.httpBearerTokenEnvVar
       ? {
           httpAuth: {
@@ -168,6 +177,7 @@ export function projectAgentEngineProfileSummary(input: {
     ...(input.profile.executable
       ? { executable: input.profile.executable }
       : {}),
+    ...(input.profile.healthUrl ? { healthUrl: input.profile.healthUrl } : {}),
     ...(input.profile.httpAuth ? { httpAuth: input.profile.httpAuth } : {}),
     id: input.profile.id,
     isDefault: input.catalog.defaults.agentEngineProfileRef === input.profile.id,
@@ -231,6 +241,12 @@ export function buildAgentEngineProfileUpsertCatalog(
     profile.defaultAgent = options.defaultAgent;
   } else if (options.clearDefaultAgent) {
     delete profile.defaultAgent;
+  }
+
+  if (options.healthUrl) {
+    profile.healthUrl = options.healthUrl;
+  } else if (options.clearHealthUrl) {
+    delete profile.healthUrl;
   }
 
   if (options.httpBearerTokenEnvVar) {

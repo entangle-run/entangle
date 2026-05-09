@@ -242,6 +242,8 @@ try {
     "ws://relay.example:7777",
     "--external-http-engine-url",
     "http://agent-engine.example:8080/turn",
+    "--external-http-engine-health-url",
+    "http://agent-engine.example:8080/health",
     "--external-http-engine-bearer-token-env-var",
     "ENTANGLE_EXTERNAL_HTTP_ENGINE_TOKEN"
   ], {
@@ -250,7 +252,9 @@ try {
       "host catalog agent-engine upsert 'distributed-external-http'",
       "--kind external_http",
       "--base-url 'http://agent-engine.example:8080/turn'",
+      "--health-url 'http://agent-engine.example:8080/health'",
       "--http-bearer-token-env-var 'ENTANGLE_EXTERNAL_HTTP_ENGINE_TOKEN'",
+      "external HTTP engine health URL: http://agent-engine.example:8080/health",
       "external HTTP engine auth env: ENTANGLE_EXTERNAL_HTTP_ENGINE_TOKEN",
       "host nodes agent-runtime 'builder'",
       '"agentEngineKind":"external_http"'
@@ -345,6 +349,49 @@ try {
     {
       mustContain:
         "--external-http-engine-url requires the agent runner to advertise external_http"
+    }
+  );
+
+  runFailureStep(
+    "proof kit external-http health without turn URL dry-run",
+    [
+      "scripts/federated-distributed-proof-kit.mjs",
+      "--dry-run",
+      "--output",
+      "/tmp/entangle-distributed-proof-ci-external-http-health-only",
+      "--host-url",
+      "http://host.example:7071",
+      "--relay-url",
+      "ws://relay.example:7777",
+      "--external-http-engine-health-url",
+      "http://agent-engine.example:8080/health"
+    ],
+    {
+      mustContain:
+        "--external-http-engine-health-url requires --external-http-engine-url"
+    }
+  );
+
+  runFailureStep(
+    "proof kit external-http local health URL dry-run",
+    [
+      "scripts/federated-distributed-proof-kit.mjs",
+      "--dry-run",
+      "--output",
+      "/tmp/entangle-distributed-proof-ci-external-http-local-health",
+      "--host-url",
+      "http://host.example:7071",
+      "--relay-url",
+      "ws://relay.example:7777",
+      "--require-external-agent-engine-urls",
+      "--external-http-engine-url",
+      "http://agent-engine.example:8080/turn",
+      "--external-http-engine-health-url",
+      "http://127.0.0.1:8080/health"
+    ],
+    {
+      mustContain:
+        "--require-external-agent-engine-urls requires --external-http-engine-health-url"
     }
   );
 

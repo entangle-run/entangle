@@ -473,6 +473,7 @@ function formatAgentEngineProfileDetail(profile: AgentEngineProfile): string {
     `scope ${profile.stateScope}`,
     profile.permissionMode ? `permission ${profile.permissionMode}` : undefined,
     profile.defaultAgent ? `agent ${profile.defaultAgent}` : undefined,
+    profile.healthUrl ? `health ${profile.healthUrl}` : undefined,
     profile.httpAuth?.mode === "bearer_env"
       ? `auth env ${profile.httpAuth.tokenEnvVar}`
       : undefined,
@@ -4870,6 +4871,21 @@ export function App() {
                     }}
                     placeholder="ENTANGLE_EXTERNAL_HTTP_ENGINE_TOKEN"
                     value={agentEngineProfileDraft.httpBearerTokenEnvVar}
+                  />
+                </label>
+
+                <label className="field">
+                  <span>Health URL</span>
+                  <input
+                    disabled={pendingAgentEngineProfileMutation}
+                    onChange={(event) => {
+                      setAgentEngineProfileDraft((current) => ({
+                        ...current,
+                        healthUrl: event.target.value
+                      }));
+                    }}
+                    placeholder="http://127.0.0.1:18082/health"
+                    value={agentEngineProfileDraft.healthUrl}
                   />
                 </label>
 

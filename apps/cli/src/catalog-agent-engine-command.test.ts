@@ -56,6 +56,7 @@ describe("catalog agent-engine command helpers", () => {
       clearBaseUrl: false,
       clearDefaultAgent: false,
       clearExecutable: false,
+      clearHealthUrl: false,
       clearHttpAuth: false,
       clearPermissionMode: false,
       clearVersion: false,
@@ -136,6 +137,7 @@ describe("catalog agent-engine command helpers", () => {
       {
         baseUrl: "https://engine.example/turn",
         displayName: "External HTTP",
+        healthUrl: "https://engine.example/health",
         httpBearerTokenEnvVar: "ENTANGLE_EXTERNAL_HTTP_ENGINE_TOKEN",
         kind: "external_http",
         setDefault: true
@@ -144,6 +146,7 @@ describe("catalog agent-engine command helpers", () => {
 
     expect(result.profile).toMatchObject({
       baseUrl: "https://engine.example/turn",
+      healthUrl: "https://engine.example/health",
       httpAuth: {
         mode: "bearer_env",
         tokenEnvVar: "ENTANGLE_EXTERNAL_HTTP_ENGINE_TOKEN"
@@ -155,10 +158,13 @@ describe("catalog agent-engine command helpers", () => {
       projectAgentEngineProfileSummary({
         catalog: result.catalog,
         profile: result.profile
-      }).httpAuth
-    ).toEqual({
-      mode: "bearer_env",
-      tokenEnvVar: "ENTANGLE_EXTERNAL_HTTP_ENGINE_TOKEN"
+      })
+    ).toMatchObject({
+      healthUrl: "https://engine.example/health",
+      httpAuth: {
+        mode: "bearer_env",
+        tokenEnvVar: "ENTANGLE_EXTERNAL_HTTP_ENGINE_TOKEN"
+      }
     });
   });
 
@@ -232,11 +238,18 @@ describe("catalog agent-engine command helpers", () => {
         clearBaseUrl: true
       })
     ).toThrow("Use either --base-url or --clear-base-url, not both.");
+    expect(() =>
+      buildAgentEngineProfileUpsertRequest({
+        clearHealthUrl: true,
+        healthUrl: "https://engine.example/health"
+      })
+    ).toThrow("Use either --health-url or --clear-health-url, not both.");
   });
 
   it("rejects conflicting auth set and clear flags", () => {
     expect(() =>
       buildAgentEngineProfileUpsertRequest({
+        clearHealthUrl: true,
         clearHttpAuth: true,
         httpBearerTokenEnvVar: "ENTANGLE_EXTERNAL_HTTP_ENGINE_TOKEN"
       })

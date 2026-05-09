@@ -43,12 +43,14 @@ export const agentEngineProfileUpsertRequestSchema = z
     clearBaseUrl: z.boolean().default(false),
     clearDefaultAgent: z.boolean().default(false),
     clearExecutable: z.boolean().default(false),
+    clearHealthUrl: z.boolean().default(false),
     clearHttpAuth: z.boolean().default(false),
     clearPermissionMode: z.boolean().default(false),
     clearVersion: z.boolean().default(false),
     defaultAgent: identifierSchema.optional(),
     displayName: nonEmptyStringSchema.optional(),
     executable: nonEmptyStringSchema.optional(),
+    healthUrl: httpUrlSchema.optional(),
     httpAuth: agentEngineHttpAuthSchema.optional(),
     kind: agentEngineProfileKindSchema.optional(),
     permissionMode: agentEnginePermissionModeSchema.optional(),
@@ -62,6 +64,7 @@ export const agentEngineProfileUpsertRequestSchema = z
         | "clearBaseUrl"
         | "clearDefaultAgent"
         | "clearExecutable"
+        | "clearHealthUrl"
         | "clearHttpAuth"
         | "clearPermissionMode"
         | "clearVersion";
@@ -69,6 +72,7 @@ export const agentEngineProfileUpsertRequestSchema = z
         | "baseUrl"
         | "defaultAgent"
         | "executable"
+        | "healthUrl"
         | "httpAuth"
         | "permissionMode"
         | "version";
@@ -76,6 +80,7 @@ export const agentEngineProfileUpsertRequestSchema = z
       { clearField: "clearBaseUrl", setField: "baseUrl" },
       { clearField: "clearDefaultAgent", setField: "defaultAgent" },
       { clearField: "clearExecutable", setField: "executable" },
+      { clearField: "clearHealthUrl", setField: "healthUrl" },
       { clearField: "clearHttpAuth", setField: "httpAuth" },
       { clearField: "clearPermissionMode", setField: "permissionMode" },
       { clearField: "clearVersion", setField: "version" }

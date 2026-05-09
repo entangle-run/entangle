@@ -3015,6 +3015,8 @@ hostCatalogAgentEngineCommand
   .option("--clear-executable", "Remove the executable from the profile.")
   .option("--base-url <url>", "HTTP base URL for attached or HTTP engines.")
   .option("--clear-base-url", "Remove the base URL from the profile.")
+  .option("--health-url <url>", "Optional external HTTP engine health URL.")
+  .option("--clear-health-url", "Remove the external HTTP health URL.")
   .option(
     "--http-bearer-token-env-var <envVar>",
     "Runner environment variable that supplies an external HTTP bearer token."

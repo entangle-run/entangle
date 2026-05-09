@@ -384,6 +384,7 @@ same-machine slice records.
 - [581-external-http-agent-engine-auth-binding-slice.md](581-external-http-agent-engine-auth-binding-slice.md)
 - [582-fake-external-http-bearer-smoke-slice.md](582-fake-external-http-bearer-smoke-slice.md)
 - [583-operator-token-file-configuration-slice.md](583-operator-token-file-configuration-slice.md)
+- [584-external-http-agent-engine-health-url-slice.md](584-external-http-agent-engine-health-url-slice.md)
 
 ## Audited Scope
 
@@ -1363,7 +1364,13 @@ or printing the secret value.
 The deterministic fake external HTTP engine and its smoke now prove that
 bearer path without real model credentials: `/turn` rejects missing auth,
 accepts the configured env-backed token, and Host default catalog seeding can
-store the same env reference for `external_http` profiles.
+store the same env reference for `external_http` profiles. `external_http`
+profiles can now also carry an explicit `healthUrl`, with Host default seeding
+from `ENTANGLE_DEFAULT_AGENT_ENGINE_HTTP_HEALTH_URL`; when present, joined
+runners probe it before the turn request and classify failed probes as
+provider-unavailable engine failures. Distributed proof-kit generation can pass
+the same health URL into generated Host operator commands for physical proof
+setup.
 CLI inbox detail can now filter Host-recorded User Node conversation messages
 by direction, exact message type, and bounded result count, matching the
 participant-oriented inbox list filters while preserving Host as the projection

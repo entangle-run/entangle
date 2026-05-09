@@ -67,6 +67,9 @@ const externalProcessEngineExecutable = readFlagValue(
   "--external-process-engine-executable"
 );
 const externalHttpEngineUrl = readFlagValue("--external-http-engine-url");
+const externalHttpEngineHealthUrl = readFlagValue(
+  "--external-http-engine-health-url"
+);
 const externalHttpEngineBearerTokenEnvVar = readFlagValue(
   "--external-http-engine-bearer-token-env-var"
 );
@@ -189,6 +192,8 @@ Options:
   --external-process-engine-executable <cmd>
                                     Configure operator commands for an external_process profile and bind the agent node to it.
   --external-http-engine-url <url>   Configure operator commands for an external_http profile and bind the agent node to it.
+  --external-http-engine-health-url <url>
+                                    Configure an optional external_http health URL that runners probe before turns.
   --external-http-engine-bearer-token-env-var <envVar>
                                     Configure external_http profile bearer auth from a runner environment variable.
   --custom-agent-engine-profile <id> Agent engine profile id for external_process/external_http setup.
@@ -677,6 +682,9 @@ function buildCustomAgentEngineOperatorCommands() {
       ? [
           "--base-url",
           shellQuote(externalHttpEngineUrl),
+          ...(externalHttpEngineHealthUrl
+            ? ["--health-url", shellQuote(externalHttpEngineHealthUrl)]
+            : []),
           ...(externalHttpEngineBearerTokenEnvVar
             ? [
                 "--http-bearer-token-env-var",
@@ -992,6 +1000,12 @@ function buildCustomAgentEngineReadmeSection() {
     configuredCustomAgentEngineKind === "external_http"
       ? "POST endpoint"
       : "runner-machine executable";
+  const healthUrlLine = externalHttpEngineHealthUrl
+    ? `- health URL: \`${externalHttpEngineHealthUrl}\`\n`
+    : "";
+  const bearerTokenEnvLine = externalHttpEngineBearerTokenEnvVar
+    ? `- bearer token env var: \`${externalHttpEngineBearerTokenEnvVar}\`\n`
+    : "";
 
   return `## Custom Agent Engine Path
 
@@ -999,7 +1013,7 @@ This kit was generated with a custom ${configuredCustomAgentEngineKind} profile:
 
 - profile id: \`${customAgentEngineProfileId}\`
 - ${setupDescription}: \`${target}\`
-${externalHttpEngineBearerTokenEnvVar ? `- bearer token env var: \`${externalHttpEngineBearerTokenEnvVar}\`\n` : ""}
+${healthUrlLine}${bearerTokenEnvLine}
 
 \`operator/commands.sh\` upserts that profile through Host and binds
 \`${agentNodeId}\` to it before runner assignment. The custom engine must
@@ -1042,6 +1056,11 @@ async function writeKit() {
       if (externalHttpEngineBearerTokenEnvVar) {
         console.log(
           `[dry-run] external HTTP engine auth env: ${externalHttpEngineBearerTokenEnvVar}`
+        );
+      }
+      if (externalHttpEngineHealthUrl) {
+        console.log(
+          `[dry-run] external HTTP engine health URL: ${externalHttpEngineHealthUrl}`
         );
       }
     }
@@ -1214,6 +1233,31 @@ try {
   if (externalHttpEngineUrl && hasUrlCredentials(externalHttpEngineUrl)) {
     throw new Error(
       "--external-http-engine-url must not include URL credentials; configure agent engine authentication outside the URL."
+    );
+  }
+
+  if (externalHttpEngineHealthUrl && !externalHttpEngineUrl) {
+    throw new Error(
+      "--external-http-engine-health-url requires --external-http-engine-url."
+    );
+  }
+
+  if (
+    requireExternalAgentEngineUrls &&
+    externalHttpEngineHealthUrl &&
+    !isExternalHttpUrl(externalHttpEngineHealthUrl)
+  ) {
+    throw new Error(
+      "--require-external-agent-engine-urls requires --external-http-engine-health-url to be a non-loopback http(s) URL reachable from runner machines."
+    );
+  }
+
+  if (
+    externalHttpEngineHealthUrl &&
+    hasUrlCredentials(externalHttpEngineHealthUrl)
+  ) {
+    throw new Error(
+      "--external-http-engine-health-url must not include URL credentials; configure agent engine authentication outside the URL."
     );
   }
 

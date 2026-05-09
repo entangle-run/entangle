@@ -1118,6 +1118,10 @@ function buildDefaultCatalog(): DeploymentResourceCatalog {
     agentEngineKind === "external_http"
       ? process.env.ENTANGLE_DEFAULT_AGENT_ENGINE_HTTP_BEARER_TOKEN_ENV_VAR?.trim()
       : undefined;
+  const agentEngineHealthUrl =
+    agentEngineKind === "external_http"
+      ? process.env.ENTANGLE_DEFAULT_AGENT_ENGINE_HTTP_HEALTH_URL?.trim()
+      : undefined;
 
   const modelEndpointId = process.env.ENTANGLE_DEFAULT_MODEL_ENDPOINT_ID?.trim();
   const modelBaseUrl = process.env.ENTANGLE_DEFAULT_MODEL_BASE_URL?.trim();
@@ -1198,6 +1202,7 @@ function buildDefaultCatalog(): DeploymentResourceCatalog {
         baseUrl: agentEngineBaseUrl || undefined,
         defaultAgent:
           process.env.ENTANGLE_DEFAULT_AGENT_ENGINE_AGENT?.trim() || undefined,
+        healthUrl: agentEngineHealthUrl || undefined,
         ...(agentEnginePermissionMode
           ? { permissionMode: agentEnginePermissionMode }
           : {}),
@@ -7110,6 +7115,12 @@ export async function upsertAgentEngineProfile(
     profile.defaultAgent = request.defaultAgent;
   } else if (request.clearDefaultAgent) {
     delete profile.defaultAgent;
+  }
+
+  if (request.healthUrl) {
+    profile.healthUrl = request.healthUrl;
+  } else if (request.clearHealthUrl) {
+    delete profile.healthUrl;
   }
 
   if (request.httpAuth) {

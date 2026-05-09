@@ -565,9 +565,13 @@ bearer-token environment variable reference; Host, CLI, Studio, runner
 execution, and distributed proof kit generation pass only the environment
 variable name while the runner reads the actual token from its own environment.
 Host default catalog seeding can now store that env reference from
-`ENTANGLE_DEFAULT_AGENT_ENGINE_HTTP_BEARER_TOKEN_ENV_VAR`, and the fake
-external HTTP engine smoke proves the authenticated fixture path without real
-model credentials.
+`ENTANGLE_DEFAULT_AGENT_ENGINE_HTTP_BEARER_TOKEN_ENV_VAR`, and the same
+profile kind can now carry an explicit `healthUrl` seeded from
+`ENTANGLE_DEFAULT_AGENT_ENGINE_HTTP_HEALTH_URL`; when present, the runner
+probes it before posting a turn. Distributed proof-kit generation can also
+carry `--external-http-engine-health-url` into generated Host operator
+commands. The fake external HTTP engine smoke proves the authenticated fixture
+path without real model credentials.
 `pnpm ops:smoke-distributed-proof-tools` now gives CI a deterministic
 no-infrastructure check for proof-kit syntax/help/dry-run paths and verifier
 self-test JSON, including non-running runtime rejection and duplicated User

@@ -328,6 +328,7 @@ Include the bearer env flag when the fixture was started with
 pnpm --filter @entangle/cli dev host catalog agent-engine upsert external-http-fake \
   --kind external_http \
   --base-url http://127.0.0.1:18082/turn \
+  --health-url http://127.0.0.1:18082/health \
   --http-bearer-token-env-var ENTANGLE_FAKE_EXTERNAL_HTTP_ENGINE_TOKEN \
   --set-default \
   --summary
@@ -494,7 +495,9 @@ For generic custom-engine checks, pass
 kind when `--agent-engine-kind` is omitted, upserts the profile through Host,
 and binds the agent node before assignment. For no-credential `external_http`
 proof setup, start `pnpm ops:fake-agent-engine-http` on a machine reachable
-from the agent runner and pass its `/turn` URL. For authenticated
+from the agent runner and pass its `/turn` URL. Add
+`--external-http-engine-health-url <url>` when the engine exposes a readiness
+endpoint that runners should probe before each turn. For authenticated
 `external_http` endpoints, add
 `--external-http-engine-bearer-token-env-var <envVar>`; the generated Host
 operator command stores only the environment variable name, and the generated
@@ -612,8 +615,9 @@ URL shape without opening the service, or combine both flags when the operator
 needs shape and live base URL checks.
 Add `--require-external-agent-engine-urls` when attached OpenCode or
 `external_http` engine URLs should be topology-checked for physical proof
-runs. The proof kit also fails fast if the supplied fake OpenCode or external
-HTTP engine URL is local-only while this guard is enabled.
+runs. The proof kit also fails fast if the supplied fake OpenCode, external
+HTTP turn, or external HTTP health URL is local-only while this guard is
+enabled.
 The same proof tooling rejects credentials embedded in agent-engine URLs:
 use `--fake-opencode-username` and `--fake-opencode-password` for fake
 OpenCode, and use `--external-http-engine-bearer-token-env-var` for generic
@@ -821,8 +825,11 @@ This repository currently contains:
   a bearer-token env reference from
   `ENTANGLE_DEFAULT_AGENT_ENGINE_HTTP_BEARER_TOKEN_ENV_VAR`; Host stores only
   the variable name, and the runner resolves the token from its own
-  environment. Unsupported native engine placeholders are not
-  exposed as active profile kinds until a runner adapter exists, with
+  environment. `external_http` profiles can also carry an explicit
+  `healthUrl`, including default seeding from
+  `ENTANGLE_DEFAULT_AGENT_ENGINE_HTTP_HEALTH_URL`; when present, the runner
+  probes that URL before posting a turn. Unsupported native engine placeholders
+  are not exposed as active profile kinds until a runner adapter exists, with
   runner-owned source workspace change
   harvesting now recording bounded changed-file and diff summaries on turns,
   host events, runtime inspection, CLI output, and Studio details, plus

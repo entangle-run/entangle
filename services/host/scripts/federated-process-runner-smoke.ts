@@ -113,6 +113,7 @@ type StartedAttachedFakeOpenCodeServer = {
 
 type StartedFakeExternalHttpEngine = {
   child: ChildProcessByStdio<null, Readable, Readable>;
+  healthUrl: string;
   stderr: () => string;
   stdout: () => string;
   tokenEnvVar: string;
@@ -820,7 +821,8 @@ async function startFakeExternalHttpEngine(input: {
     }
   );
 
-  const turnUrl = await new Promise<string>((resolve, reject) => {
+  const urls = await new Promise<{ healthUrl: string; turnUrl: string }>(
+    (resolve, reject) => {
     const timer = setTimeout(() => {
       settle(
         new Error(
@@ -829,7 +831,10 @@ async function startFakeExternalHttpEngine(input: {
       );
     }, Math.min(timeoutMs, 5000));
 
-    function settle(error: Error | undefined, value?: string): void {
+    function settle(
+      error: Error | undefined,
+      value?: { healthUrl: string; turnUrl: string }
+    ): void {
       if (settled) {
         return;
       }
@@ -842,7 +847,12 @@ async function startFakeExternalHttpEngine(input: {
         return;
       }
 
-      resolve(value ?? "");
+      if (!value) {
+        reject(new Error("Fake external HTTP agent engine did not report URLs."));
+        return;
+      }
+
+      resolve(value);
     }
 
     child.stdout.on("data", (chunk: Buffer | string) => {
@@ -866,9 +876,13 @@ async function startFakeExternalHttpEngine(input: {
             typeof parsed === "object" &&
             !Array.isArray(parsed) &&
             (parsed as { event?: unknown }).event === "listening" &&
+            typeof (parsed as { healthUrl?: unknown }).healthUrl === "string" &&
             typeof (parsed as { turnUrl?: unknown }).turnUrl === "string"
           ) {
-            settle(undefined, (parsed as { turnUrl: string }).turnUrl);
+            settle(
+              undefined,
+              parsed as { healthUrl: string; turnUrl: string }
+            );
           }
         } catch {
           // Ignore non-JSON startup noise; stderr/stdout are included on timeout.
@@ -885,17 +899,19 @@ async function startFakeExternalHttpEngine(input: {
         )
       );
     });
-  }).catch(async (error: unknown) => {
+    }
+  ).catch(async (error: unknown) => {
     await stopRunnerProcess(child);
     throw error;
   });
 
   return {
     child,
+    healthUrl: urls.healthUrl,
     stderr: () => stderr,
     stdout: () => stdout,
     tokenEnvVar: input.bearerTokenEnvVar,
-    turnUrl
+    turnUrl: urls.turnUrl
   };
 }
 
@@ -1206,6 +1222,8 @@ async function main(): Promise<void> {
         "fake-agent-engine-http-1.0.0";
       process.env.ENTANGLE_DEFAULT_AGENT_ENGINE_BASE_URL =
         fakeExternalHttpEngine.turnUrl;
+      process.env.ENTANGLE_DEFAULT_AGENT_ENGINE_HTTP_HEALTH_URL =
+        fakeExternalHttpEngine.healthUrl;
       process.env.ENTANGLE_DEFAULT_AGENT_ENGINE_HTTP_BEARER_TOKEN_ENV_VAR =
         fakeExternalHttpEngine.tokenEnvVar;
       process.env[fakeExternalHttpEngine.tokenEnvVar] = bearerToken;
@@ -5388,6 +5406,7 @@ async function main(): Promise<void> {
     delete process.env.ENTANGLE_DEFAULT_AGENT_ENGINE_DISPLAY_NAME;
     delete process.env.ENTANGLE_DEFAULT_AGENT_ENGINE_VERSION;
     delete process.env.ENTANGLE_DEFAULT_AGENT_ENGINE_BASE_URL;
+    delete process.env.ENTANGLE_DEFAULT_AGENT_ENGINE_HTTP_HEALTH_URL;
     delete process.env.ENTANGLE_DEFAULT_AGENT_ENGINE_HTTP_BEARER_TOKEN_ENV_VAR;
     delete process.env.ENTANGLE_DEFAULT_AGENT_ENGINE_PERMISSION_MODE;
     delete process.env.ENTANGLE_FAKE_EXTERNAL_HTTP_ENGINE_TOKEN;

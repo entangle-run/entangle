@@ -59,6 +59,7 @@ describe("agent engine profile editor helpers", () => {
       clearBaseUrl: false,
       clearDefaultAgent: false,
       clearExecutable: true,
+      clearHealthUrl: true,
       clearHttpAuth: true,
       clearPermissionMode: false,
       clearVersion: false,
@@ -110,6 +111,7 @@ describe("agent engine profile editor helpers", () => {
       defaultAgent: "",
       displayName: "OpenCode",
       executable: "opencode",
+      healthUrl: "",
       kind: "opencode_server",
       permissionMode: "auto_reject",
       httpBearerTokenEnvVar: "",
@@ -126,6 +128,7 @@ describe("agent engine profile editor helpers", () => {
       baseUrl: "https://engine.example/turn",
       displayName: "External HTTP",
       executable: "",
+      healthUrl: "https://engine.example/health",
       httpBearerTokenEnvVar: "ENTANGLE_EXTERNAL_HTTP_ENGINE_TOKEN",
       kind: "external_http",
       permissionMode: "",
@@ -135,6 +138,7 @@ describe("agent engine profile editor helpers", () => {
     expect(catalog.agentEngineProfiles).toContainEqual({
       baseUrl: "https://engine.example/turn",
       displayName: "External HTTP",
+      healthUrl: "https://engine.example/health",
       httpAuth: {
         mode: "bearer_env",
         tokenEnvVar: "ENTANGLE_EXTERNAL_HTTP_ENGINE_TOKEN"
@@ -152,11 +156,13 @@ describe("agent engine profile editor helpers", () => {
         baseUrl: "https://opencode.example",
         displayName: "OpenCode Attached",
         executable: "",
+        healthUrl: "https://opencode.example/health",
         httpBearerTokenEnvVar: "ENTANGLE_EXTERNAL_HTTP_ENGINE_TOKEN",
         kind: "opencode_server",
         profileId: "opencode-attached"
       })
     ).toMatchObject({
+      clearHealthUrl: true,
       clearHttpAuth: true,
       kind: "opencode_server"
     });

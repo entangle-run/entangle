@@ -1659,6 +1659,11 @@ Current status:
   bearer token through an env-var reference, verify unauthenticated `/turn`
   rejection, verify authenticated turn execution, and Host default catalog
   seeding can write the same env reference for `external_http` profiles;
+- `external_http` profiles can now carry an explicit `healthUrl`, including
+  Host default seeding from `ENTANGLE_DEFAULT_AGENT_ENGINE_HTTP_HEALTH_URL`;
+  the runner probes that URL before posting the turn and treats failed probes
+  as provider-unavailable engine failures, and distributed proof-kit
+  generation can pass that URL into generated Host operator commands;
 - generated proof kits can now require User Client Basic Auth placeholders and
   fail-fast start checks for User Node runner machines, keeping credentials out
   of the kit command line while hardening physical proof endpoints;
