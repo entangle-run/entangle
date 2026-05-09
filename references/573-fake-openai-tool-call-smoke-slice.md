@@ -71,8 +71,11 @@ provided.
 
 ## Open Questions
 
-Future work can add scripted multi-step provider responses if Entangle needs
-scenario fixtures that go beyond a single deterministic tool-call round.
+`references/585-fake-openai-scripted-provider-slice.md` and
+`references/588-fake-openai-scripted-error-slice.md` add scripted multi-step
+provider responses and deterministic non-streaming error responses. Future work
+can focus on scripted streaming frames if Entangle needs mid-stream provider
+failure fixtures.
 
 ## Verification
 
