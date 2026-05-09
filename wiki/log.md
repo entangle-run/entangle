@@ -1,5 +1,13 @@
 # Entangle Wiki Log
 
+## [2026-05-09] runner | Added fallback review queue
+
+Added `references/568-human-interface-fallback-review-queue-slice.md`. The
+Human Interface Runtime fallback HTML client now renders the same grouped
+Review Queue as the React User Client, including pending source-change rows
+from participant projection state and conversation links when context can be
+inferred.
+
 ## [2026-05-09] user-client | Added participant review queue
 
 Added `references/567-user-client-review-queue-slice.md`. The running React

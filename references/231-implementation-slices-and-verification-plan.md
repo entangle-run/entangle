@@ -1644,6 +1644,9 @@ Current status:
 - the running User Client now renders a grouped participant Review Queue from
   projected pending approval ids and pending source-change refs, deduplicating
   approval ids and navigating to conversation context when available;
+- the Human Interface Runtime fallback HTML client now renders the same grouped
+  Review Queue, including pending source-change rows from projection state and
+  conversation links when context can be inferred;
 - deterministic runner task memory now records bounded approval-request
   directives, rebuilds `summaries/approval-ledger.md`, and feeds the ledger
   into future turn `memoryRefs` plus bounded memory briefs;

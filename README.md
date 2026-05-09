@@ -186,7 +186,8 @@ and reachable targets, plus a grouped Review Queue that jumps from pending
 approval and source-change items to the related User Node conversation when
 projection context is available.
 The Human Interface Runtime fallback HTML client renders the same workload
-categories when the React bundle is not available.
+categories and a matching grouped Review Queue when the React bundle is not
+available.
 The fallback HTML client can also request visible wiki page updates and
 single-page wiki patch-sets through the same participant-scoped Host control
 path as the React User Client.

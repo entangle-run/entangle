@@ -133,6 +133,31 @@ type UserClientWorkloadSummary = {
   wikiRefCount: number;
 };
 
+type UserClientReviewQueueItem =
+  | {
+      approvalId: string;
+      conversationId: string;
+      id: string;
+      kind: "approval";
+      peerNodeId: string;
+      status: UserConversationProjectionRecord["status"];
+      unreadCount: number;
+      updatedAt: string;
+    }
+  | {
+      additions?: number | undefined;
+      candidateId: string;
+      conversationId?: string | undefined;
+      deletions?: number | undefined;
+      fileCount?: number | undefined;
+      id: string;
+      kind: "source_change";
+      nodeId: string;
+      peerNodeId?: string | undefined;
+      status: SourceChangeRefProjectionRecord["status"];
+      updatedAt: string;
+    };
+
 const openConversationStatuses = new Set([
   "acknowledged",
   "awaiting_approval",
@@ -3660,6 +3685,172 @@ function renderUserClientWorkloadSummary(state: UserClientState): string {
   return `<ul class="workload-list">${workloadLines}</ul>`;
 }
 
+function conversationUpdatedAt(
+  conversation: UserConversationProjectionRecord
+): string {
+  return conversation.lastMessageAt ?? conversation.projection.updatedAt;
+}
+
+function sortConversationsByRecency(
+  conversations: UserConversationProjectionRecord[]
+): UserConversationProjectionRecord[] {
+  return [...conversations].sort((left, right) => {
+    const updatedOrder = conversationUpdatedAt(right).localeCompare(
+      conversationUpdatedAt(left)
+    );
+
+    if (updatedOrder !== 0) {
+      return updatedOrder;
+    }
+
+    return left.conversationId.localeCompare(right.conversationId);
+  });
+}
+
+function sortSourceChangeReviewItems(
+  items: Extract<UserClientReviewQueueItem, { kind: "source_change" }>[]
+): Extract<UserClientReviewQueueItem, { kind: "source_change" }>[] {
+  return items.sort((left, right) => {
+    const updatedOrder = right.updatedAt.localeCompare(left.updatedAt);
+
+    if (updatedOrder !== 0) {
+      return updatedOrder;
+    }
+
+    return left.candidateId.localeCompare(right.candidateId);
+  });
+}
+
+function inferSourceChangeConversation(input: {
+  conversationId?: string | undefined;
+  conversations: UserConversationProjectionRecord[];
+  nodeId: string;
+}): UserConversationProjectionRecord | undefined {
+  if (input.conversationId) {
+    return input.conversations.find(
+      (conversation) => conversation.conversationId === input.conversationId
+    );
+  }
+
+  const peerMatches = input.conversations.filter(
+    (conversation) => conversation.peerNodeId === input.nodeId
+  );
+
+  return peerMatches.length === 1 ? peerMatches[0] : undefined;
+}
+
+function buildUserClientReviewQueue(
+  state: UserClientState
+): UserClientReviewQueueItem[] {
+  const seenApprovalIds = new Set<string>();
+  const approvalItems: UserClientReviewQueueItem[] = [];
+
+  for (const conversation of sortConversationsByRecency(state.conversations)) {
+    for (const approvalId of conversation.pendingApprovalIds) {
+      if (seenApprovalIds.has(approvalId)) {
+        continue;
+      }
+
+      seenApprovalIds.add(approvalId);
+      approvalItems.push({
+        approvalId,
+        conversationId: conversation.conversationId,
+        id: `approval:${approvalId}`,
+        kind: "approval",
+        peerNodeId: conversation.peerNodeId,
+        status: conversation.status,
+        unreadCount: conversation.unreadCount,
+        updatedAt: conversationUpdatedAt(conversation)
+      });
+    }
+  }
+
+  const sourceChangeItems = sortSourceChangeReviewItems(
+    state.sourceChangeRefs
+      .filter((ref) => ref.status === "pending_review")
+      .map((ref) => {
+        const summary = ref.sourceChangeSummary ?? ref.candidate?.sourceChangeSummary;
+        const conversation = inferSourceChangeConversation({
+          conversationId: ref.candidate?.conversationId,
+          conversations: state.conversations,
+          nodeId: ref.nodeId
+        });
+
+        return {
+          ...(summary
+            ? {
+                additions: summary.additions,
+                deletions: summary.deletions,
+                fileCount: summary.fileCount
+              }
+            : {}),
+          candidateId: ref.candidateId,
+          ...(conversation?.conversationId
+            ? { conversationId: conversation.conversationId }
+            : {}),
+          id: `source_change:${ref.candidateId}`,
+          kind: "source_change" as const,
+          nodeId: ref.nodeId,
+          ...(conversation?.peerNodeId
+            ? { peerNodeId: conversation.peerNodeId }
+            : {}),
+          status: ref.status,
+          updatedAt: ref.candidate?.updatedAt ?? ref.projection.updatedAt
+        };
+      })
+  );
+
+  return [...approvalItems, ...sourceChangeItems];
+}
+
+function formatReviewQueueFileCount(fileCount: number): string {
+  return `${fileCount} ${fileCount === 1 ? "file" : "files"}`;
+}
+
+function formatUserClientReviewQueueItem(item: UserClientReviewQueueItem): string {
+  if (item.kind === "approval") {
+    return [
+      `approval ${item.approvalId}`,
+      item.peerNodeId,
+      `${item.unreadCount} unread`,
+      item.status,
+      item.conversationId
+    ].join(" - ");
+  }
+
+  return [
+    `source change ${item.candidateId}`,
+    item.nodeId,
+    item.fileCount !== undefined &&
+    item.additions !== undefined &&
+    item.deletions !== undefined
+      ? `${formatReviewQueueFileCount(item.fileCount)} +${item.additions} -${item.deletions}`
+      : item.status,
+    item.conversationId ?? "no conversation"
+  ].join(" - ");
+}
+
+function renderUserClientReviewQueue(state: UserClientState): string {
+  const queue = buildUserClientReviewQueue(state);
+
+  if (queue.length === 0) {
+    return `<p class="empty">No pending reviews.</p>`;
+  }
+
+  return `<div class="review-queue-list">
+    ${queue
+      .slice(0, 8)
+      .map((item) => {
+        const body = `<span>${escapeHtml(item.kind === "approval" ? "Approval" : "Source Change")}</span><strong>${escapeHtml(formatUserClientReviewQueueItem(item))}</strong>`;
+
+        return item.conversationId
+          ? `<a class="review-queue-item" href="/?conversationId=${encodeURIComponent(item.conversationId)}">${body}</a>`
+          : `<div class="review-queue-item disabled">${body}</div>`;
+      })
+      .join("")}
+  </div>`;
+}
+
 function renderMessageDelivery(message: UserNodeMessageRecord): string {
   if (message.direction === "inbound") {
     return `<div class="message-meta">delivery received by User Client</div>`;
@@ -3979,6 +4170,11 @@ async function renderHome(input: {
       .command-receipt { border: 1px solid var(--line); border-radius: 6px; display: grid; gap: 4px; padding: 8px; }
       .command-receipt-conflict { background: #fff5f2; border-left: 3px solid var(--danger); color: var(--danger); display: grid; font-size: 12px; gap: 3px; margin-top: 4px; padding: 7px 9px; overflow-wrap: anywhere; }
       .workload-list { color: var(--muted); display: grid; font-size: 13px; gap: 6px; margin: 12px 0 0; padding-left: 18px; }
+      .review-queue-list { display: grid; gap: 8px; margin-top: 12px; }
+      .review-queue-item { color: inherit; display: grid; gap: 4px; text-decoration: none; border: 1px solid var(--line); background: #f8fafc; border-radius: 8px; padding: 10px; }
+      .review-queue-item.disabled { opacity: .65; }
+      .review-queue-item span { color: var(--muted); font-size: 11px; font-weight: 800; text-transform: uppercase; }
+      .review-queue-item strong { overflow-wrap: anywhere; }
       .wiki-preview { background: #f4f6f8; border-radius: 6px; margin: 0; max-height: 220px; overflow: auto; padding: 8px; white-space: pre-wrap; word-break: break-word; }
       .detail-list { display: grid; gap: 10px; margin: 12px 0 0; }
       .detail-list div { display: grid; grid-template-columns: 120px 1fr; gap: 10px; }
@@ -4035,6 +4231,10 @@ async function renderHome(input: {
           <section>
             <h2>Workload</h2>
             ${renderUserClientWorkloadSummary(state)}
+          </section>
+          <section>
+            <h2>Review Queue</h2>
+            ${renderUserClientReviewQueue(state)}
           </section>
           <section>
             <h2>Command Receipts</h2>

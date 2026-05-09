@@ -342,6 +342,9 @@ The most accurate current description is:
 - the running React User Client now renders a grouped participant Review Queue
   from projected pending approval ids and pending source-change refs, with
   conversation navigation when projection context is available;
+- the Human Interface Runtime fallback HTML client now renders the same grouped
+  Review Queue, including pending source-change rows from projection state and
+  conversation links when context can be inferred;
 - the process-runner smoke now proves that User Client wiki publication path
   through a signed builder wiki approval request, the running User Client JSON
   route, a completed projected `runtime.wiki.publish` command receipt, a
@@ -1454,8 +1457,8 @@ The current implementation-truth audit now lives in
   preview plus stale-edit conflict receipt summaries in the browser, CLI, and
   fallback Human Interface Runtime plus User Client conflict-base recovery into
   the visible page editor plus
-  approval-response turn correlation plus the first grouped User Client review
-  queue;
+  approval-response turn correlation plus the first grouped React and fallback
+  User Client review queues;
   the next git gaps are richer collaborative wiki merge UI, repository
   lifecycle behavior, and explicit fallback or replication behavior,
   while the next deployment-grade gap is

@@ -368,6 +368,7 @@ same-machine slice records.
 - [565-cli-user-node-runner-candidates-slice.md](565-cli-user-node-runner-candidates-slice.md)
 - [566-studio-user-node-runner-candidates-slice.md](566-studio-user-node-runner-candidates-slice.md)
 - [567-user-client-review-queue-slice.md](567-user-client-review-queue-slice.md)
+- [568-human-interface-fallback-review-queue-slice.md](568-human-interface-fallback-review-queue-slice.md)
 
 ## Audited Scope
 
@@ -1327,6 +1328,9 @@ The running User Client now derives a grouped participant Review Queue from
 projected pending approval ids and pending source-change refs, deduplicating
 approval ids and navigating to the related User Node conversation when
 projection context is available.
+The Human Interface Runtime fallback HTML client now renders the same grouped
+Review Queue, including pending source-change rows when only projection state
+is available and conversation links when context can be inferred.
 Deterministic runner task memory now also preserves bounded source-change
 candidate ids, status, totals, diff availability, and changed-file summaries
 from the live turn record, and the derived recent-work summary surfaces the
