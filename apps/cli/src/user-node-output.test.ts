@@ -10,6 +10,7 @@ import type {
 import {
   attachUserNodeClientHealthForCli,
   buildUserNodeClientSummariesForCli,
+  filterUserConversationsForCli,
   filterUserNodeClientSummariesForCli,
   filterUserNodeCommandReceiptsForCli,
   listCurrentUserNodeAssignmentsForCli,
@@ -282,6 +283,16 @@ describe("user node CLI output", () => {
       unreadCount: 2,
       userNodeId: "user-a"
     });
+  });
+
+  it("filters User Node conversations by unread state and peer node", () => {
+    expect(
+      filterUserConversationsForCli({
+        conversations,
+        peerNodeId: "worker-b",
+        unreadOnly: true
+      }).map((conversation) => conversation.conversationId)
+    ).toEqual(["conversation-new"]);
   });
 
   it("sorts User Nodes and projects compact summaries", () => {

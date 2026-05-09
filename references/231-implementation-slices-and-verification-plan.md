@@ -1613,6 +1613,9 @@ Current status:
 - CLI User Client endpoint summaries now support `--node <nodeId>`, so
   operators can inspect and optionally health-probe one human participant
   without probing every active User Client;
+- CLI inbox listing now supports `--unread-only`, `--peer-node <nodeId>`, and
+  `--limit <n>`, giving headless User Node participants a bounded conversation
+  inbox over Host projection;
 - generated distributed proof kits can now optionally include
   `docker-compose.runners.yml` plus per-runner container entrypoints with
   `--write-runner-compose`, giving operators a same-machine container-boundary

@@ -112,6 +112,7 @@ import {
 import {
   attachUserNodeClientHealthForCli,
   buildUserNodeClientSummariesForCli,
+  filterUserConversationsForCli,
   filterUserNodeClientSummariesForCli,
   filterUserNodeCommandReceiptsForCli,
   listCurrentUserNodeAssignmentsForCli,
@@ -120,7 +121,6 @@ import {
   projectUserNodeIdentitySummary,
   projectUserNodeMessageSummary,
   projectUserNodeMessagePublishSummary,
-  sortUserConversationsForCli,
   sortUserNodeIdentitiesForCli
 } from "./user-node-output.js";
 import {
@@ -1858,22 +1858,39 @@ const inboxCommand = program
 inboxCommand
   .command("list")
   .requiredOption("--user-node <nodeId>", "User Node identifier.")
+  .option("--peer-node <nodeId>", "Filter to conversations with one peer node.")
+  .option("--unread-only", "Only include conversations with unread messages.")
+  .option("--limit <n>", "Maximum number of conversations to return.", "20")
   .option("--summary", "Print compact conversation summaries.")
   .description("List projected conversations for one User Node.")
   .action(async (
-    options: { summary?: boolean; userNode: string },
+    options: {
+      limit: string;
+      peerNode?: string;
+      summary?: boolean;
+      unreadOnly?: boolean;
+      userNode: string;
+    },
     command: Command
   ) => {
+    const limit = parsePositiveIntegerOption(options.limit, "--limit");
     const client = createCliHostClient(command);
     const inbox = await client.getUserNodeInbox(options.userNode);
-    const conversations = sortUserConversationsForCli(inbox.conversations);
+    const matchedConversations = filterUserConversationsForCli({
+      conversations: inbox.conversations,
+      ...(options.peerNode ? { peerNodeId: options.peerNode } : {}),
+      unreadOnly: options.unreadOnly === true
+    });
+    const conversations = matchedConversations.slice(0, limit);
 
     printJson(
       options.summary
         ? {
-            conversations: conversations.map(projectUserConversationSummary)
+            conversations: conversations.map(projectUserConversationSummary),
+            returned: conversations.length,
+            totalMatched: matchedConversations.length
           }
-        : { conversations }
+        : { conversations, returned: conversations.length, totalMatched: matchedConversations.length }
     );
   });
 

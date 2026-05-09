@@ -1151,6 +1151,9 @@ machine without mutating Host or runner state; each probe is bounded by a
 configurable `--health-timeout-ms` timeout and timeout failures are serialized
 into `clientHealth`. The same command now accepts `--node <nodeId>` to narrow
 endpoint inspection and optional health probing to one human participant.
+The headless `entangle inbox list` participant surface now also supports
+unread, peer-node, and limit filters over Host-projected User Node
+conversations.
 Generated distributed proof operator commands now run that same CLI health
 probe before sending the scripted User Node task, and proof-kit dry-run output
 names the command so CI can keep it present. Host

@@ -310,6 +310,10 @@ The most accurate current description is:
   Interface Runtime enforcing visibility and tagging the request as the User
   Node; target-specific requests must match a visible
   `wiki_repository_publication` resource in that conversation;
+- the headless `entangle inbox list` participant surface now supports
+  `--unread-only`, `--peer-node <nodeId>`, and `--limit <n>`, returning bounded
+  conversation lists with `returned` and `totalMatched` counts without mutating
+  Host or runner state;
 - the process-runner smoke now proves that User Client wiki publication path
   through a signed builder wiki approval request, the running User Client JSON
   route, a completed projected `runtime.wiki.publish` command receipt, a

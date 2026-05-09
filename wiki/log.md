@@ -1,5 +1,14 @@
 # Entangle Wiki Log
 
+## [2026-05-09] cli | Added bounded inbox filters
+
+Added `references/559-cli-inbox-filter-slice.md`.
+`entangle inbox list` now accepts `--unread-only`, `--peer-node <nodeId>`, and
+`--limit <n>`, returning `returned` and `totalMatched` counts with either
+summary or full JSON output. This gives each User Node a more practical
+headless participant inbox over Host projection without mutating Host or runner
+state.
+
 ## [2026-05-09] cli | Added User Client endpoint node filtering
 
 Added `references/558-cli-user-node-client-filter-slice.md`.

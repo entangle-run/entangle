@@ -228,6 +228,29 @@ export function sortUserConversationsForCli(
   });
 }
 
+export function filterUserConversationsForCli(input: {
+  conversations: UserConversationProjectionRecord[];
+  peerNodeId?: string | undefined;
+  unreadOnly?: boolean | undefined;
+}): UserConversationProjectionRecord[] {
+  return sortUserConversationsForCli(
+    input.conversations.filter((conversation) => {
+      if (
+        input.peerNodeId !== undefined &&
+        conversation.peerNodeId !== input.peerNodeId
+      ) {
+        return false;
+      }
+
+      if (input.unreadOnly === true && conversation.unreadCount <= 0) {
+        return false;
+      }
+
+      return true;
+    })
+  );
+}
+
 export function sortUserNodeCommandReceiptsForCli(
   receipts: RuntimeCommandReceiptProjectionRecord[]
 ): RuntimeCommandReceiptProjectionRecord[] {
