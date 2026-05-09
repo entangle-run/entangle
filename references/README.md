@@ -135,6 +135,10 @@ code-change context without copying raw diffs or full file previews into
 long-lived memory. The generated `working-context.md` page now also includes a
 runner-owned source-change context section with bounded metadata, giving future
 turns deterministic code-change memory even when the model summary is sparse.
+Post-turn memory maintenance now also maintains deterministic source-change
+and approval ledgers from task-page evidence, giving future turns compact
+recent code-change and approval-request context without copying raw diffs,
+peer transcripts, or artifact bodies into memory.
 The generated working context also carries bounded emitted handoff message ids,
 so nodes retain deterministic delegation evidence without copying peer
 conversations into memory. The same working context now carries active
@@ -923,6 +927,7 @@ files are the active federated redesign pack.
 562. [561-cli-inbox-approval-requests-slice.md](561-cli-inbox-approval-requests-slice.md)
 563. [562-cli-inbox-source-review-requests-slice.md](562-cli-inbox-source-review-requests-slice.md)
 564. [563-cli-user-node-assignment-roster-slice.md](563-cli-user-node-assignment-roster-slice.md)
+565. [564-approval-ledger-memory-slice.md](564-approval-ledger-memory-slice.md)
 
 ## Role of this corpus
 

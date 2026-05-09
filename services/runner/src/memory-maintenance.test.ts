@@ -26,6 +26,19 @@ describe("post-turn memory maintenance", () => {
       producedArtifactIds: ["report-turn-001"],
       result: {
         assistantMessages: ["Reviewed the parser patch and found no blockers."],
+        approvalRequestDirectives: [
+          {
+            approvalId: "approval-source-parser",
+            approverNodeIds: ["user-reviewer"],
+            operation: "source_application",
+            reason: "Review parser source changes before applying them.",
+            resource: {
+              id: "source-change-parser",
+              kind: "source_change_candidate",
+              label: "Parser source change"
+            }
+          }
+        ],
         handoffDirectives: [
           {
             includeArtifacts: "produced",
@@ -98,6 +111,7 @@ describe("post-turn memory maintenance", () => {
       indexPage,
       summaryPage,
       sourceLedgerPage,
+      approvalLedgerPage,
       delegationLedgerPage,
       turnRequest
     ] = await Promise.all([
@@ -106,6 +120,7 @@ describe("post-turn memory maintenance", () => {
       readFile(memoryUpdate.indexPath, "utf8"),
       readFile(memoryUpdate.summaryPagePath, "utf8"),
       readFile(memoryUpdate.sourceChangeLedgerPagePath, "utf8"),
+      readFile(memoryUpdate.approvalLedgerPagePath, "utf8"),
       readFile(memoryUpdate.delegationLedgerPagePath, "utf8"),
       buildAgentEngineTurnRequest(context)
     ]);
@@ -125,6 +140,14 @@ describe("post-turn memory maintenance", () => {
     expect(taskPage).toContain("- Totals: files=1 additions=3 deletions=1");
     expect(taskPage).toContain("- Diff excerpt: available");
     expect(taskPage).toContain("- modified `src/parser.ts` +3 -1");
+    expect(taskPage).toContain("## Approval Requests");
+    expect(taskPage).toContain("- Requested approvals:");
+    expect(taskPage).toContain("approvalId=`approval-source-parser`");
+    expect(taskPage).toContain("operation=`source_application`");
+    expect(taskPage).toContain("resource=source_change_candidate:`source-change-parser`");
+    expect(taskPage).toContain(
+      'reason="Review parser source changes before applying them."'
+    );
     expect(taskPage).toContain("## Delegation / Handoffs");
     expect(taskPage).toContain(`- Emitted message ids: \`${"a".repeat(64)}\``);
     expect(taskPage).toContain("- Requested handoff directives:");
@@ -136,6 +159,9 @@ describe("post-turn memory maintenance", () => {
     expect(summaryPage).toContain("- Candidate ids: `source-change-parser`");
     expect(summaryPage).toContain("- Totals: files=1 additions=3 deletions=1");
     expect(summaryPage).toContain("- modified `src/parser.ts` +3 -1");
+    expect(summaryPage).toContain("Approval memory:");
+    expect(summaryPage).toContain("approvalId=`approval-source-parser`");
+    expect(summaryPage).toContain("resource=source_change_candidate:`source-change-parser`");
     expect(summaryPage).toContain("Delegation memory:");
     expect(summaryPage).toContain(`- Emitted message ids: \`${"a".repeat(64)}\``);
     expect(summaryPage).toContain("targetNodeId=`reviewer-node`");
@@ -147,6 +173,15 @@ describe("post-turn memory maintenance", () => {
     expect(sourceLedgerPage).toContain("- Candidate ids: `source-change-parser`");
     expect(sourceLedgerPage).toContain("- Source changes: `changed`");
     expect(sourceLedgerPage).toContain("- modified `src/parser.ts` +3 -1");
+    expect(approvalLedgerPage).toContain("# Approval Ledger");
+    expect(approvalLedgerPage).toContain("### session-alpha / turn-memory-001");
+    expect(approvalLedgerPage).toContain(
+      "- Task page: [session-alpha / turn-memory-001](tasks/session-alpha/turn-memory-001.md)"
+    );
+    expect(approvalLedgerPage).toContain("approvalId=`approval-source-parser`");
+    expect(approvalLedgerPage).toContain(
+      "resource=source_change_candidate:`source-change-parser`"
+    );
     expect(delegationLedgerPage).toContain("# Delegation Ledger");
     expect(delegationLedgerPage).toContain("### session-alpha / turn-memory-001");
     expect(delegationLedgerPage).toContain(
@@ -164,12 +199,14 @@ describe("post-turn memory maintenance", () => {
     expect(indexPage).toContain(
       "[Source Change Ledger](summaries/source-change-ledger.md)"
     );
+    expect(indexPage).toContain("[Approval Ledger](summaries/approval-ledger.md)");
     expect(indexPage).toContain("[Delegation Ledger](summaries/delegation-ledger.md)");
     expect(turnRequest.memoryRefs).toEqual(
       expect.arrayContaining([
         path.join(context.workspace.memoryRoot, "wiki", "log.md"),
         memoryUpdate.summaryPagePath,
         memoryUpdate.sourceChangeLedgerPagePath,
+        memoryUpdate.approvalLedgerPagePath,
         memoryUpdate.delegationLedgerPagePath,
         memoryUpdate.taskPagePath
       ])

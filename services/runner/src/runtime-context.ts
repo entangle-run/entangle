@@ -38,6 +38,10 @@ const memoryBriefCandidates: MemoryBriefCandidate[] = [
     relativePath: "summaries/source-change-ledger.md"
   },
   {
+    label: "Approval ledger",
+    relativePath: "summaries/approval-ledger.md"
+  },
+  {
     label: "Delegation ledger",
     relativePath: "summaries/delegation-ledger.md"
   },
@@ -179,6 +183,12 @@ export async function collectMemoryRefs(
       "wiki",
       "summaries",
       "source-change-ledger.md"
+    ),
+    path.join(
+      context.workspace.memoryRoot,
+      "wiki",
+      "summaries",
+      "approval-ledger.md"
     ),
     path.join(
       context.workspace.memoryRoot,

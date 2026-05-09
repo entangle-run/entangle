@@ -1286,6 +1286,10 @@ This repository currently contains:
   maintenance now rebuilds `memory/wiki/summaries/source-change-ledger.md`
   from source-change-bearing task pages and feeds that page into future
   memory refs plus bounded memory briefs;
+- a deterministic approval ledger refinement where post-turn memory
+  maintenance now records bounded approval-request directives in task pages,
+  rebuilds `memory/wiki/summaries/approval-ledger.md`, and feeds that page
+  into future memory refs plus bounded memory briefs;
 - a handoff-aware working-context refinement where optional model-guided memory
   synthesis sees bounded handoff evidence from the completed turn, and the
   durable `working-context.md` page now carries emitted handoff message ids
@@ -1647,8 +1651,8 @@ The highest-value remaining gaps are:
   session-aware, artifact-aware/artifact-carrying, engine-outcome-aware,
   execution-insight-carrying, source-change-aware, owner-aware, and
   coordination-map-aware bounded runtime inspection surface plus deterministic
-  task-page source-change/delegation memory and the source-change/delegation
-  ledgers;
+  task-page source-change/approval/delegation memory and the
+  source-change/approval/delegation ledgers;
 - deeper delegated-session runtime semantics beyond the current controlled
   autonomous handoff and runner-local active-conversation reconciliation path,
   especially formal cross-runtime relation modeling, richer participant-aware

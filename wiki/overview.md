@@ -271,6 +271,9 @@ The most accurate current description is:
   `memory/wiki/summaries/source-change-ledger.md` from source-change-bearing
   task pages and feeds that page into future memory refs plus bounded memory
   briefs;
+- post-turn memory maintenance now also rebuilds a deterministic
+  `memory/wiki/summaries/approval-ledger.md` from approval-request-bearing task
+  pages and feeds that page into future memory refs plus bounded memory briefs;
 - the process-runner smoke now proves that patch mode through the running
   User Client JSON API, including expected-base hash forwarding, completed
   command receipt projection, and projected patched wiki preview content;
@@ -895,6 +898,10 @@ The repository now also contains the first real implementation baseline:
   maintenance now rebuilds `summaries/source-change-ledger.md` from
   source-change-bearing task pages and feeds that page into future memory refs
   plus bounded memory briefs;
+- a deterministic approval ledger refinement where post-turn memory
+  maintenance now records bounded approval-request directives in task pages,
+  rebuilds `summaries/approval-ledger.md`, and feeds that page into future
+  memory refs plus bounded memory briefs;
 - a handoff-aware working-context refinement where optional model-guided memory
   synthesis receives bounded emitted-handoff evidence and the durable
   `working-context.md` page now records emitted handoff message ids without
@@ -1446,8 +1453,8 @@ The current implementation-truth audit now lives in
   autonomous `task.handoff` emission and runner-local active-conversation
   reconciliation plus host-derived conversation lifecycle diagnostics,
   consistency findings, read-only participant runtime status, and first
-  owner-aware, coordination-map, and deterministic delegation-ledger memory
-  projection are implemented;
+  owner-aware, coordination-map, and deterministic approval/delegation-ledger
+  memory projection are implemented;
 - deepen the bootstrap host operator-token boundary, multi-token request audit,
   status reporting, server-filterable event inspection, route-level bootstrap
   permissions, coarse read-only `viewer` enforcement, bootstrap token expiry,
@@ -1461,8 +1468,8 @@ The current implementation-truth audit now lives in
   and otherwise deepen model-guided memory maintenance on top of the now
   stronger session-aware, artifact-aware/artifact-carrying,
   engine-outcome-aware, execution-insight-carrying, and source-change-aware
-  bounded runtime inspection surface plus deterministic source-change and
-  delegation ledgers;
+  bounded runtime inspection surface plus deterministic source-change,
+  approval, and delegation ledgers;
 - keep later CLI widening focused only on real operational leverage, not
   surface parity for its own sake;
 - keep Studio host-first as it deepens, so richer operator flows continue to

@@ -19,6 +19,7 @@ type PostTurnMemoryUpdateInput = {
 };
 
 type PostTurnMemoryUpdateResult = {
+  approvalLedgerPagePath: string;
   delegationLedgerPagePath: string;
   indexPath: string;
   logPath: string;
@@ -40,10 +41,13 @@ export const focusedRegisterTransitionHistoryRelativePath =
   "summaries/focused-register-transition-history.md";
 export const sourceChangeLedgerSummaryRelativePath =
   "summaries/source-change-ledger.md";
+export const approvalLedgerSummaryRelativePath =
+  "summaries/approval-ledger.md";
 export const delegationLedgerSummaryRelativePath =
   "summaries/delegation-ledger.md";
 const maxRecentSummaryEntries = 5;
 const maxSourceChangeLedgerEntries = 12;
+const maxApprovalLedgerEntries = 12;
 const maxDelegationLedgerEntries = 12;
 
 function buildTaskPageRelativePath(input: {
@@ -241,6 +245,10 @@ export function resolveSourceChangeLedgerSummaryPath(wikiRoot: string): string {
   return path.join(wikiRoot, sourceChangeLedgerSummaryRelativePath);
 }
 
+export function resolveApprovalLedgerSummaryPath(wikiRoot: string): string {
+  return path.join(wikiRoot, approvalLedgerSummaryRelativePath);
+}
+
 export function resolveDelegationLedgerSummaryPath(wikiRoot: string): string {
   return path.join(wikiRoot, delegationLedgerSummaryRelativePath);
 }
@@ -309,6 +317,37 @@ function renderHandoffMemoryLines(input: {
   ];
 }
 
+function renderApprovalMemoryLines(result: AgentEngineTurnResult): string[] {
+  const directives = result.approvalRequestDirectives ?? [];
+
+  if (directives.length === 0) {
+    return ["- Requested approvals: none"];
+  }
+
+  return [
+    "- Requested approvals:",
+    ...directives.map((directive) => {
+      const resource = directive.resource
+        ? [
+            `resource=${directive.resource.kind}:\`${directive.resource.id}\``,
+            ...(directive.resource.label
+              ? [`label="${compactInlineText(directive.resource.label)}"`]
+              : [])
+          ].join(" ")
+        : "resource=unspecified";
+      const reason = compactInlineText(directive.reason);
+
+      return [
+        `  - approvalId=\`${directive.approvalId ?? "unspecified"}\``,
+        `operation=\`${directive.operation}\``,
+        `approvers=${renderInlineCodeList(directive.approverNodeIds)}`,
+        resource,
+        `reason="${reason}"`
+      ].join(" ");
+    })
+  ];
+}
+
 function buildTaskPageContent(input: {
   consumedArtifactIds: string[];
   envelope: RunnerInboundEnvelope;
@@ -371,6 +410,10 @@ function buildTaskPageContent(input: {
     "",
     renderSourceChangeCandidateLine(input.turnRecord),
     ...renderSourceChangeSummaryLines(input.turnRecord?.sourceChangeSummary),
+    "",
+    "## Approval Requests",
+    "",
+    ...renderApprovalMemoryLines(input.result),
     "",
     "## Delegation / Handoffs",
     "",
@@ -605,6 +648,36 @@ function extractTaskPageDelegation(content: string): string | undefined {
   return delegationLines.length > 0 ? delegationLines.join("\n") : undefined;
 }
 
+function extractTaskPageApproval(content: string): string | undefined {
+  const lines = content.split("\n");
+  const headingIndex = lines.findIndex(
+    (line) => line.trim() === "## Approval Requests"
+  );
+
+  if (headingIndex === -1) {
+    return undefined;
+  }
+
+  const approvalLines: string[] = [];
+
+  for (const line of lines.slice(headingIndex + 1)) {
+    if (line.trim().startsWith("## ")) {
+      break;
+    }
+
+    const trimmedLine = line.trimEnd();
+
+    if (
+      trimmedLine.startsWith("- Requested approvals:") ||
+      trimmedLine.startsWith("  - ")
+    ) {
+      approvalLines.push(trimmedLine);
+    }
+  }
+
+  return approvalLines.length > 0 ? approvalLines.join("\n") : undefined;
+}
+
 function sourceChangeMemoryHasDurableSignal(summary: string): boolean {
   const lines = summary.split("\n").map((line) => line.trim());
 
@@ -629,6 +702,18 @@ function sourceChangeMemoryHasDurableSignal(summary: string): boolean {
         line
       )
     );
+  });
+}
+
+function approvalMemoryHasDurableSignal(summary: string): boolean {
+  const lines = summary.split("\n").map((line) => line.trim());
+
+  return lines.some((line) => {
+    if (line === "- Requested approvals: none") {
+      return false;
+    }
+
+    return line.startsWith("- approvalId=");
   });
 }
 
@@ -685,6 +770,10 @@ async function buildRecentWorkSummaryContent(input: {
     );
     const outcome = extractTaskPageOutcome(entry.content);
     const sourceChangeSummary = extractTaskPageSourceChange(entry.content);
+    const approvalSummary = extractTaskPageApproval(entry.content);
+    const approvalHasDurableSignal = approvalSummary
+      ? approvalMemoryHasDurableSignal(approvalSummary)
+      : false;
     const delegationSummary = extractTaskPageDelegation(entry.content);
     const delegationHasDurableSignal = delegationSummary
       ? delegationMemoryHasDurableSignal(delegationSummary)
@@ -710,11 +799,80 @@ async function buildRecentWorkSummaryContent(input: {
       ...(sourceChangeSummary
         ? ["", "Source-change memory:", sourceChangeSummary]
         : []),
+      ...(approvalSummary && approvalHasDurableSignal
+        ? ["", "Approval memory:", approvalSummary]
+        : []),
       ...(delegationSummary && delegationHasDurableSignal
         ? ["", "Delegation memory:", delegationSummary]
         : []),
       "",
       outcome.assistantSummary,
+      ""
+    );
+  }
+
+  return contentLines.join("\n");
+}
+
+async function buildApprovalLedgerContent(input: {
+  wikiRoot: string;
+}): Promise<string> {
+  const taskRoot = path.join(input.wikiRoot, "tasks");
+  const taskPaths = await collectMarkdownFilesRecursively(taskRoot);
+  const taskEntries = await Promise.all(
+    taskPaths.map(async (taskPath) => ({
+      content: await readFile(taskPath, "utf8"),
+      modifiedAt: (await stat(taskPath)).mtimeMs,
+      relativePath: path
+        .relative(input.wikiRoot, taskPath)
+        .split(path.sep)
+        .join(path.posix.sep)
+    }))
+  );
+
+  const approvalEntries = taskEntries
+    .map((entry) => {
+      const approvalSummary = extractTaskPageApproval(entry.content);
+
+      return {
+        ...entry,
+        approvalSummary
+      };
+    })
+    .filter((entry): entry is typeof entry & { approvalSummary: string } => {
+      const approvalSummary = entry.approvalSummary;
+
+      return (
+        approvalSummary !== undefined &&
+        approvalMemoryHasDurableSignal(approvalSummary)
+      );
+    })
+    .sort((left, right) => right.modifiedAt - left.modifiedAt)
+    .slice(0, maxApprovalLedgerEntries);
+
+  const contentLines = [
+    "# Approval Ledger",
+    "",
+    "## Latest Approval Requests",
+    ""
+  ];
+
+  if (approvalEntries.length === 0) {
+    contentLines.push("No approval request turns have been recorded yet.", "");
+    return contentLines.join("\n");
+  }
+
+  for (const entry of approvalEntries) {
+    const title = extractTaskPageTitle(
+      entry.content,
+      path.basename(entry.relativePath, ".md")
+    );
+
+    contentLines.push(
+      `### ${title}`,
+      "",
+      `- Task page: [${title}](${entry.relativePath})`,
+      entry.approvalSummary,
       ""
     );
   }
@@ -853,6 +1011,7 @@ export async function performPostTurnMemoryUpdate(
   const summaryPagePath = resolveRecentWorkSummaryPath(wikiRoot);
   const sourceChangeLedgerPagePath =
     resolveSourceChangeLedgerSummaryPath(wikiRoot);
+  const approvalLedgerPagePath = resolveApprovalLedgerSummaryPath(wikiRoot);
   const delegationLedgerPagePath = resolveDelegationLedgerSummaryPath(wikiRoot);
   const taskPageRelativePath = buildTaskPageRelativePath({
     sessionId: input.envelope.message.sessionId,
@@ -884,17 +1043,23 @@ export async function performPostTurnMemoryUpdate(
   const summaryBullet = "- [Recent Work Summary](summaries/recent-work.md)";
   const sourceChangeLedgerBullet =
     "- [Source Change Ledger](summaries/source-change-ledger.md)";
+  const approvalLedgerBullet =
+    "- [Approval Ledger](summaries/approval-ledger.md)";
   const delegationLedgerBullet =
     "- [Delegation Ledger](summaries/delegation-ledger.md)";
   const nextIndex = appendSectionBullet(
     appendSectionBullet(
       appendSectionBullet(
-        appendSectionBullet(currentIndex, "Task Pages", indexBullet),
+        appendSectionBullet(
+          appendSectionBullet(currentIndex, "Task Pages", indexBullet),
+          "Summaries",
+          summaryBullet
+        ),
         "Summaries",
-        summaryBullet
+        sourceChangeLedgerBullet
       ),
       "Summaries",
-      sourceChangeLedgerBullet
+      approvalLedgerBullet
     ),
     "Summaries",
     delegationLedgerBullet
@@ -917,6 +1082,9 @@ export async function performPostTurnMemoryUpdate(
   const sourceChangeLedger = await buildSourceChangeLedgerContent({
     wikiRoot
   });
+  const approvalLedger = await buildApprovalLedgerContent({
+    wikiRoot
+  });
   const delegationLedger = await buildDelegationLedgerContent({
     wikiRoot
   });
@@ -927,6 +1095,7 @@ export async function performPostTurnMemoryUpdate(
       sourceChangeLedgerPagePath,
       `${sourceChangeLedger.trimEnd()}\n`
     ),
+    writeTextFile(approvalLedgerPagePath, `${approvalLedger.trimEnd()}\n`),
     writeTextFile(
       delegationLedgerPagePath,
       `${delegationLedger.trimEnd()}\n`
@@ -934,6 +1103,7 @@ export async function performPostTurnMemoryUpdate(
   ]);
 
   return {
+    approvalLedgerPagePath,
     delegationLedgerPagePath,
     indexPath,
     logPath,

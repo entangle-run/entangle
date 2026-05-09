@@ -1,5 +1,16 @@
 # Entangle Wiki Log
 
+## [2026-05-09] runner | Added approval ledger memory
+
+Added `references/564-approval-ledger-memory-slice.md`. Deterministic runner
+task pages now record bounded approval-request directives, and post-turn memory
+maintenance rebuilds `memory/wiki/summaries/approval-ledger.md` for future
+memory refs and bounded memory briefs.
+
+The ledger is private node memory only: signed User Node messages, runner
+approval records, conversations, and Host projection remain the operational
+approval truth.
+
 ## [2026-05-09] cli | Added User Node assignment roster
 
 Added `references/563-cli-user-node-assignment-roster-slice.md`.

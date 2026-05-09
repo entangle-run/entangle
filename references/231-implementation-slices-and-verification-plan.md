@@ -661,6 +661,10 @@ Current status:
   `summaries/source-change-ledger.md` from source-change-bearing task pages,
   links it from the node wiki index, and feeds it into future turn
   `memoryRefs` plus bounded memory briefs;
+- deterministic task memory now records bounded approval-request directives,
+  and post-turn memory maintenance rebuilds `summaries/approval-ledger.md` from
+  approval-bearing task pages so future engine turns receive recent approval
+  context through memory refs plus the bounded memory brief;
 - deterministic task memory now records requested handoff directives and
   emitted handoff event ids, and post-turn memory maintenance rebuilds
   `summaries/delegation-ledger.md` from handoff-bearing task pages so future
@@ -1630,6 +1634,9 @@ Current status:
   `review-source-candidate --from-message` decisions;
 - CLI User Node assignments now has a focused read-only roster for all or
   current assignment records of one human participant before reassignment;
+- deterministic runner task memory now records bounded approval-request
+  directives, rebuilds `summaries/approval-ledger.md`, and feeds the ledger
+  into future turn `memoryRefs` plus bounded memory briefs;
 - generated distributed proof kits can now optionally include
   `docker-compose.runners.yml` plus per-runner container entrypoints with
   `--write-runner-compose`, giving operators a same-machine container-boundary

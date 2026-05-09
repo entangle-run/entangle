@@ -364,6 +364,7 @@ same-machine slice records.
 - [561-cli-inbox-approval-requests-slice.md](561-cli-inbox-approval-requests-slice.md)
 - [562-cli-inbox-source-review-requests-slice.md](562-cli-inbox-source-review-requests-slice.md)
 - [563-cli-user-node-assignment-roster-slice.md](563-cli-user-node-assignment-roster-slice.md)
+- [564-approval-ledger-memory-slice.md](564-approval-ledger-memory-slice.md)
 
 ## Audited Scope
 
@@ -812,6 +813,9 @@ runner-owned session snapshot, preserving deterministic coordination context
 for delegated sessions without copying transcripts.
 Post-turn memory maintenance now also rebuilds a deterministic
 `source-change-ledger.md` page from source-change-bearing task pages and feeds
+that page into future memory refs and bounded memory briefs.
+Post-turn memory maintenance now also rebuilds a deterministic
+`approval-ledger.md` page from approval-request-bearing task pages and feeds
 that page into future memory refs and bounded memory briefs.
 
 ## Planned Implementation Slices
@@ -1318,6 +1322,10 @@ Post-turn memory maintenance now also rebuilds
 `summaries/source-change-ledger.md` from source-change-bearing task pages,
 links it from the node wiki index, and exposes it through future turn
 `memoryRefs` and bounded memory briefs.
+Post-turn memory maintenance now also preserves bounded approval-request
+directives in task pages, rebuilds `summaries/approval-ledger.md`, links it
+from the node wiki index, and exposes it through future turn `memoryRefs` and
+bounded memory briefs.
 Deterministic task memory now also preserves bounded handoff evidence and
 rebuilds `summaries/delegation-ledger.md` from handoff-bearing task pages.
 Successful non-blocked turns write memory after outbound handoff publication,
