@@ -953,6 +953,9 @@ The repository now also contains the first real implementation baseline:
 - a User Client workload review-total refinement where the running React client
   and fallback Human Interface Runtime show one total pending review count
   derived from the same Review Queue model;
+- a handoff response-policy prompt refinement where coding engines can see the
+  optional delegated-conversation lifecycle shape while Entangle runner
+  validation remains authoritative;
 - a coordination-map memory refinement where successful model-guided synthesis
   now writes `memory/wiki/summaries/coordination-map.md` with local node
   relation, owner/origin/entrypoint, inbound message provenance, active peer

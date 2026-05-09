@@ -704,8 +704,11 @@ This repository currently contains:
   `handoffDirectives` are validated against local autonomy policy, effective
   edge routes, peer pubkeys, and allowed edge relations before emitting
   `task.handoff`, with emitted handoff message ids preserved on runner turns,
-  host activity events, and shared runtime-turn presentation, plus
-  runner-owned active-conversation reconciliation so multi-handoff sessions
+  host activity events, and shared runtime-turn presentation, while
+  agent-engine prompts expose the optional handoff `responsePolicy` shape for
+  response-required, close-on-result, and max-followup delegated-conversation
+  lifecycle semantics, plus runner-owned active-conversation reconciliation so
+  multi-handoff sessions
   remain active until every open delegated conversation resolves or closes,
   with a runner-start repair pass that realigns stale active-conversation ids
   from durable conversation records, moves still-pending approval-gated drained

@@ -712,6 +712,9 @@ describe("runner runtime context", () => {
     expect(request.interactionPromptParts.join("\n")).toContain(
       "Entangle action contract:"
     );
+    expect(request.interactionPromptParts.join("\n")).toContain(
+      "\"responsePolicy\":{\"responseRequired\":true,\"closeOnResult\":true,\"maxFollowups\":1}"
+    );
     expect(request.toolDefinitions).toEqual([
       {
         description: "Inspect a retrieved inbound artifact by artifact id.",

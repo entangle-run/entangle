@@ -1,5 +1,12 @@
 # Entangle Wiki Log
 
+## [2026-05-09] runner | Exposed handoff response policy in prompts
+
+Added `references/574-handoff-response-policy-prompt-slice.md`. Agent-engine
+turn prompts now show that handoff directives may include `responsePolicy`, so
+coding engines can request delegated-conversation lifecycle semantics while the
+runner keeps graph route and policy validation authoritative.
+
 ## [2026-05-09] tooling | Added fake OpenAI tool-call smoke
 
 Added `references/573-fake-openai-tool-call-smoke-slice.md`. The

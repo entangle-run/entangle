@@ -374,6 +374,7 @@ same-machine slice records.
 - [571-cli-review-queue-slice.md](571-cli-review-queue-slice.md)
 - [572-user-client-workload-review-total-slice.md](572-user-client-workload-review-total-slice.md)
 - [573-fake-openai-tool-call-smoke-slice.md](573-fake-openai-tool-call-smoke-slice.md)
+- [574-handoff-response-policy-prompt-slice.md](574-handoff-response-policy-prompt-slice.md)
 
 ## Audited Scope
 
@@ -1356,6 +1357,10 @@ The React User Client and fallback Workload summaries now also expose a total
 pending review count derived from the same Review Queue model, so participant
 triage starts from one queue-aligned number before the detailed queue is
 opened.
+Agent-engine turn prompts now show that handoff directives may include
+`responsePolicy` with response-required, close-on-result, and max-followup
+fields, while runner validation and graph policy remain authoritative for every
+published handoff.
 Deterministic runner task memory now also preserves bounded source-change
 candidate ids, status, totals, diff availability, and changed-file summaries
 from the live turn record, and the derived recent-work summary surfaces the

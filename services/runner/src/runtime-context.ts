@@ -406,7 +406,8 @@ function buildEntangleActionContractPromptPart(
     "Entangle action contract:",
     "- Do not message peers, publish artifacts, mutate the graph, or apply source changes directly.",
     "- Propose Entangle side effects only through a single fenced ```entangle-actions JSON block in the final answer.",
-    "- Supported shape: {\"handoffDirectives\":[{\"targetNodeId\":\"peer-node-id\",\"summary\":\"bounded task summary\",\"includeArtifacts\":\"produced\"}],\"approvalRequestDirectives\":[{\"operation\":\"source_publication\",\"reason\":\"bounded approval reason\",\"resource\":{\"kind\":\"source_history\",\"id\":\"resource-id\"}}]}",
+    "- Supported shape: {\"handoffDirectives\":[{\"targetNodeId\":\"peer-node-id\",\"summary\":\"bounded task summary\",\"includeArtifacts\":\"produced\",\"responsePolicy\":{\"responseRequired\":true,\"closeOnResult\":true,\"maxFollowups\":1}}],\"approvalRequestDirectives\":[{\"operation\":\"source_publication\",\"reason\":\"bounded approval reason\",\"resource\":{\"kind\":\"source_history\",\"id\":\"resource-id\"}}]}",
+    "- For handoffs, omit responsePolicy to use protocol defaults; include it only when the delegated conversation should stay open, require a result, or cap follow-up turns differently.",
     "- Entangle validates every directive against graph routes and policy before performing the side effect.",
     "- Approval request directives create pending Entangle approval gates; do not perform the gated action yourself.",
     `- materialized peer handoff routes available: ${peerRouteCount}`

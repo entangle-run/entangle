@@ -937,6 +937,7 @@ files are the active federated redesign pack.
 572. [571-cli-review-queue-slice.md](571-cli-review-queue-slice.md)
 573. [572-user-client-workload-review-total-slice.md](572-user-client-workload-review-total-slice.md)
 574. [573-fake-openai-tool-call-smoke-slice.md](573-fake-openai-tool-call-smoke-slice.md)
+575. [574-handoff-response-policy-prompt-slice.md](574-handoff-response-policy-prompt-slice.md)
 
 ## Role of this corpus
 

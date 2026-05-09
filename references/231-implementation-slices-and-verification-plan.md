@@ -1666,6 +1666,9 @@ Current status:
 - the React User Client and fallback Human Interface Runtime Workload panels
   now include a total pending review count derived from the same Review Queue
   model used by the detailed participant queue;
+- agent-engine turn prompts now show the optional handoff `responsePolicy`
+  shape, so coding engines can request delegated-conversation lifecycle
+  semantics while Entangle validation remains authoritative;
 - deterministic runner task memory now records bounded approval-request
   directives, rebuilds `summaries/approval-ledger.md`, and feeds the ledger
   into future turn `memoryRefs` plus bounded memory briefs;
