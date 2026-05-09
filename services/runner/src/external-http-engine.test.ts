@@ -45,7 +45,12 @@ function buildTurnRequest() {
 
 function createExternalRuntimeContext(
   context: EffectiveRuntimeContext,
-  baseUrl: string
+  baseUrl: string,
+  options: {
+    httpAuth?: NonNullable<
+      EffectiveRuntimeContext["agentRuntimeContext"]["engineProfile"]["httpAuth"]
+    >;
+  } = {}
 ): EffectiveRuntimeContext {
   return {
     ...context,
@@ -54,6 +59,7 @@ function createExternalRuntimeContext(
       engineProfile: {
         baseUrl,
         displayName: "External HTTP",
+        ...(options.httpAuth ? { httpAuth: options.httpAuth } : {}),
         id: "external-http-test",
         kind: "external_http" as const,
         stateScope: "node" as const
@@ -94,6 +100,7 @@ async function startHttpEngine(handler: HttpHandler): Promise<string> {
 }
 
 afterEach(async () => {
+  delete process.env.ENTANGLE_EXTERNAL_HTTP_ENGINE_TOKEN;
   await cleanupRuntimeFixtures();
   await Promise.all(serverClosers.splice(0).map((closeServer) => closeServer()));
 });
@@ -131,6 +138,58 @@ describe("external HTTP runner engine adapter", () => {
       assistantMessages: ["external HTTP handled worker-it in worker-it"],
       engineVersion: "external-http-fixture-1",
       stopReason: "completed"
+    });
+  });
+
+  it("sends external HTTP bearer auth from the configured environment variable", async () => {
+    process.env.ENTANGLE_EXTERNAL_HTTP_ENGINE_TOKEN = "engine-token";
+    const baseUrl = await startHttpEngine((request, response) => {
+      expect(request.headers.authorization).toBe("Bearer engine-token");
+      response.setHeader("content-type", "application/json");
+      response.end(
+        JSON.stringify({
+          assistantMessages: ["authenticated external HTTP"],
+          stopReason: "completed"
+        })
+      );
+    });
+    const fixture = await createRuntimeFixture();
+    const runtimeContext = createExternalRuntimeContext(fixture.context, baseUrl, {
+      httpAuth: {
+        mode: "bearer_env",
+        tokenEnvVar: "ENTANGLE_EXTERNAL_HTTP_ENGINE_TOKEN"
+      }
+    });
+    const engine = createExternalHttpAgentEngine({ runtimeContext });
+
+    await expect(engine.executeTurn(buildTurnRequest())).resolves.toMatchObject({
+      assistantMessages: ["authenticated external HTTP"],
+      stopReason: "completed"
+    });
+  });
+
+  it("fails configuration when external HTTP bearer auth env var is missing", async () => {
+    delete process.env.ENTANGLE_EXTERNAL_HTTP_ENGINE_TOKEN;
+    const baseUrl = await startHttpEngine((_request, response) => {
+      response.setHeader("content-type", "application/json");
+      response.end(
+        JSON.stringify({
+          assistantMessages: ["should not be called"],
+          stopReason: "completed"
+        })
+      );
+    });
+    const fixture = await createRuntimeFixture();
+    const runtimeContext = createExternalRuntimeContext(fixture.context, baseUrl, {
+      httpAuth: {
+        mode: "bearer_env",
+        tokenEnvVar: "ENTANGLE_EXTERNAL_HTTP_ENGINE_TOKEN"
+      }
+    });
+    const engine = createExternalHttpAgentEngine({ runtimeContext });
+
+    await expect(engine.executeTurn(buildTurnRequest())).rejects.toMatchObject({
+      name: "AgentEngineConfigurationError"
     });
   });
 

@@ -129,6 +129,15 @@ export const agentEnginePermissionModeSchema = z.enum([
   "auto_reject"
 ]);
 
+export const agentEngineHttpAuthSchema = z.object({
+  mode: z.literal("bearer_env"),
+  tokenEnvVar: z
+    .string()
+    .regex(/^[A-Za-z_][A-Za-z0-9_]*$/, {
+      message: "Agent engine auth token env var must be a valid environment variable name."
+    })
+});
+
 export const agentEngineProfileSchema = z
   .object({
     id: identifierSchema,
@@ -138,6 +147,7 @@ export const agentEngineProfileSchema = z
     executable: nonEmptyStringSchema.optional(),
     baseUrl: httpUrlSchema.optional(),
     defaultAgent: identifierSchema.optional(),
+    httpAuth: agentEngineHttpAuthSchema.optional(),
     permissionMode: agentEnginePermissionModeSchema.optional(),
     stateScope: z.enum(["node", "shared"]).default("node")
   })
@@ -169,6 +179,14 @@ export const agentEngineProfileSchema = z
       });
     }
 
+    if (value.httpAuth && value.kind !== "external_http") {
+      context.addIssue({
+        code: z.ZodIssueCode.custom,
+        message:
+          "HTTP agent engine auth is only supported for external_http profiles.",
+        path: ["httpAuth"]
+      });
+    }
   });
 
 export const defaultOpenCodeAgentEngineProfile = {

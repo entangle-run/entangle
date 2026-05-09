@@ -960,6 +960,7 @@ files are the active federated redesign pack.
 579. [578-distributed-proof-external-git-url-slice.md](578-distributed-proof-external-git-url-slice.md)
 580. [579-distributed-proof-external-agent-engine-url-slice.md](579-distributed-proof-external-agent-engine-url-slice.md)
 581. [580-agent-engine-proof-url-credential-hardening-slice.md](580-agent-engine-proof-url-credential-hardening-slice.md)
+582. [581-external-http-agent-engine-auth-binding-slice.md](581-external-http-agent-engine-auth-binding-slice.md)
 
 ## Role of this corpus
 

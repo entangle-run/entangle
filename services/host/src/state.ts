@@ -7100,6 +7100,12 @@ export async function upsertAgentEngineProfile(
     delete profile.defaultAgent;
   }
 
+  if (request.httpAuth) {
+    profile.httpAuth = request.httpAuth;
+  } else if (request.clearHttpAuth) {
+    delete profile.httpAuth;
+  }
+
   if (request.permissionMode) {
     profile.permissionMode = request.permissionMode;
   } else if (request.clearPermissionMode) {

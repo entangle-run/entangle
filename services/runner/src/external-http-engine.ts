@@ -92,12 +92,28 @@ function parseExternalHttpResult(rawBody: string): unknown {
 }
 
 function buildHeaders(input: {
-  profileId: string;
   runtimeContext: EffectiveRuntimeContext;
 }): Record<string, string> {
+  const profile = input.runtimeContext.agentRuntimeContext.engineProfile;
+  const httpAuth = profile.httpAuth;
+  const authHeaders: Record<string, string> = {};
+
+  if (httpAuth?.mode === "bearer_env") {
+    const token = process.env[httpAuth.tokenEnvVar]?.trim();
+
+    if (!token) {
+      throw new AgentEngineConfigurationError(
+        `External HTTP engine profile '${profile.id}' requires bearer token environment variable '${httpAuth.tokenEnvVar}'.`
+      );
+    }
+
+    authHeaders.authorization = `Bearer ${token}`;
+  }
+
   return {
+    ...authHeaders,
     "content-type": "application/json",
-    "x-entangle-agent-engine-profile-id": input.profileId,
+    "x-entangle-agent-engine-profile-id": profile.id,
     "x-entangle-graph-id": input.runtimeContext.binding.graphId,
     "x-entangle-node-id": input.runtimeContext.binding.node.nodeId
   };
@@ -147,7 +163,6 @@ export function createExternalHttpAgentEngine(input: {
             })
           ),
           headers: buildHeaders({
-            profileId: profile.id,
             runtimeContext: input.runtimeContext
           }),
           method: "POST",
@@ -192,6 +207,10 @@ export function createExternalHttpAgentEngine(input: {
         }
 
         if (error instanceof AgentEngineExecutionError) {
+          throw error;
+        }
+
+        if (error instanceof AgentEngineConfigurationError) {
           throw error;
         }
 

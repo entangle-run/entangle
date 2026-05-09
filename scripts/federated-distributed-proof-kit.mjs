@@ -67,6 +67,9 @@ const externalProcessEngineExecutable = readFlagValue(
   "--external-process-engine-executable"
 );
 const externalHttpEngineUrl = readFlagValue("--external-http-engine-url");
+const externalHttpEngineBearerTokenEnvVar = readFlagValue(
+  "--external-http-engine-bearer-token-env-var"
+);
 const configuredCustomAgentEngineKind = externalHttpEngineUrl
   ? "external_http"
   : externalProcessEngineExecutable
@@ -95,6 +98,13 @@ if (requireUserClientBasicAuth) {
   validateEnvVarName(
     userClientBasicAuthEnvVar,
     "--user-client-basic-auth-env-var"
+  );
+}
+
+if (externalHttpEngineBearerTokenEnvVar) {
+  validateEnvVarName(
+    externalHttpEngineBearerTokenEnvVar,
+    "--external-http-engine-bearer-token-env-var"
   );
 }
 
@@ -179,6 +189,8 @@ Options:
   --external-process-engine-executable <cmd>
                                     Configure operator commands for an external_process profile and bind the agent node to it.
   --external-http-engine-url <url>   Configure operator commands for an external_http profile and bind the agent node to it.
+  --external-http-engine-bearer-token-env-var <envVar>
+                                    Configure external_http profile bearer auth from a runner environment variable.
   --custom-agent-engine-profile <id> Agent engine profile id for external_process/external_http setup.
   --agent-runner <id>               Agent runner id. Default: distributed-agent-runner
   --user-runner <id>                Primary User Node runner id. Default: distributed-user-runner
@@ -394,6 +406,14 @@ function buildRunnerEnvContent(profile, runnerSecret) {
               ])
         ]
       : [];
+  const externalHttpAuthLines =
+    externalHttpEngineBearerTokenEnvVar && profile.id === agentRunnerId
+      ? [
+          "",
+          "# Required bearer token for this external_http agent engine.",
+          `export ${externalHttpEngineBearerTokenEnvVar}="\${${externalHttpEngineBearerTokenEnvVar}:-REPLACE_WITH_EXTERNAL_HTTP_ENGINE_TOKEN}"`
+        ]
+      : [];
   const userClientBasicAuthEnvLine =
     `export ENTANGLE_HUMAN_INTERFACE_BASIC_AUTH="\${${userClientBasicAuthEnvVar}:-` +
     `${userClientBasicAuthPlaceholder}}"`;
@@ -411,6 +431,7 @@ function buildRunnerEnvContent(profile, runnerSecret) {
     `export ${runnerSecretEnvVar}=${shellQuote(runnerSecret)}`,
     ...hostTokenLine,
     ...fakeOpenCodeLines,
+    ...externalHttpAuthLines,
     ...userClientBasicAuthLines,
     ""
   ].join("\n");
@@ -653,7 +674,16 @@ function buildCustomAgentEngineOperatorCommands() {
       : "Distributed External Process";
   const profileArgs =
     engineKind === "external_http"
-      ? ["--base-url", shellQuote(externalHttpEngineUrl)]
+      ? [
+          "--base-url",
+          shellQuote(externalHttpEngineUrl),
+          ...(externalHttpEngineBearerTokenEnvVar
+            ? [
+                "--http-bearer-token-env-var",
+                shellQuote(externalHttpEngineBearerTokenEnvVar)
+              ]
+            : [])
+        ]
       : ["--executable", shellQuote(externalProcessEngineExecutable)];
 
   return [
@@ -969,11 +999,13 @@ This kit was generated with a custom ${configuredCustomAgentEngineKind} profile:
 
 - profile id: \`${customAgentEngineProfileId}\`
 - ${setupDescription}: \`${target}\`
+${externalHttpEngineBearerTokenEnvVar ? `- bearer token env var: \`${externalHttpEngineBearerTokenEnvVar}\`\n` : ""}
 
 \`operator/commands.sh\` upserts that profile through Host and binds
 \`${agentNodeId}\` to it before runner assignment. The custom engine must
 implement Entangle's shared \`AgentEngineTurnRequest\`/\`AgentEngineTurnResult\`
-contract.
+contract. When a bearer-token env var is configured, set it on the agent
+runner machine before starting that runner.
 `;
 }
 
@@ -1007,6 +1039,11 @@ async function writeKit() {
           buildCustomAgentEngineOperatorCommands().filter(Boolean).join(" && ")
         }`
       );
+      if (externalHttpEngineBearerTokenEnvVar) {
+        console.log(
+          `[dry-run] external HTTP engine auth env: ${externalHttpEngineBearerTokenEnvVar}`
+        );
+      }
     }
     if (requireUserClientBasicAuth) {
       const authEnvSummary =
@@ -1195,6 +1232,12 @@ try {
   if (externalProcessEngineExecutable && externalHttpEngineUrl) {
     throw new Error(
       "Choose either --external-process-engine-executable or --external-http-engine-url, not both."
+    );
+  }
+
+  if (externalHttpEngineBearerTokenEnvVar && !externalHttpEngineUrl) {
+    throw new Error(
+      "--external-http-engine-bearer-token-env-var requires --external-http-engine-url."
     );
   }
 

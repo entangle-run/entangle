@@ -560,6 +560,10 @@ endpoint.
 Distributed proof tooling now also rejects credentials embedded in attached
 OpenCode or `external_http` engine URLs, and verifier agent-engine diagnostics
 redact any credentialed catalog URL before printing checks.
+`external_http` agent engine profiles can now store a typed runner-local
+bearer-token environment variable reference; Host, CLI, Studio, runner
+execution, and distributed proof kit generation pass only the environment
+variable name while the runner reads the actual token from its own environment.
 `pnpm ops:smoke-distributed-proof-tools` now gives CI a deterministic
 no-infrastructure check for proof-kit syntax/help/dry-run paths and verifier
 self-test JSON, including non-running runtime rejection and duplicated User

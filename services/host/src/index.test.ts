@@ -1747,6 +1747,36 @@ describe("buildHostServer", () => {
         version: "fake-opencode-1.0.0"
       });
 
+      const externalHttpResponse = await server.inject({
+        method: "PUT",
+        payload: {
+          baseUrl: "https://engine.example/turn",
+          displayName: "External HTTP",
+          httpAuth: {
+            mode: "bearer_env",
+            tokenEnvVar: "ENTANGLE_EXTERNAL_HTTP_ENGINE_TOKEN"
+          },
+          kind: "external_http"
+        },
+        url: "/v1/catalog/agent-engine-profiles/external-http"
+      });
+      const externalHttpInspection = catalogInspectionResponseSchema.parse(
+        externalHttpResponse.json()
+      );
+
+      expect(externalHttpResponse.statusCode).toBe(200);
+      expect(externalHttpInspection.catalog?.agentEngineProfiles).toContainEqual({
+        baseUrl: "https://engine.example/turn",
+        displayName: "External HTTP",
+        httpAuth: {
+          mode: "bearer_env",
+          tokenEnvVar: "ENTANGLE_EXTERNAL_HTTP_ENGINE_TOKEN"
+        },
+        id: "external-http",
+        kind: "external_http",
+        stateScope: "node"
+      });
+
       const invalidResponse = await server.inject({
         method: "PUT",
         payload: {

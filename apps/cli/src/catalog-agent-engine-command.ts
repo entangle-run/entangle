@@ -13,11 +13,13 @@ export type CatalogAgentEngineUpsertOptions = {
   clearBaseUrl?: boolean;
   clearDefaultAgent?: boolean;
   clearExecutable?: boolean;
+  clearHttpAuth?: boolean;
   clearPermissionMode?: boolean;
   clearVersion?: boolean;
   defaultAgent?: string;
   displayName?: string;
   executable?: string;
+  httpBearerTokenEnvVar?: string;
   kind?: string;
   permissionMode?: string;
   setDefault?: boolean;
@@ -30,6 +32,7 @@ export type AgentEngineProfileSummary = {
   defaultAgent?: string;
   displayName: string;
   executable?: string;
+  httpAuth?: AgentEngineProfile["httpAuth"];
   id: string;
   isDefault: boolean;
   kind: AgentEngineProfile["kind"];
@@ -69,6 +72,12 @@ function assertAgentEngineUpsertOptionsAreNotConflicting(
     );
   }
 
+  if (options.httpBearerTokenEnvVar && options.clearHttpAuth) {
+    throw new Error(
+      "Use either --http-bearer-token-env-var or --clear-http-auth, not both."
+    );
+  }
+
   if (options.permissionMode && options.clearPermissionMode) {
     throw new Error(
       "Use either --permission-mode or --clear-permission-mode, not both."
@@ -90,11 +99,20 @@ export function buildAgentEngineProfileUpsertRequest(
     ...(options.clearBaseUrl ? { clearBaseUrl: true } : {}),
     ...(options.clearDefaultAgent ? { clearDefaultAgent: true } : {}),
     ...(options.clearExecutable ? { clearExecutable: true } : {}),
+    ...(options.clearHttpAuth ? { clearHttpAuth: true } : {}),
     ...(options.clearPermissionMode ? { clearPermissionMode: true } : {}),
     ...(options.clearVersion ? { clearVersion: true } : {}),
     ...(options.defaultAgent ? { defaultAgent: options.defaultAgent } : {}),
     ...(options.displayName ? { displayName: options.displayName } : {}),
     ...(options.executable ? { executable: options.executable } : {}),
+    ...(options.httpBearerTokenEnvVar
+      ? {
+          httpAuth: {
+            mode: "bearer_env",
+            tokenEnvVar: options.httpBearerTokenEnvVar
+          }
+        }
+      : {}),
     ...(options.kind
       ? { kind: agentEngineProfileKindSchema.parse(options.kind) }
       : {}),
@@ -150,6 +168,7 @@ export function projectAgentEngineProfileSummary(input: {
     ...(input.profile.executable
       ? { executable: input.profile.executable }
       : {}),
+    ...(input.profile.httpAuth ? { httpAuth: input.profile.httpAuth } : {}),
     id: input.profile.id,
     isDefault: input.catalog.defaults.agentEngineProfileRef === input.profile.id,
     kind: input.profile.kind,
@@ -212,6 +231,15 @@ export function buildAgentEngineProfileUpsertCatalog(
     profile.defaultAgent = options.defaultAgent;
   } else if (options.clearDefaultAgent) {
     delete profile.defaultAgent;
+  }
+
+  if (options.httpBearerTokenEnvVar) {
+    profile.httpAuth = {
+      mode: "bearer_env",
+      tokenEnvVar: options.httpBearerTokenEnvVar
+    };
+  } else if (options.clearHttpAuth) {
+    delete profile.httpAuth;
   }
 
   if (options.permissionMode) {

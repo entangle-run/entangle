@@ -241,13 +241,17 @@ try {
     "--relay-url",
     "ws://relay.example:7777",
     "--external-http-engine-url",
-    "http://agent-engine.example:8080/turn"
+    "http://agent-engine.example:8080/turn",
+    "--external-http-engine-bearer-token-env-var",
+    "ENTANGLE_EXTERNAL_HTTP_ENGINE_TOKEN"
   ], {
     mustContain: [
       "custom agent engine profile: distributed-external-http (external_http)",
       "host catalog agent-engine upsert 'distributed-external-http'",
       "--kind external_http",
       "--base-url 'http://agent-engine.example:8080/turn'",
+      "--http-bearer-token-env-var 'ENTANGLE_EXTERNAL_HTTP_ENGINE_TOKEN'",
+      "external HTTP engine auth env: ENTANGLE_EXTERNAL_HTTP_ENGINE_TOKEN",
       "host nodes agent-runtime 'builder'",
       '"agentEngineKind":"external_http"'
     ]

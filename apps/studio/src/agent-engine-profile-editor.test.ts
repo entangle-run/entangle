@@ -59,6 +59,7 @@ describe("agent engine profile editor helpers", () => {
       clearBaseUrl: false,
       clearDefaultAgent: false,
       clearExecutable: true,
+      clearHttpAuth: true,
       clearPermissionMode: false,
       clearVersion: false,
       defaultAgent: "general",
@@ -111,11 +112,65 @@ describe("agent engine profile editor helpers", () => {
       executable: "opencode",
       kind: "opencode_server",
       permissionMode: "auto_reject",
+      httpBearerTokenEnvVar: "",
       profileId: "opencode-default",
       setDefault: true,
       stateScope: "node",
       version: ""
     });
+  });
+
+  it("builds external HTTP profile auth from env-var references", () => {
+    const catalog = buildAgentEngineProfileCatalogMutation(buildCatalog(), {
+      ...createEmptyAgentEngineProfileEditorDraft(),
+      baseUrl: "https://engine.example/turn",
+      displayName: "External HTTP",
+      executable: "",
+      httpBearerTokenEnvVar: "ENTANGLE_EXTERNAL_HTTP_ENGINE_TOKEN",
+      kind: "external_http",
+      permissionMode: "",
+      profileId: "external-http"
+    });
+
+    expect(catalog.agentEngineProfiles).toContainEqual({
+      baseUrl: "https://engine.example/turn",
+      displayName: "External HTTP",
+      httpAuth: {
+        mode: "bearer_env",
+        tokenEnvVar: "ENTANGLE_EXTERNAL_HTTP_ENGINE_TOKEN"
+      },
+      id: "external-http",
+      kind: "external_http",
+      stateScope: "node"
+    });
+  });
+
+  it("omits bearer auth when the draft is not external HTTP", () => {
+    expect(
+      buildAgentEngineProfileUpsertRequestFromDraft({
+        ...createEmptyAgentEngineProfileEditorDraft(),
+        baseUrl: "https://opencode.example",
+        displayName: "OpenCode Attached",
+        executable: "",
+        httpBearerTokenEnvVar: "ENTANGLE_EXTERNAL_HTTP_ENGINE_TOKEN",
+        kind: "opencode_server",
+        profileId: "opencode-attached"
+      })
+    ).toMatchObject({
+      clearHttpAuth: true,
+      kind: "opencode_server"
+    });
+    expect(
+      buildAgentEngineProfileUpsertRequestFromDraft({
+        ...createEmptyAgentEngineProfileEditorDraft(),
+        baseUrl: "https://opencode.example",
+        displayName: "OpenCode Attached",
+        executable: "",
+        httpBearerTokenEnvVar: "ENTANGLE_EXTERNAL_HTTP_ENGINE_TOKEN",
+        kind: "opencode_server",
+        profileId: "opencode-attached"
+      }).httpAuth
+    ).toBeUndefined();
   });
 
   it("rejects invalid profiles through catalog validation", () => {

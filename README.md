@@ -478,7 +478,12 @@ For generic custom-engine checks, pass
 kind when `--agent-engine-kind` is omitted, upserts the profile through Host,
 and binds the agent node before assignment. For no-credential `external_http`
 proof setup, start `pnpm ops:fake-agent-engine-http` on a machine reachable
-from the agent runner and pass its `/turn` URL.
+from the agent runner and pass its `/turn` URL. For authenticated
+`external_http` endpoints, add
+`--external-http-engine-bearer-token-env-var <envVar>`; the generated Host
+operator command stores only the environment variable name, and the generated
+agent-runner env file contains a placeholder that must be replaced on the
+runner machine.
 Pass `--check-relay-health` with at least one `--relay-url` when the generated
 operator command should also probe relay WebSocket reachability from the
 operator machine.
@@ -595,8 +600,9 @@ runs. The proof kit also fails fast if the supplied fake OpenCode or external
 HTTP engine URL is local-only while this guard is enabled.
 The same proof tooling rejects credentials embedded in agent-engine URLs:
 use `--fake-opencode-username` and `--fake-opencode-password` for fake
-OpenCode, and keep generic `external_http` authentication outside the URL
-until a typed credential binding exists.
+OpenCode, and use `--external-http-engine-bearer-token-env-var` for generic
+`external_http` bearer authentication instead of putting credentials in the
+URL.
 Generate the kit with `--check-published-git-ref` when the operator machine
 should also run `git ls-remote` against projected post-work git artifact refs.
 
@@ -618,7 +624,8 @@ when explicitly required. It also checks loopback User Client URL rejection
 when physical proof mode requests external URLs, loopback git service URL
 rejection when external git URLs are required, loopback attached-engine URL
 rejection when external agent engine URLs are required, credential rejection
-and verifier redaction for agent-engine URLs, generated User Client Basic Auth
+and verifier redaction for agent-engine URLs, generated external HTTP
+agent-engine bearer-token env placeholders, generated User Client Basic Auth
 placeholders for User Node runner machines, custom assignment ids from proof
 profiles, and the generated post-work artifact verifier command. It
 does not replace the real distributed proof above.

@@ -1349,6 +1349,10 @@ The proof tooling now also rejects credentials embedded in attached OpenCode
 and `external_http` engine URLs before generating proof material, and verifier
 agent-engine catalog diagnostics redact URL credentials to a single `***@`
 marker.
+`external_http` agent engine profiles can now carry a typed bearer-token
+environment variable reference, so Host, CLI, Studio, runner execution, and
+distributed proof kits can configure authenticated HTTP engines without storing
+or printing the secret value.
 CLI inbox detail can now filter Host-recorded User Node conversation messages
 by direction, exact message type, and bounded result count, matching the
 participant-oriented inbox list filters while preserving Host as the projection

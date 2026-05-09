@@ -473,6 +473,9 @@ function formatAgentEngineProfileDetail(profile: AgentEngineProfile): string {
     `scope ${profile.stateScope}`,
     profile.permissionMode ? `permission ${profile.permissionMode}` : undefined,
     profile.defaultAgent ? `agent ${profile.defaultAgent}` : undefined,
+    profile.httpAuth?.mode === "bearer_env"
+      ? `auth env ${profile.httpAuth.tokenEnvVar}`
+      : undefined,
     executionTarget,
     profile.version ? `version ${profile.version}` : undefined
   ].filter((value): value is string => Boolean(value));
@@ -4852,6 +4855,21 @@ export function App() {
                     }}
                     placeholder="http://127.0.0.1:18081"
                     value={agentEngineProfileDraft.baseUrl}
+                  />
+                </label>
+
+                <label className="field">
+                  <span>Bearer token env var</span>
+                  <input
+                    disabled={pendingAgentEngineProfileMutation}
+                    onChange={(event) => {
+                      setAgentEngineProfileDraft((current) => ({
+                        ...current,
+                        httpBearerTokenEnvVar: event.target.value
+                      }));
+                    }}
+                    placeholder="ENTANGLE_EXTERNAL_HTTP_ENGINE_TOKEN"
+                    value={agentEngineProfileDraft.httpBearerTokenEnvVar}
                   />
                 </label>
 

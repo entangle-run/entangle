@@ -56,6 +56,7 @@ describe("catalog agent-engine command helpers", () => {
       clearBaseUrl: false,
       clearDefaultAgent: false,
       clearExecutable: false,
+      clearHttpAuth: false,
       clearPermissionMode: false,
       clearVersion: false,
       defaultAgent: "general",
@@ -112,6 +113,7 @@ describe("catalog agent-engine command helpers", () => {
       {
         clearBaseUrl: true,
         clearDefaultAgent: true,
+        clearHttpAuth: true,
         clearPermissionMode: true,
         clearVersion: true,
         executable: "opencode"
@@ -124,6 +126,39 @@ describe("catalog agent-engine command helpers", () => {
       id: "opencode-attached",
       kind: "opencode_server",
       stateScope: "node"
+    });
+  });
+
+  it("stores external HTTP bearer auth as an environment variable reference", () => {
+    const result = buildAgentEngineProfileUpsertCatalog(
+      buildCatalog(),
+      "external-http",
+      {
+        baseUrl: "https://engine.example/turn",
+        displayName: "External HTTP",
+        httpBearerTokenEnvVar: "ENTANGLE_EXTERNAL_HTTP_ENGINE_TOKEN",
+        kind: "external_http",
+        setDefault: true
+      }
+    );
+
+    expect(result.profile).toMatchObject({
+      baseUrl: "https://engine.example/turn",
+      httpAuth: {
+        mode: "bearer_env",
+        tokenEnvVar: "ENTANGLE_EXTERNAL_HTTP_ENGINE_TOKEN"
+      },
+      id: "external-http",
+      kind: "external_http"
+    });
+    expect(
+      projectAgentEngineProfileSummary({
+        catalog: result.catalog,
+        profile: result.profile
+      }).httpAuth
+    ).toEqual({
+      mode: "bearer_env",
+      tokenEnvVar: "ENTANGLE_EXTERNAL_HTTP_ENGINE_TOKEN"
     });
   });
 
@@ -197,6 +232,15 @@ describe("catalog agent-engine command helpers", () => {
         clearBaseUrl: true
       })
     ).toThrow("Use either --base-url or --clear-base-url, not both.");
+  });
+
+  it("rejects conflicting auth set and clear flags", () => {
+    expect(() =>
+      buildAgentEngineProfileUpsertRequest({
+        clearHttpAuth: true,
+        httpBearerTokenEnvVar: "ENTANGLE_EXTERNAL_HTTP_ENGINE_TOKEN"
+      })
+    ).toThrow("Use either --http-bearer-token-env-var or --clear-http-auth, not both.");
   });
 
   it("rejects invalid state scopes explicitly", () => {

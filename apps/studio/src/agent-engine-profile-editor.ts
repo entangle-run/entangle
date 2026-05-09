@@ -21,6 +21,7 @@ export type AgentEngineProfileEditorDraft = {
   defaultAgent: string;
   displayName: string;
   executable: string;
+  httpBearerTokenEnvVar: string;
   kind: AgentEngineProfile["kind"];
   permissionMode: "" | AgentEngineProfile["permissionMode"];
   profileId: string;
@@ -35,6 +36,7 @@ export function createEmptyAgentEngineProfileEditorDraft(): AgentEngineProfileEd
     defaultAgent: "",
     displayName: "",
     executable: "opencode",
+    httpBearerTokenEnvVar: "",
     kind: "opencode_server",
     permissionMode: "auto_reject",
     profileId: "",
@@ -53,6 +55,10 @@ export function buildAgentEngineProfileEditorDraft(input: {
     defaultAgent: input.profile.defaultAgent ?? "",
     displayName: input.profile.displayName,
     executable: input.profile.executable ?? "",
+    httpBearerTokenEnvVar:
+      input.profile.httpAuth?.mode === "bearer_env"
+        ? input.profile.httpAuth.tokenEnvVar
+        : "",
     kind: input.profile.kind,
     permissionMode: input.profile.permissionMode ?? "",
     profileId: input.profile.id,
@@ -67,6 +73,7 @@ export function buildAgentEngineProfileFromDraft(
 ): AgentEngineProfile {
   const profileId = draft.profileId.trim();
   const kind = agentEngineProfileKindSchema.parse(draft.kind);
+  const supportsHttpAuth = kind === "external_http";
   const profile = {
     displayName: draft.displayName.trim() || profileId,
     id: profileId,
@@ -81,6 +88,14 @@ export function buildAgentEngineProfileFromDraft(
       ? { defaultAgent: draft.defaultAgent.trim() }
       : {}),
     ...(draft.executable.trim() ? { executable: draft.executable.trim() } : {}),
+    ...(supportsHttpAuth && draft.httpBearerTokenEnvVar.trim()
+      ? {
+          httpAuth: {
+            mode: "bearer_env",
+            tokenEnvVar: draft.httpBearerTokenEnvVar.trim()
+          }
+        }
+      : {}),
     ...(draft.permissionMode
       ? {
           permissionMode: agentEnginePermissionModeSchema.parse(
@@ -121,14 +136,17 @@ export function buildAgentEngineProfileCatalogMutation(
 export function buildAgentEngineProfileUpsertRequestFromDraft(
   draft: AgentEngineProfileEditorDraft
 ): AgentEngineProfileUpsertRequest {
+  const kind = agentEngineProfileKindSchema.parse(draft.kind);
+  const supportsHttpAuth = kind === "external_http";
   return agentEngineProfileUpsertRequestSchema.parse({
     clearBaseUrl: draft.baseUrl.trim() === "",
     clearDefaultAgent: draft.defaultAgent.trim() === "",
     clearExecutable: draft.executable.trim() === "",
+    clearHttpAuth: !supportsHttpAuth || draft.httpBearerTokenEnvVar.trim() === "",
     clearPermissionMode: draft.permissionMode === "",
     clearVersion: draft.version.trim() === "",
     displayName: draft.displayName.trim() || draft.profileId.trim(),
-    kind: agentEngineProfileKindSchema.parse(draft.kind),
+    kind,
     setDefault: draft.setDefault,
     stateScope: draft.stateScope,
     ...(draft.baseUrl.trim() ? { baseUrl: draft.baseUrl.trim() } : {}),
@@ -136,6 +154,14 @@ export function buildAgentEngineProfileUpsertRequestFromDraft(
       ? { defaultAgent: draft.defaultAgent.trim() }
       : {}),
     ...(draft.executable.trim() ? { executable: draft.executable.trim() } : {}),
+    ...(supportsHttpAuth && draft.httpBearerTokenEnvVar.trim()
+      ? {
+          httpAuth: {
+            mode: "bearer_env",
+            tokenEnvVar: draft.httpBearerTokenEnvVar.trim()
+          }
+        }
+      : {}),
     ...(draft.permissionMode
       ? {
           permissionMode: agentEnginePermissionModeSchema.parse(

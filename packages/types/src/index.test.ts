@@ -5170,6 +5170,39 @@ describe("agent runtime contracts", () => {
     expect(result.permissionMode).toBe("entangle_approval");
   });
 
+  it("accepts env-backed bearer auth references on external HTTP agent engine profiles", () => {
+    const result = agentEngineProfileSchema.parse({
+      baseUrl: "https://engine.example/turn",
+      displayName: "External HTTP",
+      httpAuth: {
+        mode: "bearer_env",
+        tokenEnvVar: "ENTANGLE_EXTERNAL_HTTP_ENGINE_TOKEN"
+      },
+      id: "external-http",
+      kind: "external_http"
+    });
+
+    expect(result.httpAuth).toEqual({
+      mode: "bearer_env",
+      tokenEnvVar: "ENTANGLE_EXTERNAL_HTTP_ENGINE_TOKEN"
+    });
+  });
+
+  it("rejects bearer auth references on non-external HTTP agent engine profiles", () => {
+    expect(
+      agentEngineProfileSchema.safeParse({
+        baseUrl: "https://opencode.example",
+        displayName: "OpenCode Attached",
+        httpAuth: {
+          mode: "bearer_env",
+          tokenEnvVar: "ENTANGLE_EXTERNAL_HTTP_ENGINE_TOKEN"
+        },
+        id: "opencode-attached",
+        kind: "opencode_server"
+      }).success
+    ).toBe(false);
+  });
+
   it("accepts atomic agent engine profile upsert requests", () => {
     const result = agentEngineProfileUpsertRequestSchema.parse({
       baseUrl: "http://127.0.0.1:18081",
@@ -5198,6 +5231,25 @@ describe("agent runtime contracts", () => {
         clearBaseUrl: true
       }).success
     ).toBe(false);
+  });
+
+  it("accepts atomic agent engine profile auth upsert requests", () => {
+    const result = agentEngineProfileUpsertRequestSchema.parse({
+      httpAuth: {
+        mode: "bearer_env",
+        tokenEnvVar: "ENTANGLE_EXTERNAL_HTTP_ENGINE_TOKEN"
+      },
+      kind: "external_http"
+    });
+
+    expect(result).toMatchObject({
+      clearHttpAuth: false,
+      httpAuth: {
+        mode: "bearer_env",
+        tokenEnvVar: "ENTANGLE_EXTERNAL_HTTP_ENGINE_TOKEN"
+      },
+      kind: "external_http"
+    });
   });
 
   it("rejects OpenCode agent engine profiles without an endpoint", () => {

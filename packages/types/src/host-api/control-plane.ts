@@ -4,6 +4,7 @@ import { graphSpecSchema } from "../graph/graph-spec.js";
 import { agentPackageManifestSchema } from "../package/package-manifest.js";
 import { packageSourceRecordSchema } from "../package/package-source.js";
 import {
+  agentEngineHttpAuthSchema,
   agentEnginePermissionModeSchema,
   agentEngineProfileKindSchema,
   deploymentResourceCatalogSchema
@@ -42,11 +43,13 @@ export const agentEngineProfileUpsertRequestSchema = z
     clearBaseUrl: z.boolean().default(false),
     clearDefaultAgent: z.boolean().default(false),
     clearExecutable: z.boolean().default(false),
+    clearHttpAuth: z.boolean().default(false),
     clearPermissionMode: z.boolean().default(false),
     clearVersion: z.boolean().default(false),
     defaultAgent: identifierSchema.optional(),
     displayName: nonEmptyStringSchema.optional(),
     executable: nonEmptyStringSchema.optional(),
+    httpAuth: agentEngineHttpAuthSchema.optional(),
     kind: agentEngineProfileKindSchema.optional(),
     permissionMode: agentEnginePermissionModeSchema.optional(),
     setDefault: z.boolean().default(false),
@@ -59,18 +62,21 @@ export const agentEngineProfileUpsertRequestSchema = z
         | "clearBaseUrl"
         | "clearDefaultAgent"
         | "clearExecutable"
+        | "clearHttpAuth"
         | "clearPermissionMode"
         | "clearVersion";
       setField:
         | "baseUrl"
         | "defaultAgent"
         | "executable"
+        | "httpAuth"
         | "permissionMode"
         | "version";
     }> = [
       { clearField: "clearBaseUrl", setField: "baseUrl" },
       { clearField: "clearDefaultAgent", setField: "defaultAgent" },
       { clearField: "clearExecutable", setField: "executable" },
+      { clearField: "clearHttpAuth", setField: "httpAuth" },
       { clearField: "clearPermissionMode", setField: "permissionMode" },
       { clearField: "clearVersion", setField: "version" }
     ];

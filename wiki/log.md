@@ -6821,3 +6821,14 @@ material.
 Verifier agent-engine catalog diagnostics now redact URL credentials with a
 single `***@` marker, and the deterministic proof-tool smoke covers both the
 generation rejection and verifier redaction path.
+
+## [2026-05-09] runner | Added external HTTP agent-engine auth binding
+
+Added `references/581-external-http-agent-engine-auth-binding-slice.md`.
+`external_http` agent engine profiles now support a typed runner-local bearer
+token environment variable reference.
+
+Host, CLI, Studio, runner execution, and distributed proof kit generation pass
+only the environment variable name. The runner resolves the actual token from
+its own environment and sends it as an HTTP bearer header, so authenticated
+external engines no longer require credentials in URLs or Host catalog state.
