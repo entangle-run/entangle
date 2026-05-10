@@ -1211,7 +1211,8 @@ This repository currently contains:
 - a no-infrastructure service-volume tool smoke through
   `pnpm ops:smoke-deployment-service-volume-tools` that verifies Gitea/relay
   service-volume export and import dry-run CLI output without requiring Docker
-  or live volumes;
+  or live volumes; smoke/demo/proof-kit wrappers now also fall back to
+  `npm exec --yes pnpm@10.18.3 --` when no global pnpm binary is installed;
 - a Docker-gated disposable service-volume roundtrip smoke through
   `pnpm ops:smoke-deployment-service-volume-roundtrip` that creates temporary
   Gitea/relay volumes, runs real non-dry-run service-volume export/import, and

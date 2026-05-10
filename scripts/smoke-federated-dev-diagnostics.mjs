@@ -1,9 +1,9 @@
 #!/usr/bin/env node
 
 import { mkdtemp, readFile, rm } from "node:fs/promises";
-import { spawnSync } from "node:child_process";
 import os from "node:os";
 import path from "node:path";
+import { runPnpmSync } from "./pnpm-runner.mjs";
 
 const defaultHostUrl = "http://localhost:7071";
 const defaultStudioUrl = "http://localhost:3000";
@@ -62,8 +62,7 @@ const tempRoot = await mkdtemp(path.join(os.tmpdir(), "entangle-diagnostics-"));
 const outputPath = path.join(tempRoot, "bundle.json");
 
 try {
-  const result = spawnSync(
-    "pnpm",
+  const result = runPnpmSync(
     [
       "--filter",
       "@entangle/cli",

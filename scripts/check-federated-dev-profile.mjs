@@ -8,6 +8,7 @@ import {
   federatedDevProfileComposeFile,
   requiredFederatedDevProfilePaths
 } from "./federated-dev-profile-paths.mjs";
+import { runPnpmSync } from "./pnpm-runner.mjs";
 
 const scriptPath = fileURLToPath(import.meta.url);
 const repositoryRoot = path.resolve(path.dirname(scriptPath), "..");
@@ -45,6 +46,25 @@ function checkCommand(name, command, args, options = {}) {
     normalizeOutput(result) || `${command} ${args.join(" ")} failed`
   );
   return false;
+}
+
+function checkPnpmAvailable() {
+  const result = runPnpmSync(["--version"], {
+    cwd: repositoryRoot,
+    encoding: "utf8",
+    stdio: ["ignore", "pipe", "pipe"]
+  });
+
+  if (result.status === 0) {
+    addCheck("pnpm:available", "pass", normalizeOutput(result).split("\n")[0] ?? "ok");
+    return;
+  }
+
+  addCheck(
+    "pnpm:available",
+    "fail",
+    normalizeOutput(result) || "pnpm execution failed"
+  );
 }
 
 for (const requiredPath of requiredFederatedDevProfilePaths) {
@@ -96,7 +116,7 @@ addCheck(
   `detected ${process.versions.node}; required >=22`
 );
 
-checkCommand("pnpm:available", "pnpm", ["--version"]);
+checkPnpmAvailable();
 
 const dockerAvailable = checkCommand(
   "docker:available",

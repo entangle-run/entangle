@@ -1,17 +1,16 @@
 #!/usr/bin/env node
 
-import { spawnSync } from "node:child_process";
 import { mkdtemp, rm } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
+import { runPnpmSync } from "./pnpm-runner.mjs";
 
 function formatOutput(result) {
   return `${result.stdout ?? ""}${result.stderr ?? ""}`.trim();
 }
 
 function runCli(args) {
-  const result = spawnSync(
-    "pnpm",
+  const result = runPnpmSync(
     ["--filter", "@entangle/cli", "dev", ...args],
     {
       encoding: "utf8",

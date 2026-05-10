@@ -398,6 +398,7 @@ same-machine slice records.
 - [595-service-volume-previous-migration-command-slice.md](595-service-volume-previous-migration-command-slice.md)
 - [596-service-volume-required-roundtrip-gate-slice.md](596-service-volume-required-roundtrip-gate-slice.md)
 - [597-open-work-memory-summary-slice.md](597-open-work-memory-summary-slice.md)
+- [598-pnpm-fallback-smoke-wrapper-slice.md](598-pnpm-fallback-smoke-wrapper-slice.md)
 
 ## Audited Scope
 
@@ -1271,6 +1272,9 @@ dry-run-first migration plan for `compose_gitea-data -> gitea-data` and
 acknowledgement and running-container checks. The Docker-required disposable
 roundtrip proof now has a dedicated root command:
 `pnpm ops:smoke-deployment-service-volume-roundtrip:required`.
+Smoke, demo, and proof-kit wrappers now also share a pnpm invocation helper,
+so operators can run packaged commands through `npm exec --yes pnpm@10.18.3 --`
+even when no global `pnpm` binary is installed.
 New Host events now carry optional audit hash-chain fields, and Host serializes
 event appends so concurrent operator requests do not fork the local audit
 sequence. Host now also exposes `GET /v1/events/integrity`, host-client

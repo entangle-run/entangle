@@ -5,6 +5,7 @@ import { randomBytes } from "node:crypto";
 import { chmod, mkdir, writeFile } from "node:fs/promises";
 import path from "node:path";
 import { normalizeDistributedProofProfile } from "./distributed-proof-profile.mjs";
+import { runPnpmSync } from "./pnpm-runner.mjs";
 
 const rawArgs = process.argv.slice(2);
 const dryRun = hasFlag("--dry-run");
@@ -372,11 +373,18 @@ function run(label, command, args) {
   }
 
   console.log(`[kit] ${label}: ${printableCommand}`);
-  const result = spawnSync(command, args, {
-    encoding: "utf8",
-    env: buildCliEnv(),
-    stdio: "inherit"
-  });
+  const result =
+    command === "pnpm"
+      ? runPnpmSync(args, {
+          encoding: "utf8",
+          env: buildCliEnv(),
+          stdio: "inherit"
+        })
+      : spawnSync(command, args, {
+          encoding: "utf8",
+          env: buildCliEnv(),
+          stdio: "inherit"
+        });
 
   if (result.status !== 0) {
     throw new Error(`${label} failed with exit code ${result.status ?? "unknown"}.`);

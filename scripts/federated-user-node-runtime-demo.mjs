@@ -2,6 +2,7 @@
 
 import { spawn, spawnSync } from "node:child_process";
 import { federatedDevProfileComposeFile } from "./federated-dev-profile-paths.mjs";
+import { runPnpmSync, spawnPnpm } from "./pnpm-runner.mjs";
 
 const rawArgs = process.argv.slice(2);
 const separatorIndex = rawArgs.indexOf("--");
@@ -88,10 +89,16 @@ function run(label, command, commandArgs) {
   }
 
   console.log(`[demo] ${label}: ${printable}`);
-  const result = spawnSync(command, commandArgs, {
-    encoding: "utf8",
-    stdio: "inherit"
-  });
+  const result =
+    command === "pnpm"
+      ? runPnpmSync(commandArgs, {
+          encoding: "utf8",
+          stdio: "inherit"
+        })
+      : spawnSync(command, commandArgs, {
+          encoding: "utf8",
+          stdio: "inherit"
+        });
 
   if (result.status !== 0) {
     process.exitCode = result.status ?? 1;
@@ -103,13 +110,22 @@ function run(label, command, commandArgs) {
 
 async function runWithStudio(command, commandArgs) {
   const studioOrigins = buildStudioCorsOrigins();
-  const smoke = spawn(command, commandArgs, {
-    env: {
-      ...process.env,
-      ENTANGLE_PROCESS_SMOKE_EXTRA_CORS_ORIGINS: studioOrigins.join(",")
-    },
-    stdio: ["inherit", "pipe", "pipe"]
-  });
+  const smoke =
+    command === "pnpm"
+      ? spawnPnpm(commandArgs, {
+          env: {
+            ...process.env,
+            ENTANGLE_PROCESS_SMOKE_EXTRA_CORS_ORIGINS: studioOrigins.join(",")
+          },
+          stdio: ["inherit", "pipe", "pipe"]
+        })
+      : spawn(command, commandArgs, {
+          env: {
+            ...process.env,
+            ENTANGLE_PROCESS_SMOKE_EXTRA_CORS_ORIGINS: studioOrigins.join(",")
+          },
+          stdio: ["inherit", "pipe", "pipe"]
+        });
 
   let hostUrl;
   let hostToken;
@@ -146,7 +162,7 @@ async function runWithStudio(command, commandArgs) {
     ];
     console.log(`[demo] Starting Studio admin surface: pnpm ${studioArgs.join(" ")}`);
     console.log(`[demo] Studio requested URL: http://localhost:${studioPort}`);
-    studioProcess = spawn("pnpm", studioArgs, {
+    studioProcess = spawnPnpm(studioArgs, {
       env: {
         ...process.env,
         VITE_ENTANGLE_HOST_TOKEN: hostToken,

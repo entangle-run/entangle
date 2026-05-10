@@ -5,6 +5,7 @@ import { setTimeout as delay } from "node:timers/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { federatedDevProfileComposeFile } from "./federated-dev-profile-paths.mjs";
+import { runPnpmSync } from "./pnpm-runner.mjs";
 
 const scriptPath = fileURLToPath(import.meta.url);
 const repositoryRoot = path.resolve(path.dirname(scriptPath), "..");
@@ -44,6 +45,15 @@ const probeTimeoutMs = readPositiveInteger(
 );
 
 function run(command, commandArgs, options = {}) {
+  if (command === "pnpm") {
+    return runPnpmSync(commandArgs, {
+      cwd: repositoryRoot,
+      encoding: "utf8",
+      env: process.env,
+      stdio: options.capture ? ["ignore", "pipe", "pipe"] : "inherit"
+    });
+  }
+
   return spawnSync(command, commandArgs, {
     cwd: repositoryRoot,
     encoding: "utf8",

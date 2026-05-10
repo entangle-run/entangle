@@ -1,9 +1,8 @@
 #!/usr/bin/env node
 
-import { spawnSync } from "node:child_process";
+import { runPnpmSync } from "./pnpm-runner.mjs";
 
-const result = spawnSync(
-  "pnpm",
+const result = runPnpmSync(
   [
     "--filter",
     "@entangle/host",

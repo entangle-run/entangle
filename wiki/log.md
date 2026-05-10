@@ -7002,3 +7002,13 @@ runner session, approval, and conversation records.
 The page is linked from the node wiki index and fed into future coding-engine
 turns through `memoryRefs` plus the front of the bounded memory brief, while
 runner state and Host projection remain the operational source of truth.
+
+## [2026-05-10] ops | Added pnpm fallback for smoke wrappers
+
+Added `references/598-pnpm-fallback-smoke-wrapper-slice.md`. Smoke, demo, and
+distributed-proof helper scripts now share `scripts/pnpm-runner.mjs`, which
+reuses the current pnpm executable when present and otherwise falls back to
+`npm exec --yes pnpm@10.18.3 --`.
+
+This removes the global-pnpm assumption from packaged smoke commands while
+leaving generated proof-kit target-machine prerequisites unchanged.

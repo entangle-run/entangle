@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 
-import { spawnSync } from "node:child_process";
+import { runPnpmSync } from "./pnpm-runner.mjs";
 
 const processArgs = process.argv.slice(2);
 const separatorIndex = processArgs.indexOf("--");
@@ -129,8 +129,7 @@ if (help) {
 }
 
 const smokeArgs = normalizeSmokeArgs(rawArgs);
-const result = spawnSync(
-  "pnpm",
+const result = runPnpmSync(
   [
     "--filter",
     "@entangle/host",

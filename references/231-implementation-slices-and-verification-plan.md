@@ -1608,6 +1608,11 @@ Current status:
 - `pnpm ops:smoke-deployment-service-volume-roundtrip:required` now provides
   the no-skip Docker-enabled CI gate for disposable service-volume
   export/import roundtrip verification;
+- root smoke/demo/proof-kit wrappers now share a pnpm invocation helper that
+  reuses `npm_execpath` when already running under pnpm and otherwise falls
+  back to `npm exec --yes pnpm@10.18.3 --`, so environments without a global
+  pnpm binary can still run the packaged smoke commands and federated-dev
+  preflight;
 - Host event records now include optional audit hash-chain fields, Host event
   appends are serialized to preserve chain order, and CLI runtime-trace
   summaries expose the hashes when present; Host, host-client, and CLI now

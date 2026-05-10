@@ -2,6 +2,7 @@
 
 import { spawnSync } from "node:child_process";
 import { federatedDevProfileComposeFile } from "./federated-dev-profile-paths.mjs";
+import { runPnpmSync } from "./pnpm-runner.mjs";
 
 const args = process.argv.slice(2);
 const skipBuild = args.includes("--skip-build");
@@ -18,10 +19,16 @@ function normalizeHttpUrl(value, fallback) {
 }
 
 function run(command, commandArgs) {
-  const result = spawnSync(command, commandArgs, {
-    encoding: "utf8",
-    stdio: "inherit"
-  });
+  const result =
+    command === "pnpm"
+      ? runPnpmSync(commandArgs, {
+          encoding: "utf8",
+          stdio: "inherit"
+        })
+      : spawnSync(command, commandArgs, {
+          encoding: "utf8",
+          stdio: "inherit"
+        });
 
   if (result.status !== 0) {
     process.exitCode = result.status ?? 1;

@@ -1412,7 +1412,8 @@ The repository now also contains the first real implementation baseline:
 - a no-infrastructure service-volume smoke through
   `pnpm ops:smoke-deployment-service-volume-tools`, which verifies Gitea/relay
   service-volume export/import dry-run CLI output without Docker or live
-  volumes;
+  volumes; smoke/demo/proof-kit wrappers now also fall back to
+  `npm exec --yes pnpm@10.18.3 --` when no global pnpm binary is installed;
 - a disposable same-machine profile smoke through `pnpm ops:smoke-federated-dev:disposable`,
   covering strict preflight, runner image build, stable service startup,
   readiness probing through the active smoke, and teardown with volumes;
