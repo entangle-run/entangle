@@ -201,6 +201,8 @@ try {
     "--runner-compose-network",
     "entangle",
     "--runner-compose-external-network",
+    "--runner-host-api-url",
+    "http://host:7071",
     "--output",
     "/tmp/entangle-distributed-proof-ci-runner-compose",
     "--host-url",
@@ -211,6 +213,7 @@ try {
     "dev-token"
   ], {
     mustContain: [
+      "'--host-api-url' 'http://host:7071'",
       "runner compose: docker-compose.runners.yml (entangle-runner:test, network entangle, external)",
       "would write runner env/start scripts, runner compose files"
     ]
@@ -580,6 +583,27 @@ try {
     {
       mustContain:
         "--require-external-host-url requires --host-url to be a non-loopback http(s) URL"
+    }
+  );
+
+  runFailureStep(
+    "proof kit external-runner-host local-url dry-run",
+    [
+      "scripts/federated-distributed-proof-kit.mjs",
+      "--dry-run",
+      "--output",
+      "/tmp/entangle-distributed-proof-ci-local-runner-host-url",
+      "--host-url",
+      "http://host.example:7071",
+      "--runner-host-api-url",
+      "http://127.0.0.1:7071",
+      "--relay-url",
+      "ws://relay.example:7777",
+      "--require-external-host-url"
+    ],
+    {
+      mustContain:
+        "--require-external-host-url requires --runner-host-api-url to be a non-loopback http(s) URL"
     }
   );
 

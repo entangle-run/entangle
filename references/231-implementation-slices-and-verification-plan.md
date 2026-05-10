@@ -1775,6 +1775,10 @@ Current status:
   `--write-runner-compose`, giving operators a same-machine container-boundary
   rehearsal path while preserving Host/runner communication through reachable
   Host and relay URLs;
+- generated distributed proof kits can now separate the operator/verifier Host
+  URL from the runner Host API URL through `--runner-host-api-url`, so
+  containerized runners can use Docker-network DNS such as `http://host:7071`
+  while operator CLI commands keep using the operator-reachable Host URL;
 - the remaining deployment hardening is infrastructure-backed orchestration
   that can provision multiple machines or VM/container boundaries around the
   verifier, plus broader non-disposable upgrade/repair workflows beyond the

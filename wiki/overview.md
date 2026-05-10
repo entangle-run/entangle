@@ -1556,7 +1556,9 @@ The current implementation-truth audit now lives in
   upgrade behavior and infrastructure-backed gates beyond the current explicit
   acknowledgement, running-container guards, read-only service-volume
   status/maintenance/health surfaces, optional and required Docker-gated
-  disposable roundtrip smokes, and guided previous-service-volume migration;
+  disposable roundtrip smokes, guided previous-service-volume migration, and
+  distributed proof-kit support for separate operator/verifier and runner Host
+  API URLs through `--runner-host-api-url`;
 - complete CLI parity where it adds real headless operational value;
 - continue narrowing the remaining delegated-session gaps now that controlled
   autonomous `task.handoff` emission and runner-local active-conversation

@@ -7012,3 +7012,14 @@ reuses the current pnpm executable when present and otherwise falls back to
 
 This removes the global-pnpm assumption from packaged smoke commands while
 leaving generated proof-kit target-machine prerequisites unchanged.
+
+## [2026-05-10] ops | Split proof-kit operator and runner Host URLs
+
+Added `references/599-distributed-proof-runner-host-api-url-slice.md`.
+`pnpm ops:distributed-proof-kit` now accepts `--runner-host-api-url`, keeping
+the operator/verifier `--host-url` separate from the Host API URL written into
+runner join configs.
+
+This lets runner Compose proofs use Docker-network Host addresses such as
+`http://host:7071` without forcing operator CLI commands to use the same DNS
+view.

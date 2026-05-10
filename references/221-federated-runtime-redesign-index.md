@@ -399,6 +399,7 @@ same-machine slice records.
 - [596-service-volume-required-roundtrip-gate-slice.md](596-service-volume-required-roundtrip-gate-slice.md)
 - [597-open-work-memory-summary-slice.md](597-open-work-memory-summary-slice.md)
 - [598-pnpm-fallback-smoke-wrapper-slice.md](598-pnpm-fallback-smoke-wrapper-slice.md)
+- [599-distributed-proof-runner-host-api-url-slice.md](599-distributed-proof-runner-host-api-url-slice.md)
 
 ## Audited Scope
 
@@ -1478,6 +1479,11 @@ Future turn assembly now includes `summaries/resolutions.md` in the bounded
 memory brief when that page exists, so recent closures are visible next to
 active obligations without forcing the coding engine to open the full memory
 ref first.
+Distributed proof-kit generation now accepts `--runner-host-api-url`, keeping
+the operator/verifier Host URL separate from the Host API URL written into
+runner join configs. This closes the immediate runner Compose DNS gap where
+operators use `localhost` but runner containers need a network-scoped Host
+address such as `http://host:7071`.
 The highest-value remaining implementation areas are richer model-guided
 memory maintenance, deeper delegated-session semantics beyond the current
 controlled handoff path and deterministic owner/coordination/delegation memory

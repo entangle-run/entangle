@@ -521,6 +521,10 @@ API URL on `localhost`, loopback, or wildcard addresses.
 The proof kit generator now applies that Host URL guard at generation time too,
 so a physical-proof kit with a local Host URL fails before writing misleading
 runner/operator material.
+Pass `--runner-host-api-url <url>` when runner machines or runner containers
+resolve Host differently than the operator/verifier machine. The value is
+written into each generated `runner-join.json`, while `--host-url` remains the
+operator/verifier URL.
 Pass `--require-external-relay-urls` when that same proof should reject relay
 URLs on `localhost`, loopback, or wildcard addresses. This guard checks URL
 shape and is separate from `--check-relay-health`, which opens the relay
@@ -544,9 +548,11 @@ replaced with `username:password`.
 Pass `--write-runner-compose` to add a runner-only
 `docker-compose.runners.yml` and container-native `start-container.sh` scripts
 to the generated kit. This is useful for a same-machine rehearsal where each
-runner has its own container boundary; generate Host and relay URLs that are
-reachable from those containers, or pass `--runner-compose-network <network>`
-with `--runner-compose-external-network` to attach the runner services to an
+runner has its own container boundary; generate a runner Host API URL and relay
+URLs that are reachable from those containers, or pass
+`--runner-host-api-url <network-reachable-host-url>`,
+`--runner-compose-network <network>`, and
+`--runner-compose-external-network` to attach the runner services to an
 existing proof network.
 Operators can also inspect and probe projected User Client endpoints from the
 Host-facing CLI:

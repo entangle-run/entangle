@@ -17,6 +17,10 @@ const hostUrl =
   readFlagValue("--host-url") ??
   process.env.ENTANGLE_HOST_URL ??
   "http://localhost:7071";
+const runnerHostApiUrl =
+  readFlagValue("--runner-host-api-url") ??
+  process.env.ENTANGLE_RUNNER_HOST_API_URL ??
+  hostUrl;
 const requestedHostTokenEnvVar = readFlagValue("--host-token-env-var");
 const hostToken =
   readFlagValue("--host-token") ??
@@ -159,6 +163,7 @@ is set in the operator environment.
 Options:
   --output <dir>                    Output directory. Default: .entangle/distributed-proof-kit
   --host-url <url>                  Reachable Host API URL. Default: ENTANGLE_HOST_URL or http://localhost:7071
+  --runner-host-api-url <url>       Host API URL written into runner join configs. Default: ENTANGLE_RUNNER_HOST_API_URL or --host-url
   --host-token <token>              Host bearer token used while generating configs.
   --host-token-env-var <envVar>     Env var runners will read for the Host token. Default: ENTANGLE_HOST_TOKEN when a token is available
   --no-host-token-env-var           Omit Host bearer-token env config for no-auth Hosts.
@@ -332,7 +337,7 @@ function buildRunnerJoinConfigArgs(profile) {
     "--output",
     joinConfigPath,
     "--host-api-url",
-    hostUrl,
+    runnerHostApiUrl,
     "--secret-env-var",
     runnerSecretEnvVar,
     "--heartbeat-interval-ms",
@@ -865,11 +870,14 @@ function buildReadme() {
 This kit is generated for a topology-faithful Entangle proof. Host, relay, git,
 and runners do not need to share a filesystem. Each runner directory can be
 copied to a different machine that has an Entangle checkout, Node, pnpm, git,
-and network access to the Host API and relay.
+and network access to the Host API and relay. The operator/verifier Host URL
+can differ from the runner Host API URL when runners are behind a container
+network or a different DNS view.
 
 ## Generated Topology
 
 Host API: ${hostUrl}
+Runner Host API: ${runnerHostApiUrl}
 Relay URLs: ${relayText}
 Git service refs: ${gitServiceRefs.length > 0 ? gitServiceRefs.join(", ") : "Host catalog default"}
 
@@ -884,7 +892,9 @@ ${buildCustomAgentEngineReadmeSection()}
 
 1. Keep Host running on the Host machine with a graph containing the node ids in
    the table, reachable relay configuration, reachable git artifact backend,
-   and an operator token if Host auth is enabled.
+   and an operator token if Host auth is enabled. If runners see Host through a
+   different address than the operator, generate the kit with
+   \`--runner-host-api-url <url>\`.
 2. Copy each runner directory to its intended runner machine.
 3. On each runner machine, set \`ENTANGLE_REPO_ROOT\` to that machine's Entangle
    checkout, edit \`runner.env\` if the Host token is not written, then run
@@ -947,8 +957,8 @@ function buildRunnerComposeReadmeSection() {
 
 This kit also includes \`docker-compose.runners.yml\` for a same-machine proof
 that still puts each runner behind a container boundary. Build or pull
-\`${runnerComposeImage}\`, make sure the generated Host and relay URLs are
-reachable from containers, then run:
+\`${runnerComposeImage}\`, make sure the generated runner Host API URL and
+relay URLs are reachable from containers, then run:
 
 \`\`\`bash
 docker compose -f docker-compose.runners.yml up
@@ -956,6 +966,7 @@ docker compose -f docker-compose.runners.yml up
 
 The generated runner services use the ${networkMode}. If Host, relay, or git
 are already running in another Docker network, generate the kit with
+\`--runner-host-api-url <network-reachable-host-url>\`,
 \`--runner-compose-network <network>\` and
 \`--runner-compose-external-network\`, or use Host/relay URLs reachable through
 \`host.docker.internal\`.
@@ -1194,6 +1205,12 @@ try {
   if (requireExternalHostUrl && !isExternalHttpUrl(hostUrl)) {
     throw new Error(
       "--require-external-host-url requires --host-url to be a non-loopback http(s) URL reachable from other machines."
+    );
+  }
+
+  if (requireExternalHostUrl && !isExternalHttpUrl(runnerHostApiUrl)) {
+    throw new Error(
+      "--require-external-host-url requires --runner-host-api-url to be a non-loopback http(s) URL reachable from runner machines."
     );
   }
 
