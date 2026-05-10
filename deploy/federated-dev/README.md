@@ -154,6 +154,12 @@ pnpm --filter @entangle/cli dev deployment service-volumes start-services
 pnpm --filter @entangle/cli dev deployment service-volumes start-services --apply
 ```
 
+Check Gitea and relay reachability after service-volume maintenance:
+
+```sh
+pnpm --filter @entangle/cli dev deployment service-volumes health
+```
+
 The service-volume bundle intentionally excludes Host secret state. Keep secret
 backup, restore, and rotation as a separate operator policy. Non-dry-run
 service-volume export and import require `--assume-services-stopped`; that flag

@@ -6953,3 +6953,12 @@ them only when the operator passes `--apply`.
 
 The helpers keep local service maintenance explicit while leaving the federated
 runtime protocol boundaries unchanged.
+
+## [2026-05-10] deployment | Added service-volume health check
+
+Added `references/593-service-volume-health-check-slice.md`.
+`entangle deployment service-volumes health` now checks Gitea HTTP reachability
+and strfry WebSocket reachability without requiring Host state.
+
+The command is scoped to service-volume maintenance and returns a non-zero exit
+code when either service check fails.

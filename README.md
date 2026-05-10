@@ -1218,6 +1218,8 @@ This repository currently contains:
 - conservative `entangle deployment service-volumes stop-services` and
   `start-services` helpers that plan Docker Compose service maintenance by
   default and execute only with `--apply`;
+- a focused `entangle deployment service-volumes health` check for Gitea HTTP
+  and strfry WebSocket reachability after service-volume maintenance;
 - first same-machine backup/restore commands through `entangle deployment backup` and
   `entangle deployment restore`, using a versioned directory bundle for
   `.entangle/host`, selected same-machine profile config snapshots, explicit secret
@@ -1233,6 +1235,8 @@ This repository currently contains:
   for each target volume; the same readiness evidence is available through
   `entangle deployment service-volumes status`, and service maintenance helper
   commands provide non-mutating stop/start plans unless `--apply` is supplied;
+  `deployment service-volumes health` provides the focused post-maintenance
+  Gitea/relay health check;
 - a first conservative same-machine repair command through `entangle deployment repair`,
   defaulting to dry-run previews and applying only safe host-state
   initialization, missing layout-marker, or missing standard host-state
@@ -1713,7 +1717,8 @@ This repository currently contains:
   acknowledgement and running-container volume checks before non-dry-run Docker
   archive commands execute, while `deployment service-volumes status` exposes
   the same volume readiness as a read-only preflight and `stop-services` /
-  `start-services` provide explicit service maintenance plans;
+  `start-services` provide explicit service maintenance plans plus a focused
+  `health` check for post-maintenance Gitea/relay reachability;
 - the next bounded Studio completion slice where the operator can now select
   one runtime-scoped session summary and inspect host-backed per-node session
   detail without widening the host API or inventing client-owned session
@@ -1825,8 +1830,8 @@ The highest-value remaining gaps are:
 - stronger end-to-end deployment and integration hardening beyond the current
   disposable same-machine profile and first service-volume export/import path,
   especially infrastructure-backed multi-machine proof execution,
-  post-import health checks, disposable non-dry-run service-volume fixtures,
-  and non-disposable upgrade/repair behavior.
+  disposable non-dry-run service-volume fixtures, and non-disposable
+  upgrade/repair behavior.
 
 The repository should be treated as a live design baseline rather than as a static document dump. Each substantial interaction with the project should begin with a lightweight audit loop:
 

@@ -1585,6 +1585,9 @@ Current status:
 - `entangle deployment service-volumes stop-services/start-services` now plan
   Gitea and strfry Docker Compose maintenance commands by default and execute
   them only with `--apply`;
+- `entangle deployment service-volumes health` now provides a focused
+  post-maintenance Gitea HTTP and strfry WebSocket health check without
+  requiring Host state;
 - `pnpm ops:smoke-deployment-service-volume-tools` now verifies those
   service-volume export/import dry-run CLI paths without requiring Docker,
   initialized Host state, or live service volumes;
@@ -1752,8 +1755,8 @@ Current status:
   Host and relay URLs;
 - the remaining deployment hardening is infrastructure-backed orchestration
   that can provision multiple machines or VM/container boundaries around the
-  verifier, plus post-import health checks and disposable non-dry-run fixtures
-  for non-disposable service-volume workflows.
+  verifier, plus disposable non-dry-run fixtures and broader non-disposable
+  upgrade/repair workflows.
 
 Verification:
 

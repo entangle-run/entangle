@@ -71,7 +71,8 @@ behavior.
 
 ## Open Questions
 
-Future work should add post-start service health validation and disposable
+`references/593-service-volume-health-check-slice.md` adds the focused
+post-maintenance Gitea/relay health check. Future work should add disposable
 non-dry-run volume fixtures.
 
 ## Verification

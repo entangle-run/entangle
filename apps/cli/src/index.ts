@@ -66,6 +66,7 @@ import {
 } from "./deployment-doctor-command.js";
 import { buildDeploymentDiagnosticsBundle } from "./deployment-diagnostics-bundle-command.js";
 import {
+  checkDeploymentServiceVolumeServices,
   createDeploymentBackup,
   createDeploymentServiceVolumeExport,
   createDeploymentServiceVolumeImport,
@@ -664,6 +665,26 @@ deploymentServiceVolumesCommand
     printJson({
       serviceVolumeMaintenance: summary
     });
+  });
+
+deploymentServiceVolumesCommand
+  .command("health")
+  .option("--gitea-url <url>", "Gitea HTTP URL.", "http://localhost:3001")
+  .option("--relay-url <url>", "Nostr relay WebSocket URL.", "ws://localhost:7777")
+  .description("Check Gitea and relay health after service-volume maintenance.")
+  .action(async (options: { giteaUrl: string; relayUrl: string }) => {
+    const summary = await checkDeploymentServiceVolumeServices({
+      giteaUrl: options.giteaUrl,
+      relayUrl: options.relayUrl
+    });
+
+    printJson({
+      serviceVolumeHealth: summary
+    });
+
+    if (summary.status === "unhealthy") {
+      process.exitCode = 1;
+    }
   });
 
 deploymentServiceVolumesCommand

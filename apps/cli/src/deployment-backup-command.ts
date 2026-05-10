@@ -81,6 +81,14 @@ export interface DeploymentServiceVolumeMaintenanceOptions {
   repositoryRoot: string;
 }
 
+export interface DeploymentServiceVolumeServicesHealthOptions {
+  connectWebSocket?: ((url: string) => Promise<string>) | undefined;
+  fetchUrl?: ((url: string) => Promise<string>) | undefined;
+  giteaUrl?: string | undefined;
+  now?: (() => Date) | undefined;
+  relayUrl?: string | undefined;
+}
+
 export interface DeploymentBackupCopyStats {
   bytes: number;
   directories: number;
@@ -227,6 +235,19 @@ export interface DeploymentServiceVolumeMaintenanceSummary {
   status: "applied" | "planned";
 }
 
+export interface DeploymentServiceVolumeServiceHealthCheck {
+  detail: string;
+  service: "gitea" | "strfry";
+  status: "fail" | "pass";
+  url: string;
+}
+
+export interface DeploymentServiceVolumeServicesHealthSummary {
+  checkedAt: string;
+  checks: DeploymentServiceVolumeServiceHealthCheck[];
+  status: "healthy" | "unhealthy";
+}
+
 export interface DeploymentServiceVolumeOperationSummary {
   createdAt: string;
   dockerImage: string;
@@ -251,6 +272,8 @@ const backupConfigPath = "config";
 const hostStateRelativePath = ".entangle/host";
 const secretsPath = ".entangle-secrets";
 const defaultServiceVolumeDockerImage = "alpine:3.20";
+const defaultServiceVolumeGiteaUrl = "http://localhost:3001";
+const defaultServiceVolumeRelayUrl = "ws://localhost:7777";
 const federatedDevProfileComposeFile =
   "deploy/federated-dev/compose/docker-compose.federated-dev.yml";
 const serviceVolumeMaintenanceServiceNames = ["gitea", "strfry"] as const;
@@ -679,6 +702,63 @@ function normalizeCommandResult(result: DeploymentServiceVolumeCommandResult): s
   return "no output";
 }
 
+function normalizeHealthError(error: unknown): string {
+  return error instanceof Error ? error.message : String(error);
+}
+
+async function defaultFetchUrl(url: string): Promise<string> {
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), 2_000);
+
+  try {
+    const response = await fetch(url, {
+      signal: controller.signal
+    });
+
+    return `${response.status} ${response.statusText}`.trim();
+  } finally {
+    clearTimeout(timeout);
+  }
+}
+
+type MinimalWebSocket = {
+  close(code?: number, reason?: string): void;
+  onerror: (() => void) | null;
+  onopen: (() => void) | null;
+};
+
+type MinimalWebSocketConstructor = new (url: string) => MinimalWebSocket;
+
+async function defaultConnectWebSocket(url: string): Promise<string> {
+  const WebSocketCtor = (
+    globalThis as typeof globalThis & {
+      WebSocket?: MinimalWebSocketConstructor;
+    }
+  ).WebSocket;
+
+  if (!WebSocketCtor) {
+    throw new Error("WebSocket is not available in this Node runtime.");
+  }
+
+  return new Promise((resolve, reject) => {
+    const socket = new WebSocketCtor(url);
+    const timeout = setTimeout(() => {
+      socket.close(1000, "entangle service-volume health timeout");
+      reject(new Error("WebSocket connection timed out."));
+    }, 2_000);
+
+    socket.onopen = () => {
+      clearTimeout(timeout);
+      socket.close(1000, "entangle service-volume health complete");
+      resolve("connected");
+    };
+    socket.onerror = () => {
+      clearTimeout(timeout);
+      reject(new Error("WebSocket connection failed."));
+    };
+  });
+}
+
 function buildServiceVolumeExportArgs(input: {
   archivePath: string;
   dockerImage: string;
@@ -962,6 +1042,56 @@ export function planDeploymentServiceVolumeMaintenance(
     generatedAt: (options.now ?? (() => new Date()))().toISOString(),
     serviceNames: [...serviceVolumeMaintenanceServiceNames],
     status: options.apply ? "applied" : "planned"
+  };
+}
+
+export async function checkDeploymentServiceVolumeServices(
+  options: DeploymentServiceVolumeServicesHealthOptions = {}
+): Promise<DeploymentServiceVolumeServicesHealthSummary> {
+  const fetchUrl = options.fetchUrl ?? defaultFetchUrl;
+  const connectWebSocket = options.connectWebSocket ?? defaultConnectWebSocket;
+  const giteaUrl = options.giteaUrl ?? defaultServiceVolumeGiteaUrl;
+  const relayUrl = options.relayUrl ?? defaultServiceVolumeRelayUrl;
+  const checks: DeploymentServiceVolumeServiceHealthCheck[] = [];
+
+  try {
+    checks.push({
+      detail: `${giteaUrl} ${await fetchUrl(giteaUrl)}`,
+      service: "gitea",
+      status: "pass",
+      url: giteaUrl
+    });
+  } catch (error) {
+    checks.push({
+      detail: normalizeHealthError(error),
+      service: "gitea",
+      status: "fail",
+      url: giteaUrl
+    });
+  }
+
+  try {
+    checks.push({
+      detail: `${relayUrl} ${await connectWebSocket(relayUrl)}`,
+      service: "strfry",
+      status: "pass",
+      url: relayUrl
+    });
+  } catch (error) {
+    checks.push({
+      detail: normalizeHealthError(error),
+      service: "strfry",
+      status: "fail",
+      url: relayUrl
+    });
+  }
+
+  return {
+    checkedAt: (options.now ?? (() => new Date()))().toISOString(),
+    checks,
+    status: checks.every((check) => check.status === "pass")
+      ? "healthy"
+      : "unhealthy"
   };
 }
 

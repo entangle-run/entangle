@@ -3,6 +3,7 @@ import os from "node:os";
 import path from "node:path";
 import { afterEach, describe, expect, it } from "vitest";
 import {
+  checkDeploymentServiceVolumeServices,
   createDeploymentBackup,
   createDeploymentServiceVolumeExport,
   createDeploymentServiceVolumeImport,
@@ -713,5 +714,57 @@ describe("deployment backup command helpers", () => {
       applied: true,
       status: "applied"
     });
+  });
+
+  it("checks service-volume service health endpoints", async () => {
+    const summary = await checkDeploymentServiceVolumeServices({
+      connectWebSocket: () => Promise.resolve("connected"),
+      fetchUrl: () => Promise.resolve("200 OK"),
+      giteaUrl: "http://gitea.test",
+      now: () => new Date("2026-05-10T00:00:00.000Z"),
+      relayUrl: "ws://relay.test"
+    });
+
+    expect(summary).toEqual({
+      checkedAt: "2026-05-10T00:00:00.000Z",
+      checks: [
+        {
+          detail: "http://gitea.test 200 OK",
+          service: "gitea",
+          status: "pass",
+          url: "http://gitea.test"
+        },
+        {
+          detail: "ws://relay.test connected",
+          service: "strfry",
+          status: "pass",
+          url: "ws://relay.test"
+        }
+      ],
+      status: "healthy"
+    });
+  });
+
+  it("reports unhealthy service-volume service health checks without throwing", async () => {
+    const summary = await checkDeploymentServiceVolumeServices({
+      connectWebSocket: () => Promise.reject(new Error("relay unavailable")),
+      fetchUrl: () => Promise.reject(new Error("gitea unavailable")),
+      giteaUrl: "http://gitea.test",
+      relayUrl: "ws://relay.test"
+    });
+
+    expect(summary.status).toBe("unhealthy");
+    expect(summary.checks).toEqual([
+      expect.objectContaining({
+        detail: "gitea unavailable",
+        service: "gitea",
+        status: "fail"
+      }),
+      expect.objectContaining({
+        detail: "relay unavailable",
+        service: "strfry",
+        status: "fail"
+      })
+    ]);
   });
 });
