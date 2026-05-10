@@ -53,6 +53,7 @@ export interface DeploymentServiceVolumeExportOptions {
   now?: (() => Date) | undefined;
   outputPath: string;
   repositoryRoot: string;
+  serviceVolumes?: readonly DeploymentServiceVolumeBinding[] | undefined;
 }
 
 export interface DeploymentServiceVolumeImportOptions {
@@ -69,6 +70,7 @@ export interface DeploymentServiceVolumesStatusOptions {
   commandRunner?: DeploymentServiceVolumeCommandRunner | undefined;
   now?: (() => Date) | undefined;
   repositoryRoot: string;
+  serviceVolumes?: readonly DeploymentServiceVolumeBinding[] | undefined;
 }
 
 export type DeploymentServiceVolumeMaintenanceAction = "start" | "stop";
@@ -175,6 +177,13 @@ export interface DeploymentServiceVolumeManifestEntry {
   mountPath: string;
   service: string;
   volume: string;
+}
+
+export type DeploymentServiceVolumeBinding = DeploymentServiceVolumeManifestEntry;
+
+export interface DeploymentServiceVolumeBindingOptions {
+  giteaVolume?: string | undefined;
+  relayVolume?: string | undefined;
 }
 
 export type DeploymentServiceVolumeOperationStatus =
@@ -308,6 +317,36 @@ const backupServiceVolumes = [
     volume: "strfry-data"
   }
 ] as const satisfies readonly DeploymentServiceVolumeManifestEntry[];
+
+function assertSafeDockerVolumeName(volume: string): void {
+  if (/^[0-9A-Za-z][0-9A-Za-z_.-]*$/u.test(volume)) {
+    return;
+  }
+
+  throw new Error(`'${volume}' is an unsafe Docker volume name.`);
+}
+
+export function resolveDeploymentServiceVolumeBindings(
+  options: DeploymentServiceVolumeBindingOptions = {}
+): DeploymentServiceVolumeBinding[] {
+  const [giteaBinding, relayBinding] = backupServiceVolumes;
+  const giteaVolume = options.giteaVolume ?? giteaBinding.volume;
+  const relayVolume = options.relayVolume ?? relayBinding.volume;
+
+  assertSafeDockerVolumeName(giteaVolume);
+  assertSafeDockerVolumeName(relayVolume);
+
+  return [
+    {
+      ...giteaBinding,
+      volume: giteaVolume
+    },
+    {
+      ...relayBinding,
+      volume: relayVolume
+    }
+  ];
+}
 
 const deploymentBackupConfigPaths = [
   "package.json",
@@ -999,7 +1038,8 @@ export function inspectDeploymentServiceVolumes(
   options: DeploymentServiceVolumesStatusOptions
 ): DeploymentServiceVolumesStatusSummary {
   const commandRunner = options.commandRunner ?? defaultCommandRunner;
-  const volumes = backupServiceVolumes.map((volume) =>
+  const serviceVolumes = options.serviceVolumes ?? backupServiceVolumes;
+  const volumes = serviceVolumes.map((volume) =>
     inspectServiceVolumeStatus({
       commandRunner,
       repositoryRoot: options.repositoryRoot,
@@ -1187,6 +1227,7 @@ export async function createDeploymentServiceVolumeExport(
   const dockerImage = options.dockerImage ?? defaultServiceVolumeDockerImage;
   const dryRun = Boolean(options.dryRun);
   const commandRunner = options.commandRunner ?? defaultCommandRunner;
+  const serviceVolumes = options.serviceVolumes ?? backupServiceVolumes;
   assertServiceVolumeMutationAcknowledged({
     assumeServicesStopped: options.assumeServicesStopped,
     dryRun,
@@ -1209,7 +1250,7 @@ export async function createDeploymentServiceVolumeExport(
     : inspectServiceVolumeQuiescenceForVolumes({
         commandRunner,
         repositoryRoot: options.repositoryRoot,
-        volumes: backupServiceVolumes
+        volumes: serviceVolumes
       });
 
   if (!dryRun && outputPathExists) {
@@ -1220,7 +1261,7 @@ export async function createDeploymentServiceVolumeExport(
     await mkdir(outputPath, { recursive: true });
   }
 
-  const volumes: DeploymentServiceVolumeOperationEntry[] = backupServiceVolumes.map(
+  const volumes: DeploymentServiceVolumeOperationEntry[] = serviceVolumes.map(
     (volume) => {
       const args = buildServiceVolumeExportArgs({
         archivePath: volume.archivePath,
@@ -1258,7 +1299,7 @@ export async function createDeploymentServiceVolumeExport(
       product: "entangle-service-volume-backup",
       schemaVersion: "1",
       secretsIncluded: false,
-      volumes: backupServiceVolumes.map((volume) => ({ ...volume }))
+      volumes: serviceVolumes.map((volume) => ({ ...volume }))
     };
     await writeJsonFile(manifestPath, manifest);
   }

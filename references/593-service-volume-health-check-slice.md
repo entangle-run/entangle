@@ -68,8 +68,9 @@ command is a focused service-volume workflow check.
 
 ## Open Questions
 
-Future work should add disposable non-dry-run service-volume fixtures and
-broader non-disposable upgrade/repair workflows.
+`references/594-service-volume-disposable-roundtrip-slice.md` adds the
+Docker-gated disposable non-dry-run service-volume roundtrip. Future work
+should add broader non-disposable upgrade/repair workflows.
 
 ## Verification
 

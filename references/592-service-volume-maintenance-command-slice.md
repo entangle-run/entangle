@@ -72,8 +72,9 @@ behavior.
 ## Open Questions
 
 `references/593-service-volume-health-check-slice.md` adds the focused
-post-maintenance Gitea/relay health check. Future work should add disposable
-non-dry-run volume fixtures.
+post-maintenance Gitea/relay health check.
+`references/594-service-volume-disposable-roundtrip-slice.md` adds the
+Docker-gated disposable non-dry-run volume fixture.
 
 ## Verification
 

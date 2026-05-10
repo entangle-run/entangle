@@ -70,9 +70,11 @@ Dry-run behavior is unchanged. Non-dry-run export/import now requires
 
 ## Open Questions
 
-Future work should add guided service stop/start orchestration, post-import
-health checks, and disposable volume fixtures for live export/import smoke
-coverage.
+`references/592-service-volume-maintenance-command-slice.md` adds guided
+service stop/start planning, `references/593-service-volume-health-check-slice.md`
+adds focused post-maintenance health checks, and
+`references/594-service-volume-disposable-roundtrip-slice.md` adds the
+Docker-gated disposable live export/import smoke coverage.
 
 ## Verification
 

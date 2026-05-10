@@ -95,8 +95,11 @@ operator policy.
 
 ## Open Questions
 
-Future work should add guided service stop/start orchestration, post-import
-health checks, disposable non-dry-run service-volume fixtures, and guided
+`references/592-service-volume-maintenance-command-slice.md` adds explicit
+service stop/start planning, `references/593-service-volume-health-check-slice.md`
+adds focused post-maintenance health checks, and
+`references/594-service-volume-disposable-roundtrip-slice.md` adds the
+Docker-gated disposable non-dry-run roundtrip. Future work should add guided
 upgrade workflows for older non-disposable profiles.
 
 ## Verification

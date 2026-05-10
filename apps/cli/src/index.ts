@@ -72,6 +72,7 @@ import {
   createDeploymentServiceVolumeImport,
   inspectDeploymentServiceVolumes,
   planDeploymentServiceVolumeMaintenance,
+  resolveDeploymentServiceVolumeBindings,
   restoreDeploymentBackup
 } from "./deployment-backup-command.js";
 import {
@@ -624,10 +625,16 @@ const deploymentServiceVolumesCommand = deploymentCommand
 
 deploymentServiceVolumesCommand
   .command("status")
+  .option("--gitea-volume <name>", "Override the Gitea data volume name.")
+  .option("--relay-volume <name>", "Override the relay data volume name.")
   .description("Inspect service-volume readiness for export or import.")
-  .action(() => {
+  .action((options: { giteaVolume?: string; relayVolume?: string }) => {
     const summary = inspectDeploymentServiceVolumes({
-      repositoryRoot
+      repositoryRoot,
+      serviceVolumes: resolveDeploymentServiceVolumeBindings({
+        giteaVolume: options.giteaVolume,
+        relayVolume: options.relayVolume
+      })
     });
 
     printJson({
@@ -696,11 +703,13 @@ deploymentServiceVolumesCommand
   .option("--docker-image <image>", "Utility image used for tar operations.", "alpine:3.20")
   .option("--dry-run", "Plan Docker archive commands without executing them.")
   .option("--force", "Replace an existing service-volume backup output directory.")
+  .option("--gitea-volume <name>", "Override the Gitea data volume name.")
   .option(
     "--output <path>",
     "Service-volume backup bundle output directory.",
     "entangle-service-volumes"
   )
+  .option("--relay-volume <name>", "Override the relay data volume name.")
   .description("Export Gitea and relay service volumes into a service-volume backup bundle.")
   .action(
     async (options: {
@@ -708,7 +717,9 @@ deploymentServiceVolumesCommand
       dockerImage: string;
       dryRun?: boolean;
       force?: boolean;
+      giteaVolume?: string;
       output: string;
+      relayVolume?: string;
     }) => {
       const summary = await createDeploymentServiceVolumeExport({
         assumeServicesStopped: options.assumeServicesStopped,
@@ -716,7 +727,11 @@ deploymentServiceVolumesCommand
         dryRun: options.dryRun,
         force: options.force,
         outputPath: resolveCliPath(options.output),
-        repositoryRoot
+        repositoryRoot,
+        serviceVolumes: resolveDeploymentServiceVolumeBindings({
+          giteaVolume: options.giteaVolume,
+          relayVolume: options.relayVolume
+        })
       });
 
       printJson({

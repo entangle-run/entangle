@@ -9,6 +9,7 @@ import {
   createDeploymentServiceVolumeImport,
   inspectDeploymentServiceVolumes,
   planDeploymentServiceVolumeMaintenance,
+  resolveDeploymentServiceVolumeBindings,
   restoreDeploymentBackup
 } from "./deployment-backup-command.js";
 
@@ -380,6 +381,93 @@ describe("deployment backup command helpers", () => {
     });
   });
 
+  it("exports explicitly bound service volumes for disposable non-dry-run fixtures", async () => {
+    const outputPath = path.join(
+      await createTempRoot("entangle-service-volume-export-custom-"),
+      "bundle"
+    );
+    const commandCalls: Array<{ args: string[]; command: string }> = [];
+    const serviceVolumes = resolveDeploymentServiceVolumeBindings({
+      giteaVolume: "entangle-fixture-gitea-data",
+      relayVolume: "entangle-fixture-strfry-data"
+    });
+
+    const summary = await createDeploymentServiceVolumeExport({
+      assumeServicesStopped: true,
+      commandRunner: (command, args) => {
+        commandCalls.push({ args, command });
+        return {
+          signal: null,
+          status: 0,
+          stderr: "",
+          stdout: ""
+        };
+      },
+      outputPath,
+      repositoryRoot: await createTempRoot("entangle-service-volume-custom-repo-"),
+      serviceVolumes
+    });
+
+    expect(summary.volumes.map((volume) => volume.volume)).toEqual([
+      "entangle-fixture-gitea-data",
+      "entangle-fixture-strfry-data"
+    ]);
+    expect(commandCalls.map((call) => call.args)).toEqual([
+      [
+        "ps",
+        "--filter",
+        "volume=entangle-fixture-gitea-data",
+        "--format",
+        "{{.Names}}"
+      ],
+      [
+        "ps",
+        "--filter",
+        "volume=entangle-fixture-strfry-data",
+        "--format",
+        "{{.Names}}"
+      ],
+      expect.arrayContaining([
+        "run",
+        "--rm",
+        "-v",
+        "entangle-fixture-gitea-data:/volume:ro",
+        "-v",
+        `${outputPath}:/backup`
+      ]),
+      expect.arrayContaining([
+        "run",
+        "--rm",
+        "-v",
+        "entangle-fixture-strfry-data:/volume:ro",
+        "-v",
+        `${outputPath}:/backup`
+      ])
+    ]);
+    expect(await readJson(path.join(outputPath, "manifest.json"))).toMatchObject({
+      volumes: [
+        {
+          archivePath: "gitea-data.tar",
+          service: "gitea",
+          volume: "entangle-fixture-gitea-data"
+        },
+        {
+          archivePath: "strfry-data.tar",
+          service: "strfry",
+          volume: "entangle-fixture-strfry-data"
+        }
+      ]
+    });
+  });
+
+  it("rejects unsafe custom service-volume names", () => {
+    expect(() =>
+      resolveDeploymentServiceVolumeBindings({
+        giteaVolume: "bad:name"
+      })
+    ).toThrow("unsafe Docker volume name");
+  });
+
   it("rejects non-dry-run service-volume export without stopped-service acknowledgement", async () => {
     const outputPath = path.join(
       await createTempRoot("entangle-service-volume-export-ack-"),
@@ -614,6 +702,51 @@ describe("deployment backup command helpers", () => {
       ["ps", "--filter", "volume=gitea-data", "--format", "{{.Names}}"],
       ["volume", "inspect", "strfry-data"],
       ["ps", "--filter", "volume=strfry-data", "--format", "{{.Names}}"]
+    ]);
+  });
+
+  it("reports custom service-volume status for disposable fixtures", async () => {
+    const commandCalls: Array<{ args: string[]; command: string }> = [];
+    const serviceVolumes = resolveDeploymentServiceVolumeBindings({
+      giteaVolume: "entangle-fixture-gitea-data",
+      relayVolume: "entangle-fixture-strfry-data"
+    });
+    const summary = inspectDeploymentServiceVolumes({
+      commandRunner: (command, args) => {
+        commandCalls.push({ args, command });
+        return {
+          signal: null,
+          status: 0,
+          stderr: "",
+          stdout: ""
+        };
+      },
+      repositoryRoot: await createTempRoot("entangle-service-volume-custom-status-"),
+      serviceVolumes
+    });
+
+    expect(summary.status).toBe("ready");
+    expect(summary.volumes.map((volume) => volume.volume)).toEqual([
+      "entangle-fixture-gitea-data",
+      "entangle-fixture-strfry-data"
+    ]);
+    expect(commandCalls.map((call) => call.args)).toEqual([
+      ["volume", "inspect", "entangle-fixture-gitea-data"],
+      [
+        "ps",
+        "--filter",
+        "volume=entangle-fixture-gitea-data",
+        "--format",
+        "{{.Names}}"
+      ],
+      ["volume", "inspect", "entangle-fixture-strfry-data"],
+      [
+        "ps",
+        "--filter",
+        "volume=entangle-fixture-strfry-data",
+        "--format",
+        "{{.Names}}"
+      ]
     ]);
   });
 

@@ -62,8 +62,10 @@ shape or runtime behavior.
 
 ## Open Questions
 
-Future deployment smokes can add live Docker volume export/import verification
-once the project has service-aware quiescing and disposable volume fixtures.
+`references/589-service-volume-quiescing-acknowledgement-slice.md` and
+`references/590-service-volume-running-container-check-slice.md` add the
+service-aware safety gates. `references/594-service-volume-disposable-roundtrip-slice.md`
+adds the Docker-gated disposable non-dry-run export/import verification.
 
 ## Verification
 

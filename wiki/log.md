@@ -6962,3 +6962,15 @@ and strfry WebSocket reachability without requiring Host state.
 
 The command is scoped to service-volume maintenance and returns a non-zero exit
 code when either service check fails.
+
+## [2026-05-10] deployment | Added disposable service-volume roundtrip smoke
+
+Added `references/594-service-volume-disposable-roundtrip-slice.md`.
+`entangle deployment service-volumes status/export` now accept explicit
+Gitea/relay volume bindings for disposable fixtures and custom-profile
+recovery.
+
+`pnpm ops:smoke-deployment-service-volume-roundtrip` creates temporary Docker
+volumes, runs the real non-dry-run service-volume export/import path, and
+verifies restored content when Docker is available. It skips without mutation
+when Docker is unavailable unless `--require-docker` is passed.

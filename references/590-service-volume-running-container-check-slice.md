@@ -81,9 +81,12 @@ view to show no active container using the target service volumes.
 
 ## Open Questions
 
-Future work should add post-import service health checks, guided service
-stop/start orchestration, and disposable volume fixtures that can exercise the
-non-dry-run path in CI without touching operator data.
+`references/592-service-volume-maintenance-command-slice.md` adds guided
+service stop/start planning, `references/593-service-volume-health-check-slice.md`
+adds focused post-maintenance health checks, and
+`references/594-service-volume-disposable-roundtrip-slice.md` adds disposable
+volume fixtures that can exercise the non-dry-run path without touching
+operator data.
 
 ## Verification
 

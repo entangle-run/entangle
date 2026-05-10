@@ -1212,9 +1212,14 @@ This repository currently contains:
   `pnpm ops:smoke-deployment-service-volume-tools` that verifies Gitea/relay
   service-volume export and import dry-run CLI output without requiring Docker
   or live volumes;
+- a Docker-gated disposable service-volume roundtrip smoke through
+  `pnpm ops:smoke-deployment-service-volume-roundtrip` that creates temporary
+  Gitea/relay volumes, runs real non-dry-run service-volume export/import, and
+  verifies restored content without touching the stable profile volumes;
 - a read-only `entangle deployment service-volumes status` surface that checks
   stable service-volume existence and running-container use before operators
-  attempt export/import;
+  attempt export/import, with explicit volume bindings for disposable fixtures
+  and custom-profile recovery;
 - conservative `entangle deployment service-volumes stop-services` and
   `start-services` helpers that plan Docker Compose service maintenance by
   default and execute only with `--apply`;
@@ -1236,7 +1241,9 @@ This repository currently contains:
   `entangle deployment service-volumes status`, and service maintenance helper
   commands provide non-mutating stop/start plans unless `--apply` is supplied;
   `deployment service-volumes health` provides the focused post-maintenance
-  Gitea/relay health check;
+  Gitea/relay health check, while the disposable roundtrip smoke verifies the
+  non-dry-run archive path against temporary Docker volumes when Docker is
+  available;
 - a first conservative same-machine repair command through `entangle deployment repair`,
   defaulting to dry-run previews and applying only safe host-state
   initialization, missing layout-marker, or missing standard host-state
@@ -1718,7 +1725,9 @@ This repository currently contains:
   archive commands execute, while `deployment service-volumes status` exposes
   the same volume readiness as a read-only preflight and `stop-services` /
   `start-services` provide explicit service maintenance plans plus a focused
-  `health` check for post-maintenance Gitea/relay reachability;
+  `health` check for post-maintenance Gitea/relay reachability; explicit
+  service-volume bindings now let the disposable roundtrip smoke exercise that
+  real archive path without mutating stable profile volumes;
 - the next bounded Studio completion slice where the operator can now select
   one runtime-scoped session summary and inspect host-backed per-node session
   detail without widening the host API or inventing client-owned session
@@ -1829,9 +1838,9 @@ The highest-value remaining gaps are:
   handoff;
 - stronger end-to-end deployment and integration hardening beyond the current
   disposable same-machine profile and first service-volume export/import path,
-  especially infrastructure-backed multi-machine proof execution,
-  disposable non-dry-run service-volume fixtures, and non-disposable
-  upgrade/repair behavior.
+  especially infrastructure-backed multi-machine proof execution, physical
+  Docker-required CI gates for the disposable service-volume roundtrip, and
+  non-disposable upgrade/repair behavior.
 
 The repository should be treated as a live design baseline rather than as a static document dump. Each substantial interaction with the project should begin with a lightweight audit loop:
 

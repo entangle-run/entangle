@@ -127,6 +127,13 @@ running containers:
 pnpm --filter @entangle/cli dev deployment service-volumes status
 ```
 
+For disposable fixtures or explicit custom-profile recovery, pass explicit
+volume bindings to the status/export commands:
+
+```sh
+pnpm --filter @entangle/cli dev deployment service-volumes status --gitea-volume entangle-fixture-gitea-data --relay-volume entangle-fixture-strfry-data
+```
+
 Plan or apply service shutdown before a real service-volume export/import:
 
 ```sh
@@ -172,6 +179,14 @@ or live service volumes:
 
 ```sh
 pnpm ops:smoke-deployment-service-volume-tools
+```
+
+When Docker is available, the disposable roundtrip smoke creates temporary
+service volumes, runs real non-dry-run export/import through the same CLI, and
+verifies restored content without touching the stable profile volumes:
+
+```sh
+pnpm ops:smoke-deployment-service-volume-roundtrip
 ```
 
 Validate a restore without changing Entangle state:
@@ -375,7 +390,8 @@ backup bundle after the check.
 
 `pnpm ops:smoke-deployment-service-volume-tools` separately verifies
 service-volume export/import dry-run output without requiring an initialized
-profile.
+profile. `pnpm ops:smoke-deployment-service-volume-roundtrip` verifies the
+non-dry-run path against disposable Docker volumes when Docker is available.
 
 Environment overrides:
 

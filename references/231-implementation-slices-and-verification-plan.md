@@ -1591,6 +1591,11 @@ Current status:
 - `pnpm ops:smoke-deployment-service-volume-tools` now verifies those
   service-volume export/import dry-run CLI paths without requiring Docker,
   initialized Host state, or live service volumes;
+- `entangle deployment service-volumes status/export` now accept explicit
+  Gitea and relay volume names, and
+  `pnpm ops:smoke-deployment-service-volume-roundtrip` exercises real
+  non-dry-run Docker export/import against disposable volumes when Docker is
+  available;
 - Host event records now include optional audit hash-chain fields, Host event
   appends are serialized to preserve chain order, and CLI runtime-trace
   summaries expose the hashes when present; Host, host-client, and CLI now
@@ -1755,8 +1760,9 @@ Current status:
   Host and relay URLs;
 - the remaining deployment hardening is infrastructure-backed orchestration
   that can provision multiple machines or VM/container boundaries around the
-  verifier, plus disposable non-dry-run fixtures and broader non-disposable
-  upgrade/repair workflows.
+  verifier, plus broader non-disposable upgrade/repair workflows and physical
+  CI gates that run the disposable service-volume roundtrip with Docker
+  required.
 
 Verification:
 

@@ -394,6 +394,7 @@ same-machine slice records.
 - [591-service-volume-status-surface-slice.md](591-service-volume-status-surface-slice.md)
 - [592-service-volume-maintenance-command-slice.md](592-service-volume-maintenance-command-slice.md)
 - [593-service-volume-health-check-slice.md](593-service-volume-health-check-slice.md)
+- [594-service-volume-disposable-roundtrip-slice.md](594-service-volume-disposable-roundtrip-slice.md)
 
 ## Audited Scope
 
@@ -1256,7 +1257,11 @@ and running-container readiness evidence through the read-only
 The same service-volume command group now also provides non-mutating
 `stop-services` and `start-services` plans, with actual Docker Compose service
 maintenance requiring `--apply`, plus a focused read-only `health` check for
-post-maintenance Gitea HTTP and strfry WebSocket reachability.
+post-maintenance Gitea HTTP and strfry WebSocket reachability. Service-volume
+`status` and `export` now also accept explicit Gitea/relay volume bindings so
+the root `ops:smoke-deployment-service-volume-roundtrip` check can exercise
+real Docker export/import against disposable volumes instead of mutating the
+stable profile volumes.
 New Host events now carry optional audit hash-chain fields, and Host serializes
 event appends so concurrent operator requests do not fork the local audit
 sequence. Host now also exposes `GET /v1/events/integrity`, host-client

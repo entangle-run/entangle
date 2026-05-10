@@ -1377,6 +1377,10 @@ The repository now also contains the first real implementation baseline:
   operator preflight, while `service-volumes stop-services/start-services`
   provide non-mutating service maintenance plans unless `--apply` is supplied,
   and `service-volumes health` checks post-maintenance Gitea/relay reachability;
+  status/export can now use explicit volume bindings, and
+  `pnpm ops:smoke-deployment-service-volume-roundtrip` verifies real
+  non-dry-run export/import against disposable Docker volumes when Docker is
+  available;
 - an active same-machine profile smoke through `pnpm ops:smoke-federated-dev`, covering
   running Compose services, the local runner image, host status/events, Studio
   HTTP, Gitea HTTP reachability, and the local `strfry` Nostr WebSocket
@@ -1537,10 +1541,11 @@ The current implementation-truth audit now lives in
   the next git gaps are richer collaborative wiki merge UI beyond the first
   conflict recovery paths, repository
   lifecycle behavior, and explicit fallback or replication behavior,
-  while the next deployment-grade gap is disposable non-dry-run fixtures and
-  non-disposable profile upgrade behavior beyond the current explicit
-  acknowledgement, running-container guards, and read-only service-volume
-  status/maintenance/health surfaces;
+  while the next deployment-grade gap is non-disposable profile upgrade
+  behavior and infrastructure-backed gates beyond the current explicit
+  acknowledgement, running-container guards, read-only service-volume
+  status/maintenance/health surfaces, and Docker-gated disposable roundtrip
+  smoke;
 - complete CLI parity where it adds real headless operational value;
 - continue narrowing the remaining delegated-session gaps now that controlled
   autonomous `task.handoff` emission and runner-local active-conversation
