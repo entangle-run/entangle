@@ -30,6 +30,10 @@ const maxMemoryBriefCharactersTotal = 4200;
 const minMemoryBriefSectionCharacters = 160;
 const memoryBriefCandidates: MemoryBriefCandidate[] = [
   {
+    label: "Open work",
+    relativePath: "summaries/open-work.md"
+  },
+  {
     label: "Next actions",
     relativePath: "summaries/next-actions.md"
   },
@@ -176,6 +180,7 @@ export async function collectMemoryRefs(
   const recentTaskRefs = await collectRecentTaskMemoryRefs(context);
   const candidatePaths = [
     path.join(context.workspace.memoryRoot, "schema", "AGENTS.md"),
+    path.join(context.workspace.memoryRoot, "wiki", "summaries", "open-work.md"),
     path.join(context.workspace.memoryRoot, "wiki", "summaries", "working-context.md"),
     path.join(context.workspace.memoryRoot, "wiki", "summaries", "coordination-map.md"),
     path.join(context.workspace.memoryRoot, "wiki", "summaries", "stable-facts.md"),

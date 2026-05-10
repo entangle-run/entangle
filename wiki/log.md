@@ -6992,3 +6992,13 @@ Added `references/596-service-volume-required-roundtrip-gate-slice.md`.
 `pnpm ops:smoke-deployment-service-volume-roundtrip:required` now runs the
 disposable Docker service-volume export/import roundtrip with Docker required,
 so physical proof machines and Docker-enabled CI can fail instead of skipping.
+
+## [2026-05-10] runner | Added open-work memory summary
+
+Added `references/597-open-work-memory-summary-slice.md`. Post-turn memory
+maintenance now rebuilds `memory/wiki/summaries/open-work.md` from current
+runner session, approval, and conversation records.
+
+The page is linked from the node wiki index and fed into future coding-engine
+turns through `memoryRefs` plus the front of the bounded memory brief, while
+runner state and Host projection remain the operational source of truth.

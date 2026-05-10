@@ -958,6 +958,11 @@ The repository now also contains the first real implementation baseline:
   maintenance now records bounded approval-request directives in task pages,
   rebuilds `summaries/approval-ledger.md`, and feeds that page into future
   memory refs plus bounded memory briefs;
+- an open-work memory refinement where post-turn maintenance rebuilds
+  `memory/wiki/summaries/open-work.md` from current runner session, approval,
+  and conversation records, then feeds that page into future memory refs and
+  the front of the bounded memory brief so a node sees active approvals and
+  conversations without treating wiki memory as workflow authority;
 - a memory-brief closure-context refinement where `summaries/resolutions.md`
   now appears in the bounded prompt brief when present, so future turns see
   recently closed questions and completed actions beside active work;
@@ -1556,8 +1561,8 @@ The current implementation-truth audit now lives in
   autonomous `task.handoff` emission and runner-local active-conversation
   reconciliation plus host-derived conversation lifecycle diagnostics,
   consistency findings, read-only participant runtime status, and first
-  owner-aware, coordination-map, and deterministic approval/delegation-ledger
-  memory projection are implemented;
+  owner-aware, coordination-map, deterministic approval/delegation-ledger, and
+  current open-work memory projection are implemented;
 - deepen the bootstrap host operator-token boundary, multi-token request audit,
   status reporting, server-filterable event inspection, route-level bootstrap
   permissions, coarse read-only `viewer` enforcement, bootstrap token expiry,

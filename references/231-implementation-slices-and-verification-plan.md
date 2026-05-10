@@ -682,6 +682,11 @@ Current status:
   `summaries/delegation-ledger.md` from handoff-bearing task pages so future
   engine turns receive recent delegation history through memory refs plus the
   bounded memory brief;
+- post-turn memory maintenance now rebuilds `summaries/open-work.md` from
+  current runner session, approval, and conversation records, links it from the
+  node wiki index, and feeds it into future memory refs plus the front of the
+  bounded memory brief so active approval gates and active conversations are
+  visible without making wiki memory authoritative;
 - model-guided runner memory synthesis now writes
   `summaries/coordination-map.md` as a focused graph-relation memory page,
   carrying local node relation, inbound message provenance, active peer

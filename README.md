@@ -1425,6 +1425,11 @@ This repository currently contains:
   requested handoff directives plus emitted event ids, and
   `summaries/delegation-ledger.md` feeds recent handoff history into future
   memory refs and bounded memory briefs;
+- an open-work memory refinement where post-turn maintenance rebuilds
+  `memory/wiki/summaries/open-work.md` from current runner session, approval,
+  and conversation records, then feeds that page into future memory refs and
+  the front of the bounded memory brief so a node sees active approvals and
+  conversations without treating wiki memory as workflow authority;
 - a memory-brief closure-context refinement where `summaries/resolutions.md`
   now appears in the bounded prompt brief next to active work, so future turns
   can see recently closed questions and completed actions without first opening

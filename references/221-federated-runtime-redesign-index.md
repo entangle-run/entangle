@@ -397,6 +397,7 @@ same-machine slice records.
 - [594-service-volume-disposable-roundtrip-slice.md](594-service-volume-disposable-roundtrip-slice.md)
 - [595-service-volume-previous-migration-command-slice.md](595-service-volume-previous-migration-command-slice.md)
 - [596-service-volume-required-roundtrip-gate-slice.md](596-service-volume-required-roundtrip-gate-slice.md)
+- [597-open-work-memory-summary-slice.md](597-open-work-memory-summary-slice.md)
 
 ## Audited Scope
 
@@ -1463,6 +1464,12 @@ rebuilds `summaries/delegation-ledger.md` from handoff-bearing task pages.
 Successful non-blocked turns write memory after outbound handoff publication,
 so the ledger can carry emitted Nostr event ids as well as requested target,
 edge, response-policy, artifact-inclusion, intent, and summary metadata.
+Post-turn memory maintenance now also rebuilds
+`summaries/open-work.md` from current runner session, approval, and
+conversation records. Future turn assembly includes that page in memory refs
+and at the front of the bounded memory brief, so each node sees current pending
+approval gates and active conversations without treating the wiki as workflow
+authority.
 Future turn assembly now includes `summaries/resolutions.md` in the bounded
 memory brief when that page exists, so recent closures are visible next to
 active obligations without forcing the coding engine to open the full memory

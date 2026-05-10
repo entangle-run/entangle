@@ -2,11 +2,20 @@ import { mkdir, readFile, readdir, stat, writeFile } from "node:fs/promises";
 import path from "node:path";
 import type {
   AgentEngineTurnResult,
+  ApprovalRecord,
+  ConversationRecord,
   EffectiveRuntimeContext,
   RunnerTurnRecord,
+  SessionRecord,
   SourceChangeSummary
 } from "@entangle/types";
 import type { RunnerInboundEnvelope } from "./transport.js";
+import {
+  buildRunnerStatePaths,
+  listApprovalRecords,
+  listConversationRecords,
+  listSessionRecords
+} from "./state-store.js";
 
 type PostTurnMemoryUpdateInput = {
   consumedArtifactIds: string[];
@@ -23,12 +32,14 @@ type PostTurnMemoryUpdateResult = {
   delegationLedgerPagePath: string;
   indexPath: string;
   logPath: string;
+  openWorkSummaryPagePath: string;
   sourceChangeLedgerPagePath: string;
   summaryPagePath: string;
   taskPagePath: string;
 };
 
 export const recentWorkSummaryRelativePath = "summaries/recent-work.md";
+export const openWorkSummaryRelativePath = "summaries/open-work.md";
 export const workingContextSummaryRelativePath = "summaries/working-context.md";
 export const stableFactsSummaryRelativePath = "summaries/stable-facts.md";
 export const openQuestionsSummaryRelativePath = "summaries/open-questions.md";
@@ -49,6 +60,7 @@ const maxRecentSummaryEntries = 5;
 const maxSourceChangeLedgerEntries = 12;
 const maxApprovalLedgerEntries = 12;
 const maxDelegationLedgerEntries = 12;
+const maxOpenWorkSummaryEntries = 12;
 
 function buildTaskPageRelativePath(input: {
   sessionId: string;
@@ -205,6 +217,10 @@ function resolveTaskPagePath(input: {
 
 function resolveRecentWorkSummaryPath(wikiRoot: string): string {
   return path.join(wikiRoot, recentWorkSummaryRelativePath);
+}
+
+export function resolveOpenWorkSummaryPath(wikiRoot: string): string {
+  return path.join(wikiRoot, openWorkSummaryRelativePath);
 }
 
 export function resolveWorkingContextSummaryPath(wikiRoot: string): string {
@@ -1002,6 +1018,195 @@ async function buildSourceChangeLedgerContent(input: {
   return contentLines.join("\n");
 }
 
+function isTerminalSessionStatus(status: SessionRecord["status"]): boolean {
+  return ["cancelled", "completed", "failed", "timed_out"].includes(status);
+}
+
+function isTerminalConversationStatus(
+  status: ConversationRecord["status"]
+): boolean {
+  return ["closed", "expired", "rejected", "resolved"].includes(status);
+}
+
+function formatApprovalResource(resource: ApprovalRecord["resource"]): string {
+  if (!resource) {
+    return "resource=unspecified";
+  }
+
+  return [
+    `resource=${resource.kind}:\`${resource.id}\``,
+    ...(resource.label
+      ? [`label="${compactInlineText(resource.label)}"`]
+      : [])
+  ].join(" ");
+}
+
+function renderOpenWorkApprovalLine(
+  approval: ApprovalRecord | { approvalId: string }
+): string {
+  if (!("status" in approval)) {
+    return `  - approvalId=\`${approval.approvalId}\` status=\`missing_record\``;
+  }
+
+  return [
+    `  - approvalId=\`${approval.approvalId}\``,
+    `status=\`${approval.status}\``,
+    ...(approval.operation ? [`operation=\`${approval.operation}\``] : []),
+    `approvers=${renderInlineCodeList(approval.approverNodeIds)}`,
+    ...(approval.conversationId
+      ? [`conversation=\`${approval.conversationId}\``]
+      : []),
+    formatApprovalResource(approval.resource),
+    ...(approval.reason
+      ? [`reason="${compactInlineText(approval.reason)}"`]
+      : [])
+  ].join(" ");
+}
+
+function renderOpenWorkConversationLine(
+  conversation: ConversationRecord | { conversationId: string }
+): string {
+  if (!("status" in conversation)) {
+    return `  - conversation=\`${conversation.conversationId}\` status=\`missing_record\``;
+  }
+
+  return [
+    `  - conversation=\`${conversation.conversationId}\``,
+    `peer=\`${conversation.peerNodeId}\``,
+    `status=\`${conversation.status}\``,
+    `initiator=\`${conversation.initiator}\``,
+    `responseRequired=\`${conversation.responsePolicy.responseRequired}\``,
+    `closeOnResult=\`${conversation.responsePolicy.closeOnResult}\``,
+    `maxFollowups=\`${conversation.responsePolicy.maxFollowups}\``,
+    `artifacts=${conversation.artifactIds.length}`,
+    ...(conversation.lastMessageType
+      ? [`lastMessageType=\`${conversation.lastMessageType}\``]
+      : [])
+  ].join(" ");
+}
+
+async function buildOpenWorkSummaryContent(input: {
+  runtimeRoot: string;
+}): Promise<string> {
+  const statePaths = buildRunnerStatePaths(input.runtimeRoot);
+  const [sessions, approvals, conversations] = await Promise.all([
+    listSessionRecords(statePaths),
+    listApprovalRecords(statePaths),
+    listConversationRecords(statePaths)
+  ]);
+  const approvalsById = new Map(
+    approvals.map((approval) => [approval.approvalId, approval] as const)
+  );
+  const conversationsById = new Map(
+    conversations.map(
+      (conversation) => [conversation.conversationId, conversation] as const
+    )
+  );
+  const openSessionEntries = sessions
+    .filter((session) => !isTerminalSessionStatus(session.status))
+    .map((session) => {
+      const pendingApprovalsById = new Map<string, ApprovalRecord | undefined>();
+      const activeConversationsById = new Map<
+        string,
+        ConversationRecord | undefined
+      >();
+
+      for (const approvalId of session.waitingApprovalIds) {
+        const approval = approvalsById.get(approvalId);
+        pendingApprovalsById.set(
+          approvalId,
+          approval?.status === "pending" ? approval : undefined
+        );
+      }
+
+      for (const approval of approvals) {
+        if (
+          approval.sessionId === session.sessionId &&
+          approval.status === "pending"
+        ) {
+          pendingApprovalsById.set(approval.approvalId, approval);
+        }
+      }
+
+      for (const conversationId of session.activeConversationIds) {
+        const conversation = conversationsById.get(conversationId);
+        activeConversationsById.set(
+          conversationId,
+          conversation && !isTerminalConversationStatus(conversation.status)
+            ? conversation
+            : undefined
+        );
+      }
+
+      const pendingApprovals = [...pendingApprovalsById].map(
+        ([approvalId, approval]) => approval ?? { approvalId }
+      );
+      const activeConversations = [...activeConversationsById].map(
+        ([conversationId, conversation]) => conversation ?? { conversationId }
+      );
+
+      return {
+        activeConversations,
+        pendingApprovals,
+        session
+      };
+    })
+    .filter(
+      (entry) =>
+        entry.pendingApprovals.length > 0 ||
+        entry.activeConversations.length > 0
+    )
+    .sort(
+      (left, right) =>
+        right.session.updatedAt.localeCompare(left.session.updatedAt) ||
+        left.session.sessionId.localeCompare(right.session.sessionId)
+    )
+    .slice(0, maxOpenWorkSummaryEntries);
+  const contentLines = [
+    "# Open Work Summary",
+    "",
+    "## Current Sessions With Open Work",
+    ""
+  ];
+
+  if (openSessionEntries.length === 0) {
+    contentLines.push("No current open work has been recorded yet.", "");
+    return contentLines.join("\n");
+  }
+
+  for (const entry of openSessionEntries) {
+    const approvalIds = entry.pendingApprovals.map(
+      (approval) => approval.approvalId
+    );
+    const conversationIds = entry.activeConversations.map(
+      (conversation) => conversation.conversationId
+    );
+
+    contentLines.push(
+      `### ${entry.session.sessionId}`,
+      "",
+      `- Status: \`${entry.session.status}\``,
+      `- Intent: ${compactInlineText(entry.session.intent)}`,
+      `- Owner node: \`${entry.session.ownerNodeId}\``,
+      ...(entry.session.originatingNodeId
+        ? [`- Originating node: \`${entry.session.originatingNodeId}\``]
+        : []),
+      `- Updated at: \`${entry.session.updatedAt}\``,
+      `- Waiting approvals: ${renderInlineCodeList(approvalIds)}`,
+      `- Active conversations: ${renderInlineCodeList(conversationIds)}`,
+      "",
+      "Pending approvals:",
+      ...entry.pendingApprovals.map(renderOpenWorkApprovalLine),
+      "",
+      "Active conversations:",
+      ...entry.activeConversations.map(renderOpenWorkConversationLine),
+      ""
+    );
+  }
+
+  return contentLines.join("\n");
+}
+
 export async function performPostTurnMemoryUpdate(
   input: PostTurnMemoryUpdateInput
 ): Promise<PostTurnMemoryUpdateResult> {
@@ -1009,6 +1214,7 @@ export async function performPostTurnMemoryUpdate(
   const indexPath = path.join(wikiRoot, "index.md");
   const logPath = path.join(wikiRoot, "log.md");
   const summaryPagePath = resolveRecentWorkSummaryPath(wikiRoot);
+  const openWorkSummaryPagePath = resolveOpenWorkSummaryPath(wikiRoot);
   const sourceChangeLedgerPagePath =
     resolveSourceChangeLedgerSummaryPath(wikiRoot);
   const approvalLedgerPagePath = resolveApprovalLedgerSummaryPath(wikiRoot);
@@ -1041,6 +1247,8 @@ export async function performPostTurnMemoryUpdate(
   ]);
   const indexBullet = `- [${taskPageTitle}](${taskPageRelativePath})`;
   const summaryBullet = "- [Recent Work Summary](summaries/recent-work.md)";
+  const openWorkSummaryBullet =
+    "- [Open Work Summary](summaries/open-work.md)";
   const sourceChangeLedgerBullet =
     "- [Source Change Ledger](summaries/source-change-ledger.md)";
   const approvalLedgerBullet =
@@ -1051,9 +1259,13 @@ export async function performPostTurnMemoryUpdate(
     appendSectionBullet(
       appendSectionBullet(
         appendSectionBullet(
-          appendSectionBullet(currentIndex, "Task Pages", indexBullet),
+          appendSectionBullet(
+            appendSectionBullet(currentIndex, "Task Pages", indexBullet),
+            "Summaries",
+            summaryBullet
+          ),
           "Summaries",
-          summaryBullet
+          openWorkSummaryBullet
         ),
         "Summaries",
         sourceChangeLedgerBullet
@@ -1079,6 +1291,9 @@ export async function performPostTurnMemoryUpdate(
   const recentWorkSummary = await buildRecentWorkSummaryContent({
     wikiRoot
   });
+  const openWorkSummary = await buildOpenWorkSummaryContent({
+    runtimeRoot: input.context.workspace.runtimeRoot
+  });
   const sourceChangeLedger = await buildSourceChangeLedgerContent({
     wikiRoot
   });
@@ -1091,6 +1306,7 @@ export async function performPostTurnMemoryUpdate(
 
   await Promise.all([
     writeTextFile(summaryPagePath, `${recentWorkSummary.trimEnd()}\n`),
+    writeTextFile(openWorkSummaryPagePath, `${openWorkSummary.trimEnd()}\n`),
     writeTextFile(
       sourceChangeLedgerPagePath,
       `${sourceChangeLedger.trimEnd()}\n`
@@ -1107,6 +1323,7 @@ export async function performPostTurnMemoryUpdate(
     delegationLedgerPagePath,
     indexPath,
     logPath,
+    openWorkSummaryPagePath,
     sourceChangeLedgerPagePath,
     summaryPagePath,
     taskPagePath

@@ -8,6 +8,12 @@ import {
   cleanupRuntimeFixtures,
   createRuntimeFixture
 } from "./test-fixtures.js";
+import {
+  ensureRunnerStatePaths,
+  writeApprovalRecord,
+  writeConversationRecord,
+  writeSessionRecord
+} from "./state-store.js";
 
 afterEach(async () => {
   await cleanupRuntimeFixtures();
@@ -211,6 +217,146 @@ describe("post-turn memory maintenance", () => {
         memoryUpdate.taskPagePath
       ])
     );
+  });
+
+  it("rebuilds an open-work summary from current runner session state", async () => {
+    const fixture = await createRuntimeFixture();
+    const context = await loadRuntimeContext(fixture.contextPath);
+    const envelope = buildInboundTaskRequest();
+    const statePaths = await ensureRunnerStatePaths(context.workspace.runtimeRoot);
+
+    await Promise.all([
+      writeSessionRecord(statePaths, {
+        activeConversationIds: ["conv-review"],
+        entrypointNodeId: "lead-it",
+        graphId: context.binding.graphId,
+        intent: "Review the parser source change.",
+        lastMessageType: "approval.request",
+        openedAt: "2026-04-26T12:00:00.000Z",
+        originatingNodeId: "lead-it",
+        ownerNodeId: context.binding.node.nodeId,
+        rootArtifactIds: ["artifact-input"],
+        sessionId: "session-alpha",
+        status: "waiting_approval",
+        traceId: "trace-open-work",
+        updatedAt: "2026-04-26T12:03:00.000Z",
+        waitingApprovalIds: ["approval-source-parser"]
+      }),
+      writeApprovalRecord(statePaths, {
+        approvalId: "approval-source-parser",
+        approverNodeIds: ["user-reviewer"],
+        conversationId: "conv-review",
+        graphId: context.binding.graphId,
+        operation: "source_application",
+        reason: "Review parser source changes before applying them.",
+        requestedAt: "2026-04-26T12:01:00.000Z",
+        requestedByNodeId: context.binding.node.nodeId,
+        resource: {
+          id: "source-change-parser",
+          kind: "source_change_candidate",
+          label: "Parser source change"
+        },
+        sessionId: "session-alpha",
+        status: "pending",
+        updatedAt: "2026-04-26T12:02:00.000Z"
+      }),
+      writeApprovalRecord(statePaths, {
+        approvalId: "approval-closed",
+        approverNodeIds: ["user-reviewer"],
+        graphId: context.binding.graphId,
+        requestedAt: "2026-04-26T11:01:00.000Z",
+        requestedByNodeId: context.binding.node.nodeId,
+        sessionId: "session-alpha",
+        status: "approved",
+        updatedAt: "2026-04-26T11:02:00.000Z"
+      }),
+      writeConversationRecord(statePaths, {
+        artifactIds: ["artifact-input"],
+        conversationId: "conv-review",
+        followupCount: 1,
+        graphId: context.binding.graphId,
+        initiator: "self",
+        lastMessageType: "approval.request",
+        localNodeId: context.binding.node.nodeId,
+        localPubkey: context.identityContext.publicKey,
+        openedAt: "2026-04-26T12:00:00.000Z",
+        peerNodeId: "reviewer-node",
+        peerPubkey: context.identityContext.publicKey,
+        responsePolicy: {
+          closeOnResult: true,
+          maxFollowups: 1,
+          responseRequired: true
+        },
+        sessionId: "session-alpha",
+        status: "working",
+        updatedAt: "2026-04-26T12:02:30.000Z"
+      }),
+      writeConversationRecord(statePaths, {
+        artifactIds: [],
+        conversationId: "conv-closed",
+        followupCount: 0,
+        graphId: context.binding.graphId,
+        initiator: "peer",
+        localNodeId: context.binding.node.nodeId,
+        localPubkey: context.identityContext.publicKey,
+        openedAt: "2026-04-26T11:00:00.000Z",
+        peerNodeId: "reviewer-node",
+        peerPubkey: context.identityContext.publicKey,
+        responsePolicy: {
+          closeOnResult: true,
+          maxFollowups: 1,
+          responseRequired: true
+        },
+        sessionId: "session-alpha",
+        status: "closed",
+        updatedAt: "2026-04-26T11:02:30.000Z"
+      })
+    ]);
+
+    const memoryUpdate = await performPostTurnMemoryUpdate({
+      consumedArtifactIds: [],
+      context,
+      envelope,
+      producedArtifactIds: ["report-turn-open-work"],
+      result: {
+        assistantMessages: ["Asked for parser review and paused for approval."],
+        stopReason: "waiting_approval",
+        toolExecutions: [],
+        toolRequests: [],
+        usage: {
+          inputTokens: 8,
+          outputTokens: 4
+        }
+      },
+      turnId: "turn-memory-open-work"
+    });
+    const [openWorkSummaryPage, indexPage, turnRequest] = await Promise.all([
+      readFile(memoryUpdate.openWorkSummaryPagePath, "utf8"),
+      readFile(memoryUpdate.indexPath, "utf8"),
+      buildAgentEngineTurnRequest(context)
+    ]);
+    const memoryBrief = turnRequest.interactionPromptParts.find((part) =>
+      part.startsWith("Memory brief:")
+    );
+
+    expect(openWorkSummaryPage).toContain("# Open Work Summary");
+    expect(openWorkSummaryPage).toContain("### session-alpha");
+    expect(openWorkSummaryPage).toContain("- Status: `waiting_approval`");
+    expect(openWorkSummaryPage).toContain("- Waiting approvals: `approval-source-parser`");
+    expect(openWorkSummaryPage).toContain("- Active conversations: `conv-review`");
+    expect(openWorkSummaryPage).toContain("approvalId=`approval-source-parser`");
+    expect(openWorkSummaryPage).toContain("operation=`source_application`");
+    expect(openWorkSummaryPage).toContain(
+      "resource=source_change_candidate:`source-change-parser`"
+    );
+    expect(openWorkSummaryPage).toContain("conversation=`conv-review`");
+    expect(openWorkSummaryPage).toContain("peer=`reviewer-node`");
+    expect(openWorkSummaryPage).not.toContain("approval-closed");
+    expect(openWorkSummaryPage).not.toContain("conv-closed");
+    expect(indexPage).toContain("[Open Work Summary](summaries/open-work.md)");
+    expect(turnRequest.memoryRefs).toContain(memoryUpdate.openWorkSummaryPagePath);
+    expect(memoryBrief).toContain("### Open work (summaries/open-work.md)");
+    expect(memoryBrief).toContain("approvalId=`approval-source-parser`");
   });
 
   it("keeps task-page links inside the Task Pages section when the wiki index already has later sections", async () => {
