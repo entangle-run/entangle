@@ -3,6 +3,8 @@
 Entangle is pre-release. The deterministic runtime proof surface is broad, but
 production hardening and live-provider validation are not complete.
 
+Current public release: [v0.1.0-alpha.1](../CHANGELOG.md#v010-alpha1---2026-05-10).
+
 ## Implemented Runtime Capabilities
 
 - Host Authority state, status, export/import, and signing helpers.

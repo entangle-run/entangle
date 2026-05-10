@@ -15,44 +15,30 @@ It is not a personal notebook and not a generic documentation dump. It should tr
 
 ## Current project state
 
-Entangle is currently in a partial end-to-end runtime implementation phase.
+Entangle is currently a pre-release runtime with broad deterministic proof
+coverage. It is no longer just conceptual architecture or a control-plane-only
+scaffold.
 
-The corpus now extends from conceptual architecture into normative contracts,
-package and binding structure, edge semantics, artifact backends, control-plane
-rules, compatibility policy, observability, Studio responsibilities, host API
-contracts, effective runtime context, engine-adapter boundaries, and a concrete
-same-machine deployment profile.
+The corpus now extends from normative contracts into real Host, runner, User
+Node, Studio, CLI, User Client, Nostr fabric, git-artifact, memory/wiki, engine
+adapter, fake-provider, deployment, and proof-kit implementations.
 
-The local reference corpus is materialized under `resources/`, and the
-implementation stack direction has now been narrowed toward a canonical
-TypeScript + Node 22 + pnpm + Turborepo toolchain around `nostr-tools`,
-`strfry`, `Gitea`, Docker Compose, `entangle-host`, and host-managed runners.
+The active repository keeps only the `resources/README.md` manifest under
+`resources/`. The external research clones are local material outside the
+active worktree at
+`/Users/vincenzo/Documents/GitHub/VincenzoImp/entangle/resources`, so they are
+inspectable without becoming embedded repositories or submodules.
 
-The previously remaining pre-implementation decisions have now also been
-closed:
+The implementation stack is now a canonical TypeScript + Node 22 + pnpm +
+Turborepo toolchain around `nostr-tools`, `strfry`, Gitea, Docker Compose,
+`entangle-host`, generic runners, `entangle-studio`, `entangle` CLI, and the
+runner-served User Client.
 
-- the node execution core should live in a first-party internal
-  `agent-engine` package rather than inside a wholesale upstream runtime fork;
-- live local host state should live under a disciplined `.entangle/` runtime
-  root with explicit desired, observed, trace, import, and workspace
-  partitions;
-- the early same-machine profile should include a thin but real CLI plus package
-  scaffolding, while Studio remains the richer operator surface.
-
-The repository is therefore no longer best described as "entering
-implementation" or as being in a control-plane-only stage.
-
-As of the 2026-04-26 federated-runtime pivot audit, the forward-looking product
-baseline is Entangle. Same-machine deployment is the first deployment topology,
-not the product identity or a separate runtime profile. The current
-implementation still has same-workstation adapter and deep-detail migration
-work: Host writes injected runtime context for launcher compatibility, Docker
-runners can still share Host-managed volumes, and some Host runtime detail APIs
-still read runner-owned state. The active redesign pack under
-`references/221-federated-runtime-redesign-index.md` defines the required shift
-to Host Authority signing, generic runner registration, runtime assignments,
-signed observations, stable User Node identities, and projection-backed
-Studio/CLI surfaces.
+The product baseline is Entangle. Same-machine deployment is a development
+adapter for the federated model, not the product identity and not a separate
+runtime profile. Active public surfaces must continue to distinguish
+implemented deterministic proof paths from manual live-provider, real-git, and
+physical multi-machine validation.
 
 The most accurate current description is:
 

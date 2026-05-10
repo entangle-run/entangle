@@ -193,6 +193,7 @@ for the surface you changed.
 - [docs/testing.md](docs/testing.md): quality gates and smoke tests.
 - [docs/repository-guide.md](docs/repository-guide.md): contribution and repo
   hygiene guidance.
+- [CHANGELOG.md](CHANGELOG.md): public release notes and validation status.
 - [references/README.md](references/README.md): technical design archive.
 - [wiki/overview.md](wiki/overview.md): project memory and current long-form
   state.

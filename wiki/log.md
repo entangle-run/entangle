@@ -7086,3 +7086,13 @@ from `releases/local`.
 This keeps Entangle's active public repository framing aligned with the
 federated product thesis: same-machine operation is a development deployment
 adapter, not a separate product identity.
+
+## [2026-05-11] docs | Added alpha changelog and repaired wiki current-state drift
+
+Added `CHANGELOG.md` with the public `v0.1.0-alpha.1` release notes and linked
+it from the root README and status documentation.
+
+Repaired the top of `wiki/overview.md` so it no longer says the external
+reference clones are materialized under the active `resources/` worktree. The
+current source of truth is that `resources/` contains only the manifest, while
+local research clones live outside the active repository.
