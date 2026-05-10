@@ -217,4 +217,4 @@ describe Entangle as a federated runtime, not as a local product.
 
 ## License
 
-Entangle is open source under the [Apache License 2.0](LICENSE).
+Entangle is open source under the [MIT License](LICENSE).
