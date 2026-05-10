@@ -1999,6 +1999,17 @@ async function requireRunnerRegistration(
   return registration;
 }
 
+export class RunnerIdentityConflictError extends Error {
+  constructor(
+    readonly runnerId: string,
+    readonly registeredPublicKey: string,
+    readonly observedPublicKey: string
+  ) {
+    super(`Runner '${runnerId}' is already registered with a different public key.`);
+    this.name = "RunnerIdentityConflictError";
+  }
+}
+
 export async function recordRunnerHello(
   input: unknown
 ): Promise<RunnerRegistryInspectionResponse> {
@@ -2010,8 +2021,10 @@ export async function recordRunnerHello(
   const existing = await readRunnerRegistrationRecord(hello.runnerId);
 
   if (existing && existing.publicKey !== hello.runnerPubkey) {
-    throw new Error(
-      `Runner '${hello.runnerId}' is already registered with a different public key.`
+    throw new RunnerIdentityConflictError(
+      hello.runnerId,
+      existing.publicKey,
+      hello.runnerPubkey
     );
   }
 
@@ -2049,8 +2062,10 @@ export async function recordRunnerHeartbeat(
   const registration = await requireRunnerRegistration(heartbeat.runnerId);
 
   if (registration.publicKey !== heartbeat.runnerPubkey) {
-    throw new Error(
-      `Runner '${heartbeat.runnerId}' heartbeat was signed by a different public key.`
+    throw new RunnerIdentityConflictError(
+      heartbeat.runnerId,
+      registration.publicKey,
+      heartbeat.runnerPubkey
     );
   }
 
@@ -2540,6 +2555,14 @@ export async function recordRuntimeAssignmentAccepted(
     assignment.runnerId !== accepted.runnerId ||
     assignment.runnerPubkey !== accepted.runnerPubkey
   ) {
+    if (assignment.runnerId === accepted.runnerId) {
+      throw new RunnerIdentityConflictError(
+        accepted.runnerId,
+        assignment.runnerPubkey,
+        accepted.runnerPubkey
+      );
+    }
+
     throw new Error(
       `Assignment '${accepted.assignmentId}' acceptance did not match the assigned runner.`
     );
@@ -2575,6 +2598,14 @@ export async function recordRuntimeAssignmentRejected(
     assignment.runnerId !== rejected.runnerId ||
     assignment.runnerPubkey !== rejected.runnerPubkey
   ) {
+    if (assignment.runnerId === rejected.runnerId) {
+      throw new RunnerIdentityConflictError(
+        rejected.runnerId,
+        assignment.runnerPubkey,
+        rejected.runnerPubkey
+      );
+    }
+
     throw new Error(
       `Assignment '${rejected.assignmentId}' rejection did not match the assigned runner.`
     );
@@ -2683,8 +2714,10 @@ async function assertRegisteredObservationRunner(input: {
   const registration = await requireRunnerRegistration(input.runnerId);
 
   if (registration.publicKey !== input.runnerPubkey) {
-    throw new Error(
-      `Runner '${input.runnerId}' observation was signed by a different public key.`
+    throw new RunnerIdentityConflictError(
+      input.runnerId,
+      registration.publicKey,
+      input.runnerPubkey
     );
   }
 

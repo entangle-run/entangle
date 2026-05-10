@@ -1779,6 +1779,13 @@ Current status:
   URL from the runner Host API URL through `--runner-host-api-url`, so
   containerized runners can use Docker-network DNS such as `http://host:7071`
   while operator CLI commands keep using the operator-reachable Host URL;
+- generated distributed proof operator/verifier scripts and non-container
+  runner `start.sh` scripts now use a local `pnpm` binary when present and
+  otherwise fall back to `npm exec --yes pnpm@10.18.3 --`, so generated proof
+  kits no longer require a global pnpm install on operator or runner machines;
+- Host federated observation intake now ignores same-runner public-key
+  conflicts as invalid observations instead of allowing stale relay events,
+  regenerated runner secrets, or reused runner ids to crash the Host process;
 - the remaining deployment hardening is infrastructure-backed orchestration
   that can provision multiple machines or VM/container boundaries around the
   verifier, plus broader non-disposable upgrade/repair workflows beyond the

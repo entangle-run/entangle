@@ -175,7 +175,10 @@ try {
     "--reviewer-user-node",
     "reviewer"
   ], {
-    mustContain: "[dry-run] would write runner env/start scripts"
+    mustContain: [
+      "[dry-run] would write runner env/start scripts",
+      "[dry-run] generated shell scripts use pnpm fallback: npm exec --yes pnpm@10.18.3 --"
+    ]
   });
 
   runStep("proof kit no-token dry-run", [

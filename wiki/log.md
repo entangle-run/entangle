@@ -7023,3 +7023,24 @@ runner join configs.
 This lets runner Compose proofs use Docker-network Host addresses such as
 `http://host:7071` without forcing operator CLI commands to use the same DNS
 view.
+
+## [2026-05-10] ops | Added generated proof-kit pnpm fallback
+
+Added `references/600-distributed-proof-generated-pnpm-fallback-slice.md`.
+Generated distributed proof `start.sh`, `operator/commands.sh`, and verifier
+scripts now prefer a local `pnpm` executable and otherwise fall back to
+`npm exec --yes pnpm@10.18.3 --`.
+
+The deterministic proof-tool smoke now checks the dry-run fallback signal, and
+a runner-Compose proof rehearsal confirmed that generated operator commands
+reach real Host CLI calls instead of failing on a missing global `pnpm`.
+
+## [2026-05-10] host | Hardened runner identity conflicts
+
+Added `references/601-runner-identity-conflict-hardening-slice.md`. Host now
+classifies same-runner public-key mismatches as runner identity conflicts and
+ignores those invalid observations at the federated control-plane boundary.
+
+This preserves the original runner identity binding and prevents stale relay
+events or regenerated runner secrets with reused runner ids from terminating
+the Host process.

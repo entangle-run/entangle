@@ -1558,7 +1558,8 @@ The current implementation-truth audit now lives in
   status/maintenance/health surfaces, optional and required Docker-gated
   disposable roundtrip smokes, guided previous-service-volume migration, and
   distributed proof-kit support for separate operator/verifier and runner Host
-  API URLs through `--runner-host-api-url`;
+  API URLs through `--runner-host-api-url`, generated proof-kit pnpm fallback
+  scripts, and Host-side runner identity-conflict hardening;
 - complete CLI parity where it adds real headless operational value;
 - continue narrowing the remaining delegated-session gaps now that controlled
   autonomous `task.handoff` emission and runner-local active-conversation

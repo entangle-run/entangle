@@ -1,6 +1,6 @@
 import { spawn, spawnSync } from "node:child_process";
 
-const pinnedPnpmPackage = "pnpm@10.18.3";
+export const pinnedPnpmPackage = "pnpm@10.18.3";
 
 export function resolvePnpmInvocation(args) {
   const pnpmExecPath = process.env.npm_execpath?.includes("pnpm")

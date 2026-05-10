@@ -331,6 +331,9 @@ Copy each runner directory to its intended machine and set
 `ENTANGLE_REPO_ROOT` there; no generated runner command should require Host
 filesystem access. Pass `--runner-host-api-url <url>` when those runners reach
 Host through a different address than the operator/verifier `--host-url`.
+Generated operator and non-container runner scripts prefer a local `pnpm`
+executable and otherwise fall back to `npm exec --yes pnpm@10.18.3 --`, so
+Node/npm is sufficient when global `pnpm` is not installed.
 For a same-machine rehearsal that still isolates runners behind container
 boundaries, generate the kit with `--write-runner-compose`. The generated
 `docker-compose.runners.yml` starts the three runner directories in separate

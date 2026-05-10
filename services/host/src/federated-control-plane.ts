@@ -20,6 +20,7 @@ import {
   recordConversationUpdatedObservation,
   recordRunnerHeartbeat,
   recordRunnerHello,
+  RunnerIdentityConflictError,
   recordRuntimeAssignmentReceiptObservation,
   recordRuntimeCommandReceiptObservation,
   recordRuntimeStatusObservation,
@@ -48,6 +49,7 @@ export type HostFederatedObservationResult = {
   action: HostFederatedObservationAction;
   controlEventId?: string;
   eventType: EntangleObservationEvent["payload"]["eventType"];
+  reason?: "runner_identity_conflict";
   runnerId: string;
 };
 
@@ -99,6 +101,29 @@ export class HostFederatedControlPlane {
     const parsedEvent = entangleObservationEventSchema.parse(event);
     const { payload } = parsedEvent;
 
+    try {
+      return await this.recordObservationPayload(payload, input);
+    } catch (error) {
+      if (error instanceof RunnerIdentityConflictError) {
+        return {
+          action: "ignored",
+          eventType: payload.eventType,
+          reason: "runner_identity_conflict",
+          runnerId: payload.runnerId
+        };
+      }
+
+      throw error;
+    }
+  }
+
+  private async recordObservationPayload(
+    payload: EntangleObservationEvent["payload"],
+    input: {
+      authRequired?: boolean;
+      relayUrls?: string[];
+    }
+  ): Promise<HostFederatedObservationResult> {
     if (payload.eventType === "runner.hello") {
       const inspection = await recordRunnerHello(payload);
       const published =

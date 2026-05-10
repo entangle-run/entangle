@@ -1484,6 +1484,14 @@ the operator/verifier Host URL separate from the Host API URL written into
 runner join configs. This closes the immediate runner Compose DNS gap where
 operators use `localhost` but runner containers need a network-scoped Host
 address such as `http://host:7071`.
+Generated distributed proof operator/verifier scripts and non-container runner
+`start.sh` scripts now also prefer a local `pnpm` binary and otherwise fall
+back to `npm exec --yes pnpm@10.18.3 --`, removing the global-pnpm assumption
+from copyable proof kits.
+Host federated observation intake now treats runner public-key conflicts as
+ignored invalid observations instead of process-fatal exceptions, preserving
+the existing runner identity binding when stale or regenerated runner secrets
+reuse a runner id.
 The highest-value remaining implementation areas are richer model-guided
 memory maintenance, deeper delegated-session semantics beyond the current
 controlled handoff path and deterministic owner/coordination/delegation memory

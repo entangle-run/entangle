@@ -82,9 +82,8 @@ pnpm can run the same root package scripts through npm's package executor.
   Mitigation: user-facing commands remain documented as pnpm commands while the
   process helper handles portability internally.
 - Risk: generated proof-kit scripts still expect pnpm on target machines.
-  Mitigation: this slice only changes repository-side wrapper execution. Proof
-  kit target-machine prerequisites still document Node, pnpm, git, and access
-  to the copied Entangle checkout.
+  Mitigation: this was the remaining gap after this slice and is now closed by
+  [600-distributed-proof-generated-pnpm-fallback-slice.md](600-distributed-proof-generated-pnpm-fallback-slice.md).
 
 ## Open Questions
 

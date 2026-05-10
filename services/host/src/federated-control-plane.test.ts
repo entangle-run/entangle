@@ -1019,4 +1019,67 @@ describe("Host federated control plane", () => {
       "runner.hello.ack"
     );
   });
+
+  it("ignores runner hello identity conflicts without crashing the control plane", async () => {
+    const { authority, controlPlaneModule, hostSecretKey, stateModule } =
+      await setupHostState();
+    const originalRunnerSecretKey = generateSecretKey();
+    const originalRunnerPubkey = getPublicKey(originalRunnerSecretKey);
+    const conflictingRunnerSecretKey = generateSecretKey();
+    const conflictingRunnerPubkey = getPublicKey(conflictingRunnerSecretKey);
+    const transport = new FakeHostFederatedTransport(hostSecretKey);
+    const controlPlane = new controlPlaneModule.HostFederatedControlPlane({
+      transport
+    });
+
+    const acceptedResult = await controlPlane.handleObservationEvent(
+      buildRunnerHello({
+        hostAuthorityPubkey: authority.authority.publicKey,
+        runnerPubkey: originalRunnerPubkey,
+        runnerSecretKey: originalRunnerSecretKey
+      }),
+      {
+        relayUrls: ["ws://relay.example.test"]
+      }
+    );
+    const conflictResult = await controlPlane.handleObservationEvent(
+      buildRunnerHello({
+        hostAuthorityPubkey: authority.authority.publicKey,
+        runnerPubkey: conflictingRunnerPubkey,
+        runnerSecretKey: conflictingRunnerSecretKey
+      }),
+      {
+        relayUrls: ["ws://relay.example.test"]
+      }
+    );
+    const heartbeatConflictResult = await controlPlane.handleObservationEvent(
+      buildRunnerHeartbeat({
+        hostAuthorityPubkey: authority.authority.publicKey,
+        runnerPubkey: conflictingRunnerPubkey,
+        runnerSecretKey: conflictingRunnerSecretKey
+      }),
+      {
+        relayUrls: ["ws://relay.example.test"]
+      }
+    );
+
+    const registry = await stateModule.listRunnerRegistry();
+
+    expect(acceptedResult.action).toBe("recorded_and_published_control");
+    expect(conflictResult).toMatchObject({
+      action: "ignored",
+      eventType: "runner.hello",
+      reason: "runner_identity_conflict",
+      runnerId: "runner-alpha"
+    });
+    expect(heartbeatConflictResult).toMatchObject({
+      action: "ignored",
+      eventType: "runner.heartbeat",
+      reason: "runner_identity_conflict",
+      runnerId: "runner-alpha"
+    });
+    expect(registry.runners).toHaveLength(1);
+    expect(registry.runners[0]?.registration.publicKey).toBe(originalRunnerPubkey);
+    expect(transport.publishedControlEvents).toHaveLength(1);
+  });
 });

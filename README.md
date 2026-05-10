@@ -525,6 +525,10 @@ Pass `--runner-host-api-url <url>` when runner machines or runner containers
 resolve Host differently than the operator/verifier machine. The value is
 written into each generated `runner-join.json`, while `--host-url` remains the
 operator/verifier URL.
+Generated operator and non-container runner shell scripts use a local `pnpm`
+executable when one is available and otherwise fall back to
+`npm exec --yes pnpm@10.18.3 --`, so proof-kit target machines need Node/npm
+and an Entangle checkout but do not need a global `pnpm` installation.
 Pass `--require-external-relay-urls` when that same proof should reject relay
 URLs on `localhost`, loopback, or wildcard addresses. This guard checks URL
 shape and is separate from `--check-relay-health`, which opens the relay

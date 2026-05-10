@@ -5,7 +5,7 @@ import { randomBytes } from "node:crypto";
 import { chmod, mkdir, writeFile } from "node:fs/promises";
 import path from "node:path";
 import { normalizeDistributedProofProfile } from "./distributed-proof-profile.mjs";
-import { runPnpmSync } from "./pnpm-runner.mjs";
+import { pinnedPnpmPackage, runPnpmSync } from "./pnpm-runner.mjs";
 
 const rawArgs = process.argv.slice(2);
 const dryRun = hasFlag("--dry-run");
@@ -476,12 +476,37 @@ function buildUserClientBasicAuthStartCheck(profile) {
   ].join("\n");
 }
 
+function buildRunPnpmShellFunction() {
+  return [
+    "run_pnpm() {",
+    "  if command -v pnpm >/dev/null 2>&1; then",
+    '    pnpm "$@"',
+    "  else",
+    `    npm exec --yes ${pinnedPnpmPackage} -- "$@"`,
+    "  fi",
+    "}"
+  ].join("\n");
+}
+
+function buildExecPnpmShellFunction() {
+  return [
+    "exec_pnpm() {",
+    "  if command -v pnpm >/dev/null 2>&1; then",
+    '    exec pnpm "$@"',
+    "  fi",
+    `  exec npm exec --yes ${pinnedPnpmPackage} -- "$@"`,
+    "}"
+  ].join("\n");
+}
+
 function buildRunnerStartScript(profile) {
   return `#!/usr/bin/env bash
 set -euo pipefail
 
 SCRIPT_DIR="$(CDPATH= cd -- "$(dirname -- "$0")" && pwd)"
 ENTANGLE_REPO_ROOT="\${ENTANGLE_REPO_ROOT:-$(pwd)}"
+
+${buildExecPnpmShellFunction()}
 
 set -a
 # shellcheck disable=SC1091
@@ -497,7 +522,7 @@ ${buildUserClientBasicAuthStartCheck(profile)}
 export ENTANGLE_RUNNER_STATE_ROOT="\${ENTANGLE_RUNNER_STATE_ROOT:-$SCRIPT_DIR/state}"
 
 cd "$ENTANGLE_REPO_ROOT"
-exec pnpm --filter @entangle/runner exec tsx src/index.ts join --config "$SCRIPT_DIR/runner-join.json"
+exec_pnpm --filter @entangle/runner exec tsx src/index.ts join --config "$SCRIPT_DIR/runner-join.json"
 `;
 }
 
@@ -552,6 +577,8 @@ function buildOperatorCommandsScript() {
     '. "$SCRIPT_DIR/operator.env"',
     "set +a",
     "",
+    buildRunPnpmShellFunction(),
+    "",
     hostToken ? 'if [ "${ENTANGLE_HOST_TOKEN:-}" = "REPLACE_WITH_HOST_TOKEN" ]; then' : "# No Host token was available when this kit was generated.",
     ...(hostToken
       ? [
@@ -564,7 +591,7 @@ function buildOperatorCommandsScript() {
     'cd "$ENTANGLE_REPO_ROOT"',
     "",
     'run_cli() {',
-    '  pnpm --filter @entangle/cli dev "$@"',
+    '  run_pnpm --filter @entangle/cli dev "$@"',
     "}",
     "",
     ...buildAgentEngineProfileOperatorCommands(),
@@ -736,7 +763,7 @@ function buildVerifierCommand(options = {}) {
   const profileFile = options.profileFile ?? "proof-profile.json";
   const junitReportFile = options.junitReportFile ?? "topology.xml";
   const args = [
-    `pnpm ops:distributed-proof-verify --profile "$SCRIPT_DIR/${profileFile}"`,
+    `run_pnpm ops:distributed-proof-verify --profile "$SCRIPT_DIR/${profileFile}"`,
     '--host-url "$ENTANGLE_HOST_URL"',
     "--check-user-client-health",
     "--require-conversation",
@@ -794,6 +821,8 @@ function buildOperatorVerifierScript(options = {}) {
     "# shellcheck disable=SC1091",
     '. "$SCRIPT_DIR/operator.env"',
     "set +a",
+    "",
+    buildRunPnpmShellFunction(),
     "",
     hostToken ? 'if [ "${ENTANGLE_HOST_TOKEN:-}" = "REPLACE_WITH_HOST_TOKEN" ]; then' : "# No Host token was available when this kit was generated.",
     ...(hostToken
@@ -869,7 +898,7 @@ function buildReadme() {
 
 This kit is generated for a topology-faithful Entangle proof. Host, relay, git,
 and runners do not need to share a filesystem. Each runner directory can be
-copied to a different machine that has an Entangle checkout, Node, pnpm, git,
+copied to a different machine that has an Entangle checkout, Node/npm, git,
 and network access to the Host API and relay. The operator/verifier Host URL
 can differ from the runner Host API URL when runners are behind a container
 network or a different DNS view.
@@ -918,6 +947,10 @@ ${buildCustomAgentEngineReadmeSection()}
 Set \`ENTANGLE_PROOF_JUNIT_DIR\` before running \`operator/verify-topology.sh\`
 or \`operator/verify-artifacts.sh\` to persist JUnit XML reports named
 \`topology.xml\` and \`artifacts.xml\` in that directory.
+
+Generated shell scripts use a local \`pnpm\` executable when available and
+otherwise fall back to \`npm exec --yes ${pinnedPnpmPackage} --\`, so a global
+\`pnpm\` install is not required on operator or non-container runner machines.
 
 ${buildRunnerComposeReadmeSection()}
 
@@ -1121,6 +1154,9 @@ async function writeKit() {
       `[dry-run] would write runner env/start scripts${
         writeRunnerCompose ? ", runner compose files" : ""
       }, operator commands, verifier scripts, and README.`
+    );
+    console.log(
+      `[dry-run] generated shell scripts use pnpm fallback: npm exec --yes ${pinnedPnpmPackage} --`
     );
     return;
   }
