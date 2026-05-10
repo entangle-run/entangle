@@ -7120,3 +7120,12 @@ JavaScript/TypeScript analysis on push, pull request, and a weekly schedule.
 The workflows use `build-mode: none`, keeping security scanning separate from
 the existing CI build/test gates while still publishing GitHub code-scanning
 results.
+
+## [2026-05-11] runtime | Made runner state writes atomic
+
+Replaced direct JSON state overwrites in the runner state store with
+same-directory temporary writes followed by atomic rename publication.
+
+This prevents concurrent runner reads from observing truncated session,
+approval, conversation, turn, artifact, source-change, source-history, or
+memory-state records while another service path is persisting an update.
