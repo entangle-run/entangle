@@ -7065,3 +7065,12 @@ distributed proof kits now include `operator/proof-graph.json` and explicit
 The bootstrap helper admits the configured proof package path, imports the
 minimal proof graph, and reruns graph preflight. The main
 `operator/commands.sh` still does not replace Host graph state implicitly.
+
+## [2026-05-10] ops | Added proof-kit runner readiness wait
+
+Added `references/604-distributed-proof-runner-readiness-wait-slice.md`.
+Generated distributed proof kits now write `operator/wait-for-runners.mjs`,
+and `operator/commands.sh` runs it before trust and assignment commands.
+
+The wait script polls Host `/v1/runners` for the generated runner ids and
+fails with a bounded diagnostic if `runner.hello` has not reached Host yet.

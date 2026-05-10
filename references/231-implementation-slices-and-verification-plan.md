@@ -1797,6 +1797,11 @@ Current status:
   the bootstrap helper admits the configured proof package path, imports the
   minimal proof graph, and reruns graph preflight, while the main
   `operator/commands.sh` still avoids implicit graph replacement;
+- generated distributed proof operator commands now also run
+  `operator/wait-for-runners.mjs` before trust and assignment mutations,
+  polling Host `/v1/runners` for the generated runner ids so operator timing
+  mistakes fail as bounded readiness diagnostics instead of immediate trust
+  command errors;
 - the remaining deployment hardening is infrastructure-backed orchestration
   that can provision multiple machines or VM/container boundaries around the
   verifier, plus broader non-disposable upgrade/repair workflows beyond the

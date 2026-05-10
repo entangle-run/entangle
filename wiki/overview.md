@@ -494,6 +494,10 @@ Generated kits also include explicit `operator/bootstrap-graph.sh` and
 `operator/proof-graph.json` files. The bootstrap helper admits the configured
 proof package path, imports a minimal proof graph, and reruns preflight, while
 the main operator command sequence still avoids implicit graph replacement.
+Generated `operator/commands.sh` now also runs
+`operator/wait-for-runners.mjs` before trust and assignment mutations. The
+wait script polls Host `/v1/runners` for the generated runner ids and fails
+with a bounded readiness diagnostic if `runner.hello` has not arrived.
 With `--fake-opencode-server-url <url>`, the same kit now prepares Host
 operator commands that upsert a deterministic attached fake OpenCode profile,
 bind the agent node to it, and write optional runner Basic-auth env for
@@ -1569,7 +1573,8 @@ The current implementation-truth audit now lives in
   API URLs through `--runner-host-api-url`, generated proof-kit pnpm fallback
   scripts, Host-side runner identity-conflict hardening, and generated
   proof-kit graph preflight plus explicit minimal graph bootstrap before
-  operator mutations;
+  operator mutations, with a generated runner-registration wait before trust
+  and assignment;
 - complete CLI parity where it adds real headless operational value;
 - continue narrowing the remaining delegated-session gaps now that controlled
   autonomous `task.handoff` emission and runner-local active-conversation

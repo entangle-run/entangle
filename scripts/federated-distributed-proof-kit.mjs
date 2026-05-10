@@ -612,6 +612,8 @@ function buildOperatorCommandsScript() {
     'node "$SCRIPT_DIR/preflight.mjs"',
     "",
     ...buildAgentEngineProfileOperatorCommands(),
+    'node "$SCRIPT_DIR/wait-for-runners.mjs"',
+    "",
     "run_cli runners list --summary"
   ];
 
@@ -862,6 +864,160 @@ function buildProofGraph() {
       }
     }
   };
+}
+
+function buildOperatorRunnerWaitScript() {
+  return `#!/usr/bin/env node
+import { readFile } from "node:fs/promises";
+import path from "node:path";
+import { fileURLToPath } from "node:url";
+
+const scriptDir = path.dirname(fileURLToPath(import.meta.url));
+
+function fail(message) {
+  console.error(\`Entangle distributed proof runner wait failed: \${message}\`);
+  process.exit(1);
+}
+
+function parsePositiveInteger(value, label) {
+  const parsed = Number.parseInt(value, 10);
+
+  if (!Number.isInteger(parsed) || parsed <= 0) {
+    fail(\`\${label} must be a positive integer, got '\${value}'.\`);
+  }
+
+  return parsed;
+}
+
+function requireString(value, label) {
+  if (typeof value !== "string" || value.trim().length === 0) {
+    fail(\`\${label} is missing from operator/proof-profile.json.\`);
+  }
+
+  return value;
+}
+
+async function readProfile() {
+  const profilePath = path.join(scriptDir, "proof-profile.json");
+  let raw;
+
+  try {
+    raw = await readFile(profilePath, "utf8");
+  } catch (error) {
+    fail(\`Could not read distributed proof profile at \${profilePath}: \${error instanceof Error ? error.message : String(error)}\`);
+  }
+
+  try {
+    return JSON.parse(raw);
+  } catch (error) {
+    fail(\`Could not parse distributed proof profile at \${profilePath}: \${error instanceof Error ? error.message : String(error)}\`);
+  }
+}
+
+async function fetchRunnerList(hostUrl) {
+  let runnersUrl;
+
+  try {
+    runnersUrl = new URL("/v1/runners", hostUrl.endsWith("/") ? hostUrl : \`\${hostUrl}/\`);
+  } catch (error) {
+    fail(\`ENTANGLE_HOST_URL is not a valid URL: \${error instanceof Error ? error.message : String(error)}\`);
+  }
+
+  const headers = {};
+  const token = process.env.ENTANGLE_HOST_TOKEN?.trim();
+  if (token && token !== "REPLACE_WITH_HOST_TOKEN") {
+    headers.authorization = \`Bearer \${token}\`;
+  }
+
+  let response;
+
+  try {
+    response = await fetch(runnersUrl, { headers });
+  } catch (error) {
+    fail(\`Could not reach Host runner API at \${runnersUrl.href}: \${error instanceof Error ? error.message : String(error)}\`);
+  }
+
+  if (!response.ok) {
+    const body = await response.text().catch(() => "");
+    const suffix = body.trim().length > 0 ? \`: \${body.trim().slice(0, 500)}\` : "";
+    fail(\`Host runner API at \${runnersUrl.href} returned \${response.status} \${response.statusText}\${suffix}\`);
+  }
+
+  try {
+    return await response.json();
+  } catch (error) {
+    fail(\`Host runner API did not return JSON: \${error instanceof Error ? error.message : String(error)}\`);
+  }
+}
+
+const hostUrl = process.env.ENTANGLE_HOST_URL?.trim();
+if (!hostUrl) {
+  fail("ENTANGLE_HOST_URL is not set. Source operator/operator.env before running this wait.");
+}
+
+const timeoutMs = parsePositiveInteger(
+  process.env.ENTANGLE_PROOF_RUNNER_WAIT_TIMEOUT_MS ?? "30000",
+  "ENTANGLE_PROOF_RUNNER_WAIT_TIMEOUT_MS"
+);
+const pollIntervalMs = parsePositiveInteger(
+  process.env.ENTANGLE_PROOF_RUNNER_WAIT_INTERVAL_MS ?? "1000",
+  "ENTANGLE_PROOF_RUNNER_WAIT_INTERVAL_MS"
+);
+const profile = await readProfile();
+const requiredRunnerIds = [
+  requireString(profile.agentRunnerId, "agentRunnerId"),
+  requireString(profile.userRunnerId, "userRunnerId"),
+  requireString(profile.reviewerUserRunnerId, "reviewerUserRunnerId")
+];
+const deadline = Date.now() + timeoutMs;
+let lastRunnerIds = [];
+
+while (true) {
+  const runnerList = await fetchRunnerList(hostUrl);
+  const runners = Array.isArray(runnerList?.runners) ? runnerList.runners : [];
+  const runnerById = new Map(
+    runners
+      .filter((runner) => typeof runner?.registration?.runnerId === "string")
+      .map((runner) => [runner.registration.runnerId, runner])
+  );
+  const missingRunnerIds = requiredRunnerIds.filter(
+    (runnerId) => !runnerById.has(runnerId)
+  );
+
+  lastRunnerIds = [...runnerById.keys()].sort((left, right) => left.localeCompare(right));
+
+  if (missingRunnerIds.length === 0) {
+    console.log(
+      JSON.stringify(
+        {
+          ok: true,
+          runnerIds: requiredRunnerIds,
+          runners: requiredRunnerIds.map((runnerId) => {
+            const runner = runnerById.get(runnerId);
+
+            return {
+              runnerId,
+              liveness: runner?.liveness,
+              trustState: runner?.registration?.trustState
+            };
+          })
+        },
+        null,
+        2
+      )
+    );
+    break;
+  }
+
+  if (Date.now() >= deadline) {
+    fail(
+      \`Runner registration(s) not observed after \${timeoutMs}ms: \${missingRunnerIds.join(", ")}. Start the generated runner directories and wait for runner.hello before rerunning operator/commands.sh. Observed runner ids: \${lastRunnerIds.length > 0 ? lastRunnerIds.join(", ") : "none"}.\`
+    );
+  }
+
+  await new Promise((resolve) => setTimeout(resolve, pollIntervalMs));
+}
+`;
 }
 
 function buildOperatorBootstrapGraphScript() {
@@ -1222,8 +1378,9 @@ ${buildCustomAgentEngineReadmeSection()}
 4. After the runners publish \`runner.hello\`, run
    \`operator/commands.sh\` from the Host/operator machine to trust runners,
    first preflight the active graph against \`operator/proof-profile.json\`,
-   then offer assignments, list User Client URLs, send a signed User Node
-   task, inspect Host projection, and run the distributed proof verifier.
+   wait for required runner registrations, then offer assignments, list User
+   Client URLs, send a signed User Node task, inspect Host projection, and run
+   the distributed proof verifier.
 5. After the agent has produced projected work evidence, run
    \`operator/verify-artifacts.sh\` from the Host/operator machine to require
    projected artifact, source-change, source-history, or wiki evidence plus
@@ -1258,6 +1415,7 @@ ${buildRunnerComposeReadmeSection()}
 - \`operator/proof-profile.json\`: machine-readable runner, node, engine, relay, optional git-service, conversation, and User Client health profile for topology verification.
 - \`operator/proof-profile-post-work.json\`: stricter profile that also requires projected work evidence and a published git artifact or source-history publication from the agent node.
 - \`operator/preflight.mjs\`: Host graph preflight that checks the generated proof node ids and required User Node outbound edge before operator commands mutate Host state.
+- \`operator/wait-for-runners.mjs\`: Host runner-registry wait that polls for the generated runner ids before trust and assignment commands.
 - \`operator/commands.sh\`: operator commands for trust, assignment, user message, projection, and verification.
 - \`operator/verify-topology.sh\`: repeatable topology, runtime, conversation, and optional relay/git verification.
 - \`operator/verify-artifacts.sh\`: post-work verifier requiring projected artifact/source/wiki evidence and published git artifact evidence from the agent node.
@@ -1428,6 +1586,9 @@ async function writeKit() {
       "[dry-run] operator client health command: run_cli user-nodes clients --summary --check-health"
     );
     console.log('[dry-run] operator graph preflight command: node "$SCRIPT_DIR/preflight.mjs"');
+    console.log(
+      '[dry-run] operator runner wait command: node "$SCRIPT_DIR/wait-for-runners.mjs"'
+    );
     console.log(`[dry-run] operator verifier command: ${buildVerifierCommand()}`);
     console.log(
       `[dry-run] operator artifact verifier command: ${buildVerifierCommand({
@@ -1508,6 +1669,10 @@ async function writeKit() {
     "utf8"
   );
   await writeExecutable(path.join(operatorDir, "preflight.mjs"), buildOperatorPreflightScript());
+  await writeExecutable(
+    path.join(operatorDir, "wait-for-runners.mjs"),
+    buildOperatorRunnerWaitScript()
+  );
   await writeExecutable(path.join(operatorDir, "commands.sh"), buildOperatorCommandsScript());
   await writeExecutable(
     path.join(operatorDir, "verify-topology.sh"),

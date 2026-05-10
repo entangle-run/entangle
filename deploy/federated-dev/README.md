@@ -332,6 +332,11 @@ When no compatible active graph exists, run the generated
 `operator/bootstrap-graph.sh` helper explicitly. It admits the proof package
 path, imports `operator/proof-graph.json`, and reruns preflight; the main
 operator command script still avoids implicit graph replacement.
+The generated operator command script also runs
+`operator/wait-for-runners.mjs` before trust and assignment commands, polling
+Host `/v1/runners` for the generated runner ids. Tune the wait with
+`ENTANGLE_PROOF_RUNNER_WAIT_TIMEOUT_MS` or
+`ENTANGLE_PROOF_RUNNER_WAIT_INTERVAL_MS` if needed.
 Pass `--check-relay-health` with at least one `--relay-url` when the generated
 operator command should probe relay WebSocket reachability from the operator
 machine.

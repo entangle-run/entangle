@@ -404,6 +404,7 @@ same-machine slice records.
 - [601-runner-identity-conflict-hardening-slice.md](601-runner-identity-conflict-hardening-slice.md)
 - [602-distributed-proof-graph-preflight-slice.md](602-distributed-proof-graph-preflight-slice.md)
 - [603-distributed-proof-graph-bootstrap-slice.md](603-distributed-proof-graph-bootstrap-slice.md)
+- [604-distributed-proof-runner-readiness-wait-slice.md](604-distributed-proof-runner-readiness-wait-slice.md)
 
 ## Audited Scope
 
@@ -1508,6 +1509,11 @@ admits the configured proof package path, imports a minimal graph with the
 generated agent, primary User Node, reviewer User Node, and required edges,
 then reruns the graph preflight. `operator/commands.sh` still does not replace
 the graph implicitly.
+Generated operator commands now also run
+`operator/wait-for-runners.mjs` before trust and assignment mutations. The
+script polls Host `/v1/runners` for the generated runner ids and fails with a
+bounded diagnostic when `runner.hello` has not reached Host yet, without
+reading runner files or mutating Host state.
 The highest-value remaining implementation areas are richer model-guided
 memory maintenance, deeper delegated-session semantics beyond the current
 controlled handoff path and deterministic owner/coordination/delegation memory

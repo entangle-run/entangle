@@ -179,6 +179,7 @@ try {
       "[dry-run] would write runner env/start scripts",
       "[dry-run] operator graph bootstrap: package distributed-proof-package-source from examples/federated-preview/agent-package; graph nodes builder, user, reviewer",
       '[dry-run] operator graph preflight command: node "$SCRIPT_DIR/preflight.mjs"',
+      '[dry-run] operator runner wait command: node "$SCRIPT_DIR/wait-for-runners.mjs"',
       "[dry-run] generated shell scripts use pnpm fallback: npm exec --yes pnpm@10.18.3 --"
     ]
   });
@@ -481,6 +482,7 @@ try {
       '"reviewerUserNodeId":"bob"',
       '"agentEngineKind":"external_process"',
       "operator graph bootstrap: package distributed-proof-package-source from examples/federated-preview/agent-package; graph nodes architect, alice, bob",
+      '[dry-run] operator runner wait command: node "$SCRIPT_DIR/wait-for-runners.mjs"',
       '"checkRelayHealth":true',
       '"checkGitBackendHealth":true',
       '"checkPublishedGitRef":true',

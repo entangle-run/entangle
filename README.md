@@ -497,6 +497,11 @@ If Host does not yet have a compatible active graph, run the generated
 `operator/bootstrap-graph.sh` helper explicitly. It admits the proof package
 path, imports `operator/proof-graph.json`, and reruns the preflight; the main
 `operator/commands.sh` does not replace the graph implicitly.
+`operator/commands.sh` also runs `operator/wait-for-runners.mjs` before trust
+and assignment commands, polling Host `/v1/runners` for the generated runner
+ids. Override `ENTANGLE_PROOF_RUNNER_WAIT_TIMEOUT_MS` or
+`ENTANGLE_PROOF_RUNNER_WAIT_INTERVAL_MS` when a physical proof needs a longer
+or shorter readiness window.
 For no-credential distributed checks against the attached OpenCode route, pass
 `--fake-opencode-server-url <url>`. The generated operator script upserts an
 `opencode_server` profile with `permissionMode: "entangle_approval"`, binds the

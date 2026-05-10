@@ -986,6 +986,7 @@ files are the active federated redesign pack.
 602. [601-runner-identity-conflict-hardening-slice.md](601-runner-identity-conflict-hardening-slice.md)
 603. [602-distributed-proof-graph-preflight-slice.md](602-distributed-proof-graph-preflight-slice.md)
 604. [603-distributed-proof-graph-bootstrap-slice.md](603-distributed-proof-graph-bootstrap-slice.md)
+605. [604-distributed-proof-runner-readiness-wait-slice.md](604-distributed-proof-runner-readiness-wait-slice.md)
 
 ## Role of this corpus
 
