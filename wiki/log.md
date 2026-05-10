@@ -7129,3 +7129,11 @@ same-directory temporary writes followed by atomic rename publication.
 This prevents concurrent runner reads from observing truncated session,
 approval, conversation, turn, artifact, source-change, source-history, or
 memory-state records while another service path is persisting an update.
+
+## [2026-05-11] security | Added OpenSSF Scorecard workflows
+
+Added OpenSSF Scorecard workflows to the runtime and website repositories.
+
+The workflows run on `main` pushes, branch-protection changes, and weekly
+schedules, publish results to OpenSSF, and upload SARIF into GitHub code
+scanning so repository security posture drift is visible beside CodeQL.
