@@ -7111,3 +7111,12 @@ human changes.
 Added `.editorconfig` and `.gitattributes` to the runtime, website, and
 organization-profile repositories so contributors and automation share the same
 UTF-8, LF, final-newline, whitespace, and binary-file conventions.
+
+## [2026-05-11] security | Added CodeQL code scanning workflows
+
+Added GitHub CodeQL workflows to the runtime and website repositories for
+JavaScript/TypeScript analysis on push, pull request, and a weekly schedule.
+
+The workflows use `build-mode: none`, keeping security scanning separate from
+the existing CI build/test gates while still publishing GitHub code-scanning
+results.
