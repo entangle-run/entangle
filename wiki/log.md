@@ -7096,3 +7096,12 @@ Repaired the top of `wiki/overview.md` so it no longer says the external
 reference clones are materialized under the active `resources/` worktree. The
 current source of truth is that `resources/` contains only the manifest, while
 local research clones live outside the active repository.
+
+## [2026-05-11] repo | Added dependency update automation
+
+Added Dependabot configuration for the runtime and website repositories,
+covering pnpm/npm dependencies and GitHub Actions updates on a weekly cadence.
+
+The runtime and website repositories already have required CI status checks on
+`main`, so automated update pull requests will use the same quality gates as
+human changes.
