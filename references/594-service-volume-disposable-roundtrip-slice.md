@@ -85,8 +85,11 @@ custom profile recovery, and explicit operator-directed migrations.
 
 ## Open Questions
 
-Future work should add broader non-disposable upgrade and repair workflows, and
-the physical proof environment should run this smoke with `--require-docker`.
+`references/595-service-volume-previous-migration-command-slice.md` adds the
+guided migration command for the known previous Compose-prefixed service
+volumes. Future work should add broader non-disposable upgrade and repair
+workflows, and the physical proof environment should run this smoke with
+`--require-docker`.
 
 ## Verification
 
@@ -97,9 +100,10 @@ Completed in this slice:
 - `pnpm --filter @entangle/cli lint`
 - `pnpm --filter @entangle/cli dev deployment service-volumes export --dry-run --output /tmp/entangle-custom-volume-green --gitea-volume entangle-fixture-gitea-data --relay-volume entangle-fixture-strfry-data`
 - `pnpm ops:smoke-deployment-service-volume-tools`
-- `pnpm ops:smoke-deployment-service-volume-roundtrip`
-  skipped on the current machine because Docker is not available; with Docker
-  available it performs a real disposable non-dry-run export/import roundtrip.
+- `pnpm ops:smoke-deployment-service-volume-roundtrip -- --require-docker`
+  initially exposed a PATH issue when Docker became available; the smoke now
+  falls back to `npm exec pnpm@10.18.3` and passed with disposable Docker
+  volumes.
 
 The final slice audit also runs product naming, whitespace, changed-diff marker
 checks, and `git diff` review before commit.

@@ -83,6 +83,15 @@ export interface DeploymentServiceVolumeMaintenanceOptions {
   repositoryRoot: string;
 }
 
+export interface DeploymentServiceVolumePreviousMigrationOptions {
+  apply?: boolean | undefined;
+  assumeServicesStopped?: boolean | undefined;
+  commandRunner?: DeploymentServiceVolumeCommandRunner | undefined;
+  dockerImage?: string | undefined;
+  now?: (() => Date) | undefined;
+  repositoryRoot: string;
+}
+
 export interface DeploymentServiceVolumeServicesHealthOptions {
   connectWebSocket?: ((url: string) => Promise<string>) | undefined;
   fetchUrl?: ((url: string) => Promise<string>) | undefined;
@@ -244,6 +253,31 @@ export interface DeploymentServiceVolumeMaintenanceSummary {
   status: "applied" | "planned";
 }
 
+export type DeploymentServiceVolumePreviousMigrationStatus =
+  | "migrated"
+  | "missing_source"
+  | "not_needed"
+  | "planned";
+
+export interface DeploymentServiceVolumePreviousMigrationEntry {
+  command?: string[] | undefined;
+  detail: string;
+  expectedVolume: string;
+  previousVolume: string;
+  service: string;
+  status: DeploymentServiceVolumePreviousMigrationStatus;
+}
+
+export interface DeploymentServiceVolumePreviousMigrationSummary {
+  applied: boolean;
+  dockerImage: string;
+  generatedAt: string;
+  migrationCount: number;
+  migrations: DeploymentServiceVolumePreviousMigrationEntry[];
+  servicesStoppedAcknowledged: boolean;
+  status: "applied" | "blocked" | "noop" | "planned";
+}
+
 export interface DeploymentServiceVolumeServiceHealthCheck {
   detail: string;
   service: "gitea" | "strfry";
@@ -286,6 +320,18 @@ const defaultServiceVolumeRelayUrl = "ws://localhost:7777";
 const federatedDevProfileComposeFile =
   "deploy/federated-dev/compose/docker-compose.federated-dev.yml";
 const serviceVolumeMaintenanceServiceNames = ["gitea", "strfry"] as const;
+const previousServiceVolumeMigrations = [
+  {
+    expectedVolume: "gitea-data",
+    previousVolume: "compose_gitea-data",
+    service: "gitea"
+  },
+  {
+    expectedVolume: "strfry-data",
+    previousVolume: "compose_strfry-data",
+    service: "strfry"
+  }
+] as const;
 const excludedExternalVolumes = [
   {
     mountPath: "/data",
@@ -838,6 +884,25 @@ function buildServiceVolumeImportArgs(input: {
   ];
 }
 
+function buildServiceVolumePreviousMigrationArgs(input: {
+  dockerImage: string;
+  expectedVolume: string;
+  previousVolume: string;
+}): string[] {
+  return [
+    "run",
+    "--rm",
+    "-v",
+    `${input.previousVolume}:/from:ro`,
+    "-v",
+    `${input.expectedVolume}:/to`,
+    input.dockerImage,
+    "sh",
+    "-c",
+    "cd /from && tar -cf - . | tar -xf - -C /to"
+  ];
+}
+
 function buildServiceVolumeInspectArgs(volume: string): string[] {
   return ["volume", "inspect", volume];
 }
@@ -868,7 +933,7 @@ function parseRunningContainerNames(stdout: string | undefined): string[] {
 function runServiceVolumeDockerCommand(input: {
   args: string[];
   commandRunner: DeploymentServiceVolumeCommandRunner;
-  operation: "export" | "import";
+  operation: "export" | "import" | "migration";
   repositoryRoot: string;
   volume: string;
 }): void {
@@ -883,6 +948,18 @@ function runServiceVolumeDockerCommand(input: {
   throw new Error(
     `Service volume ${input.operation} for '${input.volume}' failed: ${normalizeCommandResult(result)}`
   );
+}
+
+function inspectDockerVolumeExists(input: {
+  commandRunner: DeploymentServiceVolumeCommandRunner;
+  repositoryRoot: string;
+  volume: string;
+}): boolean {
+  const result = input.commandRunner("docker", buildServiceVolumeInspectArgs(input.volume), {
+    cwd: input.repositoryRoot
+  });
+
+  return result.status === 0 && !result.error && !result.signal;
 }
 
 function inspectServiceVolumeQuiescence(input: {
@@ -1082,6 +1159,130 @@ export function planDeploymentServiceVolumeMaintenance(
     generatedAt: (options.now ?? (() => new Date()))().toISOString(),
     serviceNames: [...serviceVolumeMaintenanceServiceNames],
     status: options.apply ? "applied" : "planned"
+  };
+}
+
+export function planDeploymentServiceVolumePreviousMigrations(
+  options: DeploymentServiceVolumePreviousMigrationOptions
+): DeploymentServiceVolumePreviousMigrationSummary {
+  if (options.apply && !options.assumeServicesStopped) {
+    throw new Error(
+      "Applying previous service-volume migrations requires --assume-services-stopped because Gitea and relay services must be stopped or quiesced first."
+    );
+  }
+
+  const commandRunner = options.commandRunner ?? defaultCommandRunner;
+  const dockerImage = options.dockerImage ?? defaultServiceVolumeDockerImage;
+  const migrations: DeploymentServiceVolumePreviousMigrationEntry[] =
+    previousServiceVolumeMigrations.map((migration) => {
+      const previousExists = inspectDockerVolumeExists({
+        commandRunner,
+        repositoryRoot: options.repositoryRoot,
+        volume: migration.previousVolume
+      });
+      const expectedExists = inspectDockerVolumeExists({
+        commandRunner,
+        repositoryRoot: options.repositoryRoot,
+        volume: migration.expectedVolume
+      });
+      const command = [
+        "docker",
+        ...buildServiceVolumePreviousMigrationArgs({
+          dockerImage,
+          expectedVolume: migration.expectedVolume,
+          previousVolume: migration.previousVolume
+        })
+      ];
+
+      if (expectedExists) {
+        return {
+          detail:
+            `Stable service volume ${migration.expectedVolume} already exists; ` +
+            `${migration.previousVolume} is not required for this migration.`,
+          expectedVolume: migration.expectedVolume,
+          previousVolume: migration.previousVolume,
+          service: migration.service,
+          status: "not_needed"
+        };
+      }
+
+      if (!previousExists) {
+        return {
+          detail:
+            `Previous service volume ${migration.previousVolume} was not found and ` +
+            `${migration.expectedVolume} does not exist.`,
+          expectedVolume: migration.expectedVolume,
+          previousVolume: migration.previousVolume,
+          service: migration.service,
+          status: "missing_source"
+        };
+      }
+
+      return {
+        command,
+        detail:
+          `Copy ${migration.previousVolume} into stable service volume ` +
+          `${migration.expectedVolume}.`,
+        expectedVolume: migration.expectedVolume,
+        previousVolume: migration.previousVolume,
+        service: migration.service,
+        status: "planned"
+      };
+    });
+
+  if (options.apply) {
+    for (const migration of migrations) {
+      if (migration.status !== "planned" || !migration.command) {
+        continue;
+      }
+
+      for (const volume of [migration.previousVolume, migration.expectedVolume]) {
+        inspectServiceVolumeQuiescence({
+          commandRunner,
+          repositoryRoot: options.repositoryRoot,
+          service: migration.service,
+          volume
+        });
+      }
+
+      runServiceVolumeDockerCommand({
+        args: migration.command.slice(1),
+        commandRunner,
+        operation: "migration",
+        repositoryRoot: options.repositoryRoot,
+        volume: migration.expectedVolume
+      });
+      migration.status = "migrated";
+      migration.detail =
+        `Copied ${migration.previousVolume} into stable service volume ` +
+        `${migration.expectedVolume}.`;
+    }
+  }
+
+  const status = (() => {
+    if (migrations.some((migration) => migration.status === "migrated")) {
+      return "applied";
+    }
+
+    if (migrations.some((migration) => migration.status === "planned")) {
+      return "planned";
+    }
+
+    if (migrations.some((migration) => migration.status === "missing_source")) {
+      return "blocked";
+    }
+
+    return "noop";
+  })();
+
+  return {
+    applied: Boolean(options.apply),
+    dockerImage,
+    generatedAt: (options.now ?? (() => new Date()))().toISOString(),
+    migrationCount: migrations.length,
+    migrations,
+    servicesStoppedAcknowledged: Boolean(options.assumeServicesStopped),
+    status
   };
 }
 

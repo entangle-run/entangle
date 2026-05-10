@@ -72,6 +72,7 @@ import {
   createDeploymentServiceVolumeImport,
   inspectDeploymentServiceVolumes,
   planDeploymentServiceVolumeMaintenance,
+  planDeploymentServiceVolumePreviousMigrations,
   resolveDeploymentServiceVolumeBindings,
   restoreDeploymentBackup
 } from "./deployment-backup-command.js";
@@ -657,6 +658,34 @@ deploymentServiceVolumesCommand
       serviceVolumeMaintenance: summary
     });
   });
+
+deploymentServiceVolumesCommand
+  .command("migrate-previous")
+  .option("--apply", "Execute previous-to-stable service-volume copy commands.")
+  .option(
+    "--assume-services-stopped",
+    "Confirm Gitea and relay services are stopped or quiesced before copying service data."
+  )
+  .option("--docker-image <image>", "Utility image used for volume copy.", "alpine:3.20")
+  .description("Plan or apply previous Compose-prefixed service-volume migration.")
+  .action(
+    (options: {
+      apply?: boolean;
+      assumeServicesStopped?: boolean;
+      dockerImage: string;
+    }) => {
+      const summary = planDeploymentServiceVolumePreviousMigrations({
+        apply: options.apply,
+        assumeServicesStopped: options.assumeServicesStopped,
+        dockerImage: options.dockerImage,
+        repositoryRoot
+      });
+
+      printJson({
+        serviceVolumePreviousMigrations: summary
+      });
+    }
+  );
 
 deploymentServiceVolumesCommand
   .command("start-services")

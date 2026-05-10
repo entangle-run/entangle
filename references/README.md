@@ -977,6 +977,7 @@ files are the active federated redesign pack.
 593. [592-service-volume-maintenance-command-slice.md](592-service-volume-maintenance-command-slice.md)
 594. [593-service-volume-health-check-slice.md](593-service-volume-health-check-slice.md)
 595. [594-service-volume-disposable-roundtrip-slice.md](594-service-volume-disposable-roundtrip-slice.md)
+596. [595-service-volume-previous-migration-command-slice.md](595-service-volume-previous-migration-command-slice.md)
 
 ## Role of this corpus
 

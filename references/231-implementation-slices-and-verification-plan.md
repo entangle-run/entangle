@@ -1596,6 +1596,10 @@ Current status:
   `pnpm ops:smoke-deployment-service-volume-roundtrip` exercises real
   non-dry-run Docker export/import against disposable volumes when Docker is
   available;
+- `entangle deployment service-volumes migrate-previous` now turns known
+  previous Compose-prefixed Gitea/strfry volume findings into a dry-run-first
+  migration plan, applying only with stopped-service acknowledgement and
+  running-container checks;
 - Host event records now include optional audit hash-chain fields, Host event
   appends are serialized to preserve chain order, and CLI runtime-trace
   summaries expose the hashes when present; Host, host-client, and CLI now
@@ -1760,9 +1764,9 @@ Current status:
   Host and relay URLs;
 - the remaining deployment hardening is infrastructure-backed orchestration
   that can provision multiple machines or VM/container boundaries around the
-  verifier, plus broader non-disposable upgrade/repair workflows and physical
-  CI gates that run the disposable service-volume roundtrip with Docker
-  required.
+  verifier, plus broader non-disposable upgrade/repair workflows beyond the
+  known previous service-volume migration and physical CI gates that run the
+  disposable service-volume roundtrip with Docker required.
 
 Verification:
 

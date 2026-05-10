@@ -58,17 +58,22 @@ function runDocker(args) {
 }
 
 function runCli(args) {
-  const pnpmCommand =
-    process.env.npm_execpath && process.env.npm_execpath.includes("pnpm")
-      ? process.env.npm_execpath
-      : "pnpm";
-  const result = run(pnpmCommand, [
-    "--silent",
-    "--filter",
-    "@entangle/cli",
-    "dev",
-    ...args
-  ]);
+  const pnpmExecPath = process.env.npm_execpath?.includes("pnpm")
+    ? process.env.npm_execpath
+    : undefined;
+  const result = pnpmExecPath
+    ? run(pnpmExecPath, ["--silent", "--filter", "@entangle/cli", "dev", ...args])
+    : run("npm", [
+        "exec",
+        "--yes",
+        "pnpm@10.18.3",
+        "--",
+        "--silent",
+        "--filter",
+        "@entangle/cli",
+        "dev",
+        ...args
+      ]);
 
   return JSON.parse(result.stdout);
 }

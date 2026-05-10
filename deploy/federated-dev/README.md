@@ -111,8 +111,19 @@ data. The manifest also records the known excluded external volumes:
 These service volumes have explicit Compose names so backup inventory and
 doctor output refer to stable names rather than project-prefixed volume names.
 If an older profile still has `compose_gitea-data` or `compose_strfry-data`,
-copy that service data into `gitea-data` or `strfry-data` before treating the
-profile as non-disposable.
+plan the migration into `gitea-data` or `strfry-data` before treating the
+profile as non-disposable:
+
+```sh
+pnpm --filter @entangle/cli dev deployment service-volumes migrate-previous
+```
+
+After stopping or otherwise quiescing Gitea and strfry, apply that focused
+previous-volume migration explicitly:
+
+```sh
+pnpm --filter @entangle/cli dev deployment service-volumes migrate-previous --assume-services-stopped --apply
+```
 
 Plan a separate Gitea/relay service-volume export without executing Docker:
 
@@ -172,7 +183,8 @@ backup, restore, and rotation as a separate operator policy. Non-dry-run
 service-volume export and import require `--assume-services-stopped`; that flag
 is an operator acknowledgement, not a stop/start action. The command also
 checks Docker's running-container view and refuses archive mutation if a target
-volume is still mounted by a running container.
+volume is still mounted by a running container. The same acknowledgement and
+running-container guard apply to `service-volumes migrate-previous`.
 
 The no-infrastructure tool smoke verifies both dry-run surfaces without Docker
 or live service volumes:

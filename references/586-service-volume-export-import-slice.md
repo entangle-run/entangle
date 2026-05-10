@@ -99,8 +99,11 @@ operator policy.
 service stop/start planning, `references/593-service-volume-health-check-slice.md`
 adds focused post-maintenance health checks, and
 `references/594-service-volume-disposable-roundtrip-slice.md` adds the
-Docker-gated disposable non-dry-run roundtrip. Future work should add guided
-upgrade workflows for older non-disposable profiles.
+Docker-gated disposable non-dry-run roundtrip.
+`references/595-service-volume-previous-migration-command-slice.md` adds the
+guided migration command for the known previous Compose-prefixed service
+volumes. Future work should add broader upgrade workflows for older
+non-disposable profiles.
 
 ## Verification
 

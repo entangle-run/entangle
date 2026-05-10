@@ -6974,3 +6974,14 @@ recovery.
 volumes, runs the real non-dry-run service-volume export/import path, and
 verifies restored content when Docker is available. It skips without mutation
 when Docker is unavailable unless `--require-docker` is passed.
+
+## [2026-05-10] deployment | Added previous service-volume migration command
+
+Added `references/595-service-volume-previous-migration-command-slice.md`.
+`entangle deployment service-volumes migrate-previous` now plans migration from
+the known previous Compose-prefixed Gitea/strfry volume names into the stable
+service-volume names.
+
+The command is dry-run-first. Apply requires both `--apply` and
+`--assume-services-stopped`, and the implementation reuses Docker
+running-container checks before copying service-owned data.

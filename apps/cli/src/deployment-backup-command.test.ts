@@ -9,6 +9,7 @@ import {
   createDeploymentServiceVolumeImport,
   inspectDeploymentServiceVolumes,
   planDeploymentServiceVolumeMaintenance,
+  planDeploymentServiceVolumePreviousMigrations,
   resolveDeploymentServiceVolumeBindings,
   restoreDeploymentBackup
 } from "./deployment-backup-command.js";
@@ -747,6 +748,126 @@ describe("deployment backup command helpers", () => {
         "--format",
         "{{.Names}}"
       ]
+    ]);
+  });
+
+  it("plans previous service-volume migrations without mutating Docker volumes", async () => {
+    const commandCalls: Array<{ args: string[]; command: string }> = [];
+    const summary = planDeploymentServiceVolumePreviousMigrations({
+      commandRunner: (command, args) => {
+        commandCalls.push({ args, command });
+        return {
+          signal: null,
+          status: args[0] === "volume" && args[2]?.startsWith("compose_") ? 0 : 1,
+          stderr: "not found\n",
+          stdout: ""
+        };
+      },
+      now: () => new Date("2026-05-10T00:00:00.000Z"),
+      repositoryRoot: await createTempRoot("entangle-service-volume-migration-plan-")
+    });
+
+    expect(summary).toMatchObject({
+      applied: false,
+      generatedAt: "2026-05-10T00:00:00.000Z",
+      status: "planned"
+    });
+    expect(summary.migrations).toEqual([
+      expect.objectContaining({
+        expectedVolume: "gitea-data",
+        previousVolume: "compose_gitea-data",
+        service: "gitea",
+        status: "planned"
+      }),
+      expect.objectContaining({
+        expectedVolume: "strfry-data",
+        previousVolume: "compose_strfry-data",
+        service: "strfry",
+        status: "planned"
+      })
+    ]);
+    expect(summary.migrations[0]?.command).toEqual(
+      expect.arrayContaining([
+        "docker",
+        "run",
+        "--rm",
+        "-v",
+        "compose_gitea-data:/from:ro",
+        "-v",
+        "gitea-data:/to"
+      ])
+    );
+    expect(commandCalls.map((call) => call.args)).toEqual([
+      ["volume", "inspect", "compose_gitea-data"],
+      ["volume", "inspect", "gitea-data"],
+      ["volume", "inspect", "compose_strfry-data"],
+      ["volume", "inspect", "strfry-data"]
+    ]);
+  });
+
+  it("applies previous service-volume migrations only after stopped-service acknowledgement", async () => {
+    const repositoryRoot = await createTempRoot(
+      "entangle-service-volume-migration-apply-"
+    );
+
+    expect(() =>
+      planDeploymentServiceVolumePreviousMigrations({
+        apply: true,
+        commandRunner: () => ({
+          signal: null,
+          status: 0,
+          stderr: "",
+          stdout: ""
+        }),
+        repositoryRoot
+      })
+    ).toThrow("--assume-services-stopped");
+
+    const commandCalls: Array<{ args: string[]; command: string }> = [];
+    const summary = planDeploymentServiceVolumePreviousMigrations({
+      apply: true,
+      assumeServicesStopped: true,
+      commandRunner: (command, args) => {
+        commandCalls.push({ args, command });
+        if (args[0] === "volume" && args[1] === "inspect") {
+          return {
+            signal: null,
+            status: args[2]?.startsWith("compose_") ? 0 : 1,
+            stderr: "not found\n",
+            stdout: ""
+          };
+        }
+
+        return {
+          signal: null,
+          status: 0,
+          stderr: "",
+          stdout: ""
+        };
+      },
+      repositoryRoot
+    });
+
+    expect(summary).toMatchObject({
+      applied: true,
+      servicesStoppedAcknowledged: true,
+      status: "applied"
+    });
+    expect(summary.migrations.map((migration) => migration.status)).toEqual([
+      "migrated",
+      "migrated"
+    ]);
+    expect(commandCalls.map((call) => call.args)).toEqual([
+      ["volume", "inspect", "compose_gitea-data"],
+      ["volume", "inspect", "gitea-data"],
+      ["volume", "inspect", "compose_strfry-data"],
+      ["volume", "inspect", "strfry-data"],
+      ["ps", "--filter", "volume=compose_gitea-data", "--format", "{{.Names}}"],
+      ["ps", "--filter", "volume=gitea-data", "--format", "{{.Names}}"],
+      expect.arrayContaining(["run", "--rm", "-v", "compose_gitea-data:/from:ro"]),
+      ["ps", "--filter", "volume=compose_strfry-data", "--format", "{{.Names}}"],
+      ["ps", "--filter", "volume=strfry-data", "--format", "{{.Names}}"],
+      expect.arrayContaining(["run", "--rm", "-v", "compose_strfry-data:/from:ro"])
     ]);
   });
 

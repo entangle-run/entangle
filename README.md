@@ -1220,6 +1220,10 @@ This repository currently contains:
   stable service-volume existence and running-container use before operators
   attempt export/import, with explicit volume bindings for disposable fixtures
   and custom-profile recovery;
+- a dry-run-first `entangle deployment service-volumes migrate-previous`
+  command that plans or applies the known previous Compose-prefixed
+  Gitea/strfry volume migration into the stable service-volume names, applying
+  only with stopped-service acknowledgement and running-container guards;
 - conservative `entangle deployment service-volumes stop-services` and
   `start-services` helpers that plan Docker Compose service maintenance by
   default and execute only with `--apply`;
@@ -1233,7 +1237,9 @@ This repository currently contains:
   state-layout compatibility checks; the federated dev Compose profile now
   gives those service volumes stable explicit names and doctor warns when older
   Compose-prefixed service volumes are present, while repair reports those
-  previous service volumes as manual migration actions; Gitea and strfry
+  previous service volumes as manual migration actions; `deployment
+  service-volumes migrate-previous` now provides the focused migration plan and
+  guarded apply path for those known previous volume names. Gitea and strfry
   service volumes now also have separate service-volume export/import bundle
   paths with dry-run Docker command planning, and non-dry-run service-volume
   operations require `--assume-services-stopped` plus a running-container check
@@ -1840,7 +1846,8 @@ The highest-value remaining gaps are:
   disposable same-machine profile and first service-volume export/import path,
   especially infrastructure-backed multi-machine proof execution, physical
   Docker-required CI gates for the disposable service-volume roundtrip, and
-  non-disposable upgrade/repair behavior.
+  broader non-disposable upgrade/repair behavior beyond the known previous
+  service-volume migration.
 
 The repository should be treated as a live design baseline rather than as a static document dump. Each substantial interaction with the project should begin with a lightweight audit loop:
 
