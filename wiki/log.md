@@ -7074,3 +7074,15 @@ and `operator/commands.sh` runs it before trust and assignment commands.
 
 The wait script polls Host `/v1/runners` for the generated runner ids and
 fails with a bounded diagnostic if `runner.hello` has not reached Host yet.
+
+## [2026-05-10] docs | Reset repository documentation entry points
+
+Rewrote the root `README.md` as a concise professional entry point for
+Entangle's current federated runtime, added focused operator documentation
+under `docs/`, replaced the oversized `references/README.md` chronology with a
+current archive/ledger map, and removed obsolete local release-train packets
+from `releases/local`.
+
+This keeps Entangle's active public repository framing aligned with the
+federated product thesis: same-machine operation is a development deployment
+adapter, not a separate product identity.
