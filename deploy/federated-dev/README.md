@@ -328,6 +328,10 @@ Generated `operator/commands.sh` now starts with
 `operator/preflight.mjs`, which reads the same profile and Host `/v1/graph`
 API to fail before Host mutations if the active graph does not contain the
 proof agent/User Node ids or the required enabled User Node outbound edge.
+When no compatible active graph exists, run the generated
+`operator/bootstrap-graph.sh` helper explicitly. It admits the proof package
+path, imports `operator/proof-graph.json`, and reruns preflight; the main
+operator command script still avoids implicit graph replacement.
 Pass `--check-relay-health` with at least one `--relay-url` when the generated
 operator command should probe relay WebSocket reachability from the operator
 machine.

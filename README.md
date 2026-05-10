@@ -493,6 +493,10 @@ verification stays aligned with the generated operator scripts.
 Generated operator commands also run `operator/preflight.mjs` before Host
 mutations, checking that the active graph contains the generated agent/User
 Node ids and the required enabled User Node outbound edge.
+If Host does not yet have a compatible active graph, run the generated
+`operator/bootstrap-graph.sh` helper explicitly. It admits the proof package
+path, imports `operator/proof-graph.json`, and reruns the preflight; the main
+`operator/commands.sh` does not replace the graph implicitly.
 For no-credential distributed checks against the attached OpenCode route, pass
 `--fake-opencode-server-url <url>`. The generated operator script upserts an
 `opencode_server` profile with `permissionMode: "entangle_approval"`, binds the

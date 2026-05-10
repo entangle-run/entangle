@@ -1792,6 +1792,11 @@ Current status:
   `operator/proof-profile.json` to fail early when the active graph does not
   contain the generated agent/User Node ids or the required enabled User Node
   outbound edge;
+- generated distributed proof kits now also write
+  `operator/proof-graph.json` and explicit `operator/bootstrap-graph.sh`;
+  the bootstrap helper admits the configured proof package path, imports the
+  minimal proof graph, and reruns graph preflight, while the main
+  `operator/commands.sh` still avoids implicit graph replacement;
 - the remaining deployment hardening is infrastructure-backed orchestration
   that can provision multiple machines or VM/container boundaries around the
   verifier, plus broader non-disposable upgrade/repair workflows beyond the

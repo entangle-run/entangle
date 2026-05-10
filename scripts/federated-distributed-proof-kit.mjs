@@ -101,6 +101,19 @@ const reviewerUserRunnerId =
 const agentNodeId = readFlagValue("--agent-node") ?? "builder";
 const userNodeId = readFlagValue("--user-node") ?? "user";
 const reviewerUserNodeId = readFlagValue("--reviewer-user-node") ?? "reviewer";
+const proofPackageSourceId =
+  readFlagValue("--proof-package-source-id") ?? "distributed-proof-package-source";
+const proofPackagePath =
+  readFlagValue("--proof-package-path") ??
+  "examples/federated-preview/agent-package";
+
+const uniqueProofNodeIds = new Set([agentNodeId, userNodeId, reviewerUserNodeId]);
+
+if (uniqueProofNodeIds.size !== 3) {
+  throw new Error(
+    "--agent-node, --user-node, and --reviewer-user-node must identify three distinct graph nodes."
+  );
+}
 
 if (requireUserClientBasicAuth) {
   validateEnvVarName(
@@ -209,6 +222,8 @@ Options:
   --agent-node <nodeId>             Agent graph node id to assign. Default: builder
   --user-node <nodeId>              Primary User Node id to assign and message as. Default: user
   --reviewer-user-node <nodeId>     Reviewer User Node id to assign. Default: reviewer
+  --proof-package-source-id <id>    Package source id used by generated proof-graph.json. Default: distributed-proof-package-source
+  --proof-package-path <path>       Package path admitted by generated bootstrap-graph.sh. Default: examples/federated-preview/agent-package
   --dry-run                         Print commands without writing files.
   -h, --help                        Show this help.
 
@@ -711,7 +726,7 @@ const graph = inspection?.graph;
 
 if (!graph) {
   fail(
-    \`No active graph is available at \${hostUrl}. Create or import the intended graph before running operator commands.\`
+    \`No active graph is available at \${hostUrl}. Create or import the intended graph before running operator commands. This kit includes operator/bootstrap-graph.sh for a minimal proof graph.\`
   );
 }
 
@@ -734,7 +749,7 @@ const missingNodeIds = requiredNodeIds.filter((nodeId) => !nodeById.has(nodeId))
 
 if (missingNodeIds.length > 0) {
   fail(
-    \`Active graph '\${graph.graphId ?? "unknown"}' is missing proof-kit node id(s): \${missingNodeIds.join(", ")}. Regenerate the kit with matching --agent-node/--user-node/--reviewer-user-node values or update the graph.\`
+    \`Active graph '\${graph.graphId ?? "unknown"}' is missing proof-kit node id(s): \${missingNodeIds.join(", ")}. Regenerate the kit with matching --agent-node/--user-node/--reviewer-user-node values, update the graph, or run operator/bootstrap-graph.sh if the generated proof graph is acceptable.\`
   );
 }
 
@@ -788,6 +803,107 @@ console.log(
     2
   )
 );
+`;
+}
+
+function buildProofGraph() {
+  return {
+    schemaVersion: "1",
+    graphId: "distributed-proof-graph",
+    name: "Distributed Proof Graph",
+    nodes: [
+      {
+        nodeId: userNodeId,
+        displayName: "Distributed Proof User",
+        nodeKind: "user"
+      },
+      {
+        nodeId: reviewerUserNodeId,
+        displayName: "Distributed Proof Reviewer",
+        nodeKind: "user"
+      },
+      {
+        nodeId: agentNodeId,
+        displayName: "Distributed Proof Agent",
+        nodeKind: "worker",
+        packageSourceRef: proofPackageSourceId
+      }
+    ],
+    edges: [
+      {
+        edgeId: `${userNodeId}-to-${agentNodeId}`,
+        fromNodeId: userNodeId,
+        toNodeId: agentNodeId,
+        relation: "delegates_to",
+        enabled: true,
+        transportPolicy: {
+          mode: "bidirectional_shared_set",
+          relayProfileRefs: [],
+          channel: "distributed-proof-task"
+        }
+      },
+      {
+        edgeId: `${agentNodeId}-to-${reviewerUserNodeId}`,
+        fromNodeId: agentNodeId,
+        toNodeId: reviewerUserNodeId,
+        relation: "reviews",
+        enabled: true,
+        transportPolicy: {
+          mode: "bidirectional_shared_set",
+          relayProfileRefs: [],
+          channel: "distributed-proof-review"
+        }
+      }
+    ],
+    defaults: {
+      runtimeProfile: "federated",
+      agentRuntime: {
+        mode: "coding_agent"
+      }
+    }
+  };
+}
+
+function buildOperatorBootstrapGraphScript() {
+  const hostTokenCheck = hostToken
+    ? [
+        'if [ "${ENTANGLE_HOST_TOKEN:-}" = "REPLACE_WITH_HOST_TOKEN" ]; then',
+        '  echo "Set ENTANGLE_HOST_TOKEN in $SCRIPT_DIR/operator.env or the environment before bootstrapping the graph." >&2',
+        "  exit 1",
+        "fi",
+        ""
+      ]
+    : ["# No Host token was available when this kit was generated.", ""];
+
+  return `#!/usr/bin/env bash
+set -euo pipefail
+
+SCRIPT_DIR="$(CDPATH= cd -- "$(dirname -- "$0")" && pwd)"
+ENTANGLE_REPO_ROOT="\${ENTANGLE_REPO_ROOT:-$(pwd)}"
+PROOF_PACKAGE_PATH=${shellQuote(proofPackagePath)}
+
+set -a
+# shellcheck disable=SC1091
+. "$SCRIPT_DIR/operator.env"
+set +a
+
+${buildRunPnpmShellFunction()}
+
+${hostTokenCheck.join("\n")}
+case "$PROOF_PACKAGE_PATH" in
+  /*) PACKAGE_SOURCE_PATH="$PROOF_PACKAGE_PATH" ;;
+  *) PACKAGE_SOURCE_PATH="$ENTANGLE_REPO_ROOT/$PROOF_PACKAGE_PATH" ;;
+esac
+
+cd "$ENTANGLE_REPO_ROOT"
+
+run_cli() {
+  run_pnpm --filter @entangle/cli dev "$@"
+}
+
+run_cli host package-sources admit "$PACKAGE_SOURCE_PATH" --package-source-id ${shellQuote(proofPackageSourceId)}
+run_cli host graph import "$SCRIPT_DIR/proof-graph.json"
+node "$SCRIPT_DIR/preflight.mjs"
 `;
 }
 
@@ -1090,8 +1206,11 @@ ${buildCustomAgentEngineReadmeSection()}
 
 1. Keep Host running on the Host machine with a graph containing the node ids in
    the table, reachable relay configuration, reachable git artifact backend,
-   and an operator token if Host auth is enabled. If runners see Host through a
-   different address than the operator, generate the kit with
+   and an operator token if Host auth is enabled. If Host does not already have
+   a suitable graph, run \`operator/bootstrap-graph.sh\` from the Host/operator
+   machine to admit the proof package source and import
+   \`operator/proof-graph.json\`. If runners see Host through a different
+   address than the operator, generate the kit with
    \`--runner-host-api-url <url>\`.
 2. Copy each runner directory to its intended runner machine.
 3. On each runner machine, set \`ENTANGLE_REPO_ROOT\` to that machine's Entangle
@@ -1134,6 +1253,8 @@ ${buildRunnerComposeReadmeSection()}
   when the kit is generated with \`--require-user-client-basic-auth\`.
 - \`*/start.sh\`: runner-machine start command.
 - \`operator/operator.env\`: Host URL and Host token placeholder or value.
+- \`operator/proof-graph.json\`: minimal proof graph using the generated agent, primary User Node, reviewer User Node, and package source ids.
+- \`operator/bootstrap-graph.sh\`: explicit Host/operator helper that admits the proof package source, imports \`proof-graph.json\`, and reruns the graph preflight.
 - \`operator/proof-profile.json\`: machine-readable runner, node, engine, relay, optional git-service, conversation, and User Client health profile for topology verification.
 - \`operator/proof-profile-post-work.json\`: stricter profile that also requires projected work evidence and a published git artifact or source-history publication from the agent node.
 - \`operator/preflight.mjs\`: Host graph preflight that checks the generated proof node ids and required User Node outbound edge before operator commands mutate Host state.
@@ -1301,6 +1422,9 @@ async function writeKit() {
       );
     }
     console.log(
+      `[dry-run] operator graph bootstrap: package ${proofPackageSourceId} from ${proofPackagePath}; graph nodes ${agentNodeId}, ${userNodeId}, ${reviewerUserNodeId}`
+    );
+    console.log(
       "[dry-run] operator client health command: run_cli user-nodes clients --summary --check-health"
     );
     console.log('[dry-run] operator graph preflight command: node "$SCRIPT_DIR/preflight.mjs"');
@@ -1356,6 +1480,15 @@ async function writeKit() {
   const operatorDir = path.join(outputDir, "operator");
   await mkdir(operatorDir, { recursive: true });
   await writeFile(path.join(operatorDir, "operator.env"), buildOperatorEnvContent(), "utf8");
+  await writeFile(
+    path.join(operatorDir, "proof-graph.json"),
+    `${JSON.stringify(buildProofGraph(), null, 2)}\n`,
+    "utf8"
+  );
+  await writeExecutable(
+    path.join(operatorDir, "bootstrap-graph.sh"),
+    buildOperatorBootstrapGraphScript()
+  );
   await writeFile(
     path.join(operatorDir, "proof-profile.json"),
     `${JSON.stringify(buildProofProfile(), null, 2)}\n`,

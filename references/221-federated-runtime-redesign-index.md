@@ -403,6 +403,7 @@ same-machine slice records.
 - [600-distributed-proof-generated-pnpm-fallback-slice.md](600-distributed-proof-generated-pnpm-fallback-slice.md)
 - [601-runner-identity-conflict-hardening-slice.md](601-runner-identity-conflict-hardening-slice.md)
 - [602-distributed-proof-graph-preflight-slice.md](602-distributed-proof-graph-preflight-slice.md)
+- [603-distributed-proof-graph-bootstrap-slice.md](603-distributed-proof-graph-bootstrap-slice.md)
 
 ## Audited Scope
 
@@ -1501,6 +1502,12 @@ catalog, trust, assignment, message, or verifier commands. The preflight reads
 `operator/proof-profile.json` and Host `/v1/graph`, failing early when the
 active graph is missing the generated agent/User Node ids or the required
 enabled User Node outbound edge.
+Generated proof kits now also include an explicit, operator-run
+`operator/bootstrap-graph.sh` plus `operator/proof-graph.json`. The helper
+admits the configured proof package path, imports a minimal graph with the
+generated agent, primary User Node, reviewer User Node, and required edges,
+then reruns the graph preflight. `operator/commands.sh` still does not replace
+the graph implicitly.
 The highest-value remaining implementation areas are richer model-guided
 memory maintenance, deeper delegated-session semantics beyond the current
 controlled handoff path and deterministic owner/coordination/delegation memory

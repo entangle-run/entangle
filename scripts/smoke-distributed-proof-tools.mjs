@@ -177,6 +177,7 @@ try {
   ], {
     mustContain: [
       "[dry-run] would write runner env/start scripts",
+      "[dry-run] operator graph bootstrap: package distributed-proof-package-source from examples/federated-preview/agent-package; graph nodes builder, user, reviewer",
       '[dry-run] operator graph preflight command: node "$SCRIPT_DIR/preflight.mjs"',
       "[dry-run] generated shell scripts use pnpm fallback: npm exec --yes pnpm@10.18.3 --"
     ]
@@ -479,6 +480,7 @@ try {
       '"userNodeId":"alice"',
       '"reviewerUserNodeId":"bob"',
       '"agentEngineKind":"external_process"',
+      "operator graph bootstrap: package distributed-proof-package-source from examples/federated-preview/agent-package; graph nodes architect, alice, bob",
       '"checkRelayHealth":true',
       '"checkGitBackendHealth":true',
       '"checkPublishedGitRef":true',
@@ -499,6 +501,28 @@ try {
       ].join(" ")
     ]
   });
+
+  runFailureStep(
+    "proof kit duplicate proof node ids dry-run",
+    [
+      "scripts/federated-distributed-proof-kit.mjs",
+      "--dry-run",
+      "--output",
+      "/tmp/entangle-distributed-proof-ci-duplicate-nodes",
+      "--host-url",
+      "http://host.example:7071",
+      "--agent-node",
+      "builder",
+      "--user-node",
+      "user",
+      "--reviewer-user-node",
+      "user"
+    ],
+    {
+      mustContain:
+        "--agent-node, --user-node, and --reviewer-user-node must identify three distinct graph nodes."
+    }
+  );
 
   runFailureStep(
     "proof kit fake-opencode external-agent-engine local-url dry-run",

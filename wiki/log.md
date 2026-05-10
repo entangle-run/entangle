@@ -7055,3 +7055,13 @@ verifier commands.
 The preflight reads Host `/v1/graph` and `operator/proof-profile.json`, then
 fails early when the active graph is missing the generated agent/User Node ids
 or the enabled User Node outbound edge required for the scripted task.
+
+## [2026-05-10] ops | Added proof-kit graph bootstrap
+
+Added `references/603-distributed-proof-graph-bootstrap-slice.md`. Generated
+distributed proof kits now include `operator/proof-graph.json` and explicit
+`operator/bootstrap-graph.sh`.
+
+The bootstrap helper admits the configured proof package path, imports the
+minimal proof graph, and reruns graph preflight. The main
+`operator/commands.sh` still does not replace Host graph state implicitly.

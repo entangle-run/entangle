@@ -490,6 +490,10 @@ Generated `operator/commands.sh` now runs `operator/preflight.mjs` before Host
 mutations; the preflight reads Host `/v1/graph` and the same proof profile to
 fail early when the active graph is missing the generated agent/User Node ids
 or the enabled User Node outbound edge required for the scripted task.
+Generated kits also include explicit `operator/bootstrap-graph.sh` and
+`operator/proof-graph.json` files. The bootstrap helper admits the configured
+proof package path, imports a minimal proof graph, and reruns preflight, while
+the main operator command sequence still avoids implicit graph replacement.
 With `--fake-opencode-server-url <url>`, the same kit now prepares Host
 operator commands that upsert a deterministic attached fake OpenCode profile,
 bind the agent node to it, and write optional runner Basic-auth env for
@@ -1564,7 +1568,8 @@ The current implementation-truth audit now lives in
   distributed proof-kit support for separate operator/verifier and runner Host
   API URLs through `--runner-host-api-url`, generated proof-kit pnpm fallback
   scripts, Host-side runner identity-conflict hardening, and generated
-  proof-kit graph preflight before operator mutations;
+  proof-kit graph preflight plus explicit minimal graph bootstrap before
+  operator mutations;
 - complete CLI parity where it adds real headless operational value;
 - continue narrowing the remaining delegated-session gaps now that controlled
   autonomous `task.handoff` emission and runner-local active-conversation
