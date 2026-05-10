@@ -400,6 +400,9 @@ same-machine slice records.
 - [597-open-work-memory-summary-slice.md](597-open-work-memory-summary-slice.md)
 - [598-pnpm-fallback-smoke-wrapper-slice.md](598-pnpm-fallback-smoke-wrapper-slice.md)
 - [599-distributed-proof-runner-host-api-url-slice.md](599-distributed-proof-runner-host-api-url-slice.md)
+- [600-distributed-proof-generated-pnpm-fallback-slice.md](600-distributed-proof-generated-pnpm-fallback-slice.md)
+- [601-runner-identity-conflict-hardening-slice.md](601-runner-identity-conflict-hardening-slice.md)
+- [602-distributed-proof-graph-preflight-slice.md](602-distributed-proof-graph-preflight-slice.md)
 
 ## Audited Scope
 
@@ -1492,6 +1495,12 @@ Host federated observation intake now treats runner public-key conflicts as
 ignored invalid observations instead of process-fatal exceptions, preserving
 the existing runner identity binding when stale or regenerated runner secrets
 reuse a runner id.
+Generated distributed proof kits now also include
+`operator/preflight.mjs`, and generated `operator/commands.sh` runs it before
+catalog, trust, assignment, message, or verifier commands. The preflight reads
+`operator/proof-profile.json` and Host `/v1/graph`, failing early when the
+active graph is missing the generated agent/User Node ids or the required
+enabled User Node outbound edge.
 The highest-value remaining implementation areas are richer model-guided
 memory maintenance, deeper delegated-session semantics beyond the current
 controlled handoff path and deterministic owner/coordination/delegation memory

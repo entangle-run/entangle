@@ -7044,3 +7044,14 @@ ignores those invalid observations at the federated control-plane boundary.
 This preserves the original runner identity binding and prevents stale relay
 events or regenerated runner secrets with reused runner ids from terminating
 the Host process.
+
+## [2026-05-10] ops | Added proof-kit graph preflight
+
+Added `references/602-distributed-proof-graph-preflight-slice.md`. Generated
+distributed proof kits now write `operator/preflight.mjs`, and
+`operator/commands.sh` runs it before catalog, trust, assignment, message, or
+verifier commands.
+
+The preflight reads Host `/v1/graph` and `operator/proof-profile.json`, then
+fails early when the active graph is missing the generated agent/User Node ids
+or the enabled User Node outbound edge required for the scripted task.

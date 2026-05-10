@@ -177,6 +177,7 @@ try {
   ], {
     mustContain: [
       "[dry-run] would write runner env/start scripts",
+      '[dry-run] operator graph preflight command: node "$SCRIPT_DIR/preflight.mjs"',
       "[dry-run] generated shell scripts use pnpm fallback: npm exec --yes pnpm@10.18.3 --"
     ]
   });
@@ -491,6 +492,7 @@ try {
       '"requireConversation":true',
       '"requirePublishedGitArtifact":true',
       "run_cli user-nodes clients --summary --check-health",
+      '[dry-run] operator graph preflight command: node "$SCRIPT_DIR/preflight.mjs"',
       [
         "User Client Basic Auth required for human-interface runners via",
         "ENTANGLE_PROOF_USER_CLIENT_BASIC_AUTH"

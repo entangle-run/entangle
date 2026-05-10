@@ -490,6 +490,9 @@ it, and the verifier rejects malformed or internally inconsistent profiles
 before inspecting Host state. Generated profiles also carry the primary User
 Node conversation and User Client health requirements, so direct `--profile`
 verification stays aligned with the generated operator scripts.
+Generated operator commands also run `operator/preflight.mjs` before Host
+mutations, checking that the active graph contains the generated agent/User
+Node ids and the required enabled User Node outbound edge.
 For no-credential distributed checks against the attached OpenCode route, pass
 `--fake-opencode-server-url <url>`. The generated operator script upserts an
 `opencode_server` profile with `permissionMode: "entangle_approval"`, binds the

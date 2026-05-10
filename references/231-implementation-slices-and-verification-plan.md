@@ -1786,6 +1786,12 @@ Current status:
 - Host federated observation intake now ignores same-runner public-key
   conflicts as invalid observations instead of allowing stale relay events,
   regenerated runner secrets, or reused runner ids to crash the Host process;
+- generated distributed proof operator commands now run
+  `operator/preflight.mjs` before catalog, trust, assignment, message, or
+  verifier commands, using Host `/v1/graph` plus
+  `operator/proof-profile.json` to fail early when the active graph does not
+  contain the generated agent/User Node ids or the required enabled User Node
+  outbound edge;
 - the remaining deployment hardening is infrastructure-backed orchestration
   that can provision multiple machines or VM/container boundaries around the
   verifier, plus broader non-disposable upgrade/repair workflows beyond the

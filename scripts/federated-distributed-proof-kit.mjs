@@ -594,6 +594,8 @@ function buildOperatorCommandsScript() {
     '  run_pnpm --filter @entangle/cli dev "$@"',
     "}",
     "",
+    'node "$SCRIPT_DIR/preflight.mjs"',
+    "",
     ...buildAgentEngineProfileOperatorCommands(),
     "run_cli runners list --summary"
   ];
@@ -620,6 +622,173 @@ function buildOperatorCommandsScript() {
   );
 
   return `${lines.join("\n")}\n`;
+}
+
+function buildOperatorPreflightScript() {
+  return `#!/usr/bin/env node
+import { readFile } from "node:fs/promises";
+import path from "node:path";
+import { fileURLToPath } from "node:url";
+
+const scriptDir = path.dirname(fileURLToPath(import.meta.url));
+
+function fail(message) {
+  console.error(\`Entangle distributed proof preflight failed: \${message}\`);
+  process.exit(1);
+}
+
+function requireString(value, label) {
+  if (typeof value !== "string" || value.trim().length === 0) {
+    fail(\`\${label} is missing from operator/proof-profile.json.\`);
+  }
+
+  return value;
+}
+
+async function readJsonFile(filePath, label) {
+  let raw;
+
+  try {
+    raw = await readFile(filePath, "utf8");
+  } catch (error) {
+    fail(\`Could not read \${label} at \${filePath}: \${error instanceof Error ? error.message : String(error)}\`);
+  }
+
+  try {
+    return JSON.parse(raw);
+  } catch (error) {
+    fail(\`Could not parse \${label} at \${filePath}: \${error instanceof Error ? error.message : String(error)}\`);
+  }
+}
+
+async function fetchGraphInspection(hostUrl) {
+  let graphUrl;
+
+  try {
+    graphUrl = new URL("/v1/graph", hostUrl.endsWith("/") ? hostUrl : \`\${hostUrl}/\`);
+  } catch (error) {
+    fail(\`ENTANGLE_HOST_URL is not a valid URL: \${error instanceof Error ? error.message : String(error)}\`);
+  }
+
+  const headers = {};
+  const token = process.env.ENTANGLE_HOST_TOKEN?.trim();
+  if (token && token !== "REPLACE_WITH_HOST_TOKEN") {
+    headers.authorization = \`Bearer \${token}\`;
+  }
+
+  let response;
+
+  try {
+    response = await fetch(graphUrl, { headers });
+  } catch (error) {
+    fail(\`Could not reach Host graph API at \${graphUrl.href}: \${error instanceof Error ? error.message : String(error)}\`);
+  }
+
+  if (!response.ok) {
+    const body = await response.text().catch(() => "");
+    const suffix = body.trim().length > 0 ? \`: \${body.trim().slice(0, 500)}\` : "";
+    fail(\`Host graph API at \${graphUrl.href} returned \${response.status} \${response.statusText}\${suffix}\`);
+  }
+
+  try {
+    return await response.json();
+  } catch (error) {
+    fail(\`Host graph API did not return JSON: \${error instanceof Error ? error.message : String(error)}\`);
+  }
+}
+
+const hostUrl = process.env.ENTANGLE_HOST_URL?.trim();
+if (!hostUrl) {
+  fail("ENTANGLE_HOST_URL is not set. Source operator/operator.env before running this preflight.");
+}
+
+const profile = await readJsonFile(
+  path.join(scriptDir, "proof-profile.json"),
+  "distributed proof profile"
+);
+const inspection = await fetchGraphInspection(hostUrl);
+const graph = inspection?.graph;
+
+if (!graph) {
+  fail(
+    \`No active graph is available at \${hostUrl}. Create or import the intended graph before running operator commands.\`
+  );
+}
+
+const nodes = Array.isArray(graph.nodes) ? graph.nodes : [];
+const edges = Array.isArray(graph.edges) ? graph.edges : [];
+const agentNodeId = requireString(profile.agentNodeId, "agentNodeId");
+const userNodeId = requireString(profile.userNodeId, "userNodeId");
+const reviewerUserNodeId = requireString(
+  profile.reviewerUserNodeId,
+  "reviewerUserNodeId"
+);
+
+const requiredNodeIds = [agentNodeId, userNodeId, reviewerUserNodeId];
+const nodeById = new Map(
+  nodes
+    .filter((node) => typeof node?.nodeId === "string")
+    .map((node) => [node.nodeId, node])
+);
+const missingNodeIds = requiredNodeIds.filter((nodeId) => !nodeById.has(nodeId));
+
+if (missingNodeIds.length > 0) {
+  fail(
+    \`Active graph '\${graph.graphId ?? "unknown"}' is missing proof-kit node id(s): \${missingNodeIds.join(", ")}. Regenerate the kit with matching --agent-node/--user-node/--reviewer-user-node values or update the graph.\`
+  );
+}
+
+const agentNode = nodeById.get(agentNodeId);
+const userNode = nodeById.get(userNodeId);
+const reviewerUserNode = nodeById.get(reviewerUserNodeId);
+
+if (agentNode.nodeKind === "user") {
+  fail(\`agentNodeId '\${agentNodeId}' points to a User Node; the proof agent node must be an assignable non-user runtime.\`);
+}
+
+const nonUserParticipants = [
+  [userNodeId, userNode],
+  [reviewerUserNodeId, reviewerUserNode]
+].filter(([, node]) => node.nodeKind !== "user");
+
+if (nonUserParticipants.length > 0) {
+  fail(
+    \`Proof User Node id(s) must point to graph nodes with nodeKind 'user': \${nonUserParticipants
+      .map(([nodeId, node]) => \`\${nodeId} has nodeKind '\${node.nodeKind ?? "unknown"}'\`)
+      .join(", ")}.\`
+  );
+}
+
+const userTaskEdge = edges.find(
+  (edge) =>
+    edge?.enabled !== false &&
+    edge.fromNodeId === userNodeId &&
+    edge.toNodeId === agentNodeId
+);
+
+if (!userTaskEdge) {
+  fail(
+    \`User Node '\${userNodeId}' does not have an enabled outbound edge to agent node '\${agentNodeId}'. Add that edge or regenerate the kit for a connected user/agent pair.\`
+  );
+}
+
+console.log(
+  JSON.stringify(
+    {
+      ok: true,
+      graphId: graph.graphId,
+      activeRevisionId: inspection.activeRevisionId,
+      requiredNodeIds,
+      userTaskEdge: {
+        edgeId: userTaskEdge.edgeId,
+        relation: userTaskEdge.relation
+      }
+    },
+    null,
+    2
+  )
+);
+`;
 }
 
 function buildRunnerComposeServiceName(profile) {
@@ -933,8 +1102,9 @@ ${buildCustomAgentEngineReadmeSection()}
    runner before starting it.
 4. After the runners publish \`runner.hello\`, run
    \`operator/commands.sh\` from the Host/operator machine to trust runners,
-   offer assignments, list User Client URLs, send a signed User Node task, and
-   inspect Host projection and run the distributed proof verifier.
+   first preflight the active graph against \`operator/proof-profile.json\`,
+   then offer assignments, list User Client URLs, send a signed User Node
+   task, inspect Host projection, and run the distributed proof verifier.
 5. After the agent has produced projected work evidence, run
    \`operator/verify-artifacts.sh\` from the Host/operator machine to require
    projected artifact, source-change, source-history, or wiki evidence plus
@@ -966,6 +1136,7 @@ ${buildRunnerComposeReadmeSection()}
 - \`operator/operator.env\`: Host URL and Host token placeholder or value.
 - \`operator/proof-profile.json\`: machine-readable runner, node, engine, relay, optional git-service, conversation, and User Client health profile for topology verification.
 - \`operator/proof-profile-post-work.json\`: stricter profile that also requires projected work evidence and a published git artifact or source-history publication from the agent node.
+- \`operator/preflight.mjs\`: Host graph preflight that checks the generated proof node ids and required User Node outbound edge before operator commands mutate Host state.
 - \`operator/commands.sh\`: operator commands for trust, assignment, user message, projection, and verification.
 - \`operator/verify-topology.sh\`: repeatable topology, runtime, conversation, and optional relay/git verification.
 - \`operator/verify-artifacts.sh\`: post-work verifier requiring projected artifact/source/wiki evidence and published git artifact evidence from the agent node.
@@ -1132,6 +1303,7 @@ async function writeKit() {
     console.log(
       "[dry-run] operator client health command: run_cli user-nodes clients --summary --check-health"
     );
+    console.log('[dry-run] operator graph preflight command: node "$SCRIPT_DIR/preflight.mjs"');
     console.log(`[dry-run] operator verifier command: ${buildVerifierCommand()}`);
     console.log(
       `[dry-run] operator artifact verifier command: ${buildVerifierCommand({
@@ -1202,6 +1374,7 @@ async function writeKit() {
     )}\n`,
     "utf8"
   );
+  await writeExecutable(path.join(operatorDir, "preflight.mjs"), buildOperatorPreflightScript());
   await writeExecutable(path.join(operatorDir, "commands.sh"), buildOperatorCommandsScript());
   await writeExecutable(
     path.join(operatorDir, "verify-topology.sh"),

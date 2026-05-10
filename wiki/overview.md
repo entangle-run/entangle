@@ -486,6 +486,10 @@ agent-engine capability with `--agent-engine-kind <kind>`, and writes a
 matching verifier command into the operator script. Custom runner ids and graph
 node ids are also carried into `operator/proof-profile.json`, which the
 generated verifier command reads.
+Generated `operator/commands.sh` now runs `operator/preflight.mjs` before Host
+mutations; the preflight reads Host `/v1/graph` and the same proof profile to
+fail early when the active graph is missing the generated agent/User Node ids
+or the enabled User Node outbound edge required for the scripted task.
 With `--fake-opencode-server-url <url>`, the same kit now prepares Host
 operator commands that upsert a deterministic attached fake OpenCode profile,
 bind the agent node to it, and write optional runner Basic-auth env for
@@ -1559,7 +1563,8 @@ The current implementation-truth audit now lives in
   disposable roundtrip smokes, guided previous-service-volume migration, and
   distributed proof-kit support for separate operator/verifier and runner Host
   API URLs through `--runner-host-api-url`, generated proof-kit pnpm fallback
-  scripts, and Host-side runner identity-conflict hardening;
+  scripts, Host-side runner identity-conflict hardening, and generated
+  proof-kit graph preflight before operator mutations;
 - complete CLI parity where it adds real headless operational value;
 - continue narrowing the remaining delegated-session gaps now that controlled
   autonomous `task.handoff` emission and runner-local active-conversation

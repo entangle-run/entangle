@@ -984,6 +984,7 @@ files are the active federated redesign pack.
 600. [599-distributed-proof-runner-host-api-url-slice.md](599-distributed-proof-runner-host-api-url-slice.md)
 601. [600-distributed-proof-generated-pnpm-fallback-slice.md](600-distributed-proof-generated-pnpm-fallback-slice.md)
 602. [601-runner-identity-conflict-hardening-slice.md](601-runner-identity-conflict-hardening-slice.md)
+603. [602-distributed-proof-graph-preflight-slice.md](602-distributed-proof-graph-preflight-slice.md)
 
 ## Role of this corpus
 
