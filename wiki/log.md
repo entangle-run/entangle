@@ -7105,3 +7105,9 @@ covering pnpm/npm dependencies and GitHub Actions updates on a weekly cadence.
 The runtime and website repositories already have required CI status checks on
 `main`, so automated update pull requests will use the same quality gates as
 human changes.
+
+## [2026-05-11] repo | Added editor and Git attribute baselines
+
+Added `.editorconfig` and `.gitattributes` to the runtime, website, and
+organization-profile repositories so contributors and automation share the same
+UTF-8, LF, final-newline, whitespace, and binary-file conventions.
