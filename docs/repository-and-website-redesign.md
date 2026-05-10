@@ -25,8 +25,8 @@ Website repository:
 - Git state was clean and aligned with `origin/main`.
 - Astro/Starlight build and typecheck passed before this cleanup.
 - Public positioning was mostly aligned with the federated product thesis.
-- Drift remained in the Open Graph image (`local-first`) and in some claims
-  that read stronger than the current verified status.
+- Drift remained in the Open Graph image and in some claims that read stronger
+  than the current verified status.
 - The site repeated the same architecture language across several pages.
 
 ## Classification

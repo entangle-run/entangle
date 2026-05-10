@@ -10,8 +10,8 @@ rather than a vague service placeholder.
 
 The host API should be:
 
-- local-first;
 - explicit;
+- deployment-profile aware;
 - stable enough for Studio, CLI, and tests to build against;
 - centered on desired state, observed state, and validation-backed mutation.
 

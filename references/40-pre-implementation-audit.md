@@ -153,7 +153,7 @@ containers dynamically. The audit made the hidden implication explicit:
   socket.
 
 This is acceptable because the host is explicitly modeled as a trusted
-local-first operator boundary.
+operator boundary for the developer deployment adapter.
 
 ### 3. Trace persistence should live in host state first
 

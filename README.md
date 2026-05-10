@@ -214,3 +214,7 @@ The public website lives in the sibling repository:
 
 Website claims must stay aligned with this repository. Public messaging should
 describe Entangle as a federated runtime, not as a local product.
+
+## License
+
+Entangle is open source under the [Apache License 2.0](LICENSE).

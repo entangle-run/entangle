@@ -63,7 +63,7 @@ This keeps the Docker boundary small and auditable.
 
 ## Connection model
 
-The current local-first connection resolution order is:
+The developer Docker adapter connection resolution order is:
 
 1. `ENTANGLE_DOCKER_SOCKET_PATH`
 2. `ENTANGLE_DOCKER_HOST_URL`
