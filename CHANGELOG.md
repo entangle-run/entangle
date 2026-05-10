@@ -16,17 +16,17 @@ Pre-production alpha for the federated Entangle runtime baseline.
 - Preserved the federated architecture baseline: Host, runners, User Nodes,
   Nostr-signed coordination, git-backed artifact references, Studio, CLI, and
   deterministic test paths.
-- Added deterministic/mock execution support for no-credential local validation
+- Added deterministic/mock execution support for no-credential validation
   when real LLM API credentials are not configured.
 - Aligned the public website and documentation around Entangle rather than a
-  local-only product identity.
+  same-machine-only product identity.
 
 ### Validation
 
 - Runtime CI passed on the release commit.
 - Website CI passed on the aligned public documentation commit.
-- Local deterministic verification passed for the runtime and website before
-  publishing this alpha release.
+- Repository deterministic verification passed for the runtime and website
+  before publishing this alpha release.
 
 ### Known Limits
 
