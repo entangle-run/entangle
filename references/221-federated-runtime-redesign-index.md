@@ -396,6 +396,7 @@ same-machine slice records.
 - [593-service-volume-health-check-slice.md](593-service-volume-health-check-slice.md)
 - [594-service-volume-disposable-roundtrip-slice.md](594-service-volume-disposable-roundtrip-slice.md)
 - [595-service-volume-previous-migration-command-slice.md](595-service-volume-previous-migration-command-slice.md)
+- [596-service-volume-required-roundtrip-gate-slice.md](596-service-volume-required-roundtrip-gate-slice.md)
 
 ## Audited Scope
 
@@ -1266,7 +1267,9 @@ stable profile volumes. `deployment service-volumes migrate-previous` now
 turns the earlier doctor/repair previous-volume warning into a focused,
 dry-run-first migration plan for `compose_gitea-data -> gitea-data` and
 `compose_strfry-data -> strfry-data`, applying only with explicit stopped-service
-acknowledgement and running-container checks.
+acknowledgement and running-container checks. The Docker-required disposable
+roundtrip proof now has a dedicated root command:
+`pnpm ops:smoke-deployment-service-volume-roundtrip:required`.
 New Host events now carry optional audit hash-chain fields, and Host serializes
 event appends so concurrent operator requests do not fork the local audit
 sequence. Host now also exposes `GET /v1/events/integrity`, host-client
@@ -1473,7 +1476,7 @@ queue, richer collaborative wiki merge UI beyond the first conflict-to-patch
 draft recovery path on top of the participant-scoped page upsert and patch-set
 commands,
 repository lifecycle and replicated/fallback artifact behavior,
-infrastructure-backed multi-machine proof execution, service-aware
-quiescing/health checks and non-disposable upgrade behavior, external audit
-retention, and deeper production identity and authorization beyond the scoped
-and expiry-aware bootstrap-token boundary.
+infrastructure-backed multi-machine proof execution, broader non-disposable
+upgrade behavior beyond the known previous service-volume migration, external
+audit retention, and deeper production identity and authorization beyond the
+scoped and expiry-aware bootstrap-token boundary.

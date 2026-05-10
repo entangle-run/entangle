@@ -6985,3 +6985,10 @@ service-volume names.
 The command is dry-run-first. Apply requires both `--apply` and
 `--assume-services-stopped`, and the implementation reuses Docker
 running-container checks before copying service-owned data.
+
+## [2026-05-10] deployment | Added required service-volume roundtrip gate
+
+Added `references/596-service-volume-required-roundtrip-gate-slice.md`.
+`pnpm ops:smoke-deployment-service-volume-roundtrip:required` now runs the
+disposable Docker service-volume export/import roundtrip with Docker required,
+so physical proof machines and Docker-enabled CI can fail instead of skipping.

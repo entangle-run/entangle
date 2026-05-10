@@ -31,6 +31,7 @@
     "ops:smoke-demo-tools": "node scripts/smoke-demo-tools.mjs",
     "ops:smoke-deployment-service-volume-tools": "node scripts/smoke-deployment-service-volume-tools.mjs",
     "ops:smoke-deployment-service-volume-roundtrip": "node scripts/smoke-deployment-service-volume-roundtrip.mjs",
+    "ops:smoke-deployment-service-volume-roundtrip:required": "node scripts/smoke-deployment-service-volume-roundtrip.mjs --require-docker",
     "ops:demo-federated-preview": "node scripts/federated-preview-demo.mjs",
     "ops:demo-federated-preview:reset": "node scripts/federated-preview-demo.mjs --reset",
     "ops:demo-user-node-runtime": "node scripts/federated-user-node-runtime-demo.mjs",

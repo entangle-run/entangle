@@ -201,6 +201,13 @@ verifies restored content without touching the stable profile volumes:
 pnpm ops:smoke-deployment-service-volume-roundtrip
 ```
 
+On Docker-enabled CI or physical proof machines, use the required gate so
+Docker unavailability fails instead of skipping:
+
+```sh
+pnpm ops:smoke-deployment-service-volume-roundtrip:required
+```
+
 Validate a restore without changing Entangle state:
 
 ```sh
@@ -404,6 +411,8 @@ backup bundle after the check.
 service-volume export/import dry-run output without requiring an initialized
 profile. `pnpm ops:smoke-deployment-service-volume-roundtrip` verifies the
 non-dry-run path against disposable Docker volumes when Docker is available.
+`pnpm ops:smoke-deployment-service-volume-roundtrip:required` is the matching
+no-skip gate for Docker-enabled CI or physical proof machines.
 
 Environment overrides:
 

@@ -90,6 +90,8 @@ third-party service layouts.
 
 Future work should add broader non-disposable profile upgrade rehearsals beyond
 the known previous Compose-prefixed service-volume migration.
+`references/596-service-volume-required-roundtrip-gate-slice.md` adds the
+dedicated Docker-required CI gate for the disposable service-volume roundtrip.
 
 ## Verification
 

@@ -1380,7 +1380,10 @@ The repository now also contains the first real implementation baseline:
   status/export can now use explicit volume bindings, and
   `pnpm ops:smoke-deployment-service-volume-roundtrip` verifies real
   non-dry-run export/import against disposable Docker volumes when Docker is
-  available; `service-volumes migrate-previous` now provides a dry-run-first
+  available, while
+  `pnpm ops:smoke-deployment-service-volume-roundtrip:required` gives
+  Docker-enabled CI and physical proof machines a no-skip gate;
+  `service-volumes migrate-previous` now provides a dry-run-first
   guided migration from the known previous Compose-prefixed Gitea/strfry
   volumes into the stable service-volume names;
 - an active same-machine profile smoke through `pnpm ops:smoke-federated-dev`, covering
@@ -1546,8 +1549,8 @@ The current implementation-truth audit now lives in
   while the next deployment-grade gap is broader non-disposable profile
   upgrade behavior and infrastructure-backed gates beyond the current explicit
   acknowledgement, running-container guards, read-only service-volume
-  status/maintenance/health surfaces, Docker-gated disposable roundtrip smoke,
-  and guided previous-service-volume migration;
+  status/maintenance/health surfaces, optional and required Docker-gated
+  disposable roundtrip smokes, and guided previous-service-volume migration;
 - complete CLI parity where it adds real headless operational value;
 - continue narrowing the remaining delegated-session gaps now that controlled
   autonomous `task.handoff` emission and runner-local active-conversation

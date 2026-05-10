@@ -88,8 +88,9 @@ custom profile recovery, and explicit operator-directed migrations.
 `references/595-service-volume-previous-migration-command-slice.md` adds the
 guided migration command for the known previous Compose-prefixed service
 volumes. Future work should add broader non-disposable upgrade and repair
-workflows, and the physical proof environment should run this smoke with
-`--require-docker`.
+workflows. `references/596-service-volume-required-roundtrip-gate-slice.md`
+adds the dedicated no-skip Docker-required root command for physical proof
+environments.
 
 ## Verification
 

@@ -1600,6 +1600,9 @@ Current status:
   previous Compose-prefixed Gitea/strfry volume findings into a dry-run-first
   migration plan, applying only with stopped-service acknowledgement and
   running-container checks;
+- `pnpm ops:smoke-deployment-service-volume-roundtrip:required` now provides
+  the no-skip Docker-enabled CI gate for disposable service-volume
+  export/import roundtrip verification;
 - Host event records now include optional audit hash-chain fields, Host event
   appends are serialized to preserve chain order, and CLI runtime-trace
   summaries expose the hashes when present; Host, host-client, and CLI now
@@ -1765,8 +1768,7 @@ Current status:
 - the remaining deployment hardening is infrastructure-backed orchestration
   that can provision multiple machines or VM/container boundaries around the
   verifier, plus broader non-disposable upgrade/repair workflows beyond the
-  known previous service-volume migration and physical CI gates that run the
-  disposable service-volume roundtrip with Docker required.
+  known previous service-volume migration.
 
 Verification:
 

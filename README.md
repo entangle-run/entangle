@@ -1215,7 +1215,9 @@ This repository currently contains:
 - a Docker-gated disposable service-volume roundtrip smoke through
   `pnpm ops:smoke-deployment-service-volume-roundtrip` that creates temporary
   Gitea/relay volumes, runs real non-dry-run service-volume export/import, and
-  verifies restored content without touching the stable profile volumes;
+  verifies restored content without touching the stable profile volumes, plus
+  `pnpm ops:smoke-deployment-service-volume-roundtrip:required` for
+  Docker-enabled CI or physical proof machines where skipping is not allowed;
 - a read-only `entangle deployment service-volumes status` surface that checks
   stable service-volume existence and running-container use before operators
   attempt export/import, with explicit volume bindings for disposable fixtures
@@ -1844,9 +1846,8 @@ The highest-value remaining gaps are:
   handoff;
 - stronger end-to-end deployment and integration hardening beyond the current
   disposable same-machine profile and first service-volume export/import path,
-  especially infrastructure-backed multi-machine proof execution, physical
-  Docker-required CI gates for the disposable service-volume roundtrip, and
-  broader non-disposable upgrade/repair behavior beyond the known previous
+  especially infrastructure-backed multi-machine proof execution and broader
+  non-disposable upgrade/repair behavior beyond the known previous
   service-volume migration.
 
 The repository should be treated as a live design baseline rather than as a static document dump. Each substantial interaction with the project should begin with a lightweight audit loop:
